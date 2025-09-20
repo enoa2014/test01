@@ -1,4 +1,4 @@
-const automator = require('miniprogram-automator');
+﻿const automator = require('miniprogram-automator');
 const config = require('../config/devtools');
 
 async function waitForConnection(tries, interval) {
@@ -14,18 +14,38 @@ async function waitForConnection(tries, interval) {
   throw lastError || new Error('Unable to connect to DevTools');
 }
 
-async function waitForElement(page, selector, retries = 15, delay = 500) {
-  for (let i = 0; i < retries; i += 1) {
-    const node = await page.$(selector);
-    if (node) {
-      return node;
+async function waitForElements(page, selector, minCount = 1, retries = 20, delay = 500) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    const errorNode = await page.$('.error');
+    if (errorNode) {
+      const errorText = (await errorNode.text()).trim();
+      throw new Error(`Page reported error: ${errorText}`);
+    }
+
+    const nodes = await page.$$(selector);
+    if (nodes.length >= minCount) {
+      return nodes;
     }
     await page.waitFor(delay);
   }
-  return null;
+  return [];
 }
 
-describe('首页端到端', () => {
+async function findFirstDataCells(rows) {
+  for (const row of rows) {
+    const cells = await row.$$('.cell');
+    if (!cells.length) {
+      continue;
+    }
+    const serial = (await cells[0].text()).trim();
+    if (/^[0-9]+$/.test(serial)) {
+      return cells;
+    }
+  }
+  return [];
+}
+
+describe('Excel 数据展示', () => {
   let miniProgram;
 
   beforeAll(async () => {
@@ -38,25 +58,25 @@ describe('首页端到端', () => {
     }
   });
 
-  test('展示云环境信息并可调用云函数', async () => {
+  test('读取并展示 Excel 内容', async () => {
     const page = await miniProgram.reLaunch('/pages/index/index');
-    await page.waitFor(1500);
+    await page.waitFor(1000);
 
-    const subtitle = await waitForElement(page, '.subtitle');
-    expect(subtitle).not.toBeNull();
+    const headerCells = await waitForElements(page, '.row.header .cell', 1);
+    expect(headerCells.length).toBeGreaterThan(0);
+    const firstHeaderText = await headerCells[0].text();
+    expect(firstHeaderText).toContain('序号');
 
-    const envText = await subtitle.text();
-    expect(envText).toContain('当前云环境');
+    const rowNodes = await waitForElements(page, '.excel-table .row', 3);
+    expect(rowNodes.length).toBeGreaterThan(2);
 
-    const button = await waitForElement(page, '.primary');
-    expect(button).not.toBeNull();
+    const dataCells = await findFirstDataCells(rowNodes);
+    expect(dataCells.length).toBeGreaterThan(1);
 
-    await button.tap();
+    const serialText = (await dataCells[0].text()).trim();
+    expect(/^[0-9]+$/.test(serialText)).toBeTruthy();
 
-    const result = await waitForElement(page, '.result-body', 20, 500);
-    expect(result).not.toBeNull();
-
-    const resultText = await result.text();
-    expect(resultText.length).toBeGreaterThan(0);
-  });
+    const nameText = (await dataCells[1].text()).trim();
+    expect(nameText).not.toBe('-');
+  }, 120000);
 });
