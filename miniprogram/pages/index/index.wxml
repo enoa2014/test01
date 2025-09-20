@@ -1,6 +1,35 @@
-﻿<view class="container">
+<view class="container">
   <view class="hero">
     <text class="title">患者档案</text>
+    <text class="subtitle">汇总每位患者的住院记录</text>
+  </view>
+
+  <view class="toolbar">
+    <view class="search-box">
+      <icon type="search" size="16" color="#9ca3af" />
+      <input
+        class="search-input"
+        placeholder="搜索姓名、诊断或医院"
+        placeholder-class="search-placeholder"
+        confirm-type="search"
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+      />
+      <view wx:if="{{searchKeyword}}" class="search-clear" bindtap="onSearchClear">清除</view>
+    </view>
+    <picker
+      class="sort-picker-wrapper"
+      mode="selector"
+      range="{{sortOptions}}"
+      range-key="label"
+      value="{{sortIndex}}"
+      bindchange="onSortChange"
+    >
+      <view class="sort-picker">
+        <text class="sort-text">{{sortOptions[sortIndex].label}}</text>
+        <text class="sort-icon">▾</text>
+      </view>
+    </picker>
   </view>
 
   <view wx:if="{{loading}}" class="placeholder">正在加载患者列表…</view>
@@ -8,21 +37,38 @@
   <scroll-view wx:else scroll-y class="patient-list">
     <view
       class="patient-item"
-      wx:for="{{patients}}"
+      wx:for="{{displayPatients}}"
       wx:key="key"
       data-key="{{item.key}}"
       bindtap="onPatientTap"
     >
-      <view class="patient-main">
-        <text class="patient-name">{{item.patientName || '-'}} </text>
-        <text class="patient-gender">{{item.gender || '未知'}}</text>
+      <view class="patient-header">
+        <text class="patient-name">{{item.patientName || '-'}}</text>
+        <text class="patient-count">共入住 {{item.admissionCount || 0}} 次</text>
       </view>
+
+      <view class="quick-info">
+        <view class="quick-item">
+          <text class="quick-label">性别</text>
+          <text class="quick-value">{{item.gender || '未知'}}</text>
+        </view>
+        <view class="quick-item">
+          <text class="quick-label">年龄</text>
+          <text class="quick-value">{{item.ageText || '-'}}</text>
+        </view>
+        <view class="quick-item" wx:if="{{item.latestAdmissionDateFormatted}}">
+          <text class="quick-label">最近入住</text>
+          <text class="quick-value">{{item.latestAdmissionDateFormatted}}</text>
+        </view>
+      </view>
+
       <view class="patient-meta">
-        <text class="meta">最近入住：{{item.latestAdmissionDate || '-'}}</text>
-        <text class="meta">诊断：{{item.latestDiagnosis || '-'}}</text>
-        <text class="meta">共 {{item.admissionCount || 0}} 次记录</text>
+        <view class="meta-row">
+          <text class="meta-label">首次诊断</text>
+          <text class="meta-value">{{item.firstDiagnosis || '-'}}</text>
+        </view>
       </view>
     </view>
-    <view wx:if="{{!patients.length}}" class="placeholder">暂无患者数据</view>
+    <view wx:if="{{!displayPatients.length}}" class="placeholder">未找到匹配的患者</view>
   </scroll-view>
 </view>

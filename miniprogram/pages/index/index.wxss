@@ -1,4 +1,4 @@
-﻿.container {
+.container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -13,6 +13,12 @@
   font-size: 44rpx;
   font-weight: 600;
   color: #111827;
+}
+
+.subtitle {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #6b7280;
 }
 
 .placeholder,
@@ -38,13 +44,21 @@
   padding: 28rpx;
   margin-bottom: 24rpx;
   box-shadow: 0 10rpx 20rpx rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
 
-.patient-main {
+.patient-item:active {
+  transform: scale(0.99);
+  opacity: 0.95;
+}
+
+.patient-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12rpx;
+  gap: 16rpx;
 }
 
 .patient-name {
@@ -53,18 +67,113 @@
   color: #111827;
 }
 
-.patient-gender {
-  font-size: 28rpx;
-  color: #4b5563;
+.patient-count {
+  font-size: 26rpx;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 6rpx 20rpx;
+  border-radius: 999rpx;
 }
 
-.patient-meta {
+.quick-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 12rpx;
+}
+
+.quick-item {
+  background: #f3f4f6;
+  border-radius: 12rpx;
+  padding: 18rpx 20rpx;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
 
-.meta {
+.quick-label {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.quick-value {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #111827;
+}
+
+.patient-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.meta-row {
+  display: flex;
+  gap: 24rpx;
+  align-items: flex-start;
+}
+
+.meta-label {
+  width: 160rpx;
   font-size: 26rpx;
+  color: #4b5563;
+}
+
+.meta-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: #1f2937;
+  word-break: break-word;
+}
+.toolbar {
+  padding: 0 24rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx 20rpx;
+  background: #ffffff;
+  border-radius: 999rpx;
+  box-shadow: 0 6rpx 14rpx rgba(15, 23, 42, 0.05);
+}
+
+.search-input {
+  flex: 1;
+  font-size: 26rpx;
+  color: #111827;
+}
+
+.search-placeholder {
+  color: #9ca3af;
+}
+
+.search-clear {
+  font-size: 24rpx;
+  color: #2563eb;
+}
+
+.sort-picker-wrapper {
+  align-self: flex-end;
+}
+
+.sort-picker {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 10rpx 20rpx;
+  background: #ffffff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  color: #111827;
+  box-shadow: 0 6rpx 14rpx rgba(15, 23, 42, 0.05);
+}
+
+.sort-icon {
+  font-size: 22rpx;
   color: #6b7280;
 }

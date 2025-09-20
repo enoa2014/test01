@@ -1,4 +1,4 @@
-﻿const XLSX = require("xlsx");
+const XLSX = require("xlsx");
 const cloud = require("wx-server-sdk");
 
 const CURRENT_ENV = process.env.TCB_ENV || process.env.TENCENTCLOUD_ENV || process.env.SCF_NAMESPACE || "cloud1-6g2fzr5f7cf51e38";
@@ -365,6 +365,14 @@ function buildPatientGroups(records) {
   groups.forEach((group) => {
     group.records.sort((a, b) => (b.admissionTimestamp || 0) - (a.admissionTimestamp || 0));
     const latest = group.records[0] || {};
+    const ascendingRecords = [...group.records].reverse();
+    const findEarliestRecord = (predicate) => ascendingRecords.find((item) => item && predicate(item));
+    const firstWithAdmission = findEarliestRecord((item) => normalizeSpacing(item.admissionDate) || item.admissionTimestamp);
+    const firstWithDiagnosis = findEarliestRecord((item) => normalizeSpacing(item.diagnosis));
+    const firstWithHospital = findEarliestRecord((item) => normalizeSpacing(item.hospital));
+    const firstAdmissionDate = (firstWithAdmission && firstWithAdmission.admissionDate) || latest.admissionDate || '';
+    const firstDiagnosis = (firstWithDiagnosis && firstWithDiagnosis.diagnosis) || latest.diagnosis || '';
+    const firstHospital = (firstWithHospital && firstWithHospital.hospital) || latest.hospital || '';
     const caregiversText = Array.from(group.caregiverNames).join('、');
 
     summaries.push({
@@ -376,9 +384,12 @@ function buildPatientGroups(records) {
       nativePlace: group.nativePlace || latest.nativePlace,
       ethnicity: group.ethnicity || latest.ethnicity,
       caregivers: caregiversText,
-      latestAdmissionDate: latest.admissionDate,
-      latestDiagnosis: latest.diagnosis,
-      latestHospital: latest.hospital,
+      latestAdmissionDate: latest.admissionDate || '',
+      latestDiagnosis: latest.diagnosis || '',
+      latestHospital: latest.hospital || '',
+      firstAdmissionDate: firstAdmissionDate,
+      firstDiagnosis: firstDiagnosis,
+      firstHospital: firstHospital,
       admissionCount: group.records.length,
       latestAdmissionTimestamp: latest.admissionTimestamp || 0
     });
@@ -561,12 +572,18 @@ exports.main = async (event = {}) => {
       ]);
       const familyInfoEntries = [];
 
-      group.addressList.forEach((value, index) => {
-        familyInfoEntries.push({
-          label: group.addressList.length > 1 ? `家庭地址${index + 1}` : '家庭地址',
-          value
-        });
-      });
+      const uniqueAddresses = Array.from(
+        new Set(
+          group.addressList
+            .map((item) => normalizeSpacing(item))
+            .filter((item) => item)
+        )
+      );
+      if (uniqueAddresses.length === 1) {
+        familyInfoEntries.push({ label: '家庭地址', value: uniqueAddresses[0] });
+      } else if (uniqueAddresses.length > 1) {
+        familyInfoEntries.push({ label: '家庭地址', value: uniqueAddresses.join('；') });
+      }
 
       const addGuardianEntries = (details, baseLabel) => {
         details.forEach((info, index) => {
