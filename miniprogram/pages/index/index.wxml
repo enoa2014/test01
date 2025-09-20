@@ -1,16 +1,7 @@
-<view class="container">
+﻿<view class="container">
   <view class="hero">
-    <text class="title">入住关怀档案</text>
-    <text class="subtitle">数据来自云环境：{{envId}}</text>
-    <text class="subtitle">云函数环境：{{cloudEnvId}}</text>
+    <text class="title">患者档案</text>
   </view>
-
-  <view class="actions">
-    <button class="primary" bindtap="onRetry" loading="{{loading}}">{{loading ? "刷新中" : "重新加载"}}</button>
-    <button class="secondary" bindtap="onImport" loading="{{importing}}" disabled="{{loading || importing}}">同步到云数据库</button>
-  </view>
-
-  <view wx:if="{{importStatus}}" class="status">{{importStatus}}</view>
 
   <view wx:if="{{loading}}" class="placeholder">正在加载患者列表…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
@@ -23,7 +14,7 @@
       bindtap="onPatientTap"
     >
       <view class="patient-main">
-        <text class="patient-name">{{item.patientName || '-'}}</text>
+        <text class="patient-name">{{item.patientName || '-'}} </text>
         <text class="patient-gender">{{item.gender || '未知'}}</text>
       </view>
       <view class="patient-meta">

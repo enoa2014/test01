@@ -1,8 +1,11 @@
-Page({
+﻿Page({
   data: {
     loading: true,
     error: "",
     patient: null,
+    basicInfo: [],
+    familyInfo: [],
+    economicInfo: [],
     records: []
   },
 
@@ -23,15 +26,18 @@ Page({
         name: "readExcel",
         data: { action: "detail", key: this.patientKey }
       });
-      const patient = res?.result?.patient || null;
-      const records = res?.result?.records || [];
+      const result = res?.result || {};
+      const patient = result.patient || null;
       if (patient?.patientName) {
         wx.setNavigationBarTitle({ title: patient.patientName });
       }
       this.setData({
         loading: false,
         patient,
-        records
+        basicInfo: result.basicInfo || [],
+        familyInfo: result.familyInfo || [],
+        economicInfo: result.economicInfo || [],
+        records: result.records || []
       });
     } catch (error) {
       console.error("Failed to load patient detail", error);
