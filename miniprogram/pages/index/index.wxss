@@ -177,3 +177,14 @@
   font-size: 22rpx;
   color: #6b7280;
 }
+
+.analysis-link {
+  align-self: flex-end;
+  padding: 12rpx 28rpx;
+  background: linear-gradient(90deg, #2563eb, #4f46e5);
+  color: #ffffff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  box-shadow: 0 6rpx 14rpx rgba(79, 70, 229, 0.25);
+}

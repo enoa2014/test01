@@ -75,6 +75,7 @@ Page({
         const latestDiagnosis = item.latestDiagnosis || item.firstDiagnosis || '';
         const firstHospital = item.firstHospital || item.latestHospital || '';
         const latestHospital = item.latestHospital || item.firstHospital || '';
+        const latestDoctor = item.latestDoctor || '';
         return {
           ...item,
           ageText: formatAge(item.birthDate),
@@ -83,7 +84,8 @@ Page({
           firstDiagnosis,
           latestDiagnosis,
           firstHospital,
-          latestHospital
+          latestHospital,
+          latestDoctor
         };
       });
       this.setData({ patients, loading: false }, () => {
@@ -114,12 +116,14 @@ Page({
         const latestDiagnosis = (item.latestDiagnosis || '').toLowerCase();
         const firstHospital = (item.firstHospital || '').toLowerCase();
         const latestHospital = (item.latestHospital || '').toLowerCase();
+        const latestDoctor = (item.latestDoctor || '').toLowerCase();
         return (
           name.includes(keyword) ||
           firstDiagnosis.includes(keyword) ||
           latestDiagnosis.includes(keyword) ||
           firstHospital.includes(keyword) ||
-          latestHospital.includes(keyword)
+          latestHospital.includes(keyword) ||
+          latestDoctor.includes(keyword)
         );
       });
     }
@@ -161,6 +165,12 @@ Page({
     const sortIndex = Number(event.detail.value) || 0;
     this.setData({ sortIndex }, () => {
       this.applyFilters();
+    });
+  },
+
+  onAnalysisTap() {
+    wx.navigateTo({
+      url: '/pages/analysis/index'
     });
   },
 

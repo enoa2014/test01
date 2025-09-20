@@ -14,12 +14,12 @@ const LABEL_MAP = {
   admissionDate: ["入住时间"],
   caregivers: ["入住人"],
   birthDate: ["患儿基本信息_出生日期"],
-  nativePlace: ["患儿基本信息_籍贯"],
-  ethnicity: ["患儿基本信息_民族"],
+  nativePlace: ["患儿基本信息_籍贯", "籍贯"],
+  ethnicity: ["患儿基本信息_民族", "民族"],
   idNumber: ["患儿基本信息_身份证号", "身份证号"],
-  hospital: ["就诊情况_就诊医院"],
+  hospital: ["就诊情况_就诊医院", "就诊医院"],
   diagnosis: ["就诊情况_医院诊断"],
-  doctor: ["就诊情况_医生姓名"],
+  doctor: ["就诊情况_医生姓名", "医生姓名"],
   symptoms: ["医疗情况_症状详情"],
   treatmentProcess: ["医疗情况_医治过程"],
   followUpPlan: ["医疗情况_后续治疗安排"],
@@ -367,6 +367,7 @@ function buildPatientGroups(records) {
     const latest = group.records[0] || {};
     const ascendingRecords = [...group.records].reverse();
     const findEarliestRecord = (predicate) => ascendingRecords.find((item) => item && predicate(item));
+    const findLatestRecord = (predicate) => group.records.find((item) => item && predicate(item));
     const firstWithAdmission = findEarliestRecord((item) => normalizeSpacing(item.admissionDate) || item.admissionTimestamp);
     const firstWithDiagnosis = findEarliestRecord((item) => normalizeSpacing(item.diagnosis));
     const firstWithHospital = findEarliestRecord((item) => normalizeSpacing(item.hospital));
@@ -387,6 +388,7 @@ function buildPatientGroups(records) {
       latestAdmissionDate: latest.admissionDate || '',
       latestDiagnosis: latest.diagnosis || '',
       latestHospital: latest.hospital || '',
+      latestDoctor: latest.doctor || '',
       firstAdmissionDate: firstAdmissionDate,
       firstDiagnosis: firstDiagnosis,
       firstHospital: firstHospital,
@@ -562,6 +564,22 @@ exports.main = async (event = {}) => {
         throw new Error("patient not found");
       }
       const latest = group.records[0] || {};
+      const pickRecordValue = (getter) => {
+        if (!Array.isArray(group.records)) {
+          return '';
+        }
+        for (const record of group.records) {
+          const value = normalizeSpacing(getter(record));
+          if (value) {
+            return value;
+          }
+        }
+        return '';
+      };
+      const patientNativePlace = normalizeSpacing(group.nativePlace) || normalizeSpacing(latest.nativePlace) || pickRecordValue((record) => record.nativePlace);
+      const patientEthnicity = normalizeSpacing(group.ethnicity) || normalizeSpacing(latest.ethnicity) || pickRecordValue((record) => record.ethnicity);
+      const patientLatestHospital = normalizeSpacing(latest.hospital) || pickRecordValue((record) => record.hospital);
+      const patientLatestDoctor = normalizeSpacing(latest.doctor) || pickRecordValue((record) => record.doctor);
       const basicInfo = buildInfoList([
         { label: '性别', value: group.gender || latest.gender },
         { label: '出生日期', value: group.birthDate || latest.birthDate },
@@ -632,7 +650,13 @@ const records = group.records.map((record, index) => ({
 return {
         patient: {
           key: group.key,
-          patientName: group.patientName
+          patientName: group.patientName,
+          gender: group.gender || latest.gender || '',
+          birthDate: group.birthDate || latest.birthDate || '',
+          nativePlace: patientNativePlace,
+          ethnicity: patientEthnicity,
+          latestHospital: patientLatestHospital,
+          latestDoctor: patientLatestDoctor
         },
         basicInfo,
         familyInfo: familyInfoEntries,

@@ -1,0 +1,50 @@
+<view class="analysis-container">
+  <view wx:if="{{loading}}" class="placeholder">正在生成分析数据…</view>
+  <view wx:elif="{{error}}" class="error">{{error}}</view>
+  <scroll-view wx:else scroll-y class="panel-container">
+    <view class="analysis-panel" wx:for="{{panels}}" wx:key="title" wx:for-index="panelIndex">
+      <text class="panel-title">{{item.title}}</text>
+      <block wx:if="{{item.stats && item.stats.length}}">
+        <scroll-view scroll-x class="stat-scroll" enable-flex="true">
+          <view
+            class="stat-card"
+            wx:for="{{item.stats}}"
+            wx:for-item="stat"
+            wx:for-index="statIndex"
+            wx:key="label"
+            data-panel-index="{{panelIndex}}"
+            data-stat-index="{{statIndex}}"
+            bindtap="onStatTap"
+          >
+            <text class="stat-label">{{stat.label}}</text>
+            <text class="stat-count">{{stat.count}} 人</text>
+            <text wx:if="{{stat.sampleNames}}" class="stat-samples">{{stat.sampleNames}}</text>
+          </view>
+        </scroll-view>
+      </block>
+      <view wx:else class="panel-placeholder">{{item.emptyText || '暂无数据'}}</view>
+    </view>
+  </scroll-view>
+
+  <view
+    wx:if="{{selection.visible}}"
+    class="selection-mask"
+    bindtap="onSelectionClose"
+  >
+    <view class="selection-panel" catchtap="noop">
+      <text class="selection-title">{{selection.title}}</text>
+      <scroll-view scroll-y class="selection-list">
+        <view
+          class="selection-item"
+          wx:for="{{selection.items}}"
+          wx:key="key"
+          data-key="{{item.key}}"
+          bindtap="onSelectionItemTap"
+        >
+          {{item.name}}
+        </view>
+      </scroll-view>
+      <view class="selection-close" bindtap="onSelectionClose">关闭</view>
+    </view>
+  </view>
+</view>

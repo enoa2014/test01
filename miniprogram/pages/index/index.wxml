@@ -30,6 +30,7 @@
         <text class="sort-icon">▾</text>
       </view>
     </picker>
+    <view class="analysis-link" bindtap="onAnalysisTap">查看分析</view>
   </view>
 
   <view wx:if="{{loading}}" class="placeholder">正在加载患者列表…</view>

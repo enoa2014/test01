@@ -83,10 +83,25 @@ Page({
       if (patient?.patientName) {
         wx.setNavigationBarTitle({ title: patient.patientName });
       }
+      const basicInfo = (result.basicInfo || []).map((item) => (item && typeof item === 'object' ? { ...item } : { label: '', value: item || '' }));
+
+      const ensureField = (label, fallbackValue) => {
+        const existing = basicInfo.find((item) => item && item.label === label);
+        const fallback = fallbackValue();
+        if (existing) {
+          existing.value = existing.value || fallback;
+        } else {
+          basicInfo.push({ label, value: fallback });
+        }
+      };
+
+      ensureField('籍贯', () => (patient && patient.nativePlace) || '未知');
+      ensureField('民族', () => (patient && patient.ethnicity) || '未知');
+
       this.setData({
         loading: false,
         patient,
-        basicInfo: result.basicInfo || [],
+        basicInfo,
         familyInfo: mergeFamilyAddresses(result.familyInfo || []),
         economicInfo: result.economicInfo || [],
         records: result.records || []

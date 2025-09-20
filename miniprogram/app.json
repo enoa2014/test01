@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/analysis/index",
     "pages/patient-detail/detail"
   ],
   "window": {
