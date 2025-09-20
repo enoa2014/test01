@@ -1,4 +1,4 @@
-﻿const automator = require('miniprogram-automator');
+const automator = require('miniprogram-automator');
 const config = require('../config/devtools');
 
 async function waitForConnection(tries, interval) {

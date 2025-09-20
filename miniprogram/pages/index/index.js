@@ -1,4 +1,4 @@
-﻿const { envList, cloudEnvId } = require("../../config/envList");
+const { envList, cloudEnvId } = require("../../config/envList");
 
 Page({
   data: {

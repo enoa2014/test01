@@ -1,4 +1,4 @@
-﻿<view class="container">
+<view class="container">
   <view class="hero">
     <text class="title">入住关怀档案</text>
     <text class="subtitle">数据来自云环境：{{envId}}</text>

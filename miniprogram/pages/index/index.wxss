@@ -1,4 +1,4 @@
-﻿.container {
+.container {
   padding: 40rpx;
   min-height: 100vh;
   box-sizing: border-box;

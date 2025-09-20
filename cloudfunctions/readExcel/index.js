@@ -1,4 +1,4 @@
-﻿const cloud = require("wx-server-sdk");
+const cloud = require("wx-server-sdk");
 const XLSX = require("xlsx");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
