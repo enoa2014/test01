@@ -1,2 +1,11 @@
 # BMAD (local only)
 .env
+
+# Node.js
+node_modules/
+
+# WeChat Mini Program build artifacts
+miniprogram/miniprogram_npm/
+cloudfunctions/*/node_modules/
+project.private.config.json
+project.private.config.json.bak

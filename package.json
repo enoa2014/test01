@@ -1,0 +1,32 @@
+{
+  "name": "test01",
+  "version": "1.0.0",
+  "description": "WeChat mini program scaffold",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test:e2e",
+    "sync-config": "node scripts/sync-config.js",
+    "fix-encoding": "node scripts/fix-encoding.js",
+    "test:e2e": "cross-env NODE_ENV=test jest --config tests/e2e/jest.config.cjs --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enoa2014/test01.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/enoa2014/test01/issues"
+  },
+  "homepage": "https://github.com/enoa2014/test01#readme",
+  "dependencies": {
+    "dotenv": "^17.2.2"
+  },
+  "devDependencies": {
+    "cross-env": "^10.0.0",
+    "jest": "^30.1.3",
+    "miniprogram-automator": "^0.12.1"
+  }
+}

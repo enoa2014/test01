@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="hero">
+    <text class="title">欢迎使用微信小程序骨架</text>
+    <text class="subtitle">当前云环境：{{envId}}</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">快速开始</text>
+    <view class="card-item">
+      <text class="item-title">1. 自定义页面</text>
+      <text class="item-desc">在 pages 目录中新增页面并在 app.json 中注册。</text>
+    </view>
+    <view class="card-item">
+      <text class="item-title">2. 云函数开发</text>
+      <text class="item-desc">使用下方按钮调试云函数示例 helloWorld。</text>
+    </view>
+    <view class="card-item">
+      <text class="item-title">3. 配置环境</text>
+      <text class="item-desc">更新 .env 后执行 npm run sync-config 同步配置。</text>
+    </view>
+  </view>
+
+  <button class="primary" bindtap="onCallCloud">调用云函数</button>
+
+  <view class="result" wx:if="{{cloudResult}}">
+    <text class="result-title">云函数返回</text>
+    <text class="result-body">{{cloudResult}}</text>
+  </view>
+</view>
