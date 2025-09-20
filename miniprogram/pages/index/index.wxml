@@ -6,22 +6,32 @@
   </view>
 
   <view class="actions">
-    <button class="primary" bindtap="onRetry" loading="{{loading}}">{{loading ? "读取中" : "重新加载"}}</button>
+    <button class="primary" bindtap="onRetry" loading="{{loading}}">{{loading ? "刷新中" : "重新加载"}}</button>
     <button class="secondary" bindtap="onImport" loading="{{importing}}" disabled="{{loading || importing}}">同步到云数据库</button>
   </view>
 
   <view wx:if="{{importStatus}}" class="status">{{importStatus}}</view>
 
-  <view wx:if="{{loading}}" class="placeholder">正在读取 Excel 数据…</view>
+  <view wx:if="{{loading}}" class="placeholder">正在加载患者列表…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
-  <scroll-view wx:else scroll-y class="table-container">
-    <view class="table excel-table">
-      <view class="row header" wx:if="{{headers.length}}">
-        <text class="cell" wx:for="{{headers}}" wx:key="header">{{item || '-'}}</text>
+  <scroll-view wx:else scroll-y class="patient-list">
+    <view
+      class="patient-item"
+      wx:for="{{patients}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onPatientTap"
+    >
+      <view class="patient-main">
+        <text class="patient-name">{{item.patientName || '-'}}</text>
+        <text class="patient-gender">{{item.gender || '未知'}}</text>
       </view>
-      <view class="row" wx:for="{{rows}}" wx:key="index">
-        <text class="cell" wx:for="{{item}}" wx:key="inner">{{item || '-'}}</text>
+      <view class="patient-meta">
+        <text class="meta">最近入住：{{item.latestAdmissionDate || '-'}}</text>
+        <text class="meta">诊断：{{item.latestDiagnosis || '-'}}</text>
+        <text class="meta">共 {{item.admissionCount || 0}} 次记录</text>
       </view>
     </view>
+    <view wx:if="{{!patients.length}}" class="placeholder">暂无患者数据</view>
   </scroll-view>
 </view>

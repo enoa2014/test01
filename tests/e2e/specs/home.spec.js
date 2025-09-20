@@ -31,21 +31,7 @@ async function waitForElements(page, selector, minCount = 1, retries = 20, delay
   return [];
 }
 
-async function findFirstDataCells(rows) {
-  for (const row of rows) {
-    const cells = await row.$$('.cell');
-    if (!cells.length) {
-      continue;
-    }
-    const serial = (await cells[0].text()).trim();
-    if (/^[0-9]+$/.test(serial)) {
-      return cells;
-    }
-  }
-  return [];
-}
-
-describe('Excel 数据展示', () => {
+describe('患者入住档案', () => {
   let miniProgram;
 
   beforeAll(async () => {
@@ -58,25 +44,26 @@ describe('Excel 数据展示', () => {
     }
   });
 
-  test('读取并展示 Excel 内容', async () => {
-    const page = await miniProgram.reLaunch('/pages/index/index');
+  test('列表展示患者并能查看详情', async () => {
+    let page = await miniProgram.reLaunch('/pages/index/index');
     await page.waitFor(1000);
 
-    const headerCells = await waitForElements(page, '.row.header .cell', 1);
-    expect(headerCells.length).toBeGreaterThan(0);
-    const firstHeaderText = await headerCells[0].text();
-    expect(firstHeaderText).toContain('序号');
+    const patientItems = await waitForElements(page, '.patient-item', 1);
+    expect(patientItems.length).toBeGreaterThan(0);
 
-    const rowNodes = await waitForElements(page, '.excel-table .row', 3);
-    expect(rowNodes.length).toBeGreaterThan(2);
+    const nameNode = await patientItems[0].$('.patient-name');
+    const patientName = nameNode ? (await nameNode.text()).trim() : '';
+    expect(patientName.length).toBeGreaterThan(0);
 
-    const dataCells = await findFirstDataCells(rowNodes);
-    expect(dataCells.length).toBeGreaterThan(1);
+    await patientItems[0].tap();
+    await page.waitFor(500);
 
-    const serialText = (await dataCells[0].text()).trim();
-    expect(/^[0-9]+$/.test(serialText)).toBeTruthy();
+    page = await miniProgram.currentPage();
+    const detailNameNode = await waitForElements(page, '.patient-detail-name', 1);
+    const detailName = detailNameNode.length ? (await detailNameNode[0].text()).trim() : '';
+    expect(detailName.length).toBeGreaterThan(0);
 
-    const nameText = (await dataCells[1].text()).trim();
-    expect(nameText).not.toBe('-');
+    const recordItems = await waitForElements(page, '.record-item', 1);
+    expect(recordItems.length).toBeGreaterThan(0);
   }, 120000);
 });

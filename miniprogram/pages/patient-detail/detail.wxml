@@ -1,0 +1,93 @@
+﻿<view class="detail-container">
+  <view wx:if="{{loading}}" class="placeholder">正在加载患者信息…</view>
+  <view wx:elif="{{error}}" class="error">{{error}}</view>
+  <scroll-view wx:else scroll-y class="detail-scroll">
+    <view class="summary" wx:if="{{patient}}">
+      <text class="patient-detail-name">{{patient.patientName}}</text>
+      <view class="summary-row">
+        <text class="label">性别</text>
+        <text class="value">{{patient.gender || '未知'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">身份证号</text>
+        <text class="value">{{patient.idNumber || '-'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">出生日期</text>
+        <text class="value">{{patient.birthDate || '-'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">籍贯 / 民族</text>
+        <text class="value">{{patient.nativePlace || '-'}} / {{patient.ethnicity || '-'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">最近入住</text>
+        <text class="value">{{patient.latestAdmissionDate || '-'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">最近诊断</text>
+        <text class="value">{{patient.latestDiagnosis || '-'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">监护人</text>
+        <text class="value">{{patient.caregivers || '-'}}</text>
+      </view>
+      <view class="summary-row">
+        <text class="label">总入住记录</text>
+        <text class="value">{{patient.admissionCount || 0}} 次</text>
+      </view>
+    </view>
+
+    <view class="records" wx:if="{{records.length}}">
+      <text class="section-title">全部入住记录</text>
+      <view class="record-item" wx:for="{{records}}" wx:key="rawRowIndex">
+        <text class="record-title">第 {{index + 1}} 次入住 · {{item.admissionDate || '-'}} </text>
+        <view class="record-field">
+          <text class="label">就诊医院</text>
+          <text class="value">{{item.hospital || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">诊断</text>
+          <text class="value">{{item.diagnosis || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">主治医生</text>
+          <text class="value">{{item.doctor || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">症状详情</text>
+          <text class="value">{{item.symptoms || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">治疗过程</text>
+          <text class="value">{{item.treatmentProcess || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">后续计划</text>
+          <text class="value">{{item.followUpPlan || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">家庭地址</text>
+          <text class="value">{{item.address || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">父亲信息</text>
+          <text class="value">{{item.fatherInfo || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">母亲信息</text>
+          <text class="value">{{item.motherInfo || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">其他监护人</text>
+          <text class="value">{{item.otherGuardian || '-'}}</text>
+        </view>
+        <view class="record-field">
+          <text class="label">家庭经济</text>
+          <text class="value">{{item.familyEconomy || '-'}}</text>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{!records.length}}" class="placeholder">暂无入住记录</view>
+  </scroll-view>
+</view>

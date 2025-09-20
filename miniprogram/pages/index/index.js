@@ -4,8 +4,7 @@ Page({
   data: {
     envId: envList.length > 0 ? envList[0].envId : "",
     cloudEnvId,
-    headers: [],
-    rows: [],
+    patients: [],
     loading: true,
     error: "",
     importing: false,
@@ -13,29 +12,25 @@ Page({
   },
 
   onLoad() {
-    this.fetchExcelRows();
+    this.fetchPatients();
   },
 
-  async fetchExcelRows() {
+  async fetchPatients() {
     this.setData({ loading: true, error: "" });
 
     try {
       const res = await wx.cloud.callFunction({
-        name: "readExcel"
+        name: "readExcel",
+        data: { action: "list" }
       });
-      const { headers = [], rows = [] } = (res && res.result) || {};
-      this.setData({
-        headers,
-        rows,
-        loading: false
-      });
+      const patients = res?.result?.patients || [];
+      this.setData({ patients, loading: false });
     } catch (error) {
-      console.error("Failed to load excel rows", error);
+      console.error("Failed to load patients", error);
       this.setData({
-        headers: [],
-        rows: [],
+        patients: [],
         loading: false,
-        error: (error && error.errMsg) || "读取 Excel 失败，请稍后重试"
+        error: (error && error.errMsg) || "读取患者数据失败，请稍后重试"
       });
     }
   },
@@ -53,11 +48,11 @@ Page({
         data: { action: "import" }
       });
       wx.hideLoading();
-      const count = res?.result?.imported?.inserted || 0;
-      const message = `已同步 ${count} 条记录到云数据库`;
+      const count = res?.result?.totalPatients || 0;
+      const message = `已同步 ${count} 名患者的数据到云数据库`;
       this.setData({ importing: false, importStatus: message });
       wx.showToast({ title: "同步完成", icon: "success" });
-      await this.fetchExcelRows();
+      await this.fetchPatients();
     } catch (error) {
       console.error("Import excel to database failed", error);
       wx.hideLoading();
@@ -70,6 +65,16 @@ Page({
   },
 
   onRetry() {
-    this.fetchExcelRows();
+    this.fetchPatients();
+  },
+
+  onPatientTap(event) {
+    const { key } = event.currentTarget.dataset;
+    if (!key) {
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/patient-detail/detail?key=${encodeURIComponent(key)}`
+    });
   }
 });
