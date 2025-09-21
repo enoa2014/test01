@@ -1,4 +1,4 @@
-const cloud = require("wx-server-sdk");
+﻿const cloud = require("wx-server-sdk");
 const { v4: uuidv4 } = require('uuid');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -12,6 +12,7 @@ const PATIENT_INTAKE_COLLECTION = "patient_intake_records";
 const PATIENT_INTAKE_DRAFTS_COLLECTION = "patient_intake_drafts";
 const INTAKE_CONFIG_COLLECTION = "intake_config";
 const EXCEL_RECORDS_COLLECTION = "excel_records";
+const PATIENT_OPERATION_LOGS_COLLECTION = "patient_operation_logs";
 
 // 配置常量
 const DRAFT_EXPIRE_DAYS = 7;
@@ -72,6 +73,34 @@ async function ensureCollectionExists(name) {
     console.warn('ensureCollectionExists unexpected error', name, error);
     return false;
   }
+}
+
+async function writePatientOperationLog(logEntry) {
+  await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
+  const now = Date.now();
+  const entry = {
+    patientKey: logEntry.patientKey,
+    action: logEntry.action || 'patient-detail-edit',
+    operatorId: logEntry.operatorId || '',
+    operatorName: logEntry.operatorName || '',
+    changes: Array.isArray(logEntry.changes) ? logEntry.changes : [],
+    message: logEntry.message || '',
+    createdAt: now,
+    extra: logEntry.extra || {}
+  };
+
+  await db.collection(PATIENT_OPERATION_LOGS_COLLECTION).add({ data: entry });
+}
+
+function assignNestedUpdates(target, source, prefix, allowedKeys) {
+  if (!source || typeof source !== 'object') {
+    return;
+  }
+  allowedKeys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(source, key) && source[key] !== undefined) {
+      target[`${prefix}.${key}`] = source[key];
+    }
+  });
 }
 
 // 校验表单数据
@@ -203,12 +232,57 @@ async function handleGetPatientDetail(event) {
     throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
   }
 
-  const res = await db.collection(PATIENTS_COLLECTION).doc(patientKey).get();
-  if (!res.data) {
+  await ensureCollectionExists(PATIENTS_COLLECTION);
+  const patientRes = await db.collection(PATIENTS_COLLECTION).doc(patientKey).get();
+  if (!patientRes.data) {
     throw makeError('PATIENT_NOT_FOUND', '患者不存在');
   }
 
-  const patient = res.data;
+  const patient = patientRes.data;
+
+  let latestIntake = null;
+  try {
+    await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+    const intakeRes = await db.collection(PATIENT_INTAKE_COLLECTION)
+      .where({ patientKey })
+      .orderBy('updatedAt', 'desc')
+      .orderBy('metadata.lastModifiedAt', 'desc')
+      .limit(1)
+      .get();
+    if (Array.isArray(intakeRes.data) && intakeRes.data.length > 0) {
+      const rawIntake = intakeRes.data[0];
+      const metadata = rawIntake.metadata || {};
+      const lastModifiedAt = metadata.lastModifiedAt
+        || rawIntake.updatedAt
+        || metadata.submittedAt
+        || null;
+      latestIntake = {
+        ...rawIntake,
+        metadata: {
+          ...metadata,
+          lastModifiedAt
+        }
+      };
+    }
+  } catch (error) {
+    console.warn('加载最新入住记录失败', patientKey, error);
+  }
+
+  let operationLogs = [];
+  try {
+    await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
+    const logsRes = await db.collection(PATIENT_OPERATION_LOGS_COLLECTION)
+      .where({ patientKey })
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+    operationLogs = Array.isArray(logsRes.data) ? logsRes.data.map((log) => ({
+      ...log
+    })) : [];
+  } catch (error) {
+    console.warn('加载患者操作日志失败', patientKey, error);
+  }
+
   return {
     success: true,
     data: {
@@ -225,12 +299,15 @@ async function handleGetPatientDetail(event) {
         emergencyPhone: patient.emergencyPhone,
         backupContact: patient.backupContact,
         backupPhone: patient.backupPhone,
-        lastIntakeNarrative: patient.lastIntakeNarrative || ''
-      }
+        lastIntakeNarrative: patient.lastIntakeNarrative || '',
+        updatedAt: patient.updatedAt || null,
+        createdAt: patient.createdAt || null
+      },
+      latestIntake,
+      operationLogs
     }
   };
 }
-
 // 保存草稿
 async function handleSaveDraft(event) {
   const { draftData, sessionId } = event;
@@ -389,6 +466,10 @@ async function handleSubmitIntake(event) {
     }
 
     // 创建入住记录
+    const intakeTimeValue = Number(formData.intakeTime);
+
+    const normalizedIntakeTime = Number.isFinite(intakeTimeValue) ? intakeTimeValue : now;
+
     const intakeRecord = {
       patientKey: finalPatientKey,
       patientName: formData.patientName,
@@ -409,8 +490,9 @@ async function handleSubmitIntake(event) {
         backupPhone: formData.backupPhone || ''
       },
       intakeInfo: {
-        intakeTime: now,
+        intakeTime: normalizedIntakeTime,
         situation: formData.situation,
+        followUpPlan: formData.followUpPlan || '',
         medicalHistory: formData.medicalHistory || [],
         attachments: uploadedFiles.map(file => ({
           id: file.id,
@@ -422,8 +504,11 @@ async function handleSubmitIntake(event) {
       metadata: {
         isEditingExisting,
         submittedAt: now,
+        lastModifiedAt: now,
         submittedBy: 'patient-intake-wizard'
-      }
+      },
+      createdAt: now,
+      updatedAt: now
     };
 
     await transaction.collection(PATIENT_INTAKE_COLLECTION).add({
@@ -441,6 +526,179 @@ async function handleSubmitIntake(event) {
   return {
     success: true,
     data: result
+  };
+}
+
+async function handleUpdatePatient(event = {}) {
+  const {
+    patientKey,
+    patientUpdates = {},
+    intakeUpdates = {},
+    audit = {},
+    expectedPatientUpdatedAt
+  } = event;
+
+  if (!patientKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
+  }
+
+  const now = Date.now();
+
+  await ensureCollectionExists(PATIENTS_COLLECTION);
+  await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+
+  const transactionResult = await db.runTransaction(async (transaction) => {
+    const patientRef = transaction.collection(PATIENTS_COLLECTION).doc(patientKey);
+    const patientDoc = await patientRef.get();
+
+    if (!patientDoc.data) {
+      throw makeError('PATIENT_NOT_FOUND', '患者不存在');
+    }
+
+    const patientSnapshot = patientDoc.data;
+    const expectedPatientTs = patientUpdates.expectedUpdatedAt !== undefined
+      ? patientUpdates.expectedUpdatedAt
+      : expectedPatientUpdatedAt;
+
+    if (expectedPatientTs !== undefined && patientSnapshot.updatedAt !== undefined
+      && Number(patientSnapshot.updatedAt) !== Number(expectedPatientTs)) {
+      throw makeError('VERSION_CONFLICT', '患者信息已被其他人更新', {
+        latestUpdatedAt: patientSnapshot.updatedAt
+      });
+    }
+
+    const patientFields = ['patientName', 'idType', 'idNumber', 'gender', 'birthDate', 'phone', 'address', 'emergencyContact', 'emergencyPhone', 'backupContact', 'backupPhone', 'lastIntakeNarrative'];
+    const patientUpdateData = {};
+    patientFields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(patientUpdates, field) && patientUpdates[field] !== undefined) {
+        patientUpdateData[field] = patientUpdates[field];
+      }
+    });
+
+    if (intakeUpdates && intakeUpdates.narrative !== undefined && !Object.prototype.hasOwnProperty.call(patientUpdateData, 'lastIntakeNarrative')) {
+      patientUpdateData.lastIntakeNarrative = intakeUpdates.narrative;
+    }
+
+    let patientChanged = false;
+    if (Object.keys(patientUpdateData).length > 0) {
+      patientUpdateData.updatedAt = now;
+      await patientRef.update({ data: patientUpdateData });
+      patientChanged = true;
+    }
+
+    let intakeChanged = false;
+    let updatedIntakeId = intakeUpdates.intakeId || null;
+
+    if (intakeUpdates && intakeUpdates.intakeId) {
+      const intakeRef = transaction.collection(PATIENT_INTAKE_COLLECTION).doc(intakeUpdates.intakeId);
+      const intakeDoc = await intakeRef.get();
+
+      if (!intakeDoc.data) {
+        throw makeError('INTAKE_NOT_FOUND', '入住记录不存在');
+      }
+
+      if (intakeDoc.data.patientKey !== patientKey) {
+        throw makeError('INTAKE_PATIENT_MISMATCH', '入住记录与当前患者不匹配');
+      }
+
+      const expectedIntakeTs = intakeUpdates.expectedUpdatedAt;
+      if (expectedIntakeTs !== undefined && intakeDoc.data.updatedAt !== undefined
+        && Number(intakeDoc.data.updatedAt) !== Number(expectedIntakeTs)) {
+        throw makeError('INTAKE_VERSION_CONFLICT', '入住记录已被其他人更新', {
+          latestUpdatedAt: intakeDoc.data.updatedAt
+        });
+      }
+
+      const intakeUpdateData = {};
+      assignNestedUpdates(intakeUpdateData, intakeUpdates.basicInfo, 'basicInfo', ['patientName', 'idType', 'idNumber', 'gender', 'birthDate', 'phone']);
+      assignNestedUpdates(intakeUpdateData, intakeUpdates.contactInfo, 'contactInfo', ['address', 'emergencyContact', 'emergencyPhone', 'backupContact', 'backupPhone']);
+
+      if (intakeUpdates.intakeInfo && typeof intakeUpdates.intakeInfo === 'object') {
+        const intakeInfo = intakeUpdates.intakeInfo;
+        if (intakeInfo.intakeTime !== undefined) {
+          let intakeTimeTs = intakeInfo.intakeTime;
+          if (typeof intakeTimeTs === 'string') {
+            const parsed = new Date(intakeTimeTs);
+            if (Number.isNaN(parsed.getTime())) {
+              throw makeError('INVALID_INTAKE_TIME', '入住时间格式不正确');
+            }
+            intakeTimeTs = parsed.getTime();
+          }
+          if (typeof intakeTimeTs !== 'number' || Number.isNaN(intakeTimeTs)) {
+            throw makeError('INVALID_INTAKE_TIME', '入住时间格式不正确');
+          }
+          intakeUpdateData['intakeInfo.intakeTime'] = intakeTimeTs;
+        }
+        if (intakeInfo.situation !== undefined) {
+          intakeUpdateData['intakeInfo.situation'] = intakeInfo.situation;
+        }
+        if (intakeInfo.followUpPlan !== undefined) {
+          intakeUpdateData['intakeInfo.followUpPlan'] = intakeInfo.followUpPlan;
+        }
+      }
+
+      if (intakeUpdates.medicalHistory !== undefined) {
+        intakeUpdateData['intakeInfo.medicalHistory'] = Array.isArray(intakeUpdates.medicalHistory)
+          ? intakeUpdates.medicalHistory
+          : [];
+      }
+
+      if (intakeUpdates.attachments !== undefined) {
+        intakeUpdateData['intakeInfo.attachments'] = Array.isArray(intakeUpdates.attachments)
+          ? intakeUpdates.attachments
+          : [];
+      }
+
+      if (intakeUpdates.narrative !== undefined) {
+        intakeUpdateData['intakeInfo.situation'] = intakeUpdates.narrative;
+      }
+
+      if (Object.keys(intakeUpdateData).length > 0) {
+        intakeUpdateData.updatedAt = now;
+        intakeUpdateData['metadata.lastModifiedAt'] = now;
+        await intakeRef.update({ data: intakeUpdateData });
+        intakeChanged = true;
+      }
+    }
+
+    if (!patientChanged && !intakeChanged) {
+      throw makeError('NO_CHANGES', '未检测到需要更新的字段');
+    }
+
+    return {
+      patientChanged,
+      intakeChanged,
+      updatedAt: now,
+      intakeId: updatedIntakeId
+    };
+  });
+
+  const changesForLog = Array.isArray(audit.changes) && audit.changes.length
+    ? audit.changes
+    : [
+        ...(transactionResult.patientChanged ? ['patient'] : []),
+        ...(transactionResult.intakeChanged ? ['intake'] : [])
+      ];
+
+  await writePatientOperationLog({
+    patientKey,
+    operatorId: audit.operatorId || audit.operatorOpenId || '',
+    operatorName: audit.operatorName || '',
+    message: audit.message || '更新患者资料',
+    action: 'patient-detail-edit',
+    changes: changesForLog,
+    extra: audit.extra || {}
+  });
+
+  return {
+    success: true,
+    data: {
+      patientKey,
+      intakeId: transactionResult.intakeId,
+      patientUpdated: transactionResult.patientChanged,
+      intakeUpdated: transactionResult.intakeChanged,
+      updatedAt: transactionResult.updatedAt
+    }
   };
 }
 
@@ -607,6 +865,8 @@ exports.main = async (event) => {
         return await handleGetDraft(event);
       case 'submit':
         return await handleSubmitIntake(event);
+      case 'updatePatient':
+        return await handleUpdatePatient(event);
       case 'getConfig':
         return await handleGetConfig(event);
       case 'cleanupDrafts':

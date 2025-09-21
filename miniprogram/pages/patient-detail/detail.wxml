@@ -2,45 +2,143 @@
   <view wx:if="{{loading}}" class="placeholder">正在加载患者信息…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y class="detail-scroll">
-    <view wx:if="{{patient}}" class="patient-header">
-      <text class="patient-detail-name">{{patient.patientName}}</text>
-    </view>
-
-    <view wx:if="{{basicInfo.length}}" class="info-section">
-      <text class="section-title">患者基本信息</text>
-      <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
-        <text class="label">{{item.label}}</text>
-        <text class="value">{{item.value}}</text>
+    <view class="patient-header">
+      <view class="patient-header-row">
+        <text class="patient-detail-name">{{editMode ? editForm.patientName : (patient.patientName || '')}}</text>
+        <view class="edit-toolbar">
+          <view wx:if="{{!editMode}}" class="edit-button" bindtap="onEditStart">编辑资料</view>
+          <block wx:else>
+            <view class="edit-button plain" bindtap="onEditCancel">放弃</view>
+            <view class="edit-button primary {{(!editCanSave || saving) ? 'disabled' : ''}}" bindtap="onSaveTap">
+              {{saving ? '保存中…' : '保存'}}
+            </view>
+          </block>
+        </view>
+      </view>
+      <view wx:if="{{editMode}}" class="edit-hint">
+        未保存的修改离开页面将丢失，请完成校验后点击保存。
+      </view>
+      <view wx:elif="{{latestIntake}}" class="latest-intake-tip">
+        最近入住时间：{{latestIntake.displayTime || '未记录'}}
       </view>
     </view>
 
-    <view wx:if="{{familyInfo.length}}" class="info-section">
-      <text class="section-title">家庭信息</text>
-      <view class="info-row" wx:for="{{familyInfo}}" wx:key="label">
-        <text class="label">{{item.label}}</text>
-        <text class="value">{{item.value}}</text>
-      </view>
+    <view wx:if="{{editMode}}" class="form-section">
+      <text class="form-section-title">基本信息</text>
+      <block wx:for="{{patientFieldConfig}}" wx:key="key">
+        <view class="form-field">
+          <text class="field-label">{{item.label}}</text>
+          <block wx:if="{{item.type === 'picker'}}">
+            <picker mode="selector" range="{{item.options}}" value="{{editPickerIndex[item.key] || 0}}" data-key="{{item.key}}" data-options="{{item.options}}" bindchange="onPickerChange">
+              <view class="picker-value">{{editForm[item.key] || item.options[0] || '请选择'}}</view>
+            </picker>
+          </block>
+          <block wx:elif="{{item.type === 'date'}}">
+            <picker mode="date" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindchange="onDatePickerChange">
+              <view class="picker-value">{{editForm[item.key] || '请选择日期'}}</view>
+            </picker>
+          </block>
+          <block wx:elif="{{item.type === 'textarea'}}">
+            <textarea class="text-area" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput"></textarea>
+          </block>
+          <block wx:else>
+            <input class="text-input" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput" type="{{item.keyboard === 'number' ? 'number' : 'text'}}" />
+          </block>
+          <text wx:if="{{editErrors[item.key]}}" class="field-error">{{editErrors[item.key]}}</text>
+        </view>
+      </block>
+
+      <text class="form-section-title">联系与紧急联系人</text>
+      <block wx:for="{{contactFieldConfig}}" wx:key="key">
+        <view class="form-field">
+          <text class="field-label">{{item.label}}</text>
+          <block wx:if="{{item.type === 'textarea'}}">
+            <textarea class="text-area" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput"></textarea>
+          </block>
+          <block wx:else>
+            <input class="text-input" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput" type="{{item.keyboard === 'number' ? 'number' : 'text'}}" />
+          </block>
+          <text wx:if="{{editErrors[item.key]}}" class="field-error">{{editErrors[item.key]}}</text>
+        </view>
+      </block>
+
+      <text class="form-section-title">入住补充信息</text>
+      <block wx:for="{{intakeFieldConfig}}" wx:key="key">
+        <view class="form-field">
+          <text class="field-label">{{item.label}}</text>
+          <block wx:if="{{item.type === 'date'}}">
+            <picker mode="date" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindchange="onDatePickerChange">
+              <view class="picker-value">{{editForm[item.key] || '请选择日期'}}</view>
+            </picker>
+          </block>
+          <block wx:elif="{{item.type === 'textarea'}}">
+        <block wx:if="{{item.key === 'narrative'}}">
+          <textarea class="text-area narrative" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onNarrativeInput"></textarea>
+        </block>
+        <block wx:else>
+          <textarea class="text-area" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput"></textarea>
+        </block>
+      </block>
+          <block wx:else>
+            <input class="text-input" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput" />
+          </block>
+          <text wx:if="{{editErrors[item.key]}}" class="field-error">{{editErrors[item.key]}}</text>
+        </view>
+      </block>
     </view>
 
-    <view wx:if="{{economicInfo.length}}" class="info-section">
-      <text class="section-title">经济情况</text>
-      <view class="info-row" wx:for="{{economicInfo}}" wx:key="label">
-        <text class="label">{{item.label}}</text>
-        <text class="value">{{item.value}}</text>
-      </view>
-    </view>
-
-    <view wx:if="{{records.length}}" class="records">
-      <text class="section-title">入住记录</text>
-      <view class="record-item" wx:for="{{records}}" wx:key="rawRowIndex">
-        <text class="record-title">{{item.title}}</text>
-        <view class="record-field" wx:for="{{item.info}}" wx:key="label">
+    <block wx:if="{{!editMode}}">
+      <view wx:if="{{basicInfo.length}}" class="info-section">
+        <text class="section-title">患者基本信息</text>
+        <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
           <text class="label">{{item.label}}</text>
           <text class="value">{{item.value}}</text>
         </view>
       </view>
+
+      <view wx:if="{{familyInfo.length}}" class="info-section">
+        <text class="section-title">联系信息</text>
+        <view class="info-row" wx:for="{{familyInfo}}" wx:key="label">
+          <text class="label">{{item.label}}</text>
+          <text class="value">{{item.value}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{economicInfo.length}}" class="info-section">
+        <text class="section-title">经济情况</text>
+        <view class="info-row" wx:for="{{economicInfo}}" wx:key="label">
+          <text class="label">{{item.label}}</text>
+          <text class="value">{{item.value}}</text>
+        </view>
+      </view>
+    </block>
+
+    <view class="latest-intake-section" wx:if="{{latestIntake}}">
+      <text class="section-title">最新入住记录</text>
+      <view class="latest-intake-row">
+        <text class="label">入住时间</text>
+        <text class="value">{{latestIntake.displayTime || '未记录'}}</text>
+      </view>
+      <view class="latest-intake-row">
+        <text class="label">情况说明</text>
+        <text class="value">{{(latestIntake.intakeInfo && latestIntake.intakeInfo.situation) || '未填写'}}</text>
+      </view>
+      <view class="latest-intake-row" wx:if="{{latestIntake.intakeInfo && latestIntake.intakeInfo.followUpPlan}}">
+        <text class="label">后续计划</text>
+        <text class="value">{{latestIntake.intakeInfo.followUpPlan}}</text>
+      </view>
     </view>
-    <view wx:else class="placeholder">暂无入住记录</view>
+
+    <view class="operation-log-section" wx:if="{{operationLogs.length}}">
+      <text class="section-title">操作日志</text>
+      <view class="operation-log-item" wx:for="{{operationLogs}}" wx:key="index">
+        <view class="log-header">
+          <text class="log-time">{{item.timeText || ''}}</text>
+          <text class="log-operator">{{item.operatorName || '未知操作人'}}</text>
+        </view>
+        <text class="log-message">{{item.message || '更新患者资料'}}</text>
+      </view>
+    </view>
 
     <view class="media-section">
       <text class="section-title">资料管理</text>

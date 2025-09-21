@@ -408,3 +408,146 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+.patient-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.edit-toolbar {
+  display: flex;
+  gap: 16rpx;
+}
+
+.edit-button {
+  padding: 14rpx 32rpx;
+  border-radius: 999rpx;
+  background: #1677ff;
+  color: #ffffff;
+  font-size: 26rpx;
+}
+
+.edit-button.primary.disabled {
+  background: #9ca3af;
+  color: #f9fafb;
+}
+
+.edit-button.plain {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.edit-hint,
+.latest-intake-tip {
+  margin-top: 18rpx;
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.form-section {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 10rpx 20rpx rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.form-section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.field-label {
+  font-size: 26rpx;
+  color: #4b5563;
+}
+
+.text-input,
+.picker-value,
+.text-area {
+  width: 100%;
+  min-height: 64rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid #d1d5db;
+  background: #f9fafb;
+  font-size: 26rpx;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.text-area {
+  min-height: 160rpx;
+  line-height: 1.6;
+}
+
+.text-area.narrative {
+  min-height: 220rpx;
+}
+
+.picker-value {
+  display: flex;
+  align-items: center;
+  color: #111827;
+}
+
+.field-error {
+  font-size: 24rpx;
+  color: #ef4444;
+}
+
+.latest-intake-section,
+.operation-log-section {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 10rpx 20rpx rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.latest-intake-row,
+.operation-log-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.latest-intake-row .label,
+.operation-log-item .log-header {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.latest-intake-row .value,
+.operation-log-item .log-message {
+  font-size: 26rpx;
+  color: #1f2937;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.log-time {
+  font-size: 24rpx;
+  color: #4b5563;
+}
+
+.log-operator {
+  font-size: 24rpx;
+  color: #9ca3af;
+}

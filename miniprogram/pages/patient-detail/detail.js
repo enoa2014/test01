@@ -5,6 +5,25 @@ const SIGNED_URL_TTL = 5 * 60 * 1000;
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 const DOCUMENT_EXTENSIONS = ["txt", "pdf", "doc", "docx", "xls", "xlsx"];
 
+const {
+  PATIENT_FIELD_CONFIG,
+  CONTACT_FIELD_CONFIG,
+  INTAKE_FIELD_CONFIG
+} = require("../../config/patient-detail-fields.js");
+
+const FIELD_CONFIG_MAP = {};
+[...PATIENT_FIELD_CONFIG, ...CONTACT_FIELD_CONFIG, ...INTAKE_FIELD_CONFIG].forEach((item) => {
+  FIELD_CONFIG_MAP[item.key] = item;
+});
+
+const FORM_FIELD_KEYS = Array.from(new Set([
+  ...PATIENT_FIELD_CONFIG.map((item) => item.key),
+  ...CONTACT_FIELD_CONFIG.map((item) => item.key),
+  ...INTAKE_FIELD_CONFIG.map((item) => item.key),
+  'medicalHistory',
+  'attachments'
+]));
+
 const EXTENSION_MIME_MAP = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -60,6 +79,126 @@ function formatDateTime(timestamp) {
   const minute = `${date.getMinutes()}`.padStart(2, "0");
   return `${year}-${month}-${day} ${hour}:${minute}`;
 }
+
+function formatDateForInput(value) {
+  if (!value) {
+    return "";
+  }
+  if (typeof value === "number") {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return [date.getFullYear(), `${date.getMonth() + 1}`.padStart(2, "0"), `${date.getDate()}`.padStart(2, "0")].join("-");
+    }
+  }
+  if (typeof value === "string" && value.length >= 8) {
+    const normalized = value.replace(/[./]/g, "-");
+    const date = new Date(normalized);
+    if (!Number.isNaN(date.getTime())) {
+      return [date.getFullYear(), `${date.getMonth() + 1}`.padStart(2, "0"), `${date.getDate()}`.padStart(2, "0")].join("-");
+    }
+  }
+  return "";
+}
+
+function toTimestampFromDateInput(value) {
+  if (!value) {
+    return undefined;
+  }
+  const normalized = `${value}`.replace(/[./]/g, "-");
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.getTime();
+}
+
+function buildEditForm(patient = {}, intake = {}) {
+  const intakeInfo = intake.intakeInfo || {};
+  return {
+    patientName: patient.patientName || "",
+    idType: patient.idType || "身份证",
+    idNumber: patient.idNumber || "",
+    gender: patient.gender || "",
+    birthDate: formatDateForInput(patient.birthDate),
+    phone: patient.phone || "",
+    address: patient.address || "",
+    emergencyContact: patient.emergencyContact || "",
+    emergencyPhone: patient.emergencyPhone || "",
+    backupContact: patient.backupContact || "",
+    backupPhone: patient.backupPhone || "",
+    intakeTime: formatDateForInput(intakeInfo.intakeTime || intake.lastIntakeTime),
+    narrative: intakeInfo.situation || intake.narrative || patient.lastIntakeNarrative || "",
+    followUpPlan: intakeInfo.followUpPlan || "",
+    medicalHistory: Array.isArray(intakeInfo.medicalHistory) ? intakeInfo.medicalHistory : [],
+    attachments: Array.isArray(intakeInfo.attachments) ? intakeInfo.attachments : [],
+    intakeId: intake.intakeId || intake._id || null,
+    intakeUpdatedAt: intake.updatedAt || intake.metadata?.lastModifiedAt || null,
+    patientUpdatedAt: patient.updatedAt || null
+  };
+}
+
+function cloneForm(form) {
+  return JSON.parse(JSON.stringify(form || {}));
+}
+
+function detectFormChanges(current, original) {
+  if (!original) {
+    return true;
+  }
+  const keys = Object.keys(current || {});
+  for (const key of keys) {
+    const currentValue = current[key];
+    const originalValue = original[key];
+    if (Array.isArray(currentValue) && Array.isArray(originalValue)) {
+      if (currentValue.length !== originalValue.length) {
+        return true;
+      }
+      for (let i = 0; i < currentValue.length; i += 1) {
+        if (JSON.stringify(currentValue[i]) !== JSON.stringify(originalValue[i])) {
+          return true;
+        }
+      }
+    } else if (currentValue !== originalValue) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function buildPickerIndexMap(form) {
+  const map = {};
+  [...PATIENT_FIELD_CONFIG, ...CONTACT_FIELD_CONFIG, ...INTAKE_FIELD_CONFIG].forEach((config) => {
+    if (config.type === 'picker' && Array.isArray(config.options)) {
+      const currentValue = form[config.key];
+      const index = config.options.indexOf(currentValue);
+      map[config.key] = index >= 0 ? index : 0;
+    }
+  });
+  return map;
+}
+
+function collectChangedFormKeys(current = {}, original = {}) {
+  const changed = [];
+  FORM_FIELD_KEYS.forEach((key) => {
+    const currentValue = current[key];
+    const originalValue = original[key];
+    if (Array.isArray(currentValue) || Array.isArray(originalValue)) {
+      const currentJson = JSON.stringify(currentValue || []);
+      const originalJson = JSON.stringify(originalValue || []);
+      if (currentJson !== originalJson) {
+        changed.push(key);
+      }
+    } else {
+      const normalizedCurrent = currentValue === undefined || currentValue === null ? '' : currentValue;
+      const normalizedOriginal = originalValue === undefined || originalValue === null ? '' : originalValue;
+      if (normalizedCurrent !== normalizedOriginal) {
+        changed.push(key);
+      }
+    }
+  });
+  return changed;
+}
+
 
 function sanitizeFileName(name) {
   const value = normalizeString(name);
@@ -233,6 +372,22 @@ Page({
     familyInfo: [],
     economicInfo: [],
     records: [],
+    latestIntake: null,
+    operationLogs: [],
+    editMode: false,
+    saving: false,
+    editForm: {},
+    editErrors: {},
+    editDirty: false,
+    editCanSave: false,
+    editMetadata: {
+      patientUpdatedAt: null,
+      intakeUpdatedAt: null
+    },
+    editPickerIndex: {},
+    patientFieldConfig: PATIENT_FIELD_CONFIG,
+    contactFieldConfig: CONTACT_FIELD_CONFIG,
+    intakeFieldConfig: INTAKE_FIELD_CONFIG,
     media: {
       accessChecked: false,
       allowed: false,
@@ -254,6 +409,7 @@ Page({
   onLoad(options) {
     this.patientKey = options?.key ? decodeURIComponent(options.key) : "";
     this.mediaInitialized = false;
+    this.originalEditForm = null;
     if (!this.patientKey) {
       this.setData({ loading: false, error: "缺少患者标识" });
       return;
@@ -261,20 +417,30 @@ Page({
     this.fetchPatientDetail();
   },
 
+  onUnload() {
+    if (wx.disableAlertBeforeUnload) {
+      wx.disableAlertBeforeUnload();
+    }
+  },
+
   async fetchPatientDetail() {
     this.setData({ loading: true, error: "" });
 
     try {
-      const res = await wx.cloud.callFunction({
-        name: "readExcel",
-        data: { action: "detail", key: this.patientKey }
-      });
-      const result = res?.result || {};
-      const patient = result.patient || null;
-      if (patient?.patientName) {
-        wx.setNavigationBarTitle({ title: patient.patientName });
-      }
-      const basicInfo = (result.basicInfo || []).map((item) =>
+      const [excelRes, patientRes] = await Promise.all([
+        wx.cloud.callFunction({
+          name: "readExcel",
+          data: { action: "detail", key: this.patientKey }
+        }),
+        wx.cloud.callFunction({
+          name: "patientIntake",
+          data: { action: "getPatientDetail", patientKey: this.patientKey }
+        })
+      ]);
+
+      const excelResult = excelRes?.result || {};
+      const patientDisplay = excelResult.patient || null;
+      const basicInfo = (excelResult.basicInfo || []).map((item) =>
         item && typeof item === "object" ? { ...item } : { label: "", value: item || "" }
       );
 
@@ -288,17 +454,51 @@ Page({
         }
       };
 
-      ensureField("绫嶈疮", () => (patient && patient.nativePlace) || "鏈煡");
-      ensureField("姘戞棌", () => (patient && patient.ethnicity) || "鏈煡");
+      ensureField("绫嶈疮", () => (patientDisplay && patientDisplay.nativePlace) || "鏈煡");
+      ensureField("姘戞棌", () => (patientDisplay && patientDisplay.ethnicity) || "鏈煡");
+
+      const detailData = patientRes?.result?.data || {};
+      const patientForEdit = detailData.patient || {};
+      const latestIntakeRaw = detailData.latestIntake || null;
+      const latestIntake = latestIntakeRaw
+        ? {
+            ...latestIntakeRaw,
+            displayTime: formatDateTime(latestIntakeRaw.intakeInfo?.intakeTime || latestIntakeRaw.intakeTime)
+          }
+        : null;
+      const operationLogs = (detailData.operationLogs || []).map((log) => ({
+        ...log,
+        timeText: formatDateTime(log.createdAt)
+      }));
+      const editForm = buildEditForm(patientForEdit, latestIntakeRaw || {});
+
+      this.originalEditForm = cloneForm(editForm);
+
+      if (patientForEdit.patientName) {
+        wx.setNavigationBarTitle({ title: patientForEdit.patientName });
+      } else if (patientDisplay?.patientName) {
+        wx.setNavigationBarTitle({ title: patientDisplay.patientName });
+      }
 
       this.setData(
         {
           loading: false,
-          patient,
+          patient: patientDisplay,
           basicInfo,
-          familyInfo: mergeFamilyAddresses(result.familyInfo || []),
-          economicInfo: result.economicInfo || [],
-          records: result.records || []
+          familyInfo: mergeFamilyAddresses(excelResult.familyInfo || []),
+          economicInfo: excelResult.economicInfo || [],
+          records: excelResult.records || [],
+          latestIntake,
+          operationLogs,
+          editForm,
+          editErrors: {},
+          editDirty: false,
+          editCanSave: false,
+          editMetadata: {
+            patientUpdatedAt: patientForEdit.updatedAt || null,
+            intakeUpdatedAt: latestIntakeRaw?.updatedAt || latestIntakeRaw?.metadata?.lastModifiedAt || null
+          },
+          editPickerIndex: buildPickerIndexMap(editForm)
         },
         () => {
           if (!this.mediaInitialized) {
@@ -311,8 +511,311 @@ Page({
       console.error("Failed to load patient detail", error);
       this.setData({
         loading: false,
-        error: (error && error.errMsg) || "加载患者详情失败，请稍后重试"
+        error: (error && (error.errMsg || error.message)) || "加载患者详情失败，请稍后重试"
       });
+    }
+  },
+
+  getFieldConfig(key) {
+    return FIELD_CONFIG_MAP[key] || null;
+  },
+
+  validateField(key, value, form) {
+    const config = this.getFieldConfig(key);
+    if (!config) {
+      return "";
+    }
+    let currentValue = value;
+    if (config.type === "textarea" || config.type === "text") {
+      currentValue = normalizeString(value);
+    }
+
+    if (config.required && !currentValue) {
+      return `${config.label}不能为空`;
+    }
+
+    if (config.maxLength && currentValue && currentValue.length > config.maxLength) {
+      return `${config.label}不能超过${config.maxLength}个字符`;
+    }
+
+    if (key === "idNumber" && form.idType === "身份证" && currentValue) {
+      if (!/^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/.test(currentValue)) {
+        return "身份证号码格式不正确";
+      }
+    }
+
+    if ((key === "phone" || key === "emergencyPhone" || key === "backupPhone") && currentValue) {
+      if (!/^1[3-9]\d{9}$/.test(currentValue)) {
+        return "手机号格式不正确";
+      }
+    }
+
+    if (key === "birthDate" && currentValue) {
+      const ts = toTimestampFromDateInput(currentValue);
+      if (ts === undefined) {
+        return "出生日期格式不正确";
+      }
+      if (ts > Date.now()) {
+        return "出生日期不能晚于今天";
+      }
+    }
+
+    if (key === "intakeTime" && currentValue) {
+      if (toTimestampFromDateInput(currentValue) === undefined) {
+        return "入住时间格式不正确";
+      }
+    }
+
+    if (key === "narrative") {
+      const text = normalizeString(value);
+      if (!text) {
+        return "情况说明不能为空";
+      }
+      if (text.length < 30) {
+        return "情况说明至少需要 30 个字符";
+      }
+      if (text.length > 500) {
+        return "情况说明不能超过 500 个字符";
+      }
+    }
+
+    return "";
+  },
+
+  validateAllFields(form) {
+    const errors = {};
+    [...PATIENT_FIELD_CONFIG, ...CONTACT_FIELD_CONFIG, ...INTAKE_FIELD_CONFIG].forEach((field) => {
+      const message = this.validateField(field.key, form[field.key], form);
+      if (message) {
+        errors[field.key] = message;
+      }
+    });
+    return errors;
+  },
+
+  updateEditFormValue(key, value) {
+    const newForm = {
+      ...this.data.editForm,
+      [key]: value
+    };
+    const newErrors = { ...this.data.editErrors };
+    const message = this.validateField(key, value, newForm);
+    if (message) {
+      newErrors[key] = message;
+    } else {
+      delete newErrors[key];
+    }
+    const dirty = detectFormChanges(newForm, this.originalEditForm);
+    const config = this.getFieldConfig(key);
+    const pickerIndexUpdates = {};
+    if (config && config.type === 'picker' && Array.isArray(config.options)) {
+      const index = config.options.indexOf(value);
+      pickerIndexUpdates[`editPickerIndex.${key}`] = index >= 0 ? index : 0;
+    }
+    this.setData({
+      editForm: newForm,
+      editErrors: newErrors,
+      editDirty: dirty,
+      editCanSave: dirty && Object.keys(newErrors).length === 0,
+      ...pickerIndexUpdates
+    });
+  },
+
+  onEditFieldInput(event) {
+    const key = event.currentTarget.dataset.key;
+    const value = event.detail.value;
+    if (!key) {
+      return;
+    }
+    this.updateEditFormValue(key, value);
+  },
+
+  onPickerChange(event) {
+    const key = event.currentTarget.dataset.key;
+    const options = event.currentTarget.dataset.options || [];
+    const index = Number(event.detail.value);
+    if (!key || !Array.isArray(options)) {
+      return;
+    }
+    const selected = options[index] || options[0] || "";
+    this.updateEditFormValue(key, selected);
+  },
+
+  onDatePickerChange(event) {
+    const key = event.currentTarget.dataset.key;
+    if (!key) {
+      return;
+    }
+    const value = event.detail.value;
+    this.updateEditFormValue(key, value);
+  },
+
+  onNarrativeInput(event) {
+    const key = event.currentTarget.dataset.key;
+    const value = event.detail.value;
+    this.updateEditFormValue(key || "narrative", value);
+  },
+
+  onEditStart() {
+    if (this.data.editMode) {
+      return;
+    }
+    const form = cloneForm(this.data.editForm || this.originalEditForm || {});
+    this.originalEditForm = cloneForm(form);
+    if (wx.enableAlertBeforeUnload) {
+      wx.enableAlertBeforeUnload({ message: "当前编辑内容尚未保存，确定离开吗？" });
+    }
+    this.setData({
+      editMode: true,
+      editForm: form,
+      editErrors: {},
+      editDirty: false,
+      editCanSave: false,
+      editPickerIndex: buildPickerIndexMap(form)
+    });
+  },
+
+  resetEditState() {
+    const form = cloneForm(this.originalEditForm || {});
+    if (wx.disableAlertBeforeUnload) {
+      wx.disableAlertBeforeUnload();
+    }
+    this.setData({
+      editMode: false,
+      saving: false,
+      editForm: form,
+      editErrors: {},
+      editDirty: false,
+      editCanSave: false,
+      editPickerIndex: buildPickerIndexMap(form)
+    });
+  },
+
+  async onEditCancel() {
+    if (!this.data.editMode) {
+      return;
+    }
+    if (this.data.editDirty) {
+      const res = await wx.showModal({
+        title: "放弃修改",
+        content: "当前修改尚未保存，确认要放弃吗？",
+        confirmText: "放弃",
+        cancelText: "继续编辑"
+      });
+      if (!res.confirm) {
+        return;
+      }
+    }
+    this.resetEditState();
+  },
+
+  async onSaveTap() {
+    if (this.data.saving) {
+      return;
+    }
+    if (!this.data.editCanSave) {
+      return;
+    }
+    const form = this.data.editForm || {};
+    const errors = this.validateAllFields(form);
+    if (Object.keys(errors).length > 0) {
+      this.setData({ editErrors: errors, editDirty: true });
+      this.setData({ editCanSave: false });
+      wx.showToast({ icon: "none", title: "请修正校验错误后再保存" });
+      return;
+    }
+    if (!this.data.editDirty) {
+      wx.showToast({ icon: "none", title: "没有需要保存的修改" });
+      return;
+    }
+
+    this.setData({ saving: true });
+
+    try {
+      const changedFields = collectChangedFormKeys(form, this.originalEditForm || {});
+      const payload = {
+        action: 'updatePatient',
+        patientKey: this.patientKey,
+        patientUpdates: {
+          patientName: form.patientName,
+          idType: form.idType,
+          idNumber: form.idNumber,
+          gender: form.gender,
+          birthDate: form.birthDate,
+          phone: form.phone,
+          address: form.address,
+          emergencyContact: form.emergencyContact,
+          emergencyPhone: form.emergencyPhone,
+          backupContact: form.backupContact,
+          backupPhone: form.backupPhone,
+          lastIntakeNarrative: form.narrative,
+          expectedUpdatedAt: this.data.editMetadata.patientUpdatedAt
+        },
+        audit: {
+          message: '患者详情页内联编辑',
+          changes: changedFields
+        }
+      };
+
+      if (form.intakeId) {
+        payload.intakeUpdates = {
+          intakeId: form.intakeId,
+          expectedUpdatedAt: this.data.editMetadata.intakeUpdatedAt,
+          basicInfo: {
+            patientName: form.patientName,
+            idType: form.idType,
+            idNumber: form.idNumber,
+            gender: form.gender,
+            birthDate: form.birthDate,
+            phone: form.phone
+          },
+          contactInfo: {
+            address: form.address,
+            emergencyContact: form.emergencyContact,
+            emergencyPhone: form.emergencyPhone,
+            backupContact: form.backupContact,
+            backupPhone: form.backupPhone
+          },
+          intakeInfo: {
+            intakeTime: toTimestampFromDateInput(form.intakeTime) || undefined,
+            followUpPlan: form.followUpPlan,
+            situation: form.narrative
+          },
+          medicalHistory: Array.isArray(form.medicalHistory) ? form.medicalHistory : undefined,
+          attachments: Array.isArray(form.attachments) ? form.attachments : undefined
+        };
+      }
+
+      const res = await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: payload
+      });
+
+      const result = res?.result || {};
+      if (!result.success) {
+        const error = result.error || {};
+        if (error.code === 'VERSION_CONFLICT' || error.code === 'INTAKE_VERSION_CONFLICT') {
+          wx.showModal({
+            title: '数据已更新',
+            content: '当前资料已被其他人更新，请刷新后重试。',
+            showCancel: false
+          });
+        } else if (error.code === 'NO_CHANGES') {
+          wx.showToast({ icon: 'none', title: '没有检测到变更' });
+        } else {
+          wx.showToast({ icon: 'none', title: error.message || '保存失败' });
+        }
+        this.setData({ saving: false });
+        return;
+      }
+
+      wx.showToast({ icon: 'success', title: '保存成功' });
+      this.resetEditState();
+      await this.fetchPatientDetail();
+    } catch (error) {
+      console.error('update patient failed', error);
+      wx.showToast({ icon: 'none', title: (error && error.message) || '保存失败，请稍后再试' });
+      this.setData({ saving: false });
     }
   },
 
@@ -836,3 +1339,6 @@ Page({
 
   noop() {}
 });
+
+
+

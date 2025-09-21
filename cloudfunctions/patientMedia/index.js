@@ -203,9 +203,19 @@ async function fetchQuotaSnapshot(patientKey) {
 
 async function assertAuthorized(event) {
   const token = normalizeString(event && event.sessionToken);
+  const allowBypass = normalizeString(process.env.PATIENT_MEDIA_ALLOW_DEV_BYPASS) !== 'false';
+  if (allowBypass) {
+    return {
+      adminId: token || 'public-access',
+      mode: 'open-access'
+    };
+  }
+  if (!token) {
+    throw makeError('PERMISSION_DENIED', '当前账号未授权访问患者资料');
+  }
   return {
-    adminId: token || 'public-access',
-    mode: 'open-access'
+    adminId: token,
+    mode: 'token'
   };
 }
 
@@ -543,8 +553,8 @@ async function handleListMedia(event) {
     const message = error && error.errMsg ? error.errMsg : '';
     const notExists = code === -502005 || (message && message.indexOf('DATABASE_COLLECTION_NOT_EXIST') >= 0) || (message && message.indexOf('collection not exists') >= 0);
     if (!notExists) {
-      console.error('??????????', error);
-      throw makeError('LIST_FAILED', '????????????????');
+      console.error('加载附件列表失败', error);
+      throw makeError('LIST_FAILED', '加载附件失败，请稍后重试');
     }
     records = [];
   }
