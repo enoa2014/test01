@@ -21,7 +21,8 @@ function connectCloudBase() {
   const envId = requireEnv('TCB_ENV');
   const secretId = requireEnv('TENCENTCLOUD_SECRETID');
   const secretKey = requireEnv('TENCENTCLOUD_SECRETKEY');
-  return cloudbase.init({ envId, secretId, secretKey });
+  const app = cloudbase.init({ env: envId, envId, secretId, secretKey });
+  return { app, envId };
 }
 
 function toTimestamp(dateText) {
@@ -145,11 +146,25 @@ function buildPatientRecords() {
   ];
 }
 
-async function removeExistingTestData(collection, command) {
+async function removeExistingTestData(collection, command, db) {
   const matcher = command.or([
     { testMarker: command.exists(true) },
-    { key: command.regex({ regex: '^' + TEST_PREFIX, options: '' }) }
+    { ['data.testMarker']: command.exists(true) },
+    { key: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+    { ['data.key']: db.RegExp({ regexp: '^' + TEST_PREFIX }) }
   ]);
+
+  try {
+    const bulk = await collection.where(matcher).remove();
+    if (bulk && typeof bulk.deleted === 'number') {
+      console.log('[run-patient-suite] Bulk removed ' + bulk.deleted + ' automation documents.');
+      if (bulk.deleted === 0) {
+        return;
+      }
+    }
+  } catch (error) {
+    console.warn('[run-patient-suite] Bulk remove fallback:', error && error.message ? error.message : error);
+  }
 
   const batchSize = 100;
   while (true) {
@@ -167,9 +182,32 @@ async function removeExistingTestData(collection, command) {
 }
 
 async function insertRecords(collection, records) {
+  let inserted = 0;
   for (const record of records) {
-    await collection.add({ data: record });
+    const res = await collection.add({ data: record });
+    if (res && res.id) {
+      console.log('[run-patient-suite] Inserted doc id', res.id);
+      try {
+        await collection.doc(res.id).update({ key: record.key, testMarker: RUN_ID });
+      } catch (updateError) {
+        console.warn('[run-patient-suite] Unable to set root fields for doc', res.id, updateError.message || updateError);
+      }
+    } else if (res && Array.isArray(res.ids)) {
+      console.log('[run-patient-suite] Inserted doc ids', res.ids.join(', '));
+      const batchUpdate = res.ids.map((id) => collection.doc(id).update({ key: record.key, testMarker: RUN_ID }).catch((err) => {
+        console.warn('[run-patient-suite] Unable to set root fields for doc', id, err.message || err);
+      }));
+      await Promise.all(batchUpdate);
+    }
+    if (res && Array.isArray(res.ids)) {
+      inserted += res.ids.length;
+    } else if (res && typeof res.id === 'string') {
+      inserted += 1;
+    } else {
+      inserted += 1;
+    }
   }
+  return inserted;
 }
 
 function runJestSuite() {
@@ -194,21 +232,26 @@ function runJestSuite() {
 
 async function main() {
   console.log('[run-patient-suite] Start run id ' + RUN_ID);
-  const app = connectCloudBase();
-  const db = app.database();
+  const { app, envId } = connectCloudBase();
+  const db = app.database({ env: envId });
   const collection = db.collection(COLLECTION);
   const command = db.command;
 
   const records = buildPatientRecords();
+  const patientKeys = Array.from(new Set(records.map((record) => record.key)));
   let testError;
 
   try {
     console.log('[run-patient-suite] Cleaning existing automation records...');
-    await removeExistingTestData(collection, command);
+    await removeExistingTestData(collection, command, db);
 
-    const patientCount = new Set(records.map((r) => r.key)).size;
-    console.log('[run-patient-suite] Inserting ' + records.length + ' test admissions for ' + patientCount + ' patients...');
-    await insertRecords(collection, records);
+    console.log('[run-patient-suite] Inserting ' + records.length + ' test admissions for ' + patientKeys.length + ' patients...');
+    const inserted = await insertRecords(collection, records);
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const verify = await collection.where({ ['data.testMarker']: RUN_ID }).get();
+    console.log('[run-patient-suite] Verification query returned ' + verify.data.length + ' documents (expected ' + inserted + ').');
 
     console.log('[run-patient-suite] Executing E2E suite...');
     await runJestSuite();
@@ -219,7 +262,7 @@ async function main() {
   } finally {
     try {
       console.log('[run-patient-suite] Removing automation records...');
-      await removeExistingTestData(collection, command);
+      await removeExistingTestData(collection, command, db);
       console.log('[run-patient-suite] Cleanup completed.');
     } catch (cleanupError) {
       console.error('[run-patient-suite] Cleanup encountered an error:', cleanupError && cleanupError.message ? cleanupError.message : cleanupError);
