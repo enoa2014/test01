@@ -7,7 +7,8 @@
     "test": "npm run test:e2e",
     "sync-config": "node scripts/sync-config.js",
     "fix-encoding": "node scripts/fix-encoding.js",
-    "test:e2e": "cross-env NODE_ENV=test jest --config tests/e2e/jest.config.cjs --runInBand"
+    "test:e2e": "cross-env NODE_ENV=test jest --config tests/e2e/jest.config.cjs --runInBand",
+    "test:e2e:patients": "node scripts/e2e/run-patient-suite.js"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,8 @@
   "homepage": "https://github.com/enoa2014/test01#readme",
   "dependencies": {
     "dotenv": "^17.2.2",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@cloudbase/node-sdk": "^2.10.0"
   },
   "devDependencies": {
     "cross-env": "^10.0.0",

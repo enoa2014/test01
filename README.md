@@ -36,6 +36,7 @@ tests/
 
 - `npm run sync-config`：根据 `.env` 同步 `project.config.json` 及环境配置文件。
 - `npm run fix-encoding`：遍历 `miniprogram/` 和 `cloudfunctions/`，将 JSON/WXML/WXSS/JS 文件统一写成 UTF-8 无 BOM。
+- `npm run test:e2e:patients`：生成测试患者数据、执行端到端测试并在结束后自动清理。
 - `npm run test:e2e` 或 `npm test`：执行端到端测试套件（自动启动微信开发者工具 CLI）。
 
 ## 端到端测试
@@ -47,8 +48,8 @@ tests/
      setx WX_IDE_PATH "C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat"
      ```
 2. **运行端到端测试**  
-   - 在项目根目录执行 `npm run test:e2e`。
-   - 脚本会调用 `miniprogram-automator.launch` 自动启动 IDE（无需手动先开窗口），加载 `project.config.json`，然后驱动 `/pages/index/index` 页面。
+   - 推荐执行 `npm run test:e2e:patients`：脚本会使用云开发数据库生成带有 `TEST_AUTOMATION_` 前缀的演示数据，串联执行端到端测试，并在运行结束（含失败场景）后自动清理测试数据。
+   - 如仅需复用已有数据，可执行 `npm run test:e2e`；脚本会调用 `miniprogram-automator.launch` 自动启动 IDE（无需手动先开窗口），加载 `project.config.json`，然后驱动 `/pages/index/index` 页面。
 3. **可选配置**  
    - `tests/e2e/config/devtools.js` 会自动检测 CLI 路径，也可通过环境变量覆盖：
      - `WX_IDE_PATH` 或 `WX_DEVTOOLS_CLI`：CLI 完整路径。

@@ -37,8 +37,9 @@ JS
    - 或直接运行 `node temp-connect.js`（脚本示例见下文）调用 `automator.connect`，若输出 `connected` 说明端口可用。
 
 5. **执行 E2E 测试**
-   - 运行 `npm run test:e2e`，使用 `tests/e2e/specs/home.spec.js` 中的 `waitForElements` 辅助方法等待云函数结果。
-   - 终端输出 `PASS tests/e2e/specs/home.spec.js`（约 10~12 秒内完成）即视为成功。
+   - 推荐运行 `npm run test:e2e:patients`：脚本会通过云开发 API 写入带有 `TEST_AUTOMATION_` 前缀的临时患者数据，随后执行 `tests/e2e/specs/home.spec.js`，最后在 `finally` 阶段清理临时数据。
+ - 如果想沿用既有数据，可运行 `npm run test:e2e`，收敛在同一测试用例；终端输出 `PASS tests/e2e/specs/home.spec.js`（约 10~12 秒内完成）即视为成功。
+   - 运行自动化脚本前，确保 `.env` 中已配置 `TCB_ENV`、`TENCENTCLOUD_SECRETID`、`TENCENTCLOUD_SECRETKEY` 等云开发密钥，脚本会使用这些信息写入/清理 `excel_records` 集合。
 
 ## 常用命令
 
@@ -49,9 +50,12 @@ JS
 # 若需要自定义 HTTP 服务端口与自动化端口
 "C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat" auto --project "C:\Users\86152\work\test01" --port 9422 --auto-port 9421 --trust-project
 
-# 设置测试使用的 WebSocket 端口并执行 E2E 测试
+# 设置测试使用的 WebSocket 端口并执行 E2E 测试（仅数据已准备好的情况下）
 set WX_DEVTOOLS_WS=ws://127.0.0.1:9421
 npm run test:e2e
+
+# 一键生成测试数据、执行 E2E，并在结束后清理
+npm run test:e2e:patients
 
 # 清理可能残留的开发者工具进程（端口被占用时）
 Stop-Process -Name WeChatAppEx -Force
