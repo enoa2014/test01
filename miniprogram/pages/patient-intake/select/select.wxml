@@ -1,0 +1,130 @@
+<!--患者选择页面-->
+<view class="select-container">
+  <view class="header">
+    <view class="title">患者入住登记</view>
+    <view class="subtitle">请选择患者或创建新患者</view>
+  </view>
+
+  <!-- 搜索区域 -->
+  <view class="search-section">
+    <view class="search-box">
+      <input
+        class="search-input"
+        value="{{searchKeyword}}"
+        placeholder="搜索患者姓名、证件号码"
+        bindinput="onSearchInput"
+        focus="{{searchFocus}}"
+      />
+      <view class="search-icon" wx:if="{{!searchKeyword}}">🔍</view>
+      <view class="clear-btn" wx:if="{{searchKeyword}}" bindtap="onClearSearch">✕</view>
+    </view>
+  </view>
+
+  <!-- 患者列表 -->
+  <scroll-view class="patient-list" scroll-y enable-lower-action="{{hasMore}}" bindscrolltolower="onLoadMore">
+    <view wx:if="{{loading && patients.length === 0}}" class="loading-state">
+      <view class="loading-text">加载中...</view>
+    </view>
+
+    <view wx:if="{{!loading && patients.length === 0 && searchKeyword}}" class="empty-state">
+      <view class="empty-icon">🔍</view>
+      <view class="empty-text">未找到匹配的患者</view>
+      <view class="empty-hint">请检查搜索条件或创建新患者</view>
+    </view>
+
+    <view wx:if="{{!loading && patients.length === 0 && !searchKeyword}}" class="empty-state">
+      <view class="empty-icon">👥</view>
+      <view class="empty-text">暂无患者数据</view>
+      <view class="empty-hint">请先创建患者信息</view>
+    </view>
+
+    <view
+      wx:for="{{patients}}"
+      wx:key="key"
+      class="patient-item"
+      data-patient="{{item}}"
+      bindtap="onPatientSelect"
+    >
+      <view class="patient-main">
+        <view class="patient-name">{{item.patientName}}</view>
+        <view class="patient-info">
+          <text class="info-item">{{item.gender}}</text>
+          <text class="info-item" wx:if="{{item.ageText}}">{{item.ageText}}</text>
+          <text class="info-item" wx:if="{{item.idNumber}}">{{item.idNumber}}</text>
+        </view>
+      </view>
+
+      <view class="patient-meta">
+        <view class="admission-info" wx:if="{{item.admissionCount > 0}}">
+          <text class="admission-count">入住{{item.admissionCount}}次</text>
+          <text class="last-admission" wx:if="{{item.latestAdmissionDateFormatted}}">
+            最近：{{item.latestAdmissionDateFormatted}}
+          </text>
+        </view>
+        <view class="new-badge" wx:if="{{item.admissionCount === 0}}">新患者</view>
+      </view>
+
+      <view class="patient-action">
+        <view class="action-icon">→</view>
+      </view>
+    </view>
+
+    <view wx:if="{{loading && patients.length > 0}}" class="loading-more">
+      <view class="loading-text">加载更多...</view>
+    </view>
+
+    <view wx:if="{{!hasMore && patients.length > 0}}" class="no-more">
+      <view class="no-more-text">已显示全部患者</view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部操作 -->
+  <view class="action-bar">
+    <button class="create-btn" bindtap="onCreateNewPatient">
+      <view class="btn-icon">👤</view>
+      <view class="btn-text">创建新患者</view>
+    </button>
+  </view>
+</view>
+
+<!-- 确认弹窗 -->
+<view class="confirm-modal" wx:if="{{showConfirmModal}}">
+  <view class="modal-content">
+    <view class="modal-header">
+      <view class="modal-title">确认选择患者</view>
+    </view>
+
+    <view class="modal-body">
+      <view class="selected-patient">
+        <view class="patient-name">{{selectedPatient.patientName}}</view>
+        <view class="patient-details">
+          <view class="detail-item">
+            <text class="detail-label">性别：</text>
+            <text class="detail-value">{{selectedPatient.gender}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{selectedPatient.ageText}}">
+            <text class="detail-label">年龄：</text>
+            <text class="detail-value">{{selectedPatient.ageText}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{selectedPatient.idNumber}}">
+            <text class="detail-label">证件号：</text>
+            <text class="detail-value">{{selectedPatient.idNumber}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{selectedPatient.phone}}">
+            <text class="detail-label">联系电话：</text>
+            <text class="detail-value">{{selectedPatient.phone}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="intake-hint">
+        <text class="hint-text">将为此患者进行入住登记，患者信息可在后续步骤中编辑</text>
+      </view>
+    </view>
+
+    <view class="modal-actions">
+      <button class="modal-btn secondary" bindtap="onCancelSelect">取消</button>
+      <button class="modal-btn primary" bindtap="onConfirmSelect">确认入住</button>
+    </view>
+  </view>
+</view>

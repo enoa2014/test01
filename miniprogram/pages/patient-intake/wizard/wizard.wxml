@@ -1,0 +1,362 @@
+<!--患者录入向导界面-->
+<view class="wizard-container">
+  <!-- 顶部进度指示器 -->
+  <view class="progress-header">
+    <view class="progress-steps">
+      <view
+        wx:for="{{steps}}"
+        wx:key="index"
+        class="step-item {{currentStep >= index ? 'active' : ''}} {{currentStep > index ? 'completed' : ''}}"
+        data-step="{{index}}"
+        bindtap="onStepTap"
+      >
+        <view class="step-number">{{index + 1}}</view>
+        <view class="step-label">{{item.title}}</view>
+      </view>
+    </view>
+    <view class="progress-info">
+      <text class="current-step">第{{currentStep + 1}}步 / 共{{steps.length}}步</text>
+      <text class="required-count" wx:if="{{requiredFieldsCount > 0}}">剩余必填项：{{requiredFieldsCount}}</text>
+    </view>
+  </view>
+
+  <!-- 当前步骤标题和必填项提示 -->
+  <view class="step-header">
+    <view class="step-title">{{currentStepData.title}}</view>
+    <view class="required-fields" wx:if="{{currentStepData.requiredFields.length > 0}}">
+      <text class="required-label">本步必填项：</text>
+      <text class="required-list">{{currentStepData.requiredFieldsText}}</text>
+    </view>
+  </view>
+
+  <!-- 步骤内容 -->
+  <scroll-view class="step-content" scroll-y>
+    <!-- 第1步：患者基础信息 -->
+    <view wx:if="{{currentStep === 0}}" class="form-section">
+      <view class="form-group">
+        <label class="form-label required">姓名</label>
+        <input
+          class="form-input {{errors.patientName ? 'error' : ''}}"
+          value="{{formData.patientName}}"
+          data-field="patientName"
+          bindinput="onInputChange"
+          placeholder="请输入患者姓名"
+        />
+        <text class="error-text" wx:if="{{errors.patientName}}">{{errors.patientName}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label required">证件类型</label>
+        <picker
+          class="form-picker {{errors.idType ? 'error' : ''}}"
+          value="{{idTypeIndex}}"
+          range="{{idTypes}}"
+          data-field="idType"
+          bindchange="onPickerChange"
+        >
+          <view class="picker-display">{{idTypes[idTypeIndex] || '请选择证件类型'}}</view>
+        </picker>
+        <text class="error-text" wx:if="{{errors.idType}}">{{errors.idType}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label required">证件号码</label>
+        <input
+          class="form-input {{errors.idNumber ? 'error' : ''}}"
+          value="{{formData.idNumber}}"
+          data-field="idNumber"
+          bindinput="onInputChange"
+          placeholder="请输入证件号码"
+        />
+        <text class="hint-text">示例：身份证格式为18位数字</text>
+        <text class="error-text" wx:if="{{errors.idNumber}}">{{errors.idNumber}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label required">性别</label>
+        <radio-group class="radio-group" data-field="gender" bindchange="onRadioChange">
+          <radio class="radio-item" value="男" checked="{{formData.gender === '男'}}">男</radio>
+          <radio class="radio-item" value="女" checked="{{formData.gender === '女'}}">女</radio>
+        </radio-group>
+        <text class="error-text" wx:if="{{errors.gender}}">{{errors.gender}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label required">出生日期</label>
+        <picker
+          mode="date"
+          class="form-picker {{errors.birthDate ? 'error' : ''}}"
+          value="{{formData.birthDate}}"
+          data-field="birthDate"
+          bindchange="onDateChange"
+          end="{{today}}"
+        >
+          <view class="picker-display">{{formData.birthDate || '请选择出生日期'}}</view>
+        </picker>
+        <text class="error-text" wx:if="{{errors.birthDate}}">{{errors.birthDate}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label">联系电话</label>
+        <input
+          class="form-input {{errors.phone ? 'error' : ''}}"
+          value="{{formData.phone}}"
+          data-field="phone"
+          bindinput="onInputChange"
+          placeholder="请输入11位手机号码"
+          type="number"
+        />
+        <text class="hint-text">示例：13812345678</text>
+        <text class="error-text" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+      </view>
+    </view>
+
+    <!-- 第2步：家庭与联系人 -->
+    <view wx:if="{{currentStep === 1}}" class="form-section">
+      <view class="form-group">
+        <label class="form-label required">常住地址</label>
+        <textarea
+          class="form-textarea {{errors.address ? 'error' : ''}}"
+          value="{{formData.address}}"
+          data-field="address"
+          bindinput="onInputChange"
+          placeholder="请输入详细地址"
+          maxlength="200"
+        />
+        <text class="error-text" wx:if="{{errors.address}}">{{errors.address}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label required">紧急联系人</label>
+        <input
+          class="form-input {{errors.emergencyContact ? 'error' : ''}}"
+          value="{{formData.emergencyContact}}"
+          data-field="emergencyContact"
+          bindinput="onInputChange"
+          placeholder="请输入紧急联系人姓名"
+        />
+        <text class="error-text" wx:if="{{errors.emergencyContact}}">{{errors.emergencyContact}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label required">紧急联系人电话</label>
+        <input
+          class="form-input {{errors.emergencyPhone ? 'error' : ''}}"
+          value="{{formData.emergencyPhone}}"
+          data-field="emergencyPhone"
+          bindinput="onInputChange"
+          placeholder="请输入11位手机号码"
+          type="number"
+        />
+        <text class="error-text" wx:if="{{errors.emergencyPhone}}">{{errors.emergencyPhone}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label">备用联系人</label>
+        <input
+          class="form-input {{errors.backupContact ? 'error' : ''}}"
+          value="{{formData.backupContact}}"
+          data-field="backupContact"
+          bindinput="onInputChange"
+          placeholder="请输入备用联系人姓名（选填）"
+        />
+        <text class="error-text" wx:if="{{errors.backupContact}}">{{errors.backupContact}}</text>
+      </view>
+
+      <view class="form-group">
+        <label class="form-label">备用联系人电话</label>
+        <input
+          class="form-input {{errors.backupPhone ? 'error' : ''}}"
+          value="{{formData.backupPhone}}"
+          data-field="backupPhone"
+          bindinput="onInputChange"
+          placeholder="请输入11位手机号码（选填）"
+          type="number"
+        />
+        <text class="error-text" wx:if="{{errors.backupPhone}}">{{errors.backupPhone}}</text>
+      </view>
+    </view>
+
+    <!-- 第3步：情况说明 -->
+    <view wx:if="{{currentStep === 2}}" class="form-section">
+      <view class="form-group">
+        <label class="form-label required">入住理由说明</label>
+        <view class="textarea-container">
+          <textarea
+            class="form-textarea large {{errors.situation ? 'error' : ''}}"
+            value="{{formData.situation}}"
+            data-field="situation"
+            bindinput="onInputChange"
+            placeholder="请详细描述入住理由和患者情况，包含护理需求或症状信息"
+            maxlength="{{situationConfig.maxLength}}"
+            show-confirm-bar="{{false}}"
+          />
+          <view class="char-count">
+            {{formData.situation.length}}/{{situationConfig.maxLength}}字
+            <text class="min-hint">(最少{{situationConfig.minLength}}字)</text>
+          </view>
+        </view>
+        <text class="error-text" wx:if="{{errors.situation}}">{{errors.situation}}</text>
+
+        <view class="hint-section">
+          <view class="hint-title">参考示例：</view>
+          <view class="example-text">{{situationConfig.example}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 第4步：附件上传 -->
+    <view wx:if="{{currentStep === 3}}" class="form-section">
+      <view class="upload-section">
+        <view class="upload-header">
+          <view class="upload-title">附件上传（选填）</view>
+          <view class="upload-desc">支持身份证、诊断证明、知情同意书等文件</view>
+        </view>
+
+        <view class="upload-rules">
+          <view class="rule-item">• 单个文件不超过 {{uploadConfig.maxFileSize}}MB</view>
+          <view class="rule-item">• 支持格式：{{uploadConfig.allowedTypes}}</view>
+          <view class="rule-item">• 最多上传 {{uploadConfig.maxCount}} 个文件</view>
+        </view>
+
+        <view class="upload-area" bindtap="chooseFile">
+          <view class="upload-icon">📎</view>
+          <view class="upload-text">点击选择文件</view>
+        </view>
+
+        <view class="upload-list" wx:if="{{uploadedFiles.length > 0}}">
+          <view
+            wx:for="{{uploadedFiles}}"
+            wx:key="id"
+            class="file-item"
+          >
+            <view class="file-info">
+              <view class="file-name">{{item.displayName}}</view>
+              <view class="file-size">{{item.sizeText}}</view>
+            </view>
+            <view class="file-actions">
+              <text class="action-btn" data-id="{{item.id}}" bindtap="previewFile">预览</text>
+              <text class="action-btn delete" data-id="{{item.id}}" bindtap="deleteFile">删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 第5步：核对与提交 -->
+    <view wx:if="{{currentStep === 4}}" class="form-section">
+      <view class="review-section">
+        <view class="review-title">请核对以下信息</view>
+
+        <view class="review-group">
+          <view class="group-title">基础信息</view>
+          <view class="review-item">
+            <text class="item-label">姓名：</text>
+            <text class="item-value">{{formData.patientName}}</text>
+          </view>
+          <view class="review-item">
+            <text class="item-label">证件：</text>
+            <text class="item-value">{{idTypes[idTypeIndex]}} {{formData.idNumber}}</text>
+          </view>
+          <view class="review-item">
+            <text class="item-label">性别：</text>
+            <text class="item-value">{{formData.gender}}</text>
+          </view>
+          <view class="review-item">
+            <text class="item-label">出生日期：</text>
+            <text class="item-value">{{formData.birthDate}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.phone}}">
+            <text class="item-label">联系电话：</text>
+            <text class="item-value">{{formData.phone}}</text>
+          </view>
+        </view>
+
+        <view class="review-group">
+          <view class="group-title">联系信息</view>
+          <view class="review-item">
+            <text class="item-label">常住地址：</text>
+            <text class="item-value">{{formData.address}}</text>
+          </view>
+          <view class="review-item">
+            <text class="item-label">紧急联系人：</text>
+            <text class="item-value">{{formData.emergencyContact}} {{formData.emergencyPhone}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.backupContact}}">
+            <text class="item-label">备用联系人：</text>
+            <text class="item-value">{{formData.backupContact}} {{formData.backupPhone}}</text>
+          </view>
+        </view>
+
+        <view class="review-group">
+          <view class="group-title">情况说明</view>
+          <view class="review-item">
+            <text class="item-value situation">{{formData.situation}}</text>
+          </view>
+        </view>
+
+        <view class="review-group" wx:if="{{uploadedFiles.length > 0}}">
+          <view class="group-title">附件 ({{uploadedFiles.length}})</view>
+          <view wx:for="{{uploadedFiles}}" wx:key="id" class="review-item">
+            <text class="item-value">{{item.displayName}}</text>
+          </view>
+        </view>
+
+        <view class="completion-status">
+          <view class="status-item {{allRequiredCompleted ? 'completed' : 'incomplete'}}">
+            <text class="status-icon">{{allRequiredCompleted ? '✅' : '⚠️'}}</text>
+            <text class="status-text">必填项{{allRequiredCompleted ? '已完成' : '未完成'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部操作区 -->
+  <view class="action-bar">
+    <view class="action-buttons">
+      <button
+        class="btn btn-secondary"
+        wx:if="{{currentStep > 0}}"
+        bindtap="onPrevStep"
+      >
+        上一步
+      </button>
+
+      <button
+        class="btn btn-primary"
+        wx:if="{{currentStep < steps.length - 1}}"
+        disabled="{{!canProceedToNext}}"
+        bindtap="onNextStep"
+      >
+        下一步
+      </button>
+
+      <button
+        class="btn btn-success"
+        wx:if="{{currentStep === steps.length - 1}}"
+        disabled="{{!allRequiredCompleted || submitting}}"
+        bindtap="onSubmit"
+        loading="{{submitting}}"
+      >
+        {{submitting ? '提交中...' : '完成入住'}}
+      </button>
+    </view>
+
+    <view class="draft-info" wx:if="{{draftSaved}}">
+      <text class="draft-text">✅ 草稿已保存</text>
+    </view>
+  </view>
+</view>
+
+<!-- 草稿恢复提示 -->
+<view class="draft-modal" wx:if="{{showDraftModal}}">
+  <view class="modal-content">
+    <view class="modal-title">发现未完成的草稿</view>
+    <view class="modal-text">您上次有未完成的入住流程，是否继续？</view>
+    <view class="modal-actions">
+      <button class="modal-btn secondary" bindtap="discardDraft">重新开始</button>
+      <button class="modal-btn primary" bindtap="restoreDraft">继续草稿</button>
+    </view>
+  </view>
+</view>

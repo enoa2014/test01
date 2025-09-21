@@ -1,0 +1,355 @@
+/* 患者选择页面样式 */
+.select-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+}
+
+/* 头部 */
+.header {
+  background-color: #fff;
+  padding: 40rpx;
+  text-align: center;
+  border-bottom: 1rpx solid #e0e0e0;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.subtitle {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 搜索区域 */
+.search-section {
+  background-color: #fff;
+  padding: 30rpx 40rpx;
+  border-bottom: 1rpx solid #e0e0e0;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 24rpx 0 60rpx;
+  font-size: 28rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 36rpx;
+  background-color: #f8f8f8;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: #1aad19;
+  background-color: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  left: 20rpx;
+  font-size: 28rpx;
+  color: #999;
+  pointer-events: none;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 20rpx;
+  width: 32rpx;
+  height: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ccc;
+  border-radius: 50%;
+  font-size: 20rpx;
+  color: #fff;
+}
+
+/* 患者列表 */
+.patient-list {
+  flex: 1;
+  padding: 0 40rpx;
+}
+
+.patient-item {
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin: 20rpx 0;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.patient-item:active {
+  transform: scale(0.98);
+}
+
+.patient-main {
+  flex: 1;
+}
+
+.patient-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.patient-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.info-item {
+  font-size: 24rpx;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 6rpx 12rpx;
+  border-radius: 4rpx;
+}
+
+.patient-meta {
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.admission-info {
+  text-align: right;
+}
+
+.admission-count {
+  font-size: 24rpx;
+  color: #1aad19;
+  display: block;
+  margin-bottom: 6rpx;
+  font-weight: bold;
+}
+
+.last-admission {
+  font-size: 22rpx;
+  color: #999;
+  display: block;
+}
+
+.new-badge {
+  font-size: 22rpx;
+  color: #ff9500;
+  background-color: #fff3e0;
+  padding: 6rpx 12rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid #ff9500;
+}
+
+.patient-action {
+  margin-left: 20rpx;
+}
+
+.action-icon {
+  font-size: 32rpx;
+  color: #1aad19;
+  font-weight: bold;
+}
+
+/* 状态提示 */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 80rpx 40rpx;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 30rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+  font-weight: bold;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+.loading-more,
+.no-more {
+  text-align: center;
+  padding: 40rpx;
+}
+
+.no-more-text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 底部操作 */
+.action-bar {
+  background-color: #fff;
+  padding: 30rpx 40rpx;
+  border-top: 1rpx solid #e0e0e0;
+}
+
+.create-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #1aad19;
+  color: #fff;
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+}
+
+.btn-icon {
+  font-size: 36rpx;
+}
+
+.btn-text {
+  font-size: 32rpx;
+}
+
+/* 确认弹窗 */
+.confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 640rpx;
+  max-width: 90vw;
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 40rpx 40rpx 20rpx;
+  text-align: center;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-body {
+  padding: 40rpx;
+}
+
+.selected-patient {
+  margin-bottom: 30rpx;
+}
+
+.patient-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.patient-details {
+  background-color: #f8f8f8;
+  padding: 30rpx;
+  border-radius: 12rpx;
+}
+
+.detail-item {
+  display: flex;
+  margin-bottom: 16rpx;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-size: 26rpx;
+  color: #666;
+  min-width: 120rpx;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  font-size: 26rpx;
+  color: #333;
+  flex: 1;
+}
+
+.intake-hint {
+  background-color: #f0f9ff;
+  padding: 24rpx;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #1aad19;
+}
+
+.hint-text {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  background-color: transparent;
+}
+
+.modal-btn.secondary {
+  color: #666;
+  border-right: 1rpx solid #f0f0f0;
+}
+
+.modal-btn.primary {
+  color: #1aad19;
+}

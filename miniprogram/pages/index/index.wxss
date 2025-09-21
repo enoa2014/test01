@@ -178,13 +178,28 @@
   color: #6b7280;
 }
 
-.analysis-link {
-  align-self: flex-end;
+.action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12rpx;
+  align-items: center;
+}
+
+.analysis-link,
+.intake-link {
   padding: 12rpx 28rpx;
-  background: linear-gradient(90deg, #2563eb, #4f46e5);
   color: #ffffff;
   border-radius: 999rpx;
   font-size: 26rpx;
   font-weight: 500;
+}
+
+.analysis-link {
+  background: linear-gradient(90deg, #2563eb, #4f46e5);
   box-shadow: 0 6rpx 14rpx rgba(79, 70, 229, 0.25);
+}
+
+.intake-link {
+  background: linear-gradient(90deg, #059669, #10b981);
+  box-shadow: 0 6rpx 14rpx rgba(16, 185, 129, 0.25);
 }

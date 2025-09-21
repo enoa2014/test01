@@ -223,6 +223,12 @@ Page({
     });
   },
 
+  onIntakeTap() {
+    wx.navigateTo({
+      url: '/pages/patient-intake/select/select'
+    });
+  },
+
   onRetry() {
     this.fetchPatients({ silent: false });
   },

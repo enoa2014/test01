@@ -2,7 +2,10 @@
   "pages": [
     "pages/index/index",
     "pages/analysis/index",
-    "pages/patient-detail/detail"
+    "pages/patient-detail/detail",
+    "pages/patient-intake/select/select",
+    "pages/patient-intake/wizard/wizard",
+    "pages/patient-intake/success/success"
   ],
   "window": {
     "navigationBarTitleText": "入住档案",

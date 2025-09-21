@@ -1,0 +1,79 @@
+<!--入住成功页面-->
+<view class="success-container">
+  <view class="success-header">
+    <view class="success-icon">✅</view>
+    <view class="success-title">入住登记成功</view>
+    <view class="success-subtitle">患者信息已录入系统</view>
+  </view>
+
+  <view class="success-content">
+    <!-- 入住信息摘要 -->
+    <view class="summary-card">
+      <view class="card-header">
+        <view class="card-title">入住信息</view>
+        <view class="record-id" wx:if="{{recordId}}">编号：{{recordId}}</view>
+      </view>
+
+      <view class="summary-info">
+        <view class="info-row">
+          <text class="info-label">患者姓名</text>
+          <text class="info-value">{{patientName}}</text>
+        </view>
+
+        <view class="info-row">
+          <text class="info-label">入住时间</text>
+          <text class="info-value">{{intakeTime}}</text>
+        </view>
+
+        <view class="info-row" wx:if="{{emergencyContact}}">
+          <text class="info-label">紧急联系人</text>
+          <text class="info-value">{{emergencyContact}} {{emergencyPhone}}</text>
+        </view>
+
+        <view class="info-row" wx:if="{{uploadCount > 0}}">
+          <text class="info-label">附件数量</text>
+          <text class="info-value">{{uploadCount}}个文件</text>
+        </view>
+      </view>
+
+      <view class="situation-summary" wx:if="{{situationSummary}}">
+        <view class="summary-label">情况说明摘要</view>
+        <view class="summary-text">{{situationSummary}}</view>
+      </view>
+    </view>
+
+    <!-- 后续提醒 -->
+    <view class="reminder-card">
+      <view class="reminder-icon">📋</view>
+      <view class="reminder-content">
+        <view class="reminder-title">温馨提醒</view>
+        <view class="reminder-list">
+          <view class="reminder-item">• 患者档案已建立，可在系统中查看和管理</view>
+          <view class="reminder-item">• 如需补充信息或附件，可随时联系管理员</view>
+          <view class="reminder-item">• 紧急情况请及时联系相关负责人</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="quick-actions">
+      <view class="action-title">后续操作</view>
+      <view class="action-buttons">
+        <button class="action-btn secondary" bindtap="onViewPatient">
+          <view class="btn-icon">👁️</view>
+          <view class="btn-text">查看患者</view>
+        </button>
+
+        <button class="action-btn secondary" bindtap="onAddAnother">
+          <view class="btn-icon">➕</view>
+          <view class="btn-text">继续添加</view>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions">
+    <button class="primary-btn" bindtap="onBackToHome">返回首页</button>
+  </view>
+</view>

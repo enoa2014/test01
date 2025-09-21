@@ -1,4 +1,5 @@
 const XLSX = require("xlsx");
+const crypto = require("crypto");
 const cloud = require("wx-server-sdk");
 
 const CURRENT_ENV = process.env.TCB_ENV || process.env.TENCENTCLOUD_ENV || process.env.SCF_NAMESPACE || "cloud1-6g2fzr5f7cf51e38";
@@ -8,6 +9,8 @@ const EXCEL_FILE_ID = process.env.EXCEL_FILE_ID
   || "cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx";
 const COLLECTION = "excel_records";
 const CACHE_COLLECTION = "excel_cache";
+const PATIENTS_COLLECTION = "patients";
+const PATIENT_INTAKE_COLLECTION = "patient_intake_records";
 const SUMMARIES_CACHE_KEY = "patient_summaries";
 const CACHE_TTL_MS = Number(process.env.EXCEL_CACHE_TTL || 5 * 60 * 1000);
 
@@ -409,6 +412,31 @@ function buildPatientGroups(records) {
     groups
   };
 }
+async function ensureCollectionExists(collectionName) {
+  const db = cloud.database();
+  try {
+    await db.collection(collectionName).limit(1).get();
+    return true;
+  } catch (error) {
+    const code = (error && error.errCode !== undefined) ? error.errCode : (error && error.code);
+    const message = (error && error.errMsg) ? error.errMsg : '';
+    const notExists = code === -502005 || (message && message.indexOf('not exist') >= 0);
+    if (notExists) {
+      try {
+        await db.createCollection(collectionName);
+        return true;
+      } catch (createErr) {
+        const alreadyExists = createErr && (createErr.errCode === -502002 || (createErr.errMsg && createErr.errMsg.indexOf('already exist') >= 0));
+        if (!alreadyExists) {
+          console.warn('ensureCollectionExists failed', collectionName, createErr);
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
 
 
 
@@ -537,6 +565,264 @@ function parseExcel(buffer) {
   return { sheetName, headers, subHeaders, rows: dataRows };
 }
 
+
+function compactObject(source) {
+  if (!source || typeof source !== 'object') {
+    return {};
+  }
+  const result = {};
+  Object.entries(source).forEach(([key, value]) => {
+    if (Array.isArray(value) && value.length === 0) {
+      return;
+    }
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+    result[key] = value;
+  });
+  return result;
+}
+
+function computePatientKey(group) {
+  const name = normalizeSpacing(group.patientName || '').toLowerCase();
+  const idNumber = normalizeSpacing(group.idNumber || '').toUpperCase();
+  const base = idNumber ? `${name}::${idNumber}` : `${name}::${group.key || ''}`;
+  const fallback = base && base.trim() ? base : `anon::${group.records?.[0]?.rawRowIndex || Date.now()}`;
+  return crypto.createHash('sha256').update(fallback).digest('hex');
+}
+
+function buildContactList(group) {
+  const contacts = [];
+  const normalizeDetail = (detail) => ({
+    name: normalizeSpacing(detail.name || ''),
+    phone: normalizeSpacing(detail.phone || ''),
+    idNumber: normalizeSpacing(detail.idNumber || ''),
+    raw: detail.raw || ''
+  });
+  const pushDetails = (details = [], relation) => {
+    details.forEach((detail) => {
+      if (!detail) {
+        return;
+      }
+      const normalized = normalizeDetail(detail);
+      if (!normalized.name && !normalized.phone && !normalized.idNumber && !normalized.raw) {
+        return;
+      }
+      contacts.push({ relation, ...normalized });
+    });
+  };
+  pushDetails(group.fatherDetails, 'father');
+  pushDetails(group.motherDetails, 'mother');
+  pushDetails(group.otherGuardianDetails, 'guardian');
+  return contacts;
+}
+
+function buildMedicalNotes(group) {
+  const notes = [];
+  (group.records || []).forEach((record) => {
+    const note = compactObject({
+      admissionDate: record.admissionDate,
+      admissionTimestamp: record.admissionTimestamp,
+      hospital: record.hospital,
+      diagnosis: record.diagnosis,
+      doctorName: record.doctor,
+      symptoms: record.symptoms,
+      treatmentProcess: record.treatmentProcess,
+      followUpPlan: record.followUpPlan
+    });
+    if (Object.keys(note).length) {
+      notes.push(note);
+    }
+  });
+  return notes;
+}
+
+function buildPatientPayload(group, latestRecord) {
+  return compactObject({
+    patientName: group.patientName,
+    gender: group.gender || latestRecord.gender,
+    birthDate: group.birthDate || latestRecord.birthDate,
+    idNumber: group.idNumber || latestRecord.idNumber,
+    nativePlace: group.nativePlace || latestRecord.nativePlace,
+    ethnicity: group.ethnicity || latestRecord.ethnicity,
+    address: (group.addressList && group.addressList[0]) || latestRecord.address,
+    caregivers: group.summaryCaregivers || '',
+    lastIntakeNarrative: latestRecord.symptoms || latestRecord.treatmentProcess || latestRecord.diagnosis || ''
+  });
+}
+
+function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
+  const latestRecord = group.records && group.records[0] ? group.records[0] : {};
+  const basicInfo = compactObject({
+    patientName: group.patientName,
+    gender: group.gender || latestRecord.gender,
+    birthDate: group.birthDate || latestRecord.birthDate,
+    idNumber: group.idNumber || latestRecord.idNumber,
+    nativePlace: group.nativePlace || latestRecord.nativePlace,
+    ethnicity: group.ethnicity || latestRecord.ethnicity,
+    caregivers: group.summaryCaregivers || ''
+  });
+
+  const admission = compactObject({
+    admissionDate: latestRecord.admissionDate,
+    admissionTimestamp: latestRecord.admissionTimestamp,
+    hospital: latestRecord.hospital,
+    diagnosis: latestRecord.diagnosis,
+    doctorName: latestRecord.doctor,
+    followUpPlan: latestRecord.followUpPlan
+  });
+
+  const payload = {
+    patientKey,
+    stage: 'submitted',
+    source: 'excel-import',
+    syncBatchId,
+    basicInfo,
+    contacts: buildContactList(group),
+    narrative: latestRecord.symptoms || latestRecord.treatmentProcess || latestRecord.diagnosis || '',
+    medicalNotes: buildMedicalNotes(group),
+    admission,
+    attachments: [],
+    meta: {
+      lastExcelSyncAt: serverDate,
+      lastExcelSyncBatchId: syncBatchId
+    },
+    createdAt: serverDate,
+    updatedAt: serverDate
+  };
+
+  return payload;
+}
+
+async function fetchExistingDoc(docRef) {
+  try {
+    const res = await docRef.get();
+    if (res && res.data) {
+      return res.data;
+    }
+    return null;
+  } catch (error) {
+    if (error && error.errMsg && (error.errMsg.includes('not found') || error.errMsg.includes('document.get:fail'))) {
+      return null;
+    }
+    if (error && typeof error.errCode === 'number' && error.errCode === 11) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function upsertPatientDocument(patientKey, payload, syncBatchId, options = {}) {
+  const db = cloud.database();
+  const docRef = db.collection(PATIENTS_COLLECTION).doc(patientKey);
+  const serverDate = options.serverDate || db.serverDate();
+  const existing = await fetchExistingDoc(docRef);
+  if (existing) {
+    const updateData = {
+      updatedAt: serverDate,
+      'meta.lastExcelSyncAt': serverDate,
+      'meta.lastExcelSyncBatchId': syncBatchId,
+      'meta.lastExcelSource': 'readExcel'
+    };
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        updateData[key] = value;
+      }
+    });
+    await docRef.update({ data: updateData });
+    return existing._id || patientKey;
+  }
+
+  const newDoc = {
+    key: patientKey,
+    createdAt: serverDate,
+    updatedAt: serverDate,
+    ...payload,
+    meta: {
+      lastExcelSyncAt: serverDate,
+      lastExcelSyncBatchId: syncBatchId,
+      lastExcelSource: 'readExcel'
+    }
+  };
+  await docRef.set({ data: newDoc });
+  return patientKey;
+}
+
+async function upsertIntakeRecord(patientKey, intakePayload, options = {}) {
+  const db = cloud.database();
+  const collection = db.collection(PATIENT_INTAKE_COLLECTION);
+  const serverDate = options.serverDate || db.serverDate();
+  const docId = `${patientKey}-excel`;
+  const payload = {
+    ...intakePayload,
+    updatedAt: serverDate,
+    createdAt: intakePayload.createdAt || serverDate,
+    meta: {
+      ...(intakePayload.meta || {}),
+      lastExcelSyncAt: serverDate,
+      lastExcelSyncBatchId: intakePayload.syncBatchId
+    }
+  };
+  await collection.doc(docId).set({ data: payload });
+  return docId;
+}
+
+async function syncPatientsFromGroups(groups, options = {}) {
+  if (!groups) {
+    return { syncBatchId: options.syncBatchId || '', patients: 0, intakeRecords: 0, errors: [] };
+  }
+  const groupList = Array.isArray(groups)
+    ? groups
+    : (typeof groups.values === 'function' ? Array.from(groups.values()) : Object.values(groups));
+  const db = cloud.database();
+  const serverDate = options.serverDate || db.serverDate();
+  const syncBatchId = options.syncBatchId || `excel-${Date.now()}`;
+  await ensureCollectionExists(PATIENTS_COLLECTION);
+  await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+
+  let patientCount = 0;
+  let intakeCount = 0;
+  const errors = [];
+
+  for (const group of groupList) {
+    if (!group || !group.patientName) {
+      continue;
+    }
+    try {
+      const patientKey = computePatientKey(group);
+      const latestRecord = group.records && group.records[0] ? group.records[0] : {};
+      const patientPayload = buildPatientPayload(group, latestRecord);
+      const patientDocId = await upsertPatientDocument(patientKey, patientPayload, syncBatchId, { serverDate });
+      patientCount += 1;
+
+      const intakePayload = buildIntakePayload(group, patientKey, syncBatchId, serverDate);
+      const intakeDocId = await upsertIntakeRecord(patientKey, intakePayload, { serverDate });
+      intakeCount += 1;
+
+      const patientsCollection = db.collection(PATIENTS_COLLECTION);
+      await patientsCollection.doc(patientDocId).update({
+        data: {
+          lastIntakeId: intakeDocId,
+          updatedAt: serverDate,
+          'meta.lastExcelSyncAt': serverDate,
+          'meta.lastExcelSyncBatchId': syncBatchId,
+          'meta.lastExcelSource': 'readExcel'
+        }
+      });
+    } catch (error) {
+      console.error('syncPatientsFromGroups error', group && group.patientName, error);
+      errors.push({ patientName: group && group.patientName, message: error.message || String(error) });
+    }
+  }
+
+  return {
+    syncBatchId,
+    patients: patientCount,
+    intakeRecords: intakeCount,
+    errors
+  };
+}
+
 async function clearCollection(collection) {
   const db = cloud.database();
   const _ = db.command;
@@ -561,6 +847,7 @@ async function clearCollection(collection) {
 
 async function importToDatabase(records) {
   const db = cloud.database();
+  await ensureCollectionExists(COLLECTION);
   const collection = db.collection(COLLECTION);
   await clearCollection(collection);
 
@@ -592,14 +879,32 @@ exports.main = async (event = {}) => {
       const parsed = parseExcel(buffer);
       const labelIndex = buildLabelIndex(parsed.headers, parsed.subHeaders);
       const records = extractRecords(parsed.rows, labelIndex);
-      const { summaries } = buildPatientGroups(records);
+      const { summaries, groups } = buildPatientGroups(records);
+      await ensureCollectionExists(CACHE_COLLECTION);
       await saveSummariesToCache(summaries);
       const stats = await importToDatabase(records);
+      const syncBatchId = event.syncBatchId || `excel-${Date.now()}`;
+      const sync = await syncPatientsFromGroups(groups, { syncBatchId });
       return {
         action: "import",
         sheetName: parsed.sheetName,
         imported: stats,
-        totalPatients: summaries.length
+        totalPatients: summaries.length,
+        sync
+      };
+    }
+
+    if (event.action === "syncPatients") {
+      const syncBatchId = event.syncBatchId || `manual-${Date.now()}`;
+      const dbRecords = await fetchRecordsFromDatabase();
+      const { summaries, groups } = buildPatientGroups(dbRecords);
+      await ensureCollectionExists(CACHE_COLLECTION);
+      const sync = await syncPatientsFromGroups(groups, { syncBatchId });
+      await saveSummariesToCache(summaries);
+      return {
+        action: "syncPatients",
+        totalPatients: summaries.length,
+        sync
       };
     }
 
@@ -723,10 +1028,12 @@ return {
 
     const dbRecords = await fetchRecordsFromDatabase();
     if (!dbRecords.length) {
+      await ensureCollectionExists(CACHE_COLLECTION);
       await saveSummariesToCache([]);
       return { patients: [], source: "database" };
     }
     const { summaries } = buildPatientGroups(dbRecords);
+    await ensureCollectionExists(CACHE_COLLECTION);
     await saveSummariesToCache(summaries);
     return { patients: summaries, source: "database" };
   } catch (error) {
@@ -734,6 +1041,8 @@ return {
     throw error;
   }
 };
+
+
 
 
 

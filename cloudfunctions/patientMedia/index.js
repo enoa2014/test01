@@ -372,6 +372,8 @@ async function handleCompleteUpload(event) {
   const rawFileName = sanitizeFileName(event.fileName || event.filename) || `${fileUuid}`;
   const displayName = sanitizeDisplayName(event.displayName, rawFileName);
   const storagePath = normalizeString(event.storagePath) || `patient-media/${patientKey}/${fileUuid}${getExtension(rawFileName)}`;
+  const intakeCategory = normalizeString(event.category);
+  const intakeId = normalizeString(event.intakeId);
 
   let fileBuffer;
   try {
@@ -483,7 +485,10 @@ async function handleCompleteUpload(event) {
         downloadCount: 0,
         deletedAt: null,
         deletedBy: null,
-        quotaSnapshot: buildQuotaSummary(newCount, newBytes)
+        quotaSnapshot: buildQuotaSummary(newCount, newBytes),
+        // 入住相关字段
+        intakeCategory: intakeCategory || "general",
+        intakeId: intakeId || null
       };
 
       const addRes = await mediaCollection.add({ data: recordData });
@@ -806,6 +811,62 @@ async function handleCheckAccess(event) {
   };
 }
 
+async function handleCleanupIntakeFiles(event) {
+  const auth = await assertAuthorized(event);
+  const { intakeId } = event;
+
+  if (!intakeId) {
+    throw makeError("INVALID_INTAKE_ID", "缺少入住记录标识");
+  }
+
+  // 查找与该入住记录相关的文件
+  const res = await db.collection(MEDIA_COLLECTION)
+    .where({
+      intakeId,
+      deletedAt: _.or(_.exists(false), _.eq(null))
+    })
+    .get();
+
+  const files = res.data || [];
+  if (files.length === 0) {
+    return {
+      success: true,
+      data: { deletedCount: 0 }
+    };
+  }
+
+  const now = Date.now();
+  let deletedCount = 0;
+
+  // 批量标记删除文件
+  const batch = db.batch();
+  const fileIds = [];
+
+  for (const file of files) {
+    const fileRef = db.collection(MEDIA_COLLECTION).doc(file._id);
+    batch.update(fileRef, {
+      deletedAt: now,
+      deletedBy: auth.adminId
+    });
+
+    fileIds.push(file.storageFileId);
+    if (file.thumbFileId) {
+      fileIds.push(file.thumbFileId);
+    }
+    deletedCount++;
+  }
+
+  await batch.commit();
+
+  // 删除云存储文件
+  await safeDeleteFiles(fileIds);
+
+  return {
+    success: true,
+    data: { deletedCount }
+  };
+}
+
 exports.main = async (event) => {
   const action = normalizeString((event && event.action));
   try {
@@ -826,6 +887,8 @@ exports.main = async (event) => {
         return await handlePreviewText(event);
       case "checkAccess":
         return await handleCheckAccess(event);
+      case "cleanupIntakeFiles":
+        return await handleCleanupIntakeFiles(event);
       default:
         throw makeError("UNSUPPORTED_ACTION", `未支持的操作：${action || "unknown"}`);
     }
