@@ -79,3 +79,9 @@ tests/
 - `NODE_ENV`：运行环境标识（development 或 production）
 
 更新 `.env` 后，重新执行 `npm run sync-config` 以同步配置。
+## 患者资料管理
+
+- 在患者详情页的“资料管理”模块上传/浏览图片与文档，支持 JPG/PNG/WebP 及 TXT/PDF/Word/Excel。
+- 单个文件不超过 10MB，单次最多 5 个，系统自动校验总数量（20）和总容量（30MB）。
+- 支持缩略图展示、原图预览与下载，TXT 文档在线预览。
+- 仅后台授权用户可操作，云函数位于 `cloudfunctions/patientMedia`，前端入口在 `miniprogram/pages/patient-detail`。

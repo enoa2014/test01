@@ -38,7 +38,7 @@ JS
 
 5. **执行 E2E 测试**
    - 推荐运行 `npm run test:e2e:patients`：脚本会通过云开发 API 写入带有 `TEST_AUTOMATION_` 前缀的临时患者数据，随后执行 `tests/e2e/specs/home.spec.js`，最后在 `finally` 阶段清理临时数据。
- - 如果想沿用既有数据，可运行 `npm run test:e2e`，收敛在同一测试用例；终端输出 `PASS tests/e2e/specs/home.spec.js`（约 10~12 秒内完成）即视为成功。
+   - 如果想沿用既有数据，可运行 `npm run test:e2e`，收敛在同一测试用例；终端输出 `PASS tests/e2e/specs/home.spec.js`（约 10~12 秒内完成）即视为成功。
    - 运行自动化脚本前，确保 `.env` 中已配置 `TCB_ENV`、`TENCENTCLOUD_SECRETID`、`TENCENTCLOUD_SECRETKEY` 等云开发密钥，脚本会使用这些信息写入/清理 `excel_records` 集合。
 
 ## 常用命令

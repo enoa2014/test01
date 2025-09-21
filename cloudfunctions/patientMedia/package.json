@@ -1,0 +1,11 @@
+{
+    "name":  "patientMedia",
+    "version":  "1.0.0",
+    "description":  "Cloud function for managing patient media files",
+    "main":  "index.js",
+    "dependencies":  {
+                         "jimp":  "^0.22.10",
+                         "uuid":  "^9.0.1",
+                         "wx-server-sdk":  "^3.0.1"
+                     }
+}

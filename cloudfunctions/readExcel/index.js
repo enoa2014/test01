@@ -7,6 +7,9 @@ cloud.init({ env: CURRENT_ENV });
 const EXCEL_FILE_ID = process.env.EXCEL_FILE_ID
   || "cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx";
 const COLLECTION = "excel_records";
+const CACHE_COLLECTION = "excel_cache";
+const SUMMARIES_CACHE_KEY = "patient_summaries";
+const CACHE_TTL_MS = Number(process.env.EXCEL_CACHE_TTL || 5 * 60 * 1000);
 
 const LABEL_MAP = {
   patientName: ["姓名"],
@@ -426,6 +429,50 @@ function normalizeStoredRecord(doc) {
   return record;
 }
 
+async function saveSummariesToCache(summaries) {
+  try {
+    const db = cloud.database();
+    const docRef = db.collection(CACHE_COLLECTION).doc(SUMMARIES_CACHE_KEY);
+    const now = Date.now();
+    await docRef.set({
+      data: {
+        key: SUMMARIES_CACHE_KEY,
+        type: 'summaries',
+        payload: summaries || [],
+        updatedAt: now,
+        ttl: CACHE_TTL_MS
+      }
+    });
+  } catch (error) {
+    console.warn('saveSummariesToCache failed', error);
+  }
+}
+
+async function fetchCachedSummaries() {
+  try {
+    const db = cloud.database();
+    const docRef = db.collection(CACHE_COLLECTION).doc(SUMMARIES_CACHE_KEY);
+    const res = await docRef.get();
+    if (!res || !res.data) {
+      return null;
+    }
+    const record = res.data;
+    const updatedAt = Number(record.updatedAt || 0);
+    const ttl = Number(record.ttl || CACHE_TTL_MS || 0);
+    if (ttl > 0 && updatedAt && Date.now() - updatedAt > ttl) {
+      return null;
+    }
+    const payload = record.payload;
+    return Array.isArray(payload) ? payload : null;
+  } catch (error) {
+    if (error && (error.errCode === 'DOCUMENT_NOT_FOUND' || (error.errMsg && error.errMsg.indexOf('not exist') >= 0))) {
+      return null;
+    }
+    console.warn('fetchCachedSummaries failed', error);
+    return null;
+  }
+}
+
 async function fetchRecordsFromDatabase() {
   const db = cloud.database();
   const collection = db.collection(COLLECTION);
@@ -539,12 +586,14 @@ async function importToDatabase(records) {
 
 exports.main = async (event = {}) => {
   try {
+    const forceRefresh = event && event.forceRefresh;
     if (event.action === "import") {
       const buffer = await downloadExcelBuffer();
       const parsed = parseExcel(buffer);
       const labelIndex = buildLabelIndex(parsed.headers, parsed.subHeaders);
       const records = extractRecords(parsed.rows, labelIndex);
       const { summaries } = buildPatientGroups(records);
+      await saveSummariesToCache(summaries);
       const stats = await importToDatabase(records);
       return {
         action: "import",
@@ -667,11 +716,18 @@ return {
     }
 
     // action=list or default
+    const cachedSummaries = forceRefresh ? null : await fetchCachedSummaries();
+    if (!forceRefresh && cachedSummaries && cachedSummaries.length) {
+      return { patients: cachedSummaries, source: "cache" };
+    }
+
     const dbRecords = await fetchRecordsFromDatabase();
     if (!dbRecords.length) {
+      await saveSummariesToCache([]);
       return { patients: [], source: "database" };
     }
     const { summaries } = buildPatientGroups(dbRecords);
+    await saveSummariesToCache(summaries);
     return { patients: summaries, source: "database" };
   } catch (error) {
     console.error("readExcel error", error);

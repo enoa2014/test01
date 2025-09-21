@@ -1,8 +1,38 @@
-const SORT_OPTIONS = [
+﻿const SORT_OPTIONS = [
   { label: '默认排序', value: 'default' },
-  { label: '按入住次数排序', value: 'admissionCountDesc' },
-  { label: '按最近入住时间排序', value: 'latestAdmissionDesc' }
+  { label: '按入院次数排序', value: 'admissionCountDesc' },
+  { label: '按最近入院时间排序', value: 'latestAdmissionDesc' }
 ];
+
+const PATIENT_CACHE_KEY = 'patient_list_cache';
+const PATIENT_CACHE_TTL = 5 * 60 * 1000;
+
+function readPatientsCache() {
+  try {
+    const cache = wx.getStorageSync(PATIENT_CACHE_KEY);
+    if (!cache || !cache.updatedAt || !Array.isArray(cache.patients)) {
+      return null;
+    }
+    if (Date.now() - cache.updatedAt > PATIENT_CACHE_TTL) {
+      return null;
+    }
+    return cache.patients;
+  } catch (error) {
+    console.warn('readPatientsCache failed', error);
+    return null;
+  }
+}
+
+function writePatientsCache(patients) {
+  try {
+    wx.setStorageSync(PATIENT_CACHE_KEY, {
+      patients: Array.isArray(patients) ? patients : [],
+      updatedAt: Date.now()
+    });
+  } catch (error) {
+    console.warn('writePatientsCache failed', error);
+  }
+}
 
 function normalizeDateString(value) {
   if (!value) {
@@ -56,18 +86,30 @@ Page({
   },
 
   onLoad() {
-    this.fetchPatients();
+    const cachedPatients = readPatientsCache();
+    if (cachedPatients && cachedPatients.length) {
+      this.setData({ patients: cachedPatients, loading: false }, () => {
+        this.applyFilters();
+      });
+    }
+    this.fetchPatients({ silent: !!(cachedPatients && cachedPatients.length) });
   },
 
-  async fetchPatients() {
-    this.setData({ loading: true, error: '' });
+  async fetchPatients(options = {}) {
+    const silent = !!(options && options.silent);
+    if (!silent) {
+      this.setData({ loading: true, error: '' });
+    } else {
+      this.setData({ error: '' });
+    }
 
     try {
       const res = await wx.cloud.callFunction({
         name: 'readExcel',
-        data: { action: 'list' }
+        data: { action: 'list', forceRefresh: true }
       });
-      const sourcePatients = res?.result?.patients || [];
+      const result = res && res.result ? res.result : {};
+      const sourcePatients = Array.isArray(result.patients) ? result.patients : [];
       const patients = sourcePatients.map((item) => {
         const latestAdmissionDateFormatted = formatDate(item.latestAdmissionDate || item.firstAdmissionDate);
         const firstAdmissionDateFormatted = formatDate(item.firstAdmissionDate || item.latestAdmissionDate);
@@ -91,21 +133,28 @@ Page({
       this.setData({ patients, loading: false }, () => {
         this.applyFilters();
       });
+      writePatientsCache(patients);
     } catch (error) {
       console.error('Failed to load patients', error);
-      this.setData({
-        patients: [],
-        displayPatients: [],
-        loading: false,
-        error: (error && error.errMsg) || '读取患者数据失败，请稍后重试'
-      });
+      const errorMessage = (error && error.errMsg) || '读取患者数据失败，请稍后重试';
+      const hasPatients = Array.isArray(this.data.patients) && this.data.patients.length > 0;
+      if (!silent || !hasPatients) {
+        this.setData({
+          patients: hasPatients ? this.data.patients : [],
+          displayPatients: hasPatients ? this.data.displayPatients : [],
+          loading: false,
+          error: errorMessage
+        });
+      } else {
+        this.setData({ loading: false, error: errorMessage });
+      }
     }
   },
 
   applyFilters() {
     const { patients, searchKeyword, sortIndex } = this.data;
     const keyword = (searchKeyword || '').trim().toLowerCase();
-    const sortValue = SORT_OPTIONS[sortIndex]?.value || 'default';
+    const sortValue = SORT_OPTIONS[sortIndex] ? SORT_OPTIONS[sortIndex].value : 'default';
 
     let list = patients.slice();
 
@@ -175,7 +224,7 @@ Page({
   },
 
   onRetry() {
-    this.fetchPatients();
+    this.fetchPatients({ silent: false });
   },
 
   onPatientTap(event) {

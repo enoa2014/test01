@@ -1,0 +1,6 @@
+﻿{
+  "permissions": {
+    "openapi": []
+  },
+  "runtime": "Nodejs18.15"
+}

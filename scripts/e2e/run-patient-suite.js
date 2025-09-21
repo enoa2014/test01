@@ -212,8 +212,10 @@ async function insertRecords(collection, records) {
 
 function runJestSuite() {
   const isWin = process.platform === 'win32';
-  const command = isWin ? 'npx.cmd' : 'npx';
-  const args = ['jest', '--config', 'tests/e2e/jest.config.cjs', '--runInBand'];
+  const command = isWin ? (process.env.COMSPEC || 'cmd.exe') : 'npx';
+  const args = isWin
+    ? ['/c', 'npx', 'jest', '--config', 'tests/e2e/jest.config.cjs', '--runInBand']
+    : ['jest', '--config', 'tests/e2e/jest.config.cjs', '--runInBand'];
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: 'inherit',

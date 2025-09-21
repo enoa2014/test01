@@ -8,7 +8,8 @@
     "sync-config": "node scripts/sync-config.js",
     "fix-encoding": "node scripts/fix-encoding.js",
     "test:e2e": "cross-env NODE_ENV=test jest --config tests/e2e/jest.config.cjs --runInBand",
-    "test:e2e:patients": "node scripts/e2e/run-patient-suite.js"
+    "test:e2e:patients": "node scripts/e2e/run-patient-suite.js",
+    "test:service": "cross-env NODE_ENV=test jest --config tests/service/jest.config.cjs"
   },
   "repository": {
     "type": "git",

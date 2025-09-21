@@ -9,3 +9,8 @@ miniprogram/miniprogram_npm/
 cloudfunctions/*/node_modules/
 project.private.config.json
 project.private.config.json.bak
+
+# Ignore local AI helper artifacts
+.claude/
+CLAUDE.md
+nul

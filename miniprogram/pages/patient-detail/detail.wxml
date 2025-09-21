@@ -30,7 +30,7 @@
       </view>
     </view>
 
-    <view class="records" wx:if="{{records.length}}">
+    <view wx:if="{{records.length}}" class="records">
       <text class="section-title">入住记录</text>
       <view class="record-item" wx:for="{{records}}" wx:key="rawRowIndex">
         <text class="record-title">{{item.title}}</text>
@@ -40,7 +40,106 @@
         </view>
       </view>
     </view>
+    <view wx:else class="placeholder">暂无入住记录</view>
 
-    <view wx:elif="{{!records.length}}" class="placeholder">暂无入住记录</view>
+    <view class="media-section">
+      <text class="section-title">资料管理</text>
+      <view wx:if="{{media.loading && !media.accessChecked}}" class="placeholder">正在检查权限…</view>
+      <view wx:elif="{{media.loading}}" class="placeholder">正在加载附件…</view>
+      <view wx:elif="{{media.error}}" class="error">
+        {{media.error}}
+        <view class="media-retry" bindtap="onMediaRetry">重新加载</view>
+      </view>
+      <view wx:elif="{{media.accessChecked && !media.allowed}}" class="placeholder">当前账号暂无权限查看附件。</view>
+      <view wx:else>
+        <view class="media-header">
+          <view class="media-quota">
+            <text>数量：{{media.quota.totalCount}} / {{media.quota.maxCount}}（剩余 {{media.quota.remainingCount}}）</text>
+            <text>容量：{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}（剩余 {{media.quota.remainingBytesText}}）</text>
+          </view>
+          <view class="media-tabs">
+            <view class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}" data-tab="images" bindtap="onMediaTabChange">照片墙</view>
+            <view class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}" data-tab="documents" bindtap="onMediaTabChange">文档列表</view>
+          </view>
+        </view>
+
+        <view wx:if="{{media.uploading}}" class="media-status">正在上传，请稍候…</view>
+
+        <view class="media-actions">
+          <view wx:if="{{media.tab === 'images'}}" class="media-action-button {{media.uploading ? 'disabled' : ''}}" bindtap="onUploadImagesTap">上传图片</view>
+          <view wx:elif="{{media.tab === 'documents'}}" class="media-action-button {{media.uploading ? 'disabled' : ''}}" bindtap="onUploadDocumentsTap">上传文档</view>
+        </view>
+
+        <view wx:if="{{media.tab === 'images'}}">
+          <view class="media-upload-hint">单次最多 5 个，支持 JPG/PNG/WebP，单个文件 ≤ 10MB。</view>
+          <view wx:if="{{media.images.length}}" class="media-grid">
+            <view class="media-card" wx:for="{{media.images}}" wx:key="id" data-index="{{index}}" bindtap="onImagePreviewTap">
+              <image src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
+              <view class="media-card-info">
+                <text class="media-card-name">{{item.displayName}}</text>
+                <text class="media-card-meta">{{item.sizeText}} · {{item.uploadedAtText}}</text>
+                <text class="media-card-meta">上传人：{{item.uploaderDisplay}}</text>
+              </view>
+              <view class="media-card-actions">
+                <view class="media-card-button {{item.downloading ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" catchtap="onImageDownloadTap">
+                  {{item.downloading ? '下载中…' : '下载'}}
+                </view>
+                <view class="media-card-button danger {{item.deleting ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" data-category="image" catchtap="onDeleteMediaTap">
+                  {{item.deleting ? '处理中…' : '删除'}}
+                </view>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{!media.images.length}}" class="placeholder">暂无图片资料</view>
+        </view>
+
+        <view wx:elif="{{media.tab === 'documents'}}">
+          <view class="media-upload-hint">支持 TXT / PDF / Word / Excel，单次最多 5 个，单个文件 ≤ 10MB。</view>
+          <view wx:if="{{media.documents.length}}" class="media-table">
+            <view class="media-table-header">
+              <view class="media-cell name">文件名</view>
+              <view class="media-cell type">类型</view>
+              <view class="media-cell size">大小</view>
+              <view class="media-cell time">上传时间</view>
+              <view class="media-cell uploader">上传人</view>
+              <view class="media-cell actions">操作</view>
+            </view>
+            <view class="media-table-row" wx:for="{{media.documents}}" wx:key="id">
+              <view class="media-cell name">
+                <text class="doc-name {{item.isText ? 'interactive' : 'disabled'}}" data-id="{{item.id}}" data-index="{{index}}" bindtap="onDocumentNameTap">
+                  {{item.displayName}}
+                </text>
+                <text wx:if="{{item.isText}}" class="doc-preview-hint">{{item.previewLoading ? '预览中…' : '支持在线预览'}}</text>
+              </view>
+              <view class="media-cell type">{{item.typeText}}</view>
+              <view class="media-cell size">{{item.sizeText}}</view>
+              <view class="media-cell time">{{item.uploadedAtText}}</view>
+              <view class="media-cell uploader">{{item.uploaderDisplay}}</view>
+              <view class="media-cell actions">
+                <view class="doc-action-button {{item.downloading ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" catchtap="onDocumentDownloadTap">
+                  {{item.downloading ? '下载中…' : '下载'}}
+                </view>
+                <view class="doc-action-button danger {{item.deleting ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" data-category="document" catchtap="onDeleteMediaTap">
+                  {{item.deleting ? '处理中…' : '删除'}}
+                </view>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{!media.documents.length}}" class="placeholder">暂无文档资料</view>
+        </view>
+      </view>
+    </view>
   </scroll-view>
+
+  <view wx:if="{{textPreview.visible}}" class="text-preview-mask" catchtouchmove="noop">
+    <view class="text-preview-dialog">
+      <view class="text-preview-header">
+        <text class="text-preview-title">{{textPreview.title}}</text>
+        <view class="text-preview-close" bindtap="onTextPreviewClose">关闭</view>
+      </view>
+      <scroll-view scroll-y class="text-preview-content">
+        <text>{{textPreview.content}}</text>
+      </scroll-view>
+    </view>
+  </view>
 </view>
