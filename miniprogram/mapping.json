@@ -1,0 +1,484 @@
+{
+  "componentMapping": {
+    "Button": {
+      "path": "/components/button/index",
+      "props": {
+        "type": {
+          "figma": "variant",
+          "mapping": {
+            "Primary": "primary",
+            "Secondary": "secondary",
+            "Danger": "danger",
+            "Text": "text"
+          }
+        },
+        "size": {
+          "figma": "variant",
+          "mapping": {
+            "Small": "sm",
+            "Medium": "md",
+            "Large": "lg"
+          }
+        },
+        "disabled": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "loading": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "block": {
+          "figma": "boolean",
+          "mapping": true
+        }
+      },
+      "slots": {
+        "default": "text"
+      }
+    },
+
+    "Card": {
+      "path": "/components/card/index",
+      "props": {
+        "title": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "shadow": {
+          "figma": "variant",
+          "mapping": {
+            "None": "none",
+            "Small": "sm",
+            "Medium": "md",
+            "Large": "lg"
+          }
+        },
+        "padding": {
+          "figma": "variant",
+          "mapping": {
+            "Small": "sm",
+            "Medium": "md",
+            "Large": "lg"
+          }
+        }
+      },
+      "slots": {
+        "header": "header",
+        "content": "content",
+        "footer": "footer"
+      }
+    },
+
+    "Input": {
+      "path": "/components/input/index",
+      "props": {
+        "type": {
+          "figma": "variant",
+          "mapping": {
+            "Text": "text",
+            "Password": "password",
+            "Number": "number",
+            "Search": "search"
+          }
+        },
+        "size": {
+          "figma": "variant",
+          "mapping": {
+            "Small": "sm",
+            "Medium": "md",
+            "Large": "lg"
+          }
+        },
+        "placeholder": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "disabled": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "required": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "error": {
+          "figma": "text",
+          "mapping": "string"
+        }
+      }
+    },
+
+    "StatusTag": {
+      "path": "/components/status-tag/index",
+      "props": {
+        "status": {
+          "figma": "variant",
+          "mapping": {
+            "In": "in",
+            "Out": "out",
+            "Pending": "pending",
+            "Emergency": "emergency"
+          }
+        },
+        "size": {
+          "figma": "variant",
+          "mapping": {
+            "Small": "sm",
+            "Medium": "md"
+          }
+        }
+      },
+      "slots": {
+        "default": "text"
+      }
+    },
+
+    "Avatar": {
+      "path": "/components/avatar/index",
+      "props": {
+        "src": {
+          "figma": "image",
+          "mapping": "string"
+        },
+        "size": {
+          "figma": "variant",
+          "mapping": {
+            "Small": "sm",
+            "Medium": "md",
+            "Large": "lg",
+            "Extra Large": "xl"
+          }
+        },
+        "shape": {
+          "figma": "variant",
+          "mapping": {
+            "Circle": "circle",
+            "Square": "square"
+          }
+        },
+        "alt": {
+          "figma": "text",
+          "mapping": "string"
+        }
+      }
+    },
+
+    "Timeline": {
+      "path": "/components/timeline/index",
+      "props": {
+        "items": {
+          "figma": "array",
+          "mapping": "array"
+        },
+        "direction": {
+          "figma": "variant",
+          "mapping": {
+            "Vertical": "vertical",
+            "Horizontal": "horizontal"
+          }
+        }
+      }
+    },
+
+    "StatCard": {
+      "path": "/components/stat-card/index",
+      "props": {
+        "title": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "value": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "icon": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "trend": {
+          "figma": "variant",
+          "mapping": {
+            "Up": "increase",
+            "Down": "decrease",
+            "Stable": "stable"
+          }
+        },
+        "trendValue": {
+          "figma": "text",
+          "mapping": "string"
+        }
+      }
+    },
+
+    "ChildCard": {
+      "path": "/components/child-card/index",
+      "props": {
+        "avatar": {
+          "figma": "image",
+          "mapping": "string"
+        },
+        "name": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "age": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "diagnosis": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "status": {
+          "figma": "variant",
+          "mapping": {
+            "In": "in",
+            "Out": "out"
+          }
+        }
+      }
+    },
+
+    "SearchBar": {
+      "path": "/components/search-bar/index",
+      "props": {
+        "placeholder": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "showFilter": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "filterCount": {
+          "figma": "number",
+          "mapping": "number"
+        }
+      }
+    },
+
+    "FilterPanel": {
+      "path": "/components/filter-panel/index",
+      "props": {
+        "filters": {
+          "figma": "array",
+          "mapping": "array"
+        },
+        "visible": {
+          "figma": "boolean",
+          "mapping": true
+        }
+      }
+    },
+
+    "NavigationBar": {
+      "path": "/components/navigation-bar/index",
+      "props": {
+        "title": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "showBack": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "showSearch": {
+          "figma": "boolean",
+          "mapping": true
+        },
+        "showMore": {
+          "figma": "boolean",
+          "mapping": true
+        }
+      }
+    },
+
+    "TabBar": {
+      "path": "/components/tab-bar/index",
+      "props": {
+        "tabs": {
+          "figma": "array",
+          "mapping": "array"
+        },
+        "activeTab": {
+          "figma": "number",
+          "mapping": "number"
+        }
+      }
+    },
+
+    "StepIndicator": {
+      "path": "/components/step-indicator/index",
+      "props": {
+        "steps": {
+          "figma": "array",
+          "mapping": "array"
+        },
+        "currentStep": {
+          "figma": "number",
+          "mapping": "number"
+        },
+        "direction": {
+          "figma": "variant",
+          "mapping": {
+            "Horizontal": "horizontal",
+            "Vertical": "vertical"
+          }
+        }
+      }
+    },
+
+    "LoadingSpinner": {
+      "path": "/components/loading-spinner/index",
+      "props": {
+        "size": {
+          "figma": "variant",
+          "mapping": {
+            "Small": "sm",
+            "Medium": "md",
+            "Large": "lg"
+          }
+        },
+        "color": {
+          "figma": "variant",
+          "mapping": {
+            "Primary": "primary",
+            "Secondary": "secondary",
+            "White": "white"
+          }
+        }
+      }
+    },
+
+    "Toast": {
+      "path": "/components/toast/index",
+      "props": {
+        "type": {
+          "figma": "variant",
+          "mapping": {
+            "Success": "success",
+            "Error": "error",
+            "Warning": "warning",
+            "Info": "info"
+          }
+        },
+        "message": {
+          "figma": "text",
+          "mapping": "string"
+        },
+        "duration": {
+          "figma": "number",
+          "mapping": "number"
+        }
+      }
+    }
+  },
+
+  "styleMapping": {
+    "colors": {
+      "primary": "var(--color-primary)",
+      "secondary": "var(--color-secondary)",
+      "success": "var(--color-success)",
+      "danger": "var(--color-danger)",
+      "warning": "var(--color-warning)",
+      "info": "var(--color-info)"
+    },
+
+    "spacing": {
+      "xs": "var(--space-1)",
+      "sm": "var(--space-2)",
+      "md": "var(--space-4)",
+      "lg": "var(--space-6)",
+      "xl": "var(--space-8)"
+    },
+
+    "borderRadius": {
+      "none": "var(--radius-none)",
+      "sm": "var(--radius-sm)",
+      "md": "var(--radius-md)",
+      "lg": "var(--radius-lg)",
+      "xl": "var(--radius-xl)",
+      "full": "var(--radius-full)"
+    },
+
+    "fontSize": {
+      "xs": "var(--text-xs)",
+      "sm": "var(--text-sm)",
+      "base": "var(--text-base)",
+      "md": "var(--text-md)",
+      "lg": "var(--text-lg)",
+      "xl": "var(--text-xl)",
+      "2xl": "var(--text-2xl)"
+    },
+
+    "fontWeight": {
+      "light": "var(--font-light)",
+      "normal": "var(--font-normal)",
+      "medium": "var(--font-medium)",
+      "semibold": "var(--font-semibold)",
+      "bold": "var(--font-bold)"
+    }
+  },
+
+  "pageMapping": {
+    "Dashboard": {
+      "path": "/pages/dashboard/index",
+      "components": ["StatCard", "Card", "Button", "NavigationBar", "TabBar"]
+    },
+
+    "FamilyList": {
+      "path": "/pages/families/index",
+      "components": ["SearchBar", "FilterPanel", "ChildCard", "NavigationBar", "LoadingSpinner"]
+    },
+
+    "FamilyDetail": {
+      "path": "/pages/families/detail",
+      "components": ["ChildCard", "Card", "Timeline", "Button", "StatusTag", "Avatar", "TabBar"]
+    },
+
+    "CheckinApply": {
+      "path": "/pages/checkin/apply",
+      "components": ["StepIndicator", "Card", "Input", "Button", "NavigationBar"]
+    },
+
+    "Analytics": {
+      "path": "/pages/analytics/index",
+      "components": ["StatCard", "Card", "NavigationBar", "TabBar"]
+    }
+  },
+
+  "rules": {
+    "naming": {
+      "component": "PascalCase",
+      "props": "camelCase",
+      "slots": "kebab-case",
+      "css": "kebab-case"
+    },
+
+    "fileStructure": {
+      "component": {
+        "template": "index.wxml",
+        "style": "index.wxss",
+        "script": "index.js",
+        "config": "index.json"
+      }
+    },
+
+    "propTypes": {
+      "string": "String",
+      "number": "Number",
+      "boolean": "Boolean",
+      "array": "Array",
+      "object": "Object"
+    }
+  },
+
+  "meta": {
+    "version": "1.0.0",
+    "generatedAt": "2024-12-22",
+    "framework": "wechat-miniprogram",
+    "designSystem": "charity-home-design-system",
+    "description": "Component mapping for 公益小家患者档案管理系统"
+  }
+}

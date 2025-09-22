@@ -1,0 +1,151 @@
+/* 家庭档案列表页面样式 */
+/* 使用设计令牌工具类 */
+
+@import '/styles/tokens.wxss';
+
+/* 页面容器 */
+.page {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* 搜索区域 */
+.search-section {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* 统计信息区域 */
+.stats-section {
+  border-bottom: 2rpx solid var(--color-border-primary);
+}
+
+/* 家庭列表 */
+.family-list {
+  padding-bottom: 200rpx; /* 为悬浮按钮留出空间 */
+}
+
+/* 空状态 */
+.empty-state {
+  padding-top: 200rpx;
+  padding-bottom: 200rpx;
+}
+
+.empty-state image {
+  width: 256rpx;
+  height: 256rpx;
+  margin: 0 auto var(--space-4);
+  opacity: 0.5;
+}
+
+/* 加载更多 */
+.load-more {
+  padding: var(--space-4) 0;
+}
+
+.reach-bottom {
+  padding: var(--space-4) 0;
+}
+
+/* 悬浮添加按钮 */
+.fab {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-4);
+  z-index: 10;
+}
+
+.fab button {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-warning));
+  color: white;
+  border: none;
+  box-shadow: 0 8rpx 32rpx rgba(255, 107, 53, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+}
+
+.fab button:active {
+  transform: scale(0.95);
+}
+
+.fab button::after {
+  display: none;
+}
+
+/* 加载遮罩 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+/* 响应式调整 */
+@media (max-width: 600rpx) {
+  .stats-section .flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .fab {
+    bottom: var(--space-4);
+    right: var(--space-3);
+  }
+
+  .fab button {
+    width: 96rpx;
+    height: 96rpx;
+    font-size: var(--text-xl);
+  }
+}
+
+/* 动画效果 */
+.family-list > view {
+  opacity: 0;
+  transform: translateY(40rpx);
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.family-list > view:nth-child(1) { animation-delay: 0.1s; }
+.family-list > view:nth-child(2) { animation-delay: 0.2s; }
+.family-list > view:nth-child(3) { animation-delay: 0.3s; }
+.family-list > view:nth-child(4) { animation-delay: 0.4s; }
+.family-list > view:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 下拉刷新样式 */
+.pull-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* 触觉反馈样式 */
+.family-list > view:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}

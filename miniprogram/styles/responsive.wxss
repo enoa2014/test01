@@ -1,0 +1,402 @@
+/* 鍏泭灏忓鎮ｈ€呮。妗堢鐞嗙郴缁?- 鍝嶅簲寮忚璁＄郴缁?*/
+/* 涓哄井淇″皬绋嬪簭璁捐鐨勫搷搴斿紡甯冨眬鍜屾柇鐐圭郴缁?*/
+
+/* ================================
+   鏂偣绯荤粺
+   ================================ */
+
+/* 寰俊灏忕▼搴忓睆骞曞昂瀵稿弬鑰?
+   iPhone SE: 375x667 (320px)
+   iPhone 12: 390x844 (375px)
+   iPhone 12 Pro Max: 428x926 (414px)
+   iPad: 768x1024 (768px)
+   iPad Pro: 1024x1366 (1024px)
+*/
+
+:root {
+  /* 鏂偣瀹氫箟 (鎸?50rpx璁捐绋胯绠? */
+  --breakpoint-xs: 480rpx;    /* ~240px - 鏋佸皬灞忓箷 */
+  --breakpoint-sm: 640rpx;    /* ~320px - 灏忓睆鎵嬫満 */
+  --breakpoint-md: 750rpx;    /* ~375px - 鏍囧噯鎵嬫満 */
+  --breakpoint-lg: 960rpx;    /* ~480px - 澶у睆鎵嬫満 */
+  --breakpoint-xl: 1200rpx;   /* ~600px - 骞虫澘绔栧睆 */
+  --breakpoint-2xl: 1536rpx;  /* ~768px - 骞虫澘妯睆 */
+}
+
+/* ================================
+   瀹瑰櫒绯荤粺
+   ================================ */
+
+.container {
+  width: 100%;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+/* 瀹瑰櫒鏈€澶у搴﹂檺鍒?*/
+.container-sm {
+  max-width: 640rpx;
+}
+
+.container-md {
+  max-width: 750rpx;
+}
+
+.container-lg {
+  max-width: 960rpx;
+}
+
+.container-xl {
+  max-width: 1200rpx;
+}
+
+/* ================================
+   缃戞牸绯荤粺
+   ================================ */
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* 绉诲姩绔紭鍏堢殑缃戞牸鍒楁暟 */
+.grid-cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* ================================
+   鍝嶅簲寮忓伐鍏风被
+   ================================ */
+
+/* 鏄剧ず/闅愯棌 */
+.hidden-xs {
+  display: none;
+}
+
+.hidden-sm {
+  display: none;
+}
+
+.visible-md {
+  display: block;
+}
+
+.visible-lg {
+  display: block;
+}
+
+/* ================================
+   甯冨眬妯″紡
+   ================================ */
+
+/* 鍫嗗彔甯冨眬 - 绉诲姩绔粯璁?*/
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* 姘村钩甯冨眬 - 杈冨ぇ灞忓箷 */
+.horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+/* 鑷€傚簲甯冨眬 */
+.adaptive-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ================================
+   缁勪欢鍝嶅簲寮忚涓?
+   ================================ */
+
+/* 鎸夐挳鍝嶅簲寮?*/
+.btn-responsive {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  min-height: 88rpx; /* 绗﹀悎瑙︽懜鐩爣鏈€灏忓昂瀵?*/
+}
+
+/* 杈撳叆妗嗗搷搴斿紡 */
+.input-responsive {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  min-height: 88rpx; /* 绗﹀悎瑙︽懜鐩爣鏈€灏忓昂瀵?*/
+}
+
+/* 鍗＄墖鍝嶅簲寮?*/
+.card-responsive {
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+/* 瀵艰埅鍝嶅簲寮?*/
+.nav-responsive {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+}
+
+.nav-item-responsive {
+  padding: var(--space-3) var(--space-4);
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ================================
+   瑙︽懜浜や簰瑙勮寖
+   ================================ */
+
+/* 鏈€灏忚Е鎽哥洰鏍囧昂瀵?44px (88rpx) */
+.touch-target {
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 瑙︽懜鍙嶉 */
+.touch-feedback {
+  transition: all 0.15s ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+/* 鎵嬪娍鎿嶄綔闂磋窛 */
+.gesture-spacing {
+  margin: var(--space-2);
+}
+
+/* ================================
+   鏂囧瓧鍝嶅簲寮?
+   ================================ */
+
+/* 鏍囬鍝嶅簲寮?*/
+.title-responsive {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: 1.3;
+  margin-bottom: var(--space-3);
+}
+
+/* 姝ｆ枃鍝嶅簲寮?*/
+.body-responsive {
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+/* 璇存槑鏂囧瓧鍝嶅簲寮?*/
+.caption-responsive {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+/* ================================
+   闂磋窛鍝嶅簲寮?
+   ================================ */
+
+/* 椤甸潰闂磋窛 */
+.page-padding {
+  padding: var(--space-4);
+}
+
+/* 缁勪欢闂磋窛 */
+.component-margin {
+  margin-bottom: var(--space-4);
+}
+
+/* 鍐呭闂磋窛 */
+.content-spacing {
+  margin-bottom: var(--space-3);
+}
+
+/* ================================
+   閫傞厤鎬у竷灞€妯″紡
+   ================================ */
+
+/* 鍒楄〃甯冨眬 */
+.list-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.list-item {
+  padding: var(--space-4);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  border: 2rpx solid var(--color-border-primary);
+}
+
+/* 琛ㄥ崟甯冨眬 */
+.form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* 鍗＄墖缃戞牸甯冨眬 */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+/* ================================
+   婊氬姩鍜屾孩鍑哄鐞?
+   ================================ */
+
+/* 姘村钩婊氬姩 */
+.scroll-horizontal {
+  display: flex;
+  overflow-x: auto;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  scroll-snap-type: x mandatory;
+}
+
+/* WXSS 不支持 '>' 后跟通配符，列出常见子元素以保持滚动项样式 */
+.scroll-horizontal > view,
+.scroll-horizontal > navigator,
+.scroll-horizontal > button,
+.scroll-horizontal > image,
+.scroll-horizontal > swiper-item,
+.scroll-horizontal > cover-view,
+.scroll-horizontal > cover-image,
+.scroll-horizontal > text,
+.scroll-horizontal > form {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+/* 鍨傜洿婊氬姩 */
+.scroll-vertical {
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+/* ================================
+   鏃犻殰纰嶅搷搴斿紡
+   ================================ */
+
+/* 鐒︾偣鍙鎬?*/
+.focus-visible {
+  outline: 4rpx solid var(--color-primary);
+  outline-offset: 4rpx;
+}
+
+/* 楂樺姣斿害鏂囨湰 */
+.high-contrast {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+/* 杩愬姩鍑忓皯 */
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ================================
+   鎬ц兘浼樺寲绫?
+   ================================ */
+
+/* GPU 鍔犻€?*/
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* 鍐呭鍙鎬т紭鍖?*/
+.content-visibility {
+  content-visibility: auto;
+  contain-intrinsic-size: 200rpx;
+}
+
+/* ================================
+   鎵撳嵃鏍峰紡 (濡傛灉鏀寔)
+   ================================ */
+
+@media print {
+  .print-hidden {
+    display: none;
+  }
+
+  .print-visible {
+    display: block;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+}
+
+/* ================================
+   璋冭瘯宸ュ叿绫?
+   ================================ */
+
+/* 寮€鍙戠幆澧冧笅鏄剧ず缃戞牸绾?*/
+.debug-grid {
+  background-image:
+    linear-gradient(rgba(255, 0, 0, 0.1) 1rpx, transparent 1rpx),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.1) 1rpx, transparent 1rpx);
+  background-size: var(--space-4) var(--space-4);
+}
+
+/* 鏄剧ず鏂偣淇℃伅 */
+.debug-breakpoint::before {
+  content: "XS";
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: red;
+  color: white;
+  padding: 4rpx 8rpx;
+  font-size: 20rpx;
+  z-index: 9999;
+}
+
