@@ -1,7 +1,2 @@
-module.exports = {
-  rootDir: '../../',
-  testEnvironment: 'node',
-  testMatch: ['<rootDir>/tests/e2e/specs/**/*.spec.js'],
-  testTimeout: 300000,
-  verbose: true
-};
+module.exports = require('../../jest.e2e.config.js');
+

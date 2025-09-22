@@ -210,12 +210,12 @@ async function insertRecords(collection, records) {
   return inserted;
 }
 
-function runJestSuite() {
+function runE2ESuite() {
   const isWin = process.platform === 'win32';
   const command = isWin ? (process.env.COMSPEC || 'cmd.exe') : 'npx';
   const args = isWin
-    ? ['/c', 'npx', 'jest', '--config', 'tests/e2e/jest.config.cjs', '--runInBand']
-    : ['jest', '--config', 'tests/e2e/jest.config.cjs', '--runInBand'];
+    ? ['/c', 'npx', 'mpflow-service', 'test:e2e']
+    : ['mpflow-service', 'test:e2e'];
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: 'inherit',
@@ -225,7 +225,7 @@ function runJestSuite() {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error('Jest exited with code ' + code));
+        reject(new Error('E2E suite exited with code ' + code));
       }
     });
     child.on('error', reject);
@@ -256,7 +256,7 @@ async function main() {
     console.log('[run-patient-suite] Verification query returned ' + verify.data.length + ' documents (expected ' + inserted + ').');
 
     console.log('[run-patient-suite] Executing E2E suite...');
-    await runJestSuite();
+    await runE2ESuite();
     console.log('[run-patient-suite] E2E suite completed successfully.');
   } catch (error) {
     testError = error;
