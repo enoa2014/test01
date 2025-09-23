@@ -104,3 +104,9 @@ miniprogram/components
 - 建立组件负责人制度，明确维护人。
 - 阿米巴式收集需求：页面反馈 → 组件库 backlog → 冲刺规划。
 - 每月例行 Review 组件 API 与使用情况，淘汰冗余实现。
+
+## 示例实现
+
+- `pm-button`、`pm-input`、`pm-card` 位于 `miniprogram/components/base/` 目录，作为 Story 001.3 的基础示例。
+- 对应测试文件位于 `tests/unit/components/`，可作为新增组件单测的模板。
+- Component Lab 页面默认加载上述组件，便于产品与设计快速预览。

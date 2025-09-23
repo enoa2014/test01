@@ -1,0 +1,135 @@
+<view class="lab">
+  <view class="lab__sidebar">
+    <view class="lab__sidebar-title">组件列表</view>
+    <block wx:for="{{components}}" wx:key="id">
+      <view class="lab__item {{item.id === activeId ? 'lab__item--active' : ''}}" data-id="{{item.id}}" bindtap="handleSelect">
+        {{item.name}}
+      </view>
+    </block>
+  </view>
+
+  <view class="lab__content">
+    <view class="lab__preview">
+      <view class="lab__preview-header">
+        <text class="lab__preview-title">{{current.name || '选择一个组件'}}</text>
+        <text class="lab__preview-path" wx:if="{{current.componentPath}}">{{current.componentPath}}</text>
+      </view>
+      <view class="lab__preview-body">
+        <pm-button
+          wx:if="{{current.id === 'pm-button'}}"
+          type="{{propsState.type}}"
+          size="{{propsState.size}}"
+          loading="{{propsState.loading}}"
+          disabled="{{propsState.disabled}}"
+          text="{{propsState.text}}"
+          bindtap="handleDemoTap"
+        ></pm-button>
+        <pm-input
+          wx:elif="{{current.id === 'pm-input'}}"
+          label="{{propsState.label}}"
+          value="{{propsState.value}}"
+          placeholder="{{propsState.placeholder}}"
+          type="{{propsState.type}}"
+          disabled="{{propsState.disabled}}"
+          clearable="{{propsState.clearable}}"
+          bindchange="handleInputChange"
+        ></pm-input>
+        <pm-card
+          wx:elif="{{current.id === 'pm-card'}}"
+          title="{{propsState.title}}"
+          description="{{propsState.description}}"
+          status="{{propsState.status}}"
+          clickable="{{propsState.clickable}}"
+        ></pm-card>
+        <view wx:else class="lab__empty">请选择需要预览的组件</view>
+      </view>
+    </view>
+
+    <view class="lab__panel" wx:if="{{current.id}}">
+      <view class="lab__panel-title">属性调节</view>
+
+      <block wx:if="{{current.id === 'pm-button'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">类型</text>
+          <picker mode="selector" range="{{current.options.type.values}}" value="{{optionIndexes.type}}" data-key="type" bindchange="handleOptionChange">
+            <view class="lab__picker">{{propsState.type}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">尺寸</text>
+          <picker mode="selector" range="{{current.options.size.values}}" value="{{optionIndexes.size}}" data-key="size" bindchange="handleOptionChange">
+            <view class="lab__picker">{{propsState.size}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch">
+            <switch checked="{{propsState.loading}}" data-prop="loading" bindchange="handleToggle"/> Loading
+          </label>
+          <label class="lab__switch">
+            <switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled
+          </label>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">文案</text>
+          <input value="{{propsState.text}}" data-key="text" bindinput="handleTextInput" placeholder="按钮文本" />
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-input'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标签</text>
+          <input value="{{propsState.label}}" data-key="label" bindinput="handleTextInput" placeholder="标签" />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">占位符</text>
+          <input value="{{propsState.placeholder}}" data-key="placeholder" bindinput="handleTextInput" placeholder="请输入占位文本" />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">内容</text>
+          <input value="{{propsState.value}}" data-key="value" bindinput="handleTextInput" placeholder="示例内容" />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">类型</text>
+          <picker mode="selector" range="{{current.options.type.values}}" value="{{optionIndexes.type}}" data-key="type" bindchange="handleOptionChange">
+            <view class="lab__picker">{{propsState.type}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch">
+            <switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled
+          </label>
+          <label class="lab__switch">
+            <switch checked="{{propsState.clearable}}" data-prop="clearable" bindchange="handleToggle"/> Clearable
+          </label>
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-card'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标题</text>
+          <input value="{{propsState.title}}" data-key="title" bindinput="handleTextInput" placeholder="卡片标题" />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">描述</text>
+          <textarea value="{{propsState.description}}" data-key="description" bindinput="handleTextInput" placeholder="卡片描述" />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">状态</text>
+          <picker mode="selector" range="{{current.options.status.values}}" value="{{optionIndexes.status}}" data-key="status" bindchange="handleOptionChange">
+            <view class="lab__picker">{{propsState.status}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <label class="lab__switch">
+            <switch checked="{{propsState.clickable}}" data-prop="clickable" bindchange="handleToggle"/> Clickable
+          </label>
+        </view>
+      </block>
+
+      <view class="lab__panel-footer" wx:if="{{current.docs}}">
+        <text>文档：</text>
+        <text class="lab__link">{{current.docs}}</text>
+      </view>
+    </view>
+  </view>
+</view>

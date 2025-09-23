@@ -5,7 +5,8 @@
     "pages/patient-detail/detail",
     "pages/patient-intake/select/select",
     "pages/patient-intake/wizard/wizard",
-    "pages/patient-intake/success/success"
+    "pages/patient-intake/success/success",
+    "pages/component-lab/index"
   ],
   "window": {
     "navigationBarTitleText": "入住档案",

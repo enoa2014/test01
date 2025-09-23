@@ -1,0 +1,44 @@
+@import "../../../styles/tokens.wxss";
+
+.pm-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pm-input__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.pm-input__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pm-input__field {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  transition: var(--transition-base);
+}
+
+.pm-input__field:focus {
+  border-color: var(--color-primary);
+}
+
+.pm-input--disabled .pm-input__field {
+  background: var(--color-border-secondary);
+  color: var(--color-text-tertiary);
+}
+
+.pm-input__clear {
+  position: absolute;
+  right: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  padding: 4rpx;
+}

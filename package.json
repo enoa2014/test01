@@ -1,74 +1,73 @@
 {
-    "name": "test01",
-    "version": "1.0.0",
-    "description": "WeChat mini program scaffold",
-    "main": "index.js",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/enoa2014/test01.git"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "type": "commonjs",
-    "bugs": {
-        "url": "https://github.com/enoa2014/test01/issues"
-    },
-    "homepage": "https://github.com/enoa2014/test01#readme",
-    "dependencies": {
-        "@cloudbase/node-sdk": "^2.10.0",
-        "dotenv": "^17.2.2",
-        "xlsx": "^0.18.5"
-    },
-    "devDependencies": {
-        "@babel/core": "^7.23.6",
-        "@babel/preset-env": "^7.28.3",
-        "@commitlint/cli": "^18.4.3",
-        "@commitlint/config-conventional": "^18.4.3",
-        "@mpflow/cli": "^0.0.35",
-        "@mpflow/plugin-e2e-test": "^0.0.34",
-        "@testing-library/jest-dom": "^6.1.5",
-        "@types/jest": "^27.5.2",
-        "babel-jest": "^27.5.1",
-        "cross-env": "^10.0.0",
-        "eslint": "^8.56.0",
-        "husky": "^8.0.3",
-        "jest": "^27.5.1",
-        "jest-environment-jsdom": "^27.5.1",
-        "lint-staged": "^15.2.0",
-        "miniprogram-automator": "^0.12.1",
-        "prettier": "^3.1.1"
-    },
-    "lint-staged": {
-        "*.js": [
-            "eslint --fix",
-            "prettier --write"
-        ],
-        "*.{json,wxml,wxss,md}": [
-            "prettier --write"
-        ]
-    },
-    "scripts": {
-        "component:create": "node scripts/create-component.js",
-        "fix-encoding": "node scripts/fix-encoding.js",
-        "test:unit:coverage": "jest --config tests/unit/jest.config.js --coverage",
-        "format:check": "prettier --check \"**/*.{js,json,wxml,wxss,md}\"",
-        "test:service": "cross-env NODE_ENV=test jest --config tests/service/jest.config.cjs",
-        "format": "prettier --write \"**/*.{js,json,wxml,wxss,md}\"",
-        "test:e2e:patients": "node scripts/e2e/run-patient-suite.js",
-        "sync-config": "node scripts/sync-config.js",
-        "test:unit:watch": "jest --config tests/unit/jest.config.js --watch",
-        "lint": "eslint miniprogram/ cloudfunctions/ scripts/ --ext .js",
-        "build:dev": "echo 'Development build'",
-        "lint-staged": "lint-staged",
-        "lint:fix": "eslint miniprogram/ cloudfunctions/ scripts/ --ext .js --fix",
-        "test:unit": "jest --config tests/unit/jest.config.js",
-        "test": "npm run test:e2e",
-        "prepare": "husky install",
-        "docs:serve": "node scripts/serve-docs.js",
-        "test:e2e:mpflow": "mpflow-service test:e2e",
-        "test:e2e": "mpflow-service test:e2e",
-        "build:prod": "echo 'Production build'",
-        "test:e2e:legacy": "cross-env NODE_ENV=test jest --config tests/e2e/jest.config.cjs --runInBand"
-    }
+  "name": "test01",
+  "version": "1.0.0",
+  "description": "WeChat mini program scaffold",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enoa2014/test01.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/enoa2014/test01/issues"
+  },
+  "homepage": "https://github.com/enoa2014/test01#readme",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.10.0",
+    "dotenv": "^17.2.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.6",
+    "@babel/preset-env": "^7.28.3",
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@mpflow/cli": "^0.0.35",
+    "@mpflow/plugin-e2e-test": "^0.0.34",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@types/jest": "^27.5.2",
+    "babel-jest": "^27.5.1",
+    "cross-env": "^10.0.0",
+    "eslint": "^8.56.0",
+    "husky": "^8.0.3",
+    "jest": "^27.5.1",
+    "jest-environment-jsdom": "^27.5.1",
+    "lint-staged": "^15.2.0",
+    "miniprogram-automator": "^0.12.1",
+    "prettier": "^3.1.1"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,wxml,wxss,md}": [
+      "prettier --write"
+    ]
+  },
+  "scripts": {
+    "component:create": "node scripts/create-component.js",
+    "fix-encoding": "node scripts/fix-encoding.js",
+    "test:unit:coverage": "jest --config tests/unit/jest.config.js --coverage",
+    "format:check": "prettier --check \"**/*.{js,json,wxml,wxss,md}\"",
+    "test:service": "cross-env NODE_ENV=test jest --config tests/service/jest.config.cjs",
+    "format": "prettier --write \"**/*.{js,json,wxml,wxss,md}\"",
+    "test:e2e:patients": "node scripts/e2e/run-patient-suite.js",
+    "sync-config": "node scripts/sync-config.js",
+    "test:unit:watch": "jest --config tests/unit/jest.config.js --watch",
+    "lint": "eslint miniprogram/ cloudfunctions/ scripts/ --ext .js",
+    "build:dev": "echo 'Development build'",
+    "lint-staged": "lint-staged",
+    "lint:fix": "eslint miniprogram/ cloudfunctions/ scripts/ --ext .js --fix",
+    "test:unit": "jest --config tests/unit/jest.config.js",
+    "test": "npm run test:e2e",
+    "prepare": "husky install",
+    "docs:serve": "node scripts/serve-docs.js",
+    "test:e2e:mpflow": "mpflow-service test:e2e",
+    "test:e2e": "mpflow-service test:e2e",
+    "build:prod": "echo 'Production build'"
+  }
 }

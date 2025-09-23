@@ -5,6 +5,9 @@
 - 本指南提供“Component Lab”页面方案，用于组件演示、属性调试、无障碍/性能验证。
 
 ## 页面结构
+
+> 当前实现位于 `miniprogram/pages/component-lab/`，默认在开发环境中可用。发布前请根据下文“权限与安全”章节通过构建脚本移除或禁用。
+
 ```
 miniprogram/pages/component-lab
 ├─ index.wxml
@@ -58,8 +61,9 @@ export const components = [
 
 ## 权限与安全
 - Component Lab 不应在生产包中发布：
-  - 使用构建脚本在发布前移除页面引用。
+  - 使用构建脚本在发布前移除 `app.json` 中的 `pages/component-lab/index`，或在构建流程中自动修改 manifest。
   - 或使用 `if (process.env.NODE_ENV !== 'production')` 控制注册。
+  - 推荐在 CI 中新增检查，阻止包含 Component Lab 页面路径的发布提交。
 - 若需对外演示，可构建专用体验版。
 
 ## 验收清单

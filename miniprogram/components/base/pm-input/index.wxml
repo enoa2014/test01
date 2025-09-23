@@ -1,0 +1,19 @@
+<view class="pm-input {{disabled ? 'pm-input--disabled' : ''}}">
+  <label wx:if="{{label}}" class="pm-input__label">{{label}}</label>
+  <view class="pm-input__control">
+    <input
+      class="pm-input__field"
+      value="{{value}}"
+      placeholder="{{placeholder}}"
+      type="{{type}}"
+      disabled="{{disabled}}"
+      bindinput="handleInput"
+      bindblur="handleBlur"
+    />
+    <view
+      wx:if="{{clearable && !disabled && value}}"
+      class="pm-input__clear"
+      bindtap="handleClear"
+    >×</view>
+  </view>
+</view>

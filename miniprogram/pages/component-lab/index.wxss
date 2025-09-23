@@ -1,0 +1,126 @@
+@import "../../styles/responsive.wxss";
+@import "../../styles/tokens.wxss";
+
+.lab {
+  display: flex;
+  height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.lab__sidebar {
+  width: 240rpx;
+  background: var(--color-bg-primary);
+  border-right: 2rpx solid var(--color-border-secondary);
+}
+
+.lab__sidebar-title {
+  padding: var(--space-4);
+  font-weight: var(--font-semibold);
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.lab__item {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+}
+
+.lab__item--active {
+  background: var(--color-primary-light);
+  color: #ffffff;
+}
+
+.lab__content {
+  display: flex;
+  flex: 1;
+  padding: var(--space-6);
+  gap: var(--space-6);
+}
+
+.lab__preview {
+  flex: 2;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.lab__preview-header {
+  margin-bottom: var(--space-4);
+}
+
+.lab__preview-title {
+  display: block;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-lg);
+}
+
+.lab__preview-path {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+.lab__preview-body {
+  min-height: 220rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.lab__empty {
+  color: var(--color-text-tertiary);
+}
+
+.lab__panel {
+  flex: 1;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.lab__panel-title {
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-4);
+}
+
+.lab__panel-field {
+  margin-bottom: var(--space-4);
+}
+
+.lab__panel-field--row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.lab__panel-label {
+  display: block;
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+.lab__picker {
+  padding: var(--space-3);
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+}
+
+.lab__switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.lab__panel-footer {
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.lab__link {
+  color: var(--color-primary);
+  margin-left: var(--space-2);
+}

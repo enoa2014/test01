@@ -1,0 +1,4 @@
+<view class="pm-button pm-button--{{type}} pm-button--{{size}} {{disabled || loading ? 'pm-button--disabled' : ''}}" bindtap="handleTap">
+  <view wx:if="{{loading}}" class="pm-button__spinner"></view>
+  <text class="pm-button__text">{{text}}</text>
+</view>

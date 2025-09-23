@@ -1,6 +1,14 @@
 /* 公益小家患者档案管理系统 - 设计令牌 */
 /* 基于设计文档和 Figma 变量的小程序样式系统 */
 
+/* 过渡与动效 (Transitions) */
+:root {
+  --transition-base: all 0.3s ease;
+  --transition-fast: all 0.2s ease;
+  --transition-slow: all 0.4s ease;
+  --transition-colors: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
 /* ================================
    设计变量 (Design Tokens)
    ================================ */
@@ -476,3 +484,5 @@
   border-color: var(--color-primary);
   box-shadow: 0 0 0 6rpx rgba(255, 107, 53, 0.1);
 }
+
+

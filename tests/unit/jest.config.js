@@ -1,4 +1,10 @@
+const path = require('path');
+const { fn: jestFn } = require('jest-mock');
+
+const projectRoot = path.resolve(__dirname, '..', '..');
+
 module.exports = {
+  rootDir: projectRoot,
   displayName: 'Unit Tests',
   testMatch: [
     '**/tests/unit/**/*.test.js',
@@ -20,26 +26,26 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
-      branches: 60,
-      functions: 60,
-      lines: 60,
-      statements: 60
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
     }
   },
   transform: {
     '^.+\\.js$': 'babel-jest'
   },
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/tests/unit/setup.js'],
-  moduleNameMapping: {
+  setupFilesAfterEnv: [path.join(projectRoot, 'tests', 'unit', 'setup.js')],
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/miniprogram/$1'
   },
   globals: {
     wx: {},
-    App: jest.fn(),
-    Page: jest.fn(),
-    Component: jest.fn(),
-    getApp: jest.fn(),
-    getCurrentPages: jest.fn()
+    App: jestFn(),
+    Page: jestFn(),
+    Component: jestFn(),
+    getApp: jestFn(),
+    getCurrentPages: jestFn()
   }
 };

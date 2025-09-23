@@ -1,0 +1,36 @@
+@import "../../../styles/tokens.wxss";
+
+.pm-card {
+  background: var(--color-bg-primary);
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+  transition: var(--transition-base);
+}
+
+.pm-card--clickable {
+  cursor: pointer;
+}
+
+.pm-card--clickable:active {
+  transform: scale(0.98);
+}
+
+.pm-card--success {
+  border-color: var(--color-success);
+}
+
+.pm-card--warning {
+  border-color: var(--color-warning);
+}
+
+.pm-card__header {
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-3);
+}
+
+.pm-card__body {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}

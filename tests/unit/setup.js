@@ -1,62 +1,52 @@
-// Jest测试环境设置
-import '@testing-library/jest-dom';
+const { fn: jestFn } = require('jest-mock');
+const expectLib = require('expect');
+global.expect = expectLib;
+require('@testing-library/jest-dom');
 
-// 模拟微信小程序全局对象
 global.wx = {
-  // 基础API模拟
-  request: jest.fn(),
-  navigateTo: jest.fn(),
-  redirectTo: jest.fn(),
-  switchTab: jest.fn(),
-  navigateBack: jest.fn(),
-  reLaunch: jest.fn(),
-
-  // 界面API
-  showToast: jest.fn(),
-  showModal: jest.fn(),
-  showLoading: jest.fn(),
-  hideLoading: jest.fn(),
-  showActionSheet: jest.fn(),
-
-  // 存储API
-  setStorageSync: jest.fn(),
-  getStorageSync: jest.fn(),
-  removeStorageSync: jest.fn(),
-  clearStorageSync: jest.fn(),
-
-  // 云开发API
+  request: jestFn(),
+  navigateTo: jestFn(),
+  redirectTo: jestFn(),
+  switchTab: jestFn(),
+  navigateBack: jestFn(),
+  reLaunch: jestFn(),
+  showToast: jestFn(),
+  showModal: jestFn(),
+  showLoading: jestFn(),
+  hideLoading: jestFn(),
+  showActionSheet: jestFn(),
+  setStorageSync: jestFn(),
+  getStorageSync: jestFn(),
+  removeStorageSync: jestFn(),
+  clearStorageSync: jestFn(),
   cloud: {
-    init: jest.fn(),
-    callFunction: jest.fn(),
-    database: jest.fn(() => ({
-      collection: jest.fn(() => ({
-        add: jest.fn(),
-        get: jest.fn(),
-        update: jest.fn(),
-        remove: jest.fn(),
-        where: jest.fn(),
-        orderBy: jest.fn(),
-        limit: jest.fn(),
-        skip: jest.fn()
+    init: jestFn(),
+    callFunction: jestFn(),
+    database: jestFn(() => ({
+      collection: jestFn(() => ({
+        add: jestFn(),
+        get: jestFn(),
+        update: jestFn(),
+        remove: jestFn(),
+        where: jestFn(),
+        orderBy: jestFn(),
+        limit: jestFn(),
+        skip: jestFn()
       }))
     })),
-    uploadFile: jest.fn(),
-    downloadFile: jest.fn()
+    uploadFile: jestFn(),
+    downloadFile: jestFn()
   }
 };
 
-// 模拟小程序构造器
-global.App = jest.fn();
-global.Page = jest.fn();
-global.Component = jest.fn();
-global.getApp = jest.fn(() => ({
-  globalData: {}
-}));
-global.getCurrentPages = jest.fn(() => []);
+global.App = jestFn();
+global.Page = jestFn();
+global.Component = jestFn();
+global.getApp = jestFn(() => ({ globalData: {} }));
+global.getCurrentPages = jestFn(() => []);
 
-// 模拟console
 global.console = {
   ...console,
-  warn: jest.fn(),
-  error: jest.fn()
+  warn: jestFn(),
+  error: jestFn()
 };
