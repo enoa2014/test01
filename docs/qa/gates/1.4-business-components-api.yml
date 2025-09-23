@@ -1,0 +1,19 @@
+# Quality Gate Decision - Story 1.4
+schema: 1
+story: "1.4"
+story_title: "business-components-api"
+gate: "PASS"
+status_reason: "组件规范、API 协议与集成指引均完备，性能与无障碍要求明确"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T02:36:15Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "实现阶段需按照指南编写示例页面与自动化测试，持续校验 API 变更"
