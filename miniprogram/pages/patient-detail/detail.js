@@ -454,8 +454,8 @@ Page({
         }
       };
 
-      ensureField("绫嶈疮", () => (patientDisplay && patientDisplay.nativePlace) || "鏈煡");
-      ensureField("姘戞棌", () => (patientDisplay && patientDisplay.ethnicity) || "鏈煡");
+      ensureField("籍贯", () => (patientDisplay && patientDisplay.nativePlace) || "未知" );
+      ensureField("民族", () => (patientDisplay && patientDisplay.ethnicity) || "未知" );
 
       const detailData = patientRes?.result?.data || {};
       const patientForEdit = detailData.patient || {};
