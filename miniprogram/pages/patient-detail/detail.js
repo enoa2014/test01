@@ -112,14 +112,20 @@ function toTimestampFromDateInput(value) {
   return date.getTime();
 }
 
-function buildEditForm(patient = {}, intake = {}) {
+function buildEditForm(patient = {}, intake = {}, fallbackPatient = {}) {
   const intakeInfo = intake.intakeInfo || {};
+
+  // 优先使用patient数据，如果为空则使用fallbackPatient
+  const patientName = patient.patientName || fallbackPatient.patientName || "";
+  const gender = patient.gender || fallbackPatient.gender || "";
+  const birthDate = patient.birthDate || fallbackPatient.birthDate || "";
+
   return {
-    patientName: patient.patientName || "",
+    patientName,
     idType: patient.idType || "身份证",
     idNumber: patient.idNumber || "",
-    gender: patient.gender || "",
-    birthDate: formatDateForInput(patient.birthDate),
+    gender,
+    birthDate: formatDateForInput(birthDate),
     phone: patient.phone || "",
     address: patient.address || "",
     emergencyContact: patient.emergencyContact || "",
@@ -470,7 +476,7 @@ Page({
         ...log,
         timeText: formatDateTime(log.createdAt)
       }));
-      const editForm = buildEditForm(patientForEdit, latestIntakeRaw || {});
+      const editForm = buildEditForm(patientForEdit, latestIntakeRaw || {}, patientDisplay);
 
       this.originalEditForm = cloneForm(editForm);
 
@@ -660,8 +666,15 @@ Page({
     if (this.data.editMode) {
       return;
     }
-    const form = cloneForm(this.data.editForm || this.originalEditForm || {});
-    this.originalEditForm = cloneForm(form);
+
+    // 如果原始editForm为空或缺少关键数据，重新构建
+    let form = cloneForm(this.originalEditForm || {});
+    if (!form.patientName && this.data.patient) {
+      console.log('重新构建编辑表单，使用患者显示数据');
+      form = buildEditForm({}, {}, this.data.patient);
+      this.originalEditForm = cloneForm(form);
+    }
+
     if (wx.enableAlertBeforeUnload) {
       wx.enableAlertBeforeUnload({ message: "当前编辑内容尚未保存，确定离开吗？" });
     }

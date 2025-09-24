@@ -230,24 +230,44 @@ Page({
     try {
       wx.showLoading({ title: '加载中...' });
 
-      // 这里应该调用云函数获取患者数据
-      // 暂时使用示例数据
-      const patientData = {
-        patientName: '测试患者',
-        idType: '身份证',
-        idNumber: '123456789012345678',
-        gender: '男',
-        birthDate: '1990-01-01',
-        phone: '13812345678',
-        address: '测试地址',
-        emergencyContact: '紧急联系人',
-        emergencyPhone: '13987654321'
+      const res = await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: { action: 'getPatientDetail', patientKey }
+      });
+
+      if (!res.result || res.result.success === false) {
+        const errorMessage = (res.result && res.result.error && res.result.error.message) || '加载患者资料失败';
+        throw new Error(errorMessage);
+      }
+
+      const payload = res.result.data || {};
+      const patient = payload.patient || {};
+      const latestIntake = payload.latestIntake || {};
+      const intakeInfo = latestIntake.intakeInfo || {};
+
+      const normalizedBirthDate = this.normalizeDateInput(patient.birthDate);
+      const situationText = intakeInfo.situation || patient.lastIntakeNarrative || '';
+
+      const nextFormData = {
+        ...this.data.formData,
+        patientName: patient.patientName || '',
+        idType: patient.idType || '身份证',
+        idNumber: patient.idNumber || '',
+        gender: patient.gender || '',
+        birthDate: normalizedBirthDate,
+        phone: patient.phone || '',
+        address: patient.address || '',
+        emergencyContact: patient.emergencyContact || '',
+        emergencyPhone: patient.emergencyPhone || '',
+        backupContact: patient.backupContact || '',
+        backupPhone: patient.backupPhone || '',
+        situation: situationText
       };
 
-      const idTypeIndex = this.data.idTypes.indexOf(patientData.idType || '身份证');
+      const idTypeIndex = this.data.idTypes.indexOf(nextFormData.idType || '身份证');
 
       this.setData({
-        formData: { ...this.data.formData, ...patientData },
+        formData: nextFormData,
         idTypeIndex: idTypeIndex >= 0 ? idTypeIndex : 0
       });
 
@@ -256,12 +276,35 @@ Page({
     } catch (error) {
       console.error('加载患者数据失败', error);
       wx.showToast({
-        title: '加载失败',
+        title: error.message || '加载失败',
         icon: 'error'
       });
     } finally {
       wx.hideLoading();
     }
+  },
+
+  normalizeDateInput(value) {
+    if (!value) {
+      return '';
+    }
+    if (typeof value === 'number') {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return this.formatDate(date);
+      }
+    }
+    if (typeof value === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+      }
+      const normalized = value.replace(/[./]/g, '-');
+      const date = new Date(normalized);
+      if (!isNaN(date.getTime())) {
+        return this.formatDate(date);
+      }
+    }
+    return '';
   },
 
   // 更新必填项状态
