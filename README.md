@@ -17,19 +17,33 @@ miniprogram/           # 小程序前端代码
   app.wxss
   config/envList.js    # 由脚本自动生成的环境配置
   pages/
-    index/             # 示例首页
-cloudfunctions/        # 云函数目录
+    index/             # 主页患者列表
+    analysis/          # 数据分析页面
+    patient-detail/    # 患者详情页面（支持编辑预填）
+    patient-intake/    # 患者入住流程
+cloudfunctions/        # 云函数目录（2025-09-25 重构）
   envList.js           # 与前端共用的环境配置
+  patientProfile/      # 患者档案业务查询（新增）
+  readExcel/           # Excel数据初始化（重构）
+  patientIntake/       # 患者入住管理
+  patientMedia/        # 患者媒体文件管理
+  dashboardService/    # 仪表板数据服务
   helloWorld/          # 示例云函数
 scripts/
   sync-config.js       # 同步 .env 的工具脚本
   fix-encoding.js      # 将文件重写为 UTF-8 无 BOM
+  test-deployment.js   # 云函数部署测试脚本
 
 tests/
-  e2e/
+  unit/                # 单元测试
+    pages/             # 页面单元测试
+    setup.js           # 全局测试配置
+  service/             # 云函数服务测试
+  e2e/                 # 端到端测试
     config/            # 端到端测试配置
     specs/             # Jest 测试用例
     jest.config.cjs    # Jest 配置文件
+    run-patient-suite.js # 患者测试套件管理
 ```
 
 ## 常用命令
@@ -79,6 +93,39 @@ tests/
 - `NODE_ENV`：运行环境标识（development 或 production）
 
 更新 `.env` 后，重新执行 `npm run sync-config` 以同步配置。
+
+## 云函数架构 (2025-09-25 重构)
+
+项目采用职责分离的云函数架构，提升系统可维护性和性能：
+
+### 核心云函数
+
+- **`patientProfile`** (新增): 专门处理前端业务的患者档案查询
+  - `action: 'list'`: 获取患者列表，支持强制刷新
+  - `action: 'detail'`: 根据患者key获取详细信息
+  - 特性: 30分钟智能缓存、分批读取、优化分组算法
+
+- **`readExcel`** (重构): 专注Excel数据初始化和同步
+  - `action: 'import'`: 从Excel文件导入数据到数据库
+  - `action: 'syncPatients'`: 同步数据到患者集合
+  - `action: 'test'`: 测试Excel解析功能
+
+- **`patientIntake`**: 患者入住管理流程
+- **`patientMedia`**: 患者媒体文件管理
+- **`dashboardService`**: 仪表板数据服务
+
+### 数据流架构
+```
+Excel文件 → readExcel(import) → excel_records
+excel_records → readExcel(syncPatients) → patients
+excel_records → patientProfile(list/detail) → 前端业务
+```
+
+### 前端调用更新
+所有页面已更新为调用 `patientProfile` 而非 `readExcel`：
+- 主页: `wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'list' } })`
+- 详情页: `wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'detail', key } })`
+
 ## 患者资料管理
 
 - 在患者详情页的“资料管理”模块上传/浏览图片与文档，支持 JPG/PNG/WebP 及 TXT/PDF/Word/Excel。

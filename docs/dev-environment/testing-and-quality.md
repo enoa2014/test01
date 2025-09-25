@@ -9,7 +9,9 @@
 | 类型 | 说明 | 工具 |
 |------|------|------|
 | 单元测试 | 组件属性、事件、渲染逻辑 | Jest + miniprogram-simulate |
-| 视觉/交互回归 | 样式和交互快照 | Jest Snapshot + 微信开发者工具自动化（可选） |
+| 云函数测试 | 云函数逻辑、数据处理 | Jest + wx-server-sdk mock |
+| 端到端测试 | 完整用户流程验证 | miniprogram-automator |
+| 视觉/交互回归 | 样式和交互快照 | Jest Snapshot + 微信开发者工具自动化 |
 | 无障碍检查 | ARIA、键盘导航、对比度 | axe-core（自定义）或手动 checklist |
 | 性能监控 | 构建体积、渲染耗时 | 自定义脚本 + 微信性能面板 |
 
@@ -17,12 +19,24 @@
 ```
 tests/
 ├─ unit/
-│   ├─ setup.ts            # 全局 mock
+│   ├─ setup.js            # 全局 mock
 │   ├─ components/
 │   │   ├─ button.test.ts
 │   │   └─ ...
+│   ├─ pages/              # 页面单元测试 (新增)
+│   │   ├─ patient-detail-prefill.test.js
+│   │   └─ ...
 │   └─ utils/
-└─ e2e/                    # 可选，留待后续扩展
+├─ service/                # 云函数测试
+│   ├─ patientProfile.test.js
+│   ├─ readExcel.test.js
+│   └─ ...
+└─ e2e/                    # 端到端测试 (已实现)
+    ├─ specs/
+    │   ├─ patient-intake-wizard.spec.js
+    │   ├─ patient-detail.spec.js
+    │   └─ ...
+    └─ run-patient-suite.js  # 患者测试套件管理
 ```
 
 ## Jest 配置要点

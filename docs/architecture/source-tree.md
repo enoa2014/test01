@@ -18,7 +18,13 @@ root
 │   ├── styles/                  # 全局样式、设计令牌、响应式辅助
 │   ├── config/                  # 常量/环境配置（预留）
 │   └── utils/                   # 工具函数
-├── cloudfunctions/              # 腾讯云函数代码（patientIntake、readExcel 等）
+├── cloudfunctions/              # 腾讯云函数代码
+│   ├── patientProfile/         # 患者档案业务查询（新增，2025-09-25）
+│   ├── readExcel/              # Excel数据初始化（重构，专注数据处理）
+│   ├── patientIntake/          # 患者入住管理
+│   ├── patientMedia/           # 患者媒体文件管理
+│   ├── dashboardService/       # 仪表板数据服务
+│   └── helloWorld/             # 测试云函数
 ├── scripts/                     # 工程脚本（创建组件、同步配置、构建等）
 ├── tests/                       # 测试目录
 │   ├── unit/                    # Jest 单元测试及配置
@@ -38,7 +44,10 @@ root
 ## 结构说明
 - **docs/**：所有规范、设计与研究资料集中于此，按照主题分目录，便于跨团队协作。
 - **miniprogram/**：核心产品代码，遵循微信小程序文件组织；`component-lab` 页面仅在开发态启用。
-- **cloudfunctions/**：与小程序共享数据的后端逻辑，需遵循统一返回结构与日志规范。
+- **cloudfunctions/**：与小程序共享数据的后端逻辑，职责分离架构：
+  - `patientProfile`: 专门处理前端业务查询（患者列表、详情）
+  - `readExcel`: 专注Excel数据初始化和同步
+  - 其他云函数各司其职，遵循统一返回结构与日志规范。
 - **tests/**：单元、服务、端到端测试集中于此，`jest.config` 在 `tests/unit/` 下维护。
 - **scripts/**：封装常用命令行工具，例如创建组件、运行 mpflow 构建、同步配置。
 - **根配置文件**：包括 ESLint/Prettier/Commitlint、babel、mpflow 等，用于统一工程流程。

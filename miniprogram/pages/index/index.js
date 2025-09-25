@@ -105,7 +105,7 @@ Page({
 
     try {
       const res = await wx.cloud.callFunction({
-        name: 'readExcel',
+        name: 'patientProfile',
         data: { action: 'list', forceRefresh: true }
       });
       const result = res && res.result ? res.result : {};

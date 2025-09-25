@@ -433,9 +433,9 @@ Page({
     this.setData({ loading: true, error: "" });
 
     try {
-      const [excelRes, patientRes] = await Promise.all([
+      const [profileRes, patientRes] = await Promise.all([
         wx.cloud.callFunction({
-          name: "readExcel",
+          name: "patientProfile",
           data: { action: "detail", key: this.patientKey }
         }),
         wx.cloud.callFunction({
@@ -444,9 +444,9 @@ Page({
         })
       ]);
 
-      const excelResult = excelRes?.result || {};
-      const patientDisplay = excelResult.patient || null;
-      const basicInfo = (excelResult.basicInfo || []).map((item) =>
+      const profileResult = profileRes?.result || {};
+      const patientDisplay = profileResult.patient || null;
+      const basicInfo = (profileResult.basicInfo || []).map((item) =>
         item && typeof item === "object" ? { ...item } : { label: "", value: item || "" }
       );
 
@@ -491,9 +491,9 @@ Page({
           loading: false,
           patient: patientDisplay,
           basicInfo,
-          familyInfo: mergeFamilyAddresses(excelResult.familyInfo || []),
-          economicInfo: excelResult.economicInfo || [],
-          records: excelResult.records || [],
+          familyInfo: mergeFamilyAddresses(profileResult.familyInfo || []),
+          economicInfo: profileResult.economicInfo || [],
+          records: profileResult.records || [],
           latestIntake,
           operationLogs,
           editForm,

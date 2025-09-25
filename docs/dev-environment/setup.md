@@ -32,6 +32,13 @@ root
 │   ├─ components/              # 基础 + 业务组件（本故事新增）
 │   ├─ pages/                   # 页面文件夹
 │   └─ utils/                   # 工具方法
+├─ cloudfunctions/              # 云函数代码 (2025-09-25 重构)
+│   ├─ patientProfile/          # 患者档案业务查询 (新增)
+│   ├─ readExcel/               # Excel数据初始化 (重构)
+│   ├─ patientIntake/           # 患者入住管理
+│   ├─ patientMedia/            # 患者媒体文件管理
+│   ├─ dashboardService/        # 仪表板数据服务
+│   └─ helloWorld/              # 测试云函数
 ├─ scripts/                     # 自定义构建、校验脚本
 ├─ tests/                       # 单元测试与端到端测试入口
 └─ package.json / pnpm-workspace.yaml
