@@ -138,7 +138,7 @@ function buildEditForm(patient = {}, intake = {}, fallbackPatient = {}) {
     medicalHistory: Array.isArray(intakeInfo.medicalHistory) ? intakeInfo.medicalHistory : [],
     attachments: Array.isArray(intakeInfo.attachments) ? intakeInfo.attachments : [],
     intakeId: intake.intakeId || intake._id || null,
-    intakeUpdatedAt: intake.updatedAt || intake.metadata?.lastModifiedAt || null,
+    intakeUpdatedAt: intake.updatedAt || (intake.metadata && intake.metadata.lastModifiedAt) || null,
     patientUpdatedAt: patient.updatedAt || null
   };
 }
@@ -318,55 +318,94 @@ function mapMediaRecord(record) {
 }
 
 function mergeFamilyAddresses(entries) {
-  if (!Array.isArray(entries) || !entries.length) {
-    return Array.isArray(entries) ? entries : [];
+  if (!Array.isArray(entries)) {
+    return [];
   }
+  return entries
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      label: entry.label || '',
+      value: entry.value || ''
+    }))
+    .filter((entry) => entry.label && entry.value);
+}
 
-  const normalized = [];
-  const addressValues = [];
-  const seen = new Set();
-  let addressInsertIndex = null;
-  const familyLabel = "瀹跺涵鍦板潃";
-  const addressRegex = /^瀹跺涵鍦板潃\d*$/;
+function safeTrim(value) {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  return String(value).trim();
+}
 
-  entries.forEach((entry) => {
-    if (!entry || typeof entry !== "object") {
-      return;
+function findValueByLabels(list, candidates) {
+  if (!Array.isArray(list) || !candidates || !candidates.length) {
+    return '';
+  }
+  for (const item of list) {
+    if (!item || typeof item !== 'object') {
+      continue;
     }
-    const label = (entry.label || "").trim();
-    const value = entry.value == null ? "" : String(entry.value).trim();
-    const isAddress = addressRegex.test(label) || label === familyLabel;
+    const label = safeTrim(item.label);
+    const value = safeTrim(item.value);
+    if (!label || !value) {
+      continue;
+    }
+    const lowerLabel = label.toLowerCase();
+    const matched = candidates.some((candidate) => {
+      const normalized = String(candidate || '').toLowerCase();
+      return lowerLabel.includes(normalized) || label.includes(candidate);
+    });
+    if (matched) {
+      return value;
+    }
+  }
+  return '';
+}
 
-    if (!isAddress) {
-      normalized.push(entry);
-      return;
+function coalesceValue(...values) {
+  for (const value of values) {
+    const normalized = safeTrim(value);
+    if (normalized) {
+      return normalized;
     }
+  }
+  return '';
+}
 
-    if (addressInsertIndex === null) {
-      addressInsertIndex = normalized.length;
-    }
-    if (!value) {
-      return;
-    }
+function extractRecordTimestamp(record = {}) {
+  const candidates = [
+    record.intakeTime,
+    record.admissionTimestamp,
+    record.updatedAt,
+    record.createdAt,
+    record.displayTime ? Date.parse(record.displayTime) : null,
+    record.metadata && record.metadata.intakeTime
+  ];
 
-    const key = value.replace(/\s+/g, "");
-    if (seen.has(key)) {
-      return;
+  for (const candidate of candidates) {
+    const numeric = Number(candidate);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric;
     }
-    seen.add(key);
-    addressValues.push(value);
+  }
+  return 0;
+}
+
+function sortIntakeRecords(records = [], order = 'desc') {
+  const normalizedOrder = order === 'asc' ? 'asc' : 'desc';
+  const sorted = [...records];
+  sorted.sort((a, b) => {
+    const diff = extractRecordTimestamp(a) - extractRecordTimestamp(b);
+    return normalizedOrder === 'asc' ? diff : -diff;
   });
+  return sorted;
+}
 
-  if (addressValues.length) {
-    const combined = { label: familyLabel, value: addressValues.join("，") };
-    if (addressInsertIndex === null || addressInsertIndex > normalized.length) {
-      normalized.push(combined);
-    } else {
-      normalized.splice(addressInsertIndex, 0, combined);
-    }
+function pushDisplayItem(target = [], label, value) {
+  const normalized = safeTrim(value);
+  if (normalized) {
+    target.push({ label, value: normalized });
   }
-
-  return normalized;
 }
 
 Page({
@@ -378,8 +417,9 @@ Page({
     familyInfo: [],
     economicInfo: [],
     records: [],
-    latestIntake: null,
+    allIntakeRecords: [],
     operationLogs: [],
+    recordsSortOrder: 'desc',
     editMode: false,
     saving: false,
     editForm: {},
@@ -413,13 +453,24 @@ Page({
   },
 
   onLoad(options) {
-    this.patientKey = options?.key ? decodeURIComponent(options.key) : "";
+    const rawKey = (options && options.key) ? decodeURIComponent(options.key) : "";
+    const rawPatientId = (options && options.patientId) ? decodeURIComponent(options.patientId) : "";
+
+    this.profileKey = rawKey || rawPatientId || "";
+    this.patientKey = rawPatientId || rawKey || "";
     this.mediaInitialized = false;
     this.originalEditForm = null;
-    if (!this.patientKey) {
+    this.allIntakeRecordsSource = [];
+
+    if (!this.profileKey && !this.patientKey) {
       this.setData({ loading: false, error: "缺少患者标识" });
       return;
     }
+
+    if (!this.profileKey) {
+      this.profileKey = this.patientKey;
+    }
+
     this.fetchPatientDetail();
   },
 
@@ -433,68 +484,242 @@ Page({
     this.setData({ loading: true, error: "" });
 
     try {
-      const [profileRes, patientRes] = await Promise.all([
-        wx.cloud.callFunction({
-          name: "patientProfile",
-          data: { action: "detail", key: this.patientKey }
-        }),
-        wx.cloud.callFunction({
-          name: "patientIntake",
-          data: { action: "getPatientDetail", patientKey: this.patientKey }
-        })
-      ]);
+      let profileResult = {
+        patient: null,
+        basicInfo: [],
+        familyInfo: [],
+        economicInfo: [],
+        records: []
+      };
 
-      const profileResult = profileRes?.result || {};
-      const patientDisplay = profileResult.patient || null;
+      if (this.profileKey) {
+        try {
+          const profileRes = await wx.cloud.callFunction({
+            name: "patientProfile",
+            data: { action: "detail", key: this.profileKey }
+          });
+          profileResult = (profileRes && profileRes.result) || profileResult;
+        } catch (profileError) {
+          console.warn("Failed to load profile detail", profileError);
+        }
+      }
+
+      const resolvedPatientKey =
+        (profileResult && (
+          profileResult.patientKey ||
+          (profileResult.patient && (profileResult.patient.key || profileResult.patient.patientKey))
+        )) ||
+        this.patientKey ||
+        "";
+
+      if (resolvedPatientKey) {
+        this.patientKey = resolvedPatientKey;
+      }
+
+      if (profileResult && profileResult.recordKey) {
+        this.profileKey = profileResult.recordKey;
+      }
+
+      const patientDisplay = profileResult.patient ? { ...profileResult.patient } : {};
+      if (this.patientKey && !patientDisplay.key) {
+        patientDisplay.key = this.patientKey;
+      }
+      if (this.profileKey && !patientDisplay.recordKey) {
+        patientDisplay.recordKey = this.profileKey;
+      }
+
       const basicInfo = (profileResult.basicInfo || []).map((item) =>
         item && typeof item === "object" ? { ...item } : { label: "", value: item || "" }
       );
 
-      const ensureField = (label, fallbackValue) => {
-        const existing = basicInfo.find((item) => item && item.label === label);
-        const fallback = fallbackValue();
-        if (existing) {
-          existing.value = existing.value || fallback;
-        } else {
-          basicInfo.push({ label, value: fallback });
+      let patientRes = null;
+      let intakeRecordsRes = null;
+      const recordKeyForExcel = this.profileKey || '';
+      const patientNameForExcel = patientDisplay.patientName || profileResult.patientName || '';
+
+      if (this.patientKey) {
+        try {
+          [patientRes, intakeRecordsRes] = await Promise.all([
+            wx.cloud.callFunction({
+              name: "patientIntake",
+              data: {
+                action: "getPatientDetail",
+                patientKey: this.patientKey,
+                recordKey: recordKeyForExcel,
+                patientName: patientNameForExcel
+              }
+            }),
+            wx.cloud.callFunction({
+              name: "patientIntake",
+              data: {
+                action: "getAllIntakeRecords",
+                patientKey: this.patientKey,
+                recordKey: recordKeyForExcel,
+                patientName: patientNameForExcel
+              }
+            })
+          ]);
+        } catch (intakeError) {
+          console.warn("Failed to load intake records from patientIntake", intakeError);
+          patientRes = null;
+          intakeRecordsRes = null;
         }
-      };
+      }
 
-      ensureField("籍贯", () => (patientDisplay && patientDisplay.nativePlace) || "未知" );
-      ensureField("民族", () => (patientDisplay && patientDisplay.ethnicity) || "未知" );
-
-      const detailData = patientRes?.result?.data || {};
+      const detailData = (patientRes && patientRes.result && patientRes.result.data) || {};
       const patientForEdit = detailData.patient || {};
+      if (patientForEdit.key && patientForEdit.key !== this.patientKey) {
+        this.patientKey = patientForEdit.key;
+      }
+
+      if (!patientDisplay.patientName && patientForEdit.patientName) {
+        patientDisplay.patientName = patientForEdit.patientName;
+      }
+
       const latestIntakeRaw = detailData.latestIntake || null;
-      const latestIntake = latestIntakeRaw
-        ? {
-            ...latestIntakeRaw,
-            displayTime: formatDateTime(latestIntakeRaw.intakeInfo?.intakeTime || latestIntakeRaw.intakeTime)
-          }
-        : null;
       const operationLogs = (detailData.operationLogs || []).map((log) => ({
         ...log,
         timeText: formatDateTime(log.createdAt)
       }));
+
+      const intakeRecordsData = (intakeRecordsRes && intakeRecordsRes.result && intakeRecordsRes.result.data) || {};
+      const allIntakeRecords = (intakeRecordsData.records || []).map((record) => {
+        const medicalInfo = record.medicalInfo || {};
+        const intakeInfo = record.intakeInfo || {};
+        const hospitalDisplay = coalesceValue(record.hospital, medicalInfo.hospital);
+        const diagnosisDisplay = coalesceValue(record.diagnosis, medicalInfo.diagnosis, intakeInfo.visitReason);
+        const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor);
+
+        return {
+          ...record,
+          displayTime: formatDateTime(record.intakeTime),
+          updatedTime: formatDateTime(record.updatedAt),
+          hospitalDisplay,
+          diagnosisDisplay,
+          doctorDisplay,
+          medicalHistoryDisplay: Array.isArray(record.medicalHistory)
+            ? record.medicalHistory.join('、')
+            : record.medicalHistory || '',
+          medicationsDisplay: Array.isArray(record.medications)
+            ? record.medications.join('、')
+            : record.medications || '',
+          allergiesDisplay: Array.isArray(record.allergies)
+            ? record.allergies.join('、')
+            : record.allergies || '',
+          disabilitiesDisplay: Array.isArray(record.disabilities)
+            ? record.disabilities.join('、')
+            : record.disabilities || ''
+        };
+      });
+
+      this.allIntakeRecordsSource = allIntakeRecords;
+      const currentOrder = this.data.recordsSortOrder || 'desc';
+      const sortedIntakeRecords = sortIntakeRecords(allIntakeRecords, currentOrder);
+
       const editForm = buildEditForm(patientForEdit, latestIntakeRaw || {}, patientDisplay);
 
       this.originalEditForm = cloneForm(editForm);
 
+      const profileBasicInfo = Array.isArray(profileResult.basicInfo) ? profileResult.basicInfo : [];
+      const profileFamilyInfo = Array.isArray(profileResult.familyInfo) ? profileResult.familyInfo : [];
+      const profileEconomicInfo = Array.isArray(profileResult.economicInfo) ? profileResult.economicInfo : [];
+
+      const basicInfoDisplay = [];
+
+      pushDisplayItem(basicInfoDisplay, '性别', coalesceValue(
+        patientForEdit.gender,
+        patientDisplay.gender,
+        findValueByLabels(profileBasicInfo, ['gender', '性别'])
+      ));
+
+      pushDisplayItem(basicInfoDisplay, '出生日期', coalesceValue(
+        patientForEdit.birthDate,
+        patientDisplay.birthDate,
+        findValueByLabels(profileBasicInfo, ['birth date', '出生', 'birthday'])
+      ));
+
+      pushDisplayItem(basicInfoDisplay, '身份证号', coalesceValue(
+        patientForEdit.idNumber,
+        patientDisplay.idNumber,
+        findValueByLabels(profileBasicInfo, ['id number', '证件', '身份证'])
+      ));
+
+      pushDisplayItem(basicInfoDisplay, '籍贯', coalesceValue(
+        patientForEdit.nativePlace,
+        patientDisplay.nativePlace,
+        findValueByLabels(profileBasicInfo, ['native place', '籍贯'])
+      ));
+
+      pushDisplayItem(basicInfoDisplay, '民族', coalesceValue(
+        patientForEdit.ethnicity,
+        patientDisplay.ethnicity,
+        findValueByLabels(profileBasicInfo, ['ethnicity', '民族'])
+      ));
+
+      pushDisplayItem(basicInfoDisplay, '主要照护人', coalesceValue(
+        patientDisplay.summaryCaregivers,
+        findValueByLabels(profileBasicInfo, ['caregivers', '照护', '监护'])
+      ));
+
+      const familyInfoDisplay = [];
+      const pushFamily = (label, value) => pushDisplayItem(familyInfoDisplay, label, value);
+
+      pushFamily('家庭地址', coalesceValue(
+        patientForEdit.address,
+        patientDisplay.address,
+        findValueByLabels(profileFamilyInfo, ['address', '家庭地址'])
+      ));
+
+      pushFamily('父亲联系方式', coalesceValue(
+        patientForEdit.fatherInfo,
+        patientDisplay.fatherInfo,
+        findValueByLabels(profileFamilyInfo, ['father', '父亲'])
+      ));
+      pushFamily('母亲联系方式', coalesceValue(
+        patientForEdit.motherInfo,
+        patientDisplay.motherInfo,
+        findValueByLabels(profileFamilyInfo, ['mother', '母亲'])
+      ));
+      pushFamily('其他监护人', coalesceValue(
+        patientForEdit.otherGuardian,
+        patientDisplay.otherGuardian,
+        findValueByLabels(profileFamilyInfo, ['other guardian', '其他监护', '祖母', '祖父', 'guardian'])
+      ));
+
+      pushFamily('紧急联系人', coalesceValue(
+        patientForEdit.emergencyContact,
+        patientDisplay.emergencyContact
+      ));
+
+      pushFamily('紧急联系电话', coalesceValue(
+        patientForEdit.emergencyPhone,
+        patientDisplay.emergencyPhone
+      ));
+
+      const economicInfoDisplay = [];
+      pushDisplayItem(
+        economicInfoDisplay,
+        '家庭经济情况',
+        coalesceValue(findValueByLabels(profileEconomicInfo, ['economic', '经济']))
+      );
+
       if (patientForEdit.patientName) {
         wx.setNavigationBarTitle({ title: patientForEdit.patientName });
-      } else if (patientDisplay?.patientName) {
+      } else if (patientDisplay && patientDisplay.patientName) {
         wx.setNavigationBarTitle({ title: patientDisplay.patientName });
       }
+
+      const patientInfoForDisplay = Object.keys(patientDisplay).length ? patientDisplay : null;
 
       this.setData(
         {
           loading: false,
-          patient: patientDisplay,
-          basicInfo,
-          familyInfo: mergeFamilyAddresses(profileResult.familyInfo || []),
-          economicInfo: profileResult.economicInfo || [],
+          patient: patientInfoForDisplay,
+          basicInfo: basicInfoDisplay,
+          familyInfo: familyInfoDisplay,
+          economicInfo: economicInfoDisplay,
           records: profileResult.records || [],
-          latestIntake,
+          allIntakeRecords: sortedIntakeRecords,
           operationLogs,
           editForm,
           editErrors: {},
@@ -502,7 +727,10 @@ Page({
           editCanSave: false,
           editMetadata: {
             patientUpdatedAt: patientForEdit.updatedAt || null,
-            intakeUpdatedAt: latestIntakeRaw?.updatedAt || latestIntakeRaw?.metadata?.lastModifiedAt || null
+            intakeUpdatedAt:
+              (latestIntakeRaw && latestIntakeRaw.updatedAt) ||
+              (latestIntakeRaw && latestIntakeRaw.metadata && latestIntakeRaw.metadata.lastModifiedAt) ||
+              null
           },
           editPickerIndex: buildPickerIndexMap(editForm)
         },
@@ -520,6 +748,24 @@ Page({
         error: (error && (error.errMsg || error.message)) || "加载患者详情失败，请稍后重试"
       });
     }
+  },
+
+  onToggleRecordsSort() {
+    const source = Array.isArray(this.allIntakeRecordsSource)
+      ? this.allIntakeRecordsSource
+      : [];
+    if (!source.length) {
+      const nextOrder = this.data.recordsSortOrder === 'desc' ? 'asc' : 'desc';
+      this.setData({ recordsSortOrder: nextOrder });
+      return;
+    }
+
+    const nextOrder = this.data.recordsSortOrder === 'desc' ? 'asc' : 'desc';
+    const sorted = sortIntakeRecords(source, nextOrder);
+    this.setData({
+      recordsSortOrder: nextOrder,
+      allIntakeRecords: sorted
+    });
   },
 
   getFieldConfig(key) {
@@ -804,7 +1050,7 @@ Page({
         data: payload
       });
 
-      const result = res?.result || {};
+      const result = (res && res.result) || {};
       if (!result.success) {
         const error = result.error || {};
         if (error.code === 'VERSION_CONFLICT' || error.code === 'INTAKE_VERSION_CONFLICT') {
@@ -895,14 +1141,14 @@ Page({
     const data = { ...payload, action, patientKey: this.patientKey };
     try {
       const res = await wx.cloud.callFunction({ name: "patientMedia", data });
-      const result = res?.result;
+      const result = res && res.result;
       if (!result) {
         throw new Error("服务无响应");
       }
       if (result.success === false) {
-        const err = new Error(result.error?.message || "操作失败");
-        err.code = result.error?.code;
-        err.details = result.error?.details;
+        const err = new Error((result.error && result.error.message) || "操作失败");
+        err.code = result.error && result.error.code;
+        err.details = result.error && result.error.details;
         throw err;
       }
       return result.data || {};
@@ -951,8 +1197,8 @@ Page({
         sizeType: ["compressed", "original"],
         sourceType: ["album", "camera"]
       });
-      const rawFiles = res?.tempFiles || [];
-      const fallbackPaths = res?.tempFilePaths || [];
+      const rawFiles = (res && res.tempFiles) || [];
+      const fallbackPaths = (res && res.tempFilePaths) || [];
       const files = rawFiles.length
         ? rawFiles.map((item) => ({
             name: sanitizeFileName(item.path),
@@ -988,7 +1234,7 @@ Page({
     const count = Math.min(MAX_UPLOAD_BATCH, remainingCount);
     try {
       const res = await wx.chooseMessageFile({ count, type: "file" });
-      const filesSource = res?.tempFiles || res?.files || [];
+      const filesSource = (res && res.tempFiles) || (res && res.files) || [];
       const files = filesSource.map((item) => ({
         name: sanitizeFileName(item.name || item.path),
         size: item.size,
@@ -1199,7 +1445,7 @@ Page({
     if (!Number.isFinite(index) || !id) {
       return;
     }
-    const record = this.data.media.images?.[index];
+    const record = this.data.media.images && this.data.media.images[index];
     if (!record) {
       return;
     }
@@ -1221,7 +1467,7 @@ Page({
     if (!Number.isFinite(index) || !id) {
       return;
     }
-    const record = this.data.media.documents?.[index];
+    const record = this.data.media.documents && this.data.media.documents[index];
     if (!record) {
       return;
     }
@@ -1306,7 +1552,7 @@ Page({
     if (!Number.isFinite(index) || !id) {
       return;
     }
-    const record = this.data.media.documents?.[index];
+    const record = this.data.media.documents && this.data.media.documents[index];
     if (!record || !record.textPreviewAvailable) {
       return;
     }
@@ -1317,7 +1563,7 @@ Page({
         textPreview: {
           visible: true,
           title: record.displayName,
-          content: data?.content || ""
+          content: (data && data.content) || ""
         }
       });
     } catch (error) {
@@ -1335,8 +1581,8 @@ Page({
   },
 
   handleMediaError(error, context) {
-    const code = error?.code;
-    let message = normalizeString(error?.message) || `${context}失败`;
+    const code = error && error.code;
+    let message = normalizeString((error && error.message)) || `${context}失败`;
     if (code === "MEDIA_QUOTA_EXCEEDED") {
       message = "配额不足";
     } else if (code === "MEDIA_DUPLICATE") {
@@ -1352,6 +1598,13 @@ Page({
 
   noop() {}
 });
+
+
+
+
+
+
+
 
 
 

@@ -24,17 +24,31 @@ const LABEL_MAP = {
   ethnicity: ["民族"],
   idNumber: ["身份证号", "证件号"],
   caregivers: ["监护人"],
-  admissionDate: ["入院日期", "入住日期", "收治日期"],
-  hospital: ["医院", "收治医院"],
-  diagnosis: ["诊断", "初步诊断", "诊断结果"],
-  doctor: ["医生", "主治医师"],
+  admissionDate: ["入院日期", "入院时间", "入住日期", "入住时间", "收治日期", "收治时间"],
+  hospital: ["医院", "收治医院", "就诊情况_就诊医院"],
+  diagnosis: ["诊断", "初步诊断", "诊断结果", "就诊情况_医院诊断"],
+  doctor: ["医生", "主治医师", "就诊情况_医生姓名"],
   symptoms: ["症状", "主要症状"],
   treatmentProcess: ["治疗过程", "康复过程"],
   followUpPlan: ["康复计划", "后续计划"],
   address: ["地址", "家庭地址", "居住地址"],
-  fatherInfo: ["父亲", "父亲信息", "爸爸"],
-  motherInfo: ["母亲", "母亲信息", "妈妈"],
-  otherGuardian: ["其他监护人"],
+  fatherInfo: [
+    "父亲",
+    "父亲信息",
+    "爸爸",
+    "家庭基础信息_父亲姓名联系电话身份证号",
+    "家庭基本情况_父亲姓名、电话、身份证号",
+    "父亲姓名、电话、身份证号"
+  ],
+  motherInfo: [
+    "母亲",
+    "母亲信息",
+    "妈妈",
+    "家庭基础信息_母亲姓名联系电话身份证号",
+    "家庭基本情况_母亲姓名、电话、身份证号",
+    "母亲姓名、电话、身份证号"
+  ],
+  otherGuardian: ["其他监护人", "家庭基础信息_其他监护人", "家庭基本情况_其他监护人"],
   familyEconomy: ["家庭基础信息_家庭经济", "家庭基本情况_家庭经济", "家庭经济"],
   hospitalAdditional: ["就诊情况_医院诊断", "医院诊断"],
   diagnosisAdditional: ["医疗情况_症状详情", "症状详情"]
@@ -65,6 +79,34 @@ function normalizeSpacing(value) {
   }
   return normalized.replace(/\s+/g, ' ').trim();
 }
+
+function normalizeTimestampValue(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (value instanceof Date) {
+    const ts = value.getTime();
+    return Number.isNaN(ts) ? null : ts;
+  }
+  const str = String(value).trim();
+  if (!str) {
+    return null;
+  }
+  if (/^\d+$/.test(str)) {
+    const num = Number(str);
+    return Number.isFinite(num) ? num : null;
+  }
+  const normalized = str.replace(/[./]/g, '-');
+  const date = new Date(normalized);
+  const ts = date.getTime();
+  return Number.isNaN(ts) ? null : ts;
+}
+
+// 兼容旧逻辑的别名
+const normalizeTimestamp = normalizeTimestampValue;
 
 // 确保集合存在
 async function ensureCollectionExists(name) {
@@ -97,11 +139,18 @@ async function ensureCollectionExists(name) {
 }
 
 // 下载Excel文件
-async function downloadExcelBuffer() {
-  if (!EXCEL_FILE_ID) {
-    throw new Error("Excel file id is not configured");
+async function downloadExcelBuffer(providedFileId) {
+  const fileId = normalizeValue(providedFileId) || normalizeValue(EXCEL_FILE_ID);
+  if (!fileId) {
+    const error = new Error("Excel file id is not configured");
+    error.code = 'INVALID_EXCEL_FILE_ID';
+    error.details = {
+      providedFileId: normalizeValue(providedFileId) || null,
+      envFileId: normalizeValue(EXCEL_FILE_ID) || null
+    };
+    throw error;
   }
-  const { fileContent } = await cloud.downloadFile({ fileID: EXCEL_FILE_ID });
+  const { fileContent } = await cloud.downloadFile({ fileID: fileId });
   return fileContent;
 }
 
@@ -256,6 +305,9 @@ function extractRecords(rows, labelIndex) {
     const idNumberRaw = normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.idNumber));
     const normalizedId = idNumberRaw ? idNumberRaw.toUpperCase() : '';
     const admissionInfo = parseDateValue(getFieldValue(row, labelIndex, LABEL_MAP.admissionDate));
+    const normalizedAdmissionTimestamp = (admissionInfo.timestamp !== null && Number.isFinite(admissionInfo.timestamp))
+      ? admissionInfo.timestamp
+      : (rawIndex + 1);
 
     const record = {
       key: patientName,
@@ -267,7 +319,7 @@ function extractRecords(rows, labelIndex) {
       idNumber: normalizedId,
       caregivers: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.caregivers)),
       admissionDate: admissionInfo.text,
-      admissionTimestamp: admissionInfo.timestamp,
+      admissionTimestamp: normalizedAdmissionTimestamp,
       hospital: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.hospital)),
       diagnosis: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.diagnosis)) ||
                  normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.hospitalAdditional)),
@@ -296,6 +348,29 @@ function extractRecords(rows, labelIndex) {
 // 构建患者分组
 function buildPatientGroups(records) {
   const groups = new Map();
+
+  const ensureTimestamp = (record) => {
+    if (!record) {
+      return null;
+    }
+    const primary = normalizeTimestampValue(record.admissionTimestamp);
+    if (primary !== null) {
+      return primary;
+    }
+    const parsed = parseDateValue(record.admissionDate || '');
+    if (parsed.timestamp !== null && Number.isFinite(parsed.timestamp)) {
+      return parsed.timestamp;
+    }
+    const importedAt = normalizeTimestampValue(record._importedAt);
+    if (importedAt !== null) {
+      return importedAt;
+    }
+    const updatedAt = normalizeTimestampValue(record.updatedAt || record.createdAt);
+    if (updatedAt !== null) {
+      return updatedAt;
+    }
+    return Date.now();
+  };
 
   records.forEach(record => {
     if (!record.key || !record.patientName) {
@@ -327,18 +402,20 @@ function buildPatientGroups(records) {
     const group = groups.get(record.key);
     group.records.push(record);
 
-    // 更新统计信息
-    if (record.admissionTimestamp) {
-      group.admissionCount++;
-      if (!group.firstAdmissionDate || record.admissionTimestamp < group.firstAdmissionTimestamp) {
-        group.firstAdmissionDate = record.admissionDate;
-        group.firstAdmissionTimestamp = record.admissionTimestamp;
+    const admissionTimestamp = ensureTimestamp(record);
+
+    if (admissionTimestamp !== null) {
+      const formattedDate = new Date(admissionTimestamp).toISOString().split('T')[0];
+      group.admissionCount += 1;
+      if (!group.firstAdmissionTimestamp || admissionTimestamp < group.firstAdmissionTimestamp) {
+        group.firstAdmissionDate = formattedDate;
+        group.firstAdmissionTimestamp = admissionTimestamp;
         group.firstDiagnosis = record.diagnosis || '';
         group.firstHospital = record.hospital || '';
       }
-      if (!group.latestAdmissionDate || record.admissionTimestamp > group.latestAdmissionTimestamp) {
-        group.latestAdmissionDate = record.admissionDate;
-        group.latestAdmissionTimestamp = record.admissionTimestamp;
+      if (!group.latestAdmissionTimestamp || admissionTimestamp > group.latestAdmissionTimestamp) {
+        group.latestAdmissionDate = formattedDate;
+        group.latestAdmissionTimestamp = admissionTimestamp;
         group.latestDiagnosis = record.diagnosis || '';
         group.latestHospital = record.hospital || '';
         group.latestDoctor = record.doctor || '';
@@ -394,17 +471,22 @@ async function saveSummariesToCache(summaries) {
 // 清空集合
 async function clearCollection(collection) {
   const BATCH_SIZE = 20;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await collection.limit(BATCH_SIZE).get();
-    if (!res.data || res.data.length === 0) {
+    const docs = res && Array.isArray(res.data) ? res.data : [];
+    if (!docs.length) {
       break;
     }
 
-    const batch = db.batch();
-    res.data.forEach(doc => {
-      batch.delete(collection.doc(doc._id));
-    });
-    await batch.commit();
+    await Promise.all(
+      docs
+        .filter((doc) => doc && doc._id)
+        .map((doc) => collection.doc(doc._id).remove().catch((error) => {
+          console.warn('clearCollection remove failed', collection._name, doc._id, error);
+          return null;
+        }))
+    );
   }
 }
 
@@ -419,11 +501,17 @@ async function importToDatabase(records) {
   }
 
   const timestamp = Date.now();
-  const docs = records.map((record, index) => ({
-    ...record,
-    _importedAt: timestamp,
-    _rowIndex: index + 1
-  }));
+  const docs = records.map((record, index) => {
+    const normalizedTimestamp = Number.isFinite(record.admissionTimestamp)
+      ? Number(record.admissionTimestamp)
+      : timestamp + index;
+    return {
+      ...record,
+      admissionTimestamp: normalizedTimestamp,
+      _importedAt: timestamp,
+      _rowIndex: index + 1
+    };
+  });
 
   const batchSize = 100;
   for (let i = 0; i < docs.length; i += batchSize) {
@@ -629,9 +717,13 @@ async function fetchRecordsFromDatabase() {
 // 主函数 - 只保留初始化和测试功能
 exports.main = async (event = {}) => {
   try {
+    const requestedFileId = normalizeValue(
+      event && (event.fileId || event.fileID || event.excelFileId)
+    );
+
     // import操作：从Excel文件导入数据到数据库
     if (event.action === "import") {
-      const buffer = await downloadExcelBuffer();
+      const buffer = await downloadExcelBuffer(requestedFileId);
       const parsed = parseExcel(buffer);
       const labelIndex = buildLabelIndex(parsed.headers, parsed.subHeaders);
       const records = extractRecords(parsed.rows, labelIndex);
@@ -672,7 +764,7 @@ exports.main = async (event = {}) => {
 
     // 测试操作：验证Excel解析功能
     if (event.action === "test") {
-      const buffer = await downloadExcelBuffer();
+      const buffer = await downloadExcelBuffer(requestedFileId);
       const parsed = parseExcel(buffer);
       const labelIndex = buildLabelIndex(parsed.headers, parsed.subHeaders);
       const records = extractRecords(parsed.rows, labelIndex);

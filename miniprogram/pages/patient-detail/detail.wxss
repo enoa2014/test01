@@ -438,8 +438,7 @@
   color: #1f2937;
 }
 
-.edit-hint,
-.latest-intake-tip {
+.edit-hint {
   margin-top: 18rpx;
   font-size: 24rpx;
   color: #6b7280;
@@ -506,7 +505,7 @@
   color: #ef4444;
 }
 
-.latest-intake-section,
+.intake-records-section,
 .operation-log-section {
   background: #ffffff;
   border-radius: 20rpx;
@@ -517,23 +516,38 @@
   gap: 16rpx;
 }
 
-.latest-intake-row,
 .operation-log-item {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
 
-.latest-intake-row .label,
 .operation-log-item .log-header {
   font-size: 24rpx;
   color: #6b7280;
 }
 
-.latest-intake-row .value,
 .operation-log-item .log-message {
   font-size: 26rpx;
   color: #1f2937;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.sort-switch {
+  font-size: 26rpx;
+  padding: 14rpx 32rpx;
+  display: inline-flex;
+  align-items: center;
+  color: #1f2937;
+  border: 2rpx solid #d1d5db;
+  border-radius: 999rpx;
+  background-color: #f3f4f6;
 }
 
 .log-header {
@@ -549,5 +563,94 @@
 
 .log-operator {
   font-size: 24rpx;
+  color: #9ca3af;
+}
+
+/* 入住记录样式 */
+.intake-record-item {
+  padding: 24rpx;
+  border: 2rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  background: #f9fafb;
+}
+
+.intake-record-item:last-child {
+  margin-bottom: 0;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid #e5e7eb;
+}
+
+.record-time {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.record-status {
+  font-size: 22rpx;
+  color: #10b981;
+  background: #d1fae5;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+}
+
+.record-section {
+  margin-bottom: 20rpx;
+}
+
+.record-section:last-child {
+  margin-bottom: 0;
+}
+
+.record-section-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.record-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12rpx;
+  line-height: 1.4;
+}
+
+.record-field:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  font-size: 24rpx;
+  color: #6b7280;
+  margin-bottom: 4rpx;
+  font-weight: 500;
+}
+
+.field-value {
+  font-size: 26rpx;
+  color: #1f2937;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.record-footer {
+  margin-top: 16rpx;
+  padding-top: 12rpx;
+  border-top: 2rpx solid #e5e7eb;
+  text-align: right;
+}
+
+.update-time {
+  font-size: 22rpx;
   color: #9ca3af;
 }

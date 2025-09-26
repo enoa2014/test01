@@ -30,21 +30,42 @@ function writePatientsCache(patients) {
   }
 }
 
-function normalizeDateString(value) {
-  if (!value) {
-    return '';
+function parseDateValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
   }
-  return String(value).replace(/[./]/g, '-');
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+    if (Math.abs(value) >= 1e10) {
+      const fromNumber = new Date(value);
+      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
+    }
+    return null;
+  }
+  const str = String(value).trim();
+  if (!str) {
+    return null;
+  }
+  if (/^\d+$/.test(str)) {
+    const num = Number(str);
+    if (Number.isFinite(num) && Math.abs(num) >= 1e10) {
+      const fromNumeric = new Date(num);
+      if (!Number.isNaN(fromNumeric.getTime())) {
+        return fromNumeric;
+      }
+    }
+  }
+  const normalized = str.replace(/[./]/g, '-');
+  const fromString = new Date(normalized);
+  return Number.isNaN(fromString.getTime()) ? null : fromString;
 }
 
 function formatDate(value) {
-  const normalized = normalizeDateString(value);
-  if (!normalized) {
+  const date = parseDateValue(value);
+  if (!date) {
     return '';
-  }
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) {
-    return value || '';
   }
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -53,12 +74,8 @@ function formatDate(value) {
 }
 
 function formatAge(birthDate) {
-  const normalized = normalizeDateString(birthDate);
-  if (!normalized) {
-    return '';
-  }
-  const birth = new Date(normalized);
-  if (Number.isNaN(birth.getTime())) {
+  const birth = parseDateValue(birthDate);
+  if (!birth) {
     return '';
   }
   const today = new Date();

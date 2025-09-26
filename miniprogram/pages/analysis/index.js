@@ -1,25 +1,46 @@
-const AGE_BUCKETS = [
+﻿const AGE_BUCKETS = [
   { label: '0-5岁', min: 0, max: 5 },
   { label: '6-12岁', min: 6, max: 12 },
   { label: '13-17岁', min: 13, max: 17 },
   { label: '18岁及以上', min: 18, max: Infinity }
 ];
 
-function normalizeDateString(value) {
-  if (!value) {
-    return '';
+function parseDateValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
   }
-  return String(value).replace(/[./]/g, '-');
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+    if (Math.abs(value) >= 1e10) {
+      const fromNumber = new Date(value);
+      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
+    }
+    return null;
+  }
+  const str = String(value).trim();
+  if (!str) {
+    return null;
+  }
+  if (/^\d+$/.test(str)) {
+    const num = Number(str);
+    if (Number.isFinite(num) && Math.abs(num) >= 1e10) {
+      const fromNumeric = new Date(num);
+      if (!Number.isNaN(fromNumeric.getTime())) {
+        return fromNumeric;
+      }
+    }
+  }
+  const normalized = str.replace(/[./]/g, '-');
+  const fromString = new Date(normalized);
+  return Number.isNaN(fromString.getTime()) ? null : fromString;
 }
 
 function formatDate(value) {
-  const normalized = normalizeDateString(value);
-  if (!normalized) {
+  const date = parseDateValue(value);
+  if (!date) {
     return '';
-  }
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) {
-    return value || '';
   }
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -28,12 +49,8 @@ function formatDate(value) {
 }
 
 function calculateAge(birthDate) {
-  const normalized = normalizeDateString(birthDate);
-  if (!normalized) {
-    return null;
-  }
-  const birth = new Date(normalized);
-  if (Number.isNaN(birth.getTime())) {
+  const birth = parseDateValue(birthDate);
+  if (!birth) {
     return null;
   }
   const today = new Date();
@@ -48,6 +65,7 @@ function calculateAge(birthDate) {
 function getPatientRef(item) {
   return {
     key: item.key,
+    patientKey: item.patientKey || item.key,
     name: item.patientName || '未命名患者'
   };
 }
@@ -135,12 +153,9 @@ function getMonthLabel(item) {
     }
   }
   const formatted = item.latestAdmissionDateFormatted || formatDate(item.latestAdmissionDate || '');
-  if (formatted) {
-    const normalized = normalizeDateString(formatted);
-    const date = normalized ? new Date(normalized) : null;
-    if (date && !Number.isNaN(date.getTime())) {
-      return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
-    }
+  const parsed = parseDateValue(formatted);
+  if (parsed) {
+    return `${parsed.getFullYear()}-${`${parsed.getMonth() + 1}`.padStart(2, '0')}`;
   }
   return '未知月份';
 }
@@ -275,16 +290,22 @@ Page({
   },
 
   onSelectionItemTap(event) {
-    const { key } = event.currentTarget.dataset;
-    if (!key) {
+    const { key, patientKey, recordKey } = event.currentTarget.dataset || {};
+    const profileKey = recordKey || key || patientKey;
+    const resolvedPatientKey = patientKey || key || recordKey;
+    if (!profileKey) {
       return;
     }
     this.setData({ 'selection.visible': false }, () => {
-      wx.navigateTo({
-        url: `/pages/patient-detail/detail?key=${encodeURIComponent(key)}`
-      });
+      let url = `/pages/patient-detail/detail?key=${encodeURIComponent(profileKey)}`;
+      if (resolvedPatientKey) {
+        url += `&patientId=${encodeURIComponent(resolvedPatientKey)}`;
+      }
+      wx.navigateTo({ url });
     });
   },
 
   noop() {}
 });
+
+

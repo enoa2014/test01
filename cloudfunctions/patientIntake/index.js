@@ -1,6 +1,8 @@
 ﻿const cloud = require("wx-server-sdk");
 const { v4: uuidv4 } = require('uuid');
 
+const createExcelSync = require('./excel-sync');
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
@@ -19,6 +21,7 @@ const DRAFT_EXPIRE_DAYS = 7;
 const SITUATION_MIN_LENGTH = 30;
 const SITUATION_MAX_LENGTH = 500;
 const SITUATION_KEYWORDS = ['护理', '症状', '康复', '治疗', '病情', '照顾', '功能', '障碍', '需要', '协助'];
+const MAX_INTAKE_QUERY_LIMIT = 100; // fetch limit for intake history queries
 
 // 工具函数
 function makeError(code, message, details) {
@@ -74,6 +77,17 @@ async function ensureCollectionExists(name) {
     return false;
   }
 }
+
+const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = createExcelSync({
+  db,
+  ensureCollectionExists,
+  normalizeString,
+  collections: {
+    PATIENTS_COLLECTION,
+    PATIENT_INTAKE_COLLECTION,
+    EXCEL_RECORDS_COLLECTION
+  }
+});
 
 async function writePatientOperationLog(logEntry) {
   await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
@@ -225,26 +239,250 @@ async function handleGetPatients(event) {
   };
 }
 
-// 获取患者详情
-async function handleGetPatientDetail(event) {
-  const { patientKey } = event;
+
+async function handleGetAllIntakeRecords(event) {
+  const { patientKey, recordKey, patientName } = event;
   if (!patientKey) {
     throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
   }
 
-  await ensureCollectionExists(PATIENTS_COLLECTION);
-  const patientRes = await db.collection(PATIENTS_COLLECTION).doc(patientKey).get();
-  if (!patientRes.data) {
+  const excelKeys = [];
+  if (recordKey) {
+    excelKeys.push(recordKey);
+  }
+  if (patientName) {
+    excelKeys.push(patientName);
+  }
+
+  const ensured = await ensurePatientDoc(patientKey, { excelKeys });
+  const resolvedPatientKey = (ensured && ensured.patientKey) || patientKey;
+  const patientDoc = ensured ? ensured.patientDoc : null;
+
+  const syncExcelKeys = [...excelKeys];
+  if (patientDoc && patientDoc.recordKey) {
+    syncExcelKeys.push(patientDoc.recordKey);
+  }
+  if (patientDoc && patientDoc.patientName) {
+    syncExcelKeys.push(patientDoc.patientName);
+  }
+
+  await syncExcelRecordsToIntake(resolvedPatientKey, { patientDoc, excelKeys: syncExcelKeys });
+
+  await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+
+  try {
+    const baseQuery = db.collection(PATIENT_INTAKE_COLLECTION).where({ patientKey: resolvedPatientKey });
+    const countRes = await baseQuery.count();
+    const total = (countRes && countRes.total) || 0;
+
+    if (!total) {
+      return {
+        success: true,
+        data: {
+          patientKey: resolvedPatientKey,
+          totalCount: 0,
+          records: []
+        }
+      };
+    }
+
+    const batchSize = MAX_INTAKE_QUERY_LIMIT;
+    const batchTimes = Math.max(1, Math.ceil(total / batchSize));
+    const tasks = [];
+
+    for (let i = 0; i < batchTimes; i++) {
+      tasks.push(
+        db.collection(PATIENT_INTAKE_COLLECTION)
+          .where({ patientKey: resolvedPatientKey })
+          .orderBy('updatedAt', 'desc')
+          .orderBy('metadata.lastModifiedAt', 'desc')
+          .skip(i * batchSize)
+          .limit(batchSize)
+          .get()
+      );
+    }
+
+    const queryResults = await Promise.all(tasks);
+    const rawIntakeRecords = [];
+
+    queryResults.forEach((res) => {
+      if (res && Array.isArray(res.data)) {
+        rawIntakeRecords.push(...res.data);
+      }
+    });
+
+    rawIntakeRecords.sort((a, b) => {
+      const timeOf = (record) => {
+        if (!record) {
+          return 0;
+        }
+        const meta = record.metadata || {};
+        return (
+          record.updatedAt ||
+          meta.lastModifiedAt ||
+          meta.submittedAt ||
+          record.createdAt ||
+          0
+        );
+      };
+      return timeOf(b) - timeOf(a);
+    });
+
+    const filteredRawRecords = rawIntakeRecords.filter((rawIntake) => {
+      if (!rawIntake) {
+        return false;
+      }
+      const metadata = rawIntake.metadata || {};
+      const isLegacyAggregated = metadata.source === 'excel-import'
+        && !metadata.excelRecordId
+        && rawIntake._id
+        && rawIntake._id.indexOf(`${resolvedPatientKey}-excel`) === 0;
+      return !isLegacyAggregated;
+    });
+
+    const intakeRecords = filteredRawRecords.map((rawIntake) => {
+      const metadata = rawIntake.metadata || {};
+      const intakeInfo = rawIntake.intakeInfo || {};
+      const basicInfo = rawIntake.basicInfo || {};
+      const medicalInfo = rawIntake.medicalInfo || {};
+      const contactInfo = rawIntake.contactInfo || {};
+
+      const record = {
+        intakeId: rawIntake._id,
+        intakeTime: intakeInfo.intakeTime || rawIntake.intakeTime,
+        situation: intakeInfo.situation || rawIntake.narrative,
+        followUpPlan: intakeInfo.followUpPlan,
+        patientName: basicInfo.patientName,
+        gender: basicInfo.gender,
+        birthDate: basicInfo.birthDate,
+        idNumber: basicInfo.idNumber,
+        primaryPhone: basicInfo.primaryPhone || contactInfo.primaryPhone,
+        backupPhone: basicInfo.backupPhone || contactInfo.backupPhone,
+        emergencyContact: basicInfo.emergencyContact || contactInfo.emergencyContact,
+        emergencyPhone: basicInfo.emergencyPhone || contactInfo.emergencyPhone,
+        medicalHistory: medicalInfo.medicalHistory || intakeInfo.medicalHistory || [],
+        currentCondition: medicalInfo.currentCondition,
+        medications: medicalInfo.medications || [],
+        allergies: medicalInfo.allergies || [],
+        disabilities: medicalInfo.disabilities || [],
+        careLevel: medicalInfo.careLevel,
+        visitReason: medicalInfo.visitReason,
+        symptoms: medicalInfo.symptoms,
+        diagnosis: medicalInfo.diagnosis,
+        treatmentPlan: medicalInfo.treatmentPlan,
+        doctorNotes: medicalInfo.doctorNotes,
+        createdAt: metadata.submittedAt || rawIntake.createdAt,
+        updatedAt: rawIntake.updatedAt || metadata.lastModifiedAt,
+        status: rawIntake.status || 'active'
+      };
+
+      const filteredRecord = {};
+      Object.entries(record).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          if (!Array.isArray(value) || value.length > 0) {
+            filteredRecord[key] = value;
+          }
+        }
+      });
+      return filteredRecord;
+    });
+
+    return {
+      success: true,
+      data: {
+        patientKey: resolvedPatientKey,
+        totalCount: intakeRecords.length,
+        records: intakeRecords
+      }
+    };
+  } catch (error) {
+    console.error('Failed to get intake records', resolvedPatientKey, error);
+    return {
+      success: true,
+      data: {
+        patientKey: resolvedPatientKey,
+        totalCount: 0,
+        records: []
+      }
+    };
+  }
+}
+
+
+
+// 获取患者详情
+async function handleGetPatientDetail(event) {
+  const { patientKey, recordKey, patientName } = event;
+  if (!patientKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
+  }
+
+  const excelKeys = [];
+  if (recordKey) {
+    excelKeys.push(recordKey);
+  }
+  if (patientName) {
+    excelKeys.push(patientName);
+  }
+
+  const ensured = await ensurePatientDoc(patientKey, { excelKeys });
+  const resolvedPatientKey = (ensured && ensured.patientKey) || patientKey;
+  const patient = ensured ? ensured.patientDoc : null;
+
+  if (!patient) {
     throw makeError('PATIENT_NOT_FOUND', '患者不存在');
   }
 
-  const patient = patientRes.data;
+  const syncExcelKeys = [...excelKeys];
+  if (patient.recordKey) {
+    syncExcelKeys.push(patient.recordKey);
+  }
+  if (patient.patientName) {
+    syncExcelKeys.push(patient.patientName);
+  }
+
+  const syncResult = await syncExcelRecordsToIntake(resolvedPatientKey, {
+    patientDoc: patient,
+    excelKeys: syncExcelKeys,
+    forceSummary: !patient || !patient.data || typeof patient.data.admissionCount !== 'number'
+  });
+  const syncSummary = syncResult && syncResult.summary;
+
+  if (syncSummary) {
+    const nextData = patient && typeof patient.data === 'object' ? { ...patient.data } : {};
+    nextData.admissionCount = syncSummary.count;
+    if (syncSummary.earliestTimestamp) {
+      nextData.firstAdmissionDate = syncSummary.earliestTimestamp;
+    }
+    if (syncSummary.latestTimestamp) {
+      nextData.latestAdmissionDate = syncSummary.latestTimestamp;
+      nextData.latestAdmissionTimestamp = syncSummary.latestTimestamp;
+    }
+    patient.data = nextData;
+    patient.admissionCount = syncSummary.count;
+    if (syncSummary.earliestTimestamp) {
+      patient.firstAdmissionDate = syncSummary.earliestTimestamp;
+    }
+    if (syncSummary.latestTimestamp) {
+      patient.latestAdmissionDate = syncSummary.latestTimestamp;
+      patient.latestAdmissionTimestamp = syncSummary.latestTimestamp;
+    }
+    if (syncSummary.latestNarrative) {
+      patient.lastIntakeNarrative = syncSummary.latestNarrative;
+    }
+    if (syncSummary.latestHospital) {
+      patient.latestHospital = syncSummary.latestHospital;
+    }
+    if (syncSummary.latestDoctor) {
+      patient.latestDoctor = syncSummary.latestDoctor;
+    }
+  }
 
   let latestIntake = null;
   try {
     await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
     const intakeRes = await db.collection(PATIENT_INTAKE_COLLECTION)
-      .where({ patientKey })
+      .where({ patientKey: resolvedPatientKey })
       .orderBy('updatedAt', 'desc')
       .orderBy('metadata.lastModifiedAt', 'desc')
       .limit(1)
@@ -265,14 +503,14 @@ async function handleGetPatientDetail(event) {
       };
     }
   } catch (error) {
-    console.warn('加载最新入住记录失败', patientKey, error);
+    console.warn('加载最新入住记录失败', resolvedPatientKey, error);
   }
 
   let operationLogs = [];
   try {
     await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
     const logsRes = await db.collection(PATIENT_OPERATION_LOGS_COLLECTION)
-      .where({ patientKey })
+      .where({ patientKey: resolvedPatientKey })
       .orderBy('createdAt', 'desc')
       .limit(20)
       .get();
@@ -280,14 +518,14 @@ async function handleGetPatientDetail(event) {
       ...log
     })) : [];
   } catch (error) {
-    console.warn('加载患者操作日志失败', patientKey, error);
+    console.warn('加载患者操作日志失败', resolvedPatientKey, error);
   }
 
   return {
     success: true,
     data: {
       patient: {
-        key: patient._id,
+        key: resolvedPatientKey,
         patientName: patient.patientName,
         idType: patient.idType,
         idNumber: patient.idNumber,
@@ -308,6 +546,8 @@ async function handleGetPatientDetail(event) {
     }
   };
 }
+
+
 // 保存草稿
 async function handleSaveDraft(event) {
   const { draftData, sessionId } = event;
@@ -417,10 +657,22 @@ async function handleSubmitIntake(event) {
       patientRecord = patientDoc.data;
 
       // 更新患者基础信息
+      const toNumber = (value) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      };
+      const dataSnapshot = patientRecord.data || {};
+      const baseCount = toNumber(patientRecord.admissionCount);
+      const fallbackCount = baseCount !== null ? baseCount : toNumber(dataSnapshot.admissionCount);
+      const newAdmissionCount = (fallbackCount !== null ? fallbackCount : 0) + 1;
+      const baseFirstDate = toNumber(dataSnapshot.firstAdmissionDate);
+      const fallbackFirstDate = baseFirstDate !== null ? baseFirstDate : toNumber(patientRecord.firstAdmissionDate);
+      const normalizedFirstAdmissionDate = fallbackFirstDate !== null ? fallbackFirstDate : now;
+
       await patientRef.update({
         data: {
           patientName: formData.patientName,
-          idType: formData.idType || '身份证',
+          idType: formData.idType || '����֤',
           idNumber: formData.idNumber,
           gender: formData.gender,
           birthDate: formData.birthDate,
@@ -431,9 +683,14 @@ async function handleSubmitIntake(event) {
           backupContact: formData.backupContact || '',
           backupPhone: formData.backupPhone || '',
           lastIntakeNarrative: formData.situation,
-          admissionCount: (patientRecord.admissionCount || 0) + 1,
+          admissionCount: newAdmissionCount,
           latestAdmissionDate: now,
-          updatedAt: now
+          updatedAt: now,
+          'data.admissionCount': newAdmissionCount,
+          'data.latestAdmissionDate': now,
+          'data.latestAdmissionTimestamp': now,
+          'data.firstAdmissionDate': normalizedFirstAdmissionDate,
+          'data.updatedAt': now
         }
       });
     } else {
@@ -457,7 +714,14 @@ async function handleSubmitIntake(event) {
         firstAdmissionDate: now,
         latestAdmissionDate: now,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        data: {
+          admissionCount: 1,
+          firstAdmissionDate: now,
+          latestAdmissionDate: now,
+          latestAdmissionTimestamp: now,
+          updatedAt: now
+        }
       };
 
       await transaction.collection(PATIENTS_COLLECTION).doc(finalPatientKey).set({
@@ -523,6 +787,21 @@ async function handleSubmitIntake(event) {
     };
   });
 
+  let summary = null;
+  try {
+    summary = await syncPatientAggregates(result.patientKey, {
+      patientDoc: { _id: result.patientKey },
+      serverDate: Date.now()
+    });
+  } catch (error) {
+    console.warn('submitIntake aggregates failed', result.patientKey, error);
+  }
+
+  if (summary) {
+    result.admissionCount = summary.count;
+    result.firstAdmissionDate = summary.earliestTimestamp;
+    result.latestAdmissionDate = summary.latestTimestamp;
+  }
   return {
     success: true,
     data: result
@@ -859,6 +1138,8 @@ exports.main = async (event) => {
         return await handleGetPatients(event);
       case 'getPatientDetail':
         return await handleGetPatientDetail(event);
+      case 'getAllIntakeRecords':
+        return await handleGetAllIntakeRecords(event);
       case 'saveDraft':
         return await handleSaveDraft(event);
       case 'getDraft':
@@ -888,3 +1169,11 @@ exports.main = async (event) => {
     };
   }
 };
+
+
+
+
+
+
+
+

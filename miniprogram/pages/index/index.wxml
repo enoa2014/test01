@@ -1,4 +1,4 @@
-<view class="container">
+﻿<view class="container">
   <view class="hero">
     <text class="title">患者档案</text>
     <text class="subtitle">汇总每位患者的住院记录</text>
@@ -44,6 +44,8 @@
       wx:for="{{displayPatients}}"
       wx:key="key"
       data-key="{{item.key}}"
+      data-patient-key="{{item.patientKey || item.key}}"
+      data-record-key="{{item.key}}"
       bindtap="onPatientTap"
     >
       <view class="patient-header">
@@ -76,3 +78,4 @@
     <view wx:if="{{!displayPatients.length}}" class="placeholder">未找到匹配的患者</view>
   </scroll-view>
 </view>
+

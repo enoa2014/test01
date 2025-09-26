@@ -1,4 +1,4 @@
-// 入住成功页面
+﻿// 入住成功页面
 Page({
   data: {
     patientName: '',
@@ -88,7 +88,7 @@ Page({
     const { patientKey } = this.data;
     if (patientKey) {
       wx.redirectTo({
-        url: `/pages/patient-detail/detail?key=${encodeURIComponent(patientKey)}`
+        url: `/pages/patient-detail/detail?key=${encodeURIComponent(patientKey)}&patientId=${encodeURIComponent(patientKey)}`
       });
     } else {
       wx.showToast({

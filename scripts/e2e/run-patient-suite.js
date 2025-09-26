@@ -140,10 +140,16 @@ function buildPatientRecords() {
     motherKey: RUN_ID + '_BETA_MOTHER'
   };
 
-  return [
-    ...toRecords('ALPHA', patientA, admissionsA),
-    ...toRecords('BETA', patientB, admissionsB)
-  ];
+  return {
+    records: [
+      ...toRecords('ALPHA', patientA, admissionsA),
+      ...toRecords('BETA', patientB, admissionsB)
+    ],
+    meta: {
+      alpha: patientA,
+      beta: patientB
+    }
+  };
 }
 
 async function removeExistingTestData(collection, command, db) {
@@ -210,7 +216,7 @@ async function insertRecords(collection, records) {
   return inserted;
 }
 
-function runE2ESuite() {
+function runE2ESuite(envExtra = {}) {
   const isWin = process.platform === 'win32';
   const command = isWin ? (process.env.COMSPEC || 'cmd.exe') : 'npx';
   const args = isWin
@@ -219,7 +225,7 @@ function runE2ESuite() {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'test' }
+      env: { ...process.env, NODE_ENV: 'test', ...envExtra }
     });
     child.on('exit', (code) => {
       if (code === 0) {
@@ -239,7 +245,7 @@ async function main() {
   const collection = db.collection(COLLECTION);
   const command = db.command;
 
-  const records = buildPatientRecords();
+  const { records, meta } = buildPatientRecords();
   const patientKeys = Array.from(new Set(records.map((record) => record.key)));
   let testError;
 
@@ -252,11 +258,52 @@ async function main() {
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
+    try {
+      console.log('[run-patient-suite] Triggering patientIntake.syncFromExcel ...');
+      await app.callFunction({
+        name: 'patientIntake',
+        data: {
+          action: 'syncFromExcel',
+          syncBatchId: RUN_ID,
+          forceRefresh: true
+        }
+      });
+      console.log('[run-patient-suite] syncFromExcel completed.');
+    } catch (syncError) {
+      console.warn('[run-patient-suite] syncFromExcel failed:', syncError && syncError.message ? syncError.message : syncError);
+    }
+
+    try {
+      console.log('[run-patient-suite] Refreshing patientProfile cache ...');
+      await app.callFunction({
+        name: 'patientProfile',
+        data: {
+          action: 'list',
+          forceRefresh: true,
+          includeTotal: true,
+          pageSize: 80
+        }
+      });
+      console.log('[run-patient-suite] patientProfile cache refresh request completed.');
+    } catch (cacheError) {
+      console.warn('[run-patient-suite] patientProfile cache refresh failed:', cacheError && cacheError.message ? cacheError.message : cacheError);
+    }
+
     const verify = await collection.where({ ['data.testMarker']: RUN_ID }).get();
     console.log('[run-patient-suite] Verification query returned ' + verify.data.length + ' documents (expected ' + inserted + ').');
 
     console.log('[run-patient-suite] Executing E2E suite...');
-    await runE2ESuite();
+    await runE2ESuite({
+      E2E_AUTOMATION_RUN_ID: RUN_ID,
+      E2E_AUTOMATION_PATIENT_ALPHA: meta.alpha.name,
+      E2E_AUTOMATION_PATIENT_ALPHA_ADDRESS: meta.alpha.address,
+      E2E_AUTOMATION_PATIENT_ALPHA_FATHER: meta.alpha.fatherInfo,
+      E2E_AUTOMATION_PATIENT_ALPHA_MOTHER: meta.alpha.motherInfo,
+      E2E_AUTOMATION_PATIENT_ALPHA_ECONOMY: meta.alpha.familyEconomy,
+      E2E_AUTOMATION_PATIENT_ALPHA_NATIVE: meta.alpha.nativePlace,
+      E2E_AUTOMATION_PATIENT_ALPHA_ETHNICITY: meta.alpha.ethnicity,
+      E2E_AUTOMATION_PATIENT_ALPHA_CAREGIVERS: meta.alpha.caregivers
+    });
     console.log('[run-patient-suite] E2E suite completed successfully.');
   } catch (error) {
     testError = error;
