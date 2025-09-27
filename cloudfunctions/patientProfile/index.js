@@ -206,6 +206,42 @@ async function buildPatientsFromDatabase(options = {}) {
   const docs = Array.isArray(res.data) ? res.data : [];
   const summaries = [];
 
+  const excelMeta = new Map();
+  const excelKeySet = new Set();
+  docs.forEach((doc) => {
+    if (doc && doc.recordKey) {
+      excelKeySet.add(doc.recordKey);
+    }
+    if (doc && doc.patientName) {
+      excelKeySet.add(doc.patientName);
+    }
+    if (doc && doc.key) {
+      excelKeySet.add(doc.key);
+    }
+  });
+
+  const excelKeys = Array.from(excelKeySet).filter(Boolean);
+  const chunkSize = 50;
+  for (let i = 0; i < excelKeys.length; i += chunkSize) {
+    const slice = excelKeys.slice(i, i + chunkSize);
+    try {
+      const excelRes = await db.collection(EXCEL_RECORDS_COLLECTION)
+        .where({ key: _.in(slice) })
+        .get();
+      const excelDocs = Array.isArray(excelRes.data) ? excelRes.data : [];
+      excelDocs.forEach((record) => {
+        if (record && record.key) {
+          excelMeta.set(record.key, {
+            nativePlace: normalizeValue(record.nativePlace),
+            ethnicity: normalizeValue(record.ethnicity)
+          });
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to load excel metadata chunk', slice, error);
+    }
+  }
+
   docs.forEach((doc) => {
     const docId = doc._id || doc.key || doc.patientKey;
     const recordKey = doc.recordKey || (doc.metadata && doc.metadata.excelRecordKey);
@@ -230,6 +266,10 @@ async function buildPatientsFromDatabase(options = {}) {
     const summaryCaregivers = doc.summaryCaregivers || doc.caregivers || data.summaryCaregivers || '';
     const lastNarrative = doc.lastIntakeNarrative || data.lastIntakeNarrative || '';
 
+    const excelInfo = excelMeta.get(nameKey) || excelMeta.get(doc.recordKey) || null;
+    const nativePlace = doc.nativePlace || data.nativePlace || (excelInfo && excelInfo.nativePlace) || '';
+    const ethnicity = doc.ethnicity || data.ethnicity || (excelInfo && excelInfo.ethnicity) || '';
+
     summaries.push({
       key: nameKey,
       patientKey: docId,
@@ -239,6 +279,8 @@ async function buildPatientsFromDatabase(options = {}) {
       gender: doc.gender || '',
       birthDate: doc.birthDate || '',
       idNumber: doc.idNumber || '',
+      nativePlace,
+      ethnicity,
       firstAdmissionDate: firstTs || null,
       latestAdmissionDate: latestTs || null,
       firstDiagnosis: doc.firstDiagnosis || '',
