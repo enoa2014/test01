@@ -114,9 +114,10 @@
     <view class="intake-records-section" wx:if="{{allIntakeRecords.length}}">
       <view class="section-header">
         <text class="section-title">入住记录历史（{{allIntakeRecords.length}}条）</text>
-        <button class="sort-switch" size="mini" plain="true" bindtap="onToggleRecordsSort">
-          {{recordsSortOrder === 'desc' ? '最新在前' : '最早在前'}}
-        </button>
+        <view class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}" bindtap="onToggleRecordsSort">
+          <text class="sort-icon">{{recordsSortOrder === 'desc' ? '▼' : '▲'}}</text>
+          <text class="sort-text">{{recordsSortOrder === 'desc' ? '最新在前' : '最早在前'}}</text>
+        </view>
       </view>
       <view class="intake-record-item" wx:for="{{allIntakeRecords}}" wx:key="intakeId">
         <view class="record-header">
