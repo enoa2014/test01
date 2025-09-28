@@ -2,7 +2,10 @@
   delay,
   waitForElement
 } = require('./helpers/miniapp');
-const { createPatientViaWizard } = require('./helpers/patient-flow');
+const {
+  createPatientViaWizard,
+  continueExistingPatientIntake
+} = require('./helpers/patient-flow');
 
 describe('patient intake wizard (mpflow)', () => {
   test('completes new patient intake', async () => {
@@ -21,6 +24,27 @@ describe('patient intake wizard (mpflow)', () => {
     expect(reminder.length).toBeGreaterThan(0);
 
     expect(patientData.patientName.length).toBeGreaterThan(0);
+    await delay(200);
+  }, 300000);
+
+  test('existing patient intake skips基础/联系人并能完成提交流程', async () => {
+    const { patientData } = await createPatientViaWizard(miniProgram, { __cacheKey: 'existing-flow' });
+
+    const {
+      successPage,
+      wizardSnapshot
+    } = await continueExistingPatientIntake(miniProgram, patientData);
+
+    expect(Array.isArray(wizardSnapshot.visibleSteps)).toBe(true);
+    expect(wizardSnapshot.visibleSteps[0].key).toBe('situation');
+    expect(wizardSnapshot.steps[0].hidden).toBe(true);
+    expect(wizardSnapshot.steps[1].hidden).toBe(true);
+    expect(wizardSnapshot.currentVisibleStepNumber).toBe(1);
+    expect(wizardSnapshot.totalVisibleSteps).toBeGreaterThanOrEqual(3);
+
+    const titleNode = await waitForElement(successPage, '.success-title', { timeout: 10000 });
+    const title = (await titleNode.text()).trim();
+    expect(title).toContain('成功');
     await delay(200);
   }, 300000);
 });

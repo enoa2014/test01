@@ -42,7 +42,7 @@
     <view
       class="patient-item"
       wx:for="{{displayPatients}}"
-      wx:key="key"
+      wx:key="patientKey"
       data-key="{{item.key}}"
       data-patient-key="{{item.patientKey || item.key}}"
       data-record-key="{{item.key}}"

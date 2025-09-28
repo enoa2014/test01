@@ -4,10 +4,10 @@
   <view class="progress-header">
     <view class="progress-steps">
       <view
-        wx:for="{{steps}}"
-        wx:key="index"
-        class="step-item {{currentStep >= index ? 'active' : ''}} {{currentStep > index ? 'completed' : ''}}"
-        data-step="{{index}}"
+        wx:for="{{visibleSteps}}"
+        wx:key="originalIndex"
+        class="step-item {{currentStep === item.originalIndex ? 'active' : ''}} {{currentStep > item.originalIndex ? 'completed' : ''}}"
+        data-step="{{item.originalIndex}}"
         bindtap="onStepTap"
       >
         <view class="step-number">{{index + 1}}</view>
@@ -15,7 +15,7 @@
       </view>
     </view>
     <view class="progress-info">
-      <text class="current-step">第{{currentStep + 1}}步 / 共{{steps.length}}步</text>
+      <text class="current-step">第{{currentVisibleStepNumber}}步 / 共{{totalVisibleSteps}}步</text>
       <text class="required-count" wx:if="{{requiredFieldsCount > 0}}">剩余必填项：{{requiredFieldsCount}}</text>
     </view>
   </view>
@@ -317,7 +317,7 @@
     <view class="action-buttons">
       <button
         class="btn btn-secondary"
-        wx:if="{{currentStep > 0}}"
+        wx:if="{{hasPrevStep}}"
         bindtap="onPrevStep"
       >
         上一步
@@ -325,7 +325,7 @@
 
       <button
         class="btn btn-primary"
-        wx:if="{{currentStep < steps.length - 1}}"
+        wx:if="{{hasNextStep}}"
         disabled="{{!canProceedToNext}}"
         bindtap="onNextStep"
       >
@@ -334,7 +334,7 @@
 
       <button
         class="btn btn-success"
-        wx:if="{{currentStep === steps.length - 1}}"
+        wx:if="{{!hasNextStep}}"
         disabled="{{!allRequiredCompleted || submitting}}"
         bindtap="onSubmit"
         loading="{{submitting}}"

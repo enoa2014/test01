@@ -25,12 +25,12 @@ const LABEL_MAP = {
   idNumber: ["身份证号", "证件号"],
   caregivers: ["监护人"],
   admissionDate: ["入院日期", "入院时间", "入住日期", "入住时间", "收治日期", "收治时间"],
-  hospital: ["医院", "收治医院", "就诊情况_就诊医院"],
-  diagnosis: ["诊断", "初步诊断", "诊断结果", "就诊情况_医院诊断"],
-  doctor: ["医生", "主治医师", "就诊情况_医生姓名"],
-  symptoms: ["症状", "主要症状"],
-  treatmentProcess: ["治疗过程", "康复过程"],
-  followUpPlan: ["康复计划", "后续计划"],
+  hospital: ["医院", "收治医院", "就诊情况_就诊医院", "就诊医院"],
+  diagnosis: ["诊断", "初步诊断", "诊断结果", "就诊情况_医院诊断", "医院诊断"],
+  doctor: ["医生", "主治医师", "就诊情况_医生姓名", "医生姓名"],
+  symptoms: ["症状", "主要症状", "症状详情"],
+  treatmentProcess: ["治疗过程", "康复过程", "医治过程"],
+  followUpPlan: ["康复计划", "后续计划", "后续治疗安排"],
   address: ["地址", "家庭地址", "居住地址"],
   fatherInfo: [
     "父亲",
@@ -38,7 +38,8 @@ const LABEL_MAP = {
     "爸爸",
     "家庭基础信息_父亲姓名联系电话身份证号",
     "家庭基本情况_父亲姓名、电话、身份证号",
-    "父亲姓名、电话、身份证号"
+    "父亲姓名、电话、身份证号",
+    "父亲姓名联系电话身份证号"
   ],
   motherInfo: [
     "母亲",
@@ -46,7 +47,8 @@ const LABEL_MAP = {
     "妈妈",
     "家庭基础信息_母亲姓名联系电话身份证号",
     "家庭基本情况_母亲姓名、电话、身份证号",
-    "母亲姓名、电话、身份证号"
+    "母亲姓名、电话、身份证号",
+    "母亲姓名联系电话身份证号"
   ],
   otherGuardian: ["其他监护人", "家庭基础信息_其他监护人", "家庭基本情况_其他监护人"],
   familyEconomy: ["家庭基础信息_家庭经济", "家庭基本情况_家庭经济", "家庭经济"],
@@ -78,6 +80,24 @@ function normalizeSpacing(value) {
     return '';
   }
   return normalized.replace(/\s+/g, ' ').trim();
+}
+
+function sanitizeIdentifier(value, fallbackSeed) {
+  const base = normalizeSpacing(value);
+  if (base) {
+    const sanitized = base.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (sanitized) {
+      return sanitized;
+    }
+  }
+  const seed = normalizeSpacing(fallbackSeed);
+  if (seed) {
+    const sanitizedSeed = seed.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (sanitizedSeed) {
+      return sanitizedSeed;
+    }
+  }
+  return `excel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function normalizeTimestampValue(value) {
@@ -530,6 +550,81 @@ function computePatientKey(group) {
   return group.patientName;
 }
 
+async function findExistingPatientDoc(collection, normalizedKey) {
+  if (!normalizedKey) {
+    return null;
+  }
+
+  try {
+    const recordRes = await collection.where({ recordKey: normalizedKey }).limit(1).get();
+    if (recordRes.data && recordRes.data.length) {
+      const doc = recordRes.data[0];
+      return { id: doc._id || normalizedKey, doc };
+    }
+  } catch (error) {
+    console.warn('findExistingPatientDoc recordKey query failed', normalizedKey, error);
+  }
+
+  try {
+    const docRes = await collection.doc(normalizedKey).get();
+    if (docRes && docRes.data) {
+      return { id: normalizedKey, doc: docRes.data };
+    }
+  } catch (error) {
+    const notFound = error && (error.errCode === -1 || error.code === 'DOCUMENT_NOT_FOUND' || error.code === 'DATABASE_DOCUMENT_NOT_EXIST');
+    if (!notFound) {
+      console.warn('findExistingPatientDoc direct lookup failed', normalizedKey, error);
+    }
+  }
+
+  try {
+    const nameRes = await collection.where({ patientName: normalizedKey }).limit(5).get();
+    if (nameRes.data && nameRes.data.length) {
+      const doc = nameRes.data[0];
+      return { id: doc._id || normalizedKey, doc };
+    }
+  } catch (error) {
+    console.warn('findExistingPatientDoc name query failed', normalizedKey, error);
+  }
+
+  return null;
+}
+
+async function removeDuplicatePatientDocs(collection, patientName, keepId, primaryIdNumber) {
+  const normalizedName = normalizeSpacing(patientName);
+  if (!normalizedName || !keepId) {
+    return;
+  }
+
+  let res;
+  try {
+    res = await collection.where({ patientName: normalizedName }).get();
+  } catch (error) {
+    console.warn('removeDuplicatePatientDocs query failed', normalizedName, error);
+    return;
+  }
+
+  const docs = Array.isArray(res.data) ? res.data : [];
+  const normalizeIdNumber = (value) => normalizeSpacing(value);
+  const baselineIdNumber = normalizeIdNumber(primaryIdNumber);
+
+  for (const doc of docs) {
+    const docId = doc && doc._id;
+    if (!docId || docId === keepId) {
+      continue;
+    }
+    const docIdNumber = normalizeIdNumber(doc && (doc.idNumber || (doc.data && doc.data.idNumber)));
+    if (baselineIdNumber && docIdNumber && docIdNumber !== baselineIdNumber) {
+      continue;
+    }
+    try {
+      await collection.doc(docId).remove();
+    } catch (error) {
+      console.warn('removeDuplicatePatientDocs remove failed', normalizedName, docId, error);
+    }
+  }
+}
+
 // 构建患者文档数据
 function buildPatientPayload(group, latestRecord) {
   return {
@@ -548,6 +643,7 @@ function buildPatientPayload(group, latestRecord) {
     admissionCount: group.admissionCount || 0,
     firstAdmissionDate: group.firstAdmissionTimestamp,
     latestAdmissionDate: group.latestAdmissionTimestamp,
+    recordKey: normalizeSpacing(group.patientName),
     createdAt: Date.now(),
     updatedAt: Date.now()
   };
@@ -558,24 +654,55 @@ async function upsertPatientDocument(patientKey, payload, syncBatchId, options =
   const db = cloud.database();
   const collection = db.collection(PATIENTS_COLLECTION);
   const serverDate = options.serverDate || db.serverDate();
+  const normalizedKey = normalizeSpacing(patientKey);
 
+  const existing = await findExistingPatientDoc(collection, normalizedKey);
+
+  const baseMeta = existing && existing.doc && existing.doc.meta ? existing.doc.meta : {};
   const docPayload = {
     ...payload,
+    recordKey: normalizedKey,
+    createdAt: existing && existing.doc && existing.doc.createdAt ? existing.doc.createdAt : (payload.createdAt || serverDate),
     updatedAt: serverDate,
     meta: {
+      ...baseMeta,
       ...(payload.meta || {}),
       lastExcelSyncAt: serverDate,
       lastExcelSyncBatchId: syncBatchId
     }
   };
 
-  await collection.doc(patientKey).set({ data: docPayload });
-  return patientKey;
+  const targetId = existing && existing.id
+    ? existing.id
+    : sanitizeIdentifier(normalizedKey ? `excel_${normalizedKey}` : '', `excel_${Date.now()}`);
+
+  await collection.doc(targetId).set({ data: docPayload });
+  await removeDuplicatePatientDocs(collection, normalizedKey, targetId, payload.idNumber || (existing && existing.doc && existing.doc.idNumber));
+  return targetId;
 }
 
 // 构建入住记录数据
 function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
   const latestRecord = group.records && group.records[0] ? group.records[0] : {};
+  const normalize = (value) => normalizeSpacing(value) || '';
+  const medicalInfo = {
+    hospital: normalize(latestRecord.hospital),
+    diagnosis: normalize(latestRecord.diagnosis),
+    doctor: normalize(latestRecord.doctor),
+    treatmentProcess: normalize(latestRecord.treatmentProcess),
+    followUpPlan: normalize(latestRecord.followUpPlan),
+    symptoms: normalize(latestRecord.symptoms)
+  };
+
+  Object.keys(medicalInfo).forEach((key) => {
+    if (!medicalInfo[key]) {
+      delete medicalInfo[key];
+    }
+  });
+
+  const situationText = normalize(latestRecord.symptoms)
+    || normalize(latestRecord.diagnosis)
+    || normalize(latestRecord.treatmentProcess);
 
   return {
     patientKey,
@@ -598,11 +725,12 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
     },
     intakeInfo: {
       intakeTime: group.latestAdmissionTimestamp || Date.now(),
-      situation: latestRecord.symptoms || latestRecord.diagnosis || '',
-      followUpPlan: latestRecord.followUpPlan || '',
+      situation: situationText,
+      followUpPlan: normalize(latestRecord.followUpPlan),
       medicalHistory: [],
       attachments: []
     },
+    medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
     metadata: {
       submittedAt: serverDate,
       lastModifiedAt: serverDate,
@@ -669,8 +797,8 @@ async function syncPatientsFromGroups(groups, options = {}) {
       const patientDocId = await upsertPatientDocument(patientKey, patientPayload, syncBatchId, { serverDate });
       patientCount += 1;
 
-      const intakePayload = buildIntakePayload(group, patientKey, syncBatchId, serverDate);
-      const intakeDocId = await upsertIntakeRecord(patientKey, intakePayload, { serverDate });
+      const intakePayload = buildIntakePayload(group, patientDocId, syncBatchId, serverDate);
+      const intakeDocId = await upsertIntakeRecord(patientDocId, intakePayload, { serverDate });
       intakeCount += 1;
     } catch (error) {
       console.error('syncPatientsFromGroups item failed', group.patientName, error);

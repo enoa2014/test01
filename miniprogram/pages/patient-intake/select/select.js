@@ -288,8 +288,9 @@ Page({
     }
 
     // 跳转到向导页面，传递患者信息
+    const targetKey = selectedPatient.patientKey || selectedPatient.key;
     wx.navigateTo({
-      url: `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(selectedPatient.key)}&mode=existing`
+      url: `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(targetKey)}&mode=existing`
     });
   },
 

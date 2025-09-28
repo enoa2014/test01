@@ -210,8 +210,90 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
   };
 }
 
+async function continueExistingPatientIntake(miniProgram, existingPatient, overrides = {}) {
+  if (!existingPatient || !existingPatient.patientKey) {
+    throw new Error('existingPatient with patientKey is required');
+  }
+
+  const followUpSituation = overrides.situation || `${situationText()} Follow-up ${Date.now()}`;
+  const wizardUrl = `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(existingPatient.patientKey)}`;
+
+  await miniProgram.reLaunch(wizardUrl);
+  const wizardPage = await waitForPage(miniProgram, 'pages/patient-intake/wizard/wizard', { timeout: 20000 });
+
+  let initialSnapshot;
+  await waitForCondition(async () => {
+    const data = await wizardPage.data();
+    if (data && Array.isArray(data.visibleSteps) && data.visibleSteps.length > 0) {
+      initialSnapshot = {
+        steps: data.steps,
+        visibleSteps: data.visibleSteps,
+        currentStep: data.currentStep,
+        currentVisibleStepNumber: data.currentVisibleStepNumber,
+        totalVisibleSteps: data.totalVisibleSteps,
+        hasPrevStep: data.hasPrevStep,
+        hasNextStep: data.hasNextStep
+      };
+      return true;
+    }
+    return false;
+  }, { timeout: 15000, message: 'Existing patient wizard未初始化可见步骤' });
+
+  const stepOrder = initialSnapshot.visibleSteps.map(step => step.originalIndex);
+  if (!stepOrder.length) {
+    throw new Error('Existing patient wizard未提供可见步骤');
+  }
+
+  const situationTextarea = await waitForElement(wizardPage, 'textarea[data-field="situation"]', { timeout: 12000 });
+  await inputValue(situationTextarea, followUpSituation);
+
+  await waitForCondition(async () => {
+    const data = await wizardPage.data();
+    return data.canProceedToNext === true;
+  }, { timeout: 8000, message: 'Existing patient情况说明步骤未满足条件' });
+
+  const firstNextButton = await waitForElement(wizardPage, '.btn-primary', { timeout: 8000 });
+  await firstNextButton.tap();
+
+  const uploadStepIndex = stepOrder[1];
+  await waitForCondition(async () => {
+    const data = await wizardPage.data();
+    return data.currentStep === uploadStepIndex;
+  }, { timeout: 8000, message: 'Existing patient未进入附件上传步骤' });
+
+  const secondNextButton = await waitForElement(wizardPage, '.btn-primary', { timeout: 8000 });
+  await secondNextButton.tap();
+
+  const reviewStepIndex = stepOrder[stepOrder.length - 1];
+  await waitForCondition(async () => {
+    const data = await wizardPage.data();
+    return data.currentStep === reviewStepIndex && data.hasNextStep === false;
+  }, { timeout: 8000, message: 'Existing patient未进入核对提交步骤' });
+
+  await waitForCondition(async () => {
+    const data = await wizardPage.data();
+    return data.allRequiredCompleted === true;
+  }, { timeout: 8000, message: 'Existing patient核对步骤仍提示缺失必填项' });
+
+  const submitButton = await waitForElement(wizardPage, '.btn-success', { timeout: 8000 });
+  await submitButton.tap();
+
+  const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', { timeout: 20000 });
+  await waitForElement(successPage, '.success-title');
+
+  return {
+    successPage,
+    patientData: {
+      ...existingPatient,
+      situation: followUpSituation
+    },
+    wizardSnapshot: initialSnapshot
+  };
+}
+
 module.exports = {
   createPatientViaWizard,
+  continueExistingPatientIntake,
   randomString,
   generateIdNumber,
   generateMobile,

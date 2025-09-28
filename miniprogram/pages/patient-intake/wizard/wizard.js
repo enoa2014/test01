@@ -1,18 +1,40 @@
 // 患者录入向导页面
+const STEP_DEFINITIONS = [
+  { title: '基础信息', key: 'basic' },
+  { title: '联系人', key: 'contact' },
+  { title: '情况说明', key: 'situation' },
+  { title: '附件上传', key: 'upload' },
+  { title: '核对提交', key: 'review' },
+];
+
+function buildSteps(isEditingExisting = false) {
+  return STEP_DEFINITIONS.map((step, index) => ({
+    ...step,
+    originalIndex: index,
+    hidden: isEditingExisting && (step.key === 'basic' || step.key === 'contact'),
+  }));
+}
+
+function getVisibleSteps(steps) {
+  return steps.filter(step => !step.hidden);
+}
+
+const INITIAL_STEPS = buildSteps(false);
+const INITIAL_VISIBLE_STEPS = getVisibleSteps(INITIAL_STEPS);
+
 const DRAFT_STORAGE_KEY = 'patient_intake_draft';
 const DRAFT_EXPIRE_DAYS = 7;
 
 Page({
   data: {
     // 步骤配置
-    steps: [
-      { title: '基础信息', key: 'basic' },
-      { title: '联系人', key: 'contact' },
-      { title: '情况说明', key: 'situation' },
-      { title: '附件上传', key: 'upload' },
-      { title: '核对提交', key: 'review' }
-    ],
-    currentStep: 0,
+    steps: INITIAL_STEPS,
+    visibleSteps: INITIAL_VISIBLE_STEPS,
+    totalVisibleSteps: INITIAL_VISIBLE_STEPS.length,
+    currentVisibleStepNumber: INITIAL_VISIBLE_STEPS.length ? 1 : 0,
+    hasPrevStep: false,
+    hasNextStep: INITIAL_VISIBLE_STEPS.length > 1,
+    currentStep: INITIAL_VISIBLE_STEPS.length ? INITIAL_VISIBLE_STEPS[0].originalIndex : 0,
 
     // 表单数据
     formData: {
@@ -27,7 +49,7 @@ Page({
       emergencyPhone: '',
       backupContact: '',
       backupPhone: '',
-      situation: ''
+      situation: '',
     },
 
     // 证件类型选项
@@ -41,13 +63,13 @@ Page({
     situationConfig: {
       minLength: 30,
       maxLength: 500,
-      example: '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。'
+      example: '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。',
     },
 
     uploadConfig: {
       maxFileSize: 10,
       maxCount: 5,
-      allowedTypes: 'JPG、PNG、PDF、Word、Excel等'
+      allowedTypes: 'JPG、PNG、PDF、Word、Excel等',
     },
 
     // 上传文件列表
@@ -61,22 +83,22 @@ Page({
 
     // 患者选择相关（如果是从患者选择页面进入）
     patientKey: '',
-    isEditingExisting: false
+    isEditingExisting: false,
   },
 
   onLoad(options) {
+    const isEditingExisting = Boolean(options.patientKey);
+
+    this.configureSteps(isEditingExisting);
+
     this.setData({
-      today: this.formatDate(new Date())
+      today: this.formatDate(new Date()),
+      patientKey: options.patientKey || '',
     });
 
     // 首先加载配置
     this.loadConfig().then(() => {
-      // 检查是否是编辑已有患者
-      if (options.patientKey) {
-        this.setData({
-          patientKey: options.patientKey,
-          isEditingExisting: true
-        });
+      if (isEditingExisting && options.patientKey) {
         this.loadPatientData(options.patientKey);
       } else {
         // 检查是否有草稿
@@ -84,6 +106,7 @@ Page({
       }
 
       // 初始化必填项状态
+      this.ensureCurrentStepVisible();
       this.updateRequiredFields();
     });
   },
@@ -114,7 +137,7 @@ Page({
     try {
       const res = await wx.cloud.callFunction({
         name: 'patientIntake',
-        data: { action: 'getConfig' }
+        data: { action: 'getConfig' },
       });
 
       if (res.result && res.result.success) {
@@ -123,14 +146,14 @@ Page({
         // 更新情况说明配置
         if (config.situationConfig) {
           this.setData({
-            situationConfig: config.situationConfig
+            situationConfig: config.situationConfig,
           });
         }
 
         // 更新上传配置
         if (config.uploadConfig) {
           this.setData({
-            uploadConfig: config.uploadConfig
+            uploadConfig: config.uploadConfig,
           });
         }
       }
@@ -149,7 +172,7 @@ Page({
         const expireTime = DRAFT_EXPIRE_DAYS * 24 * 60 * 60 * 1000;
         if (now - draft.timestamp < expireTime) {
           this.setData({ showDraftModal: true });
-          return;
+          
         }
       }
     } catch (error) {
@@ -166,12 +189,13 @@ Page({
           formData: { ...this.data.formData, ...draft.data.formData },
           currentStep: draft.data.currentStep || 0,
           uploadedFiles: draft.data.uploadedFiles || [],
-          showDraftModal: false
+          showDraftModal: false,
         });
+        this.ensureCurrentStepVisible();
         this.updateRequiredFields();
         wx.showToast({
           title: '草稿已恢复',
-          icon: 'success'
+          icon: 'success',
         });
       }
     } catch (error) {
@@ -196,11 +220,11 @@ Page({
       const draftData = {
         formData: this.data.formData,
         currentStep: this.data.currentStep,
-        uploadedFiles: this.data.uploadedFiles
+        uploadedFiles: this.data.uploadedFiles,
       };
       wx.setStorageSync(DRAFT_STORAGE_KEY, {
         data: draftData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       this.setData({ draftSaved: true });
       setTimeout(() => {
@@ -225,6 +249,87 @@ Page({
     }
   },
 
+  configureSteps(isEditingExisting) {
+    const steps = buildSteps(isEditingExisting);
+    const firstVisibleStep = this.getFirstVisibleStepIndex(steps);
+
+    this.setData({
+      steps,
+      currentStep: firstVisibleStep,
+      isEditingExisting,
+    });
+
+    this.refreshVisibleStepMeta(steps, firstVisibleStep);
+  },
+
+  refreshVisibleStepMeta(stepsOverride, currentStepOverride) {
+    const steps = stepsOverride || this.data.steps || [];
+    const currentStep = typeof currentStepOverride === 'number' ? currentStepOverride : this.data.currentStep;
+    const visibleSteps = getVisibleSteps(steps).map(step => ({ ...step }));
+    const currentVisibleIndex = visibleSteps.findIndex(step => step.originalIndex === currentStep);
+
+    this.setData({
+      visibleSteps,
+      totalVisibleSteps: visibleSteps.length,
+      currentVisibleStepNumber: currentVisibleIndex >= 0 ? currentVisibleIndex + 1 : 0,
+      hasPrevStep: currentVisibleIndex > 0,
+      hasNextStep: currentVisibleIndex >= 0 && currentVisibleIndex < visibleSteps.length - 1,
+    });
+  },
+
+  getFirstVisibleStepIndex(steps) {
+    const visible = (steps || []).find(step => !step.hidden);
+    return visible ? visible.originalIndex : 0;
+  },
+
+  getNextVisibleStepIndex(currentStep) {
+    const { steps } = this.data;
+    if (!steps || !steps.length) {
+      return null;
+    }
+    for (let i = currentStep + 1; i < steps.length; i += 1) {
+      if (!steps[i].hidden) {
+        return i;
+      }
+    }
+    return null;
+  },
+
+  getPrevVisibleStepIndex(currentStep) {
+    const { steps } = this.data;
+    if (!steps || !steps.length) {
+      return null;
+    }
+    for (let i = currentStep - 1; i >= 0; i -= 1) {
+      if (!steps[i].hidden) {
+        return i;
+      }
+    }
+    return null;
+  },
+
+  isStepVisible(stepIndex) {
+    const step = this.data.steps[stepIndex];
+    return !!(step && !step.hidden);
+  },
+
+  ensureCurrentStepVisible() {
+    const { steps, currentStep } = this.data;
+    if (!steps || !steps.length) {
+      return;
+    }
+
+    const step = steps[currentStep];
+    if (!step || step.hidden) {
+      const firstVisible = this.getFirstVisibleStepIndex(steps);
+      this.setData({ currentStep: firstVisible });
+      this.refreshVisibleStepMeta(steps, firstVisible);
+      return;
+    }
+
+    this.refreshVisibleStepMeta(steps, currentStep);
+  },
+
   // 加载患者数据（编辑已有患者时）
   async loadPatientData(patientKey) {
     try {
@@ -232,7 +337,7 @@ Page({
 
       const res = await wx.cloud.callFunction({
         name: 'patientIntake',
-        data: { action: 'getPatientDetail', patientKey }
+        data: { action: 'getPatientDetail', patientKey },
       });
 
       if (!res.result || res.result.success === false) {
@@ -261,14 +366,14 @@ Page({
         emergencyPhone: patient.emergencyPhone || '',
         backupContact: patient.backupContact || '',
         backupPhone: patient.backupPhone || '',
-        situation: situationText
+        situation: situationText,
       };
 
       const idTypeIndex = this.data.idTypes.indexOf(nextFormData.idType || '身份证');
 
       this.setData({
         formData: nextFormData,
-        idTypeIndex: idTypeIndex >= 0 ? idTypeIndex : 0
+        idTypeIndex: idTypeIndex >= 0 ? idTypeIndex : 0,
       });
 
       this.updateRequiredFields();
@@ -277,7 +382,7 @@ Page({
       console.error('加载患者数据失败', error);
       wx.showToast({
         title: error.message || '加载失败',
-        icon: 'error'
+        icon: 'error',
       });
     } finally {
       wx.hideLoading();
@@ -314,38 +419,39 @@ Page({
     let requiredFieldsText = '';
 
     switch (currentStep) {
-      case 0: // 基础信息
-        const basicRequired = [
-          { key: 'patientName', label: '姓名' },
-          { key: 'idType', label: '证件类型' },
-          { key: 'idNumber', label: '证件号码' },
-          { key: 'gender', label: '性别' },
-          { key: 'birthDate', label: '出生日期' }
-        ];
-        requiredFields = basicRequired.filter(field => !formData[field.key]);
-        break;
-
-      case 1: // 联系人
-        const contactRequired = [
-          { key: 'address', label: '常住地址' },
-          { key: 'emergencyContact', label: '紧急联系人' },
-          { key: 'emergencyPhone', label: '紧急联系人电话' }
-        ];
-        requiredFields = contactRequired.filter(field => !formData[field.key]);
-        break;
-
-      case 2: // 情况说明
-        if (!formData.situation || formData.situation.length < this.data.situationConfig.minLength) {
-          requiredFields.push({ key: 'situation', label: '情况说明' });
-        }
-        break;
-
-      case 3: // 附件上传 - 选填
-        break;
-
-      case 4: // 核对提交
-        requiredFields = this.getAllMissingRequiredFields();
-        break;
+    case 0: { // 基础信息
+      const basicRequired = [
+        { key: 'patientName', label: '姓名' },
+        { key: 'idType', label: '证件类型' },
+        { key: 'idNumber', label: '证件号码' },
+        { key: 'gender', label: '性别' },
+        { key: 'birthDate', label: '出生日期' },
+      ];
+      requiredFields = basicRequired.filter(field => !formData[field.key]);
+      break;
+    }
+    case 1: { // 联系人
+      const contactRequired = [
+        { key: 'address', label: '常住地址' },
+        { key: 'emergencyContact', label: '紧急联系人' },
+        { key: 'emergencyPhone', label: '紧急联系人电话' },
+      ];
+      requiredFields = contactRequired.filter(field => !formData[field.key]);
+      break;
+    }
+    case 2: { // 情况说明
+      if (!formData.situation || formData.situation.length < this.data.situationConfig.minLength) {
+        requiredFields.push({ key: 'situation', label: '情况说明' });
+      }
+      break;
+    }
+    case 3: { // 附件上传 - 选填
+      break;
+    }
+    case 4: { // 核对提交
+      requiredFields = this.getAllMissingRequiredFields();
+      break;
+    }
     }
 
     requiredFieldsText = requiredFields.map(field => field.label).join('、');
@@ -357,28 +463,38 @@ Page({
       currentStepData: {
         ...this.data.steps[currentStep],
         requiredFields,
-        requiredFieldsText
+        requiredFieldsText,
       },
       requiredFieldsCount: requiredFields.length,
       canProceedToNext,
-      allRequiredCompleted
+      allRequiredCompleted,
     });
+
+    this.refreshVisibleStepMeta();
   },
 
   // 获取所有缺失的必填项
   getAllMissingRequiredFields() {
-    const { formData, situationConfig } = this.data;
-    const allRequired = [
+    const { formData, situationConfig, isEditingExisting } = this.data;
+    const baseAndContactFields = [
       { key: 'patientName', label: '姓名' },
       { key: 'idNumber', label: '证件号码' },
       { key: 'gender', label: '性别' },
       { key: 'birthDate', label: '出生日期' },
       { key: 'address', label: '常住地址' },
       { key: 'emergencyContact', label: '紧急联系人' },
-      { key: 'emergencyPhone', label: '紧急联系人电话' }
+      { key: 'emergencyPhone', label: '紧急联系人电话' },
     ];
 
-    let missing = allRequired.filter(field => !formData[field.key]);
+    const missing = [];
+
+    if (!isEditingExisting) {
+      baseAndContactFields.forEach(field => {
+        if (!formData[field.key]) {
+          missing.push(field);
+        }
+      });
+    }
 
     // 检查情况说明
     if (!formData.situation || formData.situation.length < situationConfig.minLength) {
@@ -395,7 +511,7 @@ Page({
 
     this.setData({
       [`formData.${field}`]: value,
-      [`errors.${field}`]: '' // 清除错误
+      [`errors.${field}`]: '', // 清除错误
     });
 
     // 实时校验
@@ -412,7 +528,7 @@ Page({
       this.setData({
         idTypeIndex: value,
         [`formData.${field}`]: this.data.idTypes[value],
-        [`errors.${field}`]: ''
+        [`errors.${field}`]: '',
       });
     }
 
@@ -426,7 +542,7 @@ Page({
 
     this.setData({
       [`formData.${field}`]: value,
-      [`errors.${field}`]: ''
+      [`errors.${field}`]: '',
     });
 
     this.updateRequiredFields();
@@ -439,7 +555,7 @@ Page({
 
     this.setData({
       [`formData.${field}`]: value,
-      [`errors.${field}`]: ''
+      [`errors.${field}`]: '',
     });
 
     this.updateRequiredFields();
@@ -450,40 +566,40 @@ Page({
     let error = '';
 
     switch (field) {
-      case 'patientName':
-        if (!value || !value.trim()) {
-          error = '请输入患者姓名';
-        }
-        break;
+    case 'patientName':
+      if (!value || !value.trim()) {
+        error = '请输入患者姓名';
+      }
+      break;
 
-      case 'idNumber':
-        if (!value || !value.trim()) {
-          error = '请输入证件号码';
-        } else if (this.data.formData.idType === '身份证' && !/^[1-9]\d{17}$/.test(value)) {
-          error = '身份证号码格式不正确';
-        }
-        break;
+    case 'idNumber':
+      if (!value || !value.trim()) {
+        error = '请输入证件号码';
+      } else if (this.data.formData.idType === '身份证' && !/^[1-9]\d{17}$/.test(value)) {
+        error = '身份证号码格式不正确';
+      }
+      break;
 
-      case 'phone':
-      case 'emergencyPhone':
-      case 'backupPhone':
-        if (value && !/^1[3-9]\d{9}$/.test(value)) {
-          error = '手机号码格式不正确';
-        }
-        break;
+    case 'phone':
+    case 'emergencyPhone':
+    case 'backupPhone':
+      if (value && !/^1[3-9]\d{9}$/.test(value)) {
+        error = '手机号码格式不正确';
+      }
+      break;
 
-      case 'situation':
-        if (value.length < this.data.situationConfig.minLength) {
-          error = `情况说明至少需要${this.data.situationConfig.minLength}字`;
-        } else if (!this.checkSituationKeywords(value)) {
-          error = '情况说明应包含护理需求或症状相关信息';
-        }
-        break;
+    case 'situation':
+      if (value.length < this.data.situationConfig.minLength) {
+        error = `情况说明至少需要${this.data.situationConfig.minLength}字`;
+      } else if (!this.checkSituationKeywords(value)) {
+        error = '情况说明应包含护理需求或症状相关信息';
+      }
+      break;
     }
 
     if (error) {
       this.setData({
-        [`errors.${field}`]: error
+        [`errors.${field}`]: error,
       });
     }
 
@@ -499,28 +615,34 @@ Page({
   // 步骤导航点击
   onStepTap(e) {
     const { step } = e.currentTarget.dataset;
-    if (step <= this.data.currentStep) {
-      this.setData({ currentStep: step });
+    const targetIndex = Number(step);
+    if (!this.isStepVisible(targetIndex)) {
+      return;
+    }
+    if (targetIndex <= this.data.currentStep) {
+      this.setData({ currentStep: targetIndex });
       this.updateRequiredFields();
     }
   },
 
   // 上一步
   onPrevStep() {
-    if (this.data.currentStep > 0) {
-      this.setData({
-        currentStep: this.data.currentStep - 1
-      });
+    const previousStep = this.getPrevVisibleStepIndex(this.data.currentStep);
+    if (previousStep !== null) {
+      this.setData({ currentStep: previousStep });
       this.updateRequiredFields();
     }
   },
 
   // 下一步
   onNextStep() {
-    if (this.validateCurrentStep()) {
-      this.setData({
-        currentStep: this.data.currentStep + 1
-      });
+    if (!this.validateCurrentStep()) {
+      return;
+    }
+
+    const nextStep = this.getNextVisibleStepIndex(this.data.currentStep);
+    if (nextStep !== null) {
+      this.setData({ currentStep: nextStep });
       this.updateRequiredFields();
       this.saveDraft(); // 完成步骤后保存草稿
     }
@@ -533,59 +655,60 @@ Page({
     const errors = {};
 
     switch (currentStep) {
-      case 0: // 基础信息
-        if (!formData.patientName || !formData.patientName.trim()) {
-          errors.patientName = '请输入患者姓名';
-          isValid = false;
-        }
-        if (!formData.idNumber || !formData.idNumber.trim()) {
-          errors.idNumber = '请输入证件号码';
-          isValid = false;
-        } else if (!this.validateField('idNumber', formData.idNumber)) {
-          isValid = false;
-        }
-        if (!formData.gender) {
-          errors.gender = '请选择性别';
-          isValid = false;
-        }
-        if (!formData.birthDate) {
-          errors.birthDate = '请选择出生日期';
-          isValid = false;
-        }
-        if (formData.phone && !this.validateField('phone', formData.phone)) {
-          isValid = false;
-        }
-        break;
-
-      case 1: // 联系人
-        if (!formData.address || !formData.address.trim()) {
-          errors.address = '请输入常住地址';
-          isValid = false;
-        }
-        if (!formData.emergencyContact || !formData.emergencyContact.trim()) {
-          errors.emergencyContact = '请输入紧急联系人';
-          isValid = false;
-        }
-        if (!formData.emergencyPhone || !formData.emergencyPhone.trim()) {
-          errors.emergencyPhone = '请输入紧急联系人电话';
-          isValid = false;
-        } else if (!this.validateField('emergencyPhone', formData.emergencyPhone)) {
-          isValid = false;
-        }
-        if (formData.backupPhone && !this.validateField('backupPhone', formData.backupPhone)) {
-          isValid = false;
-        }
-        break;
-
-      case 2: // 情况说明
-        if (!formData.situation || formData.situation.length < this.data.situationConfig.minLength) {
-          errors.situation = `情况说明至少需要${this.data.situationConfig.minLength}字`;
-          isValid = false;
-        } else if (!this.checkSituationKeywords(formData.situation)) {
-          errors.situation = '情况说明应包含护理需求或症状相关信息';
-          isValid = false;
-        }
-        break;
+    case 0: { // 基础信息
+      if (!formData.patientName || !formData.patientName.trim()) {
+        errors.patientName = '请输入患者姓名';
+        isValid = false;
+      }
+      if (!formData.idNumber || !formData.idNumber.trim()) {
+        errors.idNumber = '请输入证件号码';
+        isValid = false;
+      } else if (!this.validateField('idNumber', formData.idNumber)) {
+        isValid = false;
+      }
+      if (!formData.gender) {
+        errors.gender = '请选择性别';
+        isValid = false;
+      }
+      if (!formData.birthDate) {
+        errors.birthDate = '请选择出生日期';
+        isValid = false;
+      }
+      if (formData.phone && !this.validateField('phone', formData.phone)) {
+        isValid = false;
+      }
+      break;
+    }
+    case 1: { // 联系人
+      if (!formData.address || !formData.address.trim()) {
+        errors.address = '请输入常住地址';
+        isValid = false;
+      }
+      if (!formData.emergencyContact || !formData.emergencyContact.trim()) {
+        errors.emergencyContact = '请输入紧急联系人';
+        isValid = false;
+      }
+      if (!formData.emergencyPhone || !formData.emergencyPhone.trim()) {
+        errors.emergencyPhone = '请输入紧急联系人电话';
+        isValid = false;
+      } else if (!this.validateField('emergencyPhone', formData.emergencyPhone)) {
+        isValid = false;
+      }
+      if (formData.backupPhone && !this.validateField('backupPhone', formData.backupPhone)) {
+        isValid = false;
+      }
+      break;
+    }
+    case 2: { // 情况说明
+      if (!formData.situation || formData.situation.length < this.data.situationConfig.minLength) {
+        errors.situation = `情况说明至少需要${this.data.situationConfig.minLength}字`;
+        isValid = false;
+      } else if (!this.checkSituationKeywords(formData.situation)) {
+        errors.situation = '情况说明应包含护理需求或症状相关信息';
+        isValid = false;
+      }
+      break;
+    }
     }
 
     if (!isValid) {
@@ -596,7 +719,7 @@ Page({
         wx.showToast({
           title: errors[firstError],
           icon: 'none',
-          duration: 3000
+          duration: 3000,
         });
       }
     }
@@ -617,9 +740,9 @@ Page({
         console.error('选择文件失败', error);
         wx.showToast({
           title: '选择文件失败',
-          icon: 'error'
+          icon: 'error',
         });
-      }
+      },
     });
   },
 
@@ -629,7 +752,7 @@ Page({
       if (this.data.uploadedFiles.length >= this.data.uploadConfig.maxCount) {
         wx.showToast({
           title: `最多只能上传${this.data.uploadConfig.maxCount}个文件`,
-          icon: 'none'
+          icon: 'none',
         });
         break;
       }
@@ -640,7 +763,7 @@ Page({
         console.error('上传文件失败', error);
         wx.showToast({
           title: `上传${file.name}失败`,
-          icon: 'error'
+          icon: 'error',
         });
       }
     }
@@ -662,16 +785,16 @@ Page({
         id: Date.now().toString(),
         displayName: file.name,
         sizeText: this.formatFileSize(file.size),
-        category: file.type?.startsWith('image/') ? 'image' : 'document'
+        category: file.type?.startsWith('image/') ? 'image' : 'document',
       };
 
       this.setData({
-        uploadedFiles: [...this.data.uploadedFiles, uploadedFile]
+        uploadedFiles: [...this.data.uploadedFiles, uploadedFile],
       });
 
       wx.showToast({
         title: '上传成功',
-        icon: 'success'
+        icon: 'success',
       });
 
     } finally {
@@ -687,12 +810,11 @@ Page({
   },
 
   // 预览文件
-  previewFile(e) {
-    const { id } = e.currentTarget.dataset;
+  previewFile(_e) {
     // 这里应该调用预览接口
     wx.showToast({
       title: '预览功能开发中',
-      icon: 'none'
+      icon: 'none',
     });
   },
 
@@ -704,7 +826,7 @@ Page({
 
     wx.showToast({
       title: '删除成功',
-      icon: 'success'
+      icon: 'success',
     });
   },
 
@@ -713,7 +835,7 @@ Page({
     if (!this.data.allRequiredCompleted) {
       wx.showToast({
         title: '请完成所有必填项',
-        icon: 'none'
+        icon: 'none',
       });
       return;
     }
@@ -733,14 +855,14 @@ Page({
 
       // 跳转到成功页面
       wx.redirectTo({
-        url: '/pages/patient-intake/success/success'
+        url: '/pages/patient-intake/success/success',
       });
 
     } catch (error) {
       console.error('提交失败', error);
       wx.showToast({
         title: error.message || '提交失败，请重试',
-        icon: 'error'
+        icon: 'error',
       });
     } finally {
       this.setData({ submitting: false });
@@ -757,13 +879,13 @@ Page({
       patientKey: isEditingExisting ? patientKey : null,
       formData,
       uploadedFiles,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // 调用云函数
     const res = await wx.cloud.callFunction({
       name: 'patientIntake',
-      data: submitData
+      data: submitData,
     });
 
     if (!res.result || !res.result.success) {
@@ -771,5 +893,5 @@ Page({
     }
 
     return res.result;
-  }
+  },
 });

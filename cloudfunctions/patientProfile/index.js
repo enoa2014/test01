@@ -532,15 +532,81 @@ function formatPatientDetail(group) {
   ]);
 
   // Build medical records
-  const records = group.records.map(record => ({
-    admissionDate: record.admissionDate || '',
-    hospital: record.hospital || '',
-    diagnosis: record.diagnosis || '',
-    doctor: record.doctor || '',
-    symptoms: record.symptoms || '',
-    treatmentProcess: record.treatmentProcess || '',
-    followUpPlan: record.followUpPlan || ''
-  })).filter(record => record.admissionDate || record.hospital || record.diagnosis);
+  const dedupeSet = new Set();
+  const records = (Array.isArray(group.records) ? group.records : []).reduce((acc, record, index) => {
+    if (!record) {
+      return acc;
+    }
+
+    const admissionDateText = normalizeValue(record.admissionDate);
+    const admissionTimestamp = normalizeTimestamp(record.admissionTimestamp || record._importedAt || record.updatedAt);
+    const hospital = normalizeSpacing(record.hospital);
+    const diagnosis = normalizeSpacing(record.diagnosis);
+    const doctor = normalizeSpacing(record.doctor);
+    const symptoms = normalizeSpacing(record.symptoms);
+    const treatmentProcess = normalizeSpacing(record.treatmentProcess);
+    const followUpPlan = normalizeSpacing(record.followUpPlan);
+
+    const dedupeKey = [
+      admissionTimestamp || '',
+      admissionDateText,
+      hospital,
+      diagnosis,
+      doctor,
+      symptoms,
+      treatmentProcess,
+      followUpPlan
+    ].join('|');
+
+    if (dedupeSet.has(dedupeKey)) {
+      return acc;
+    }
+    dedupeSet.add(dedupeKey);
+
+    const situationText = normalizeSpacing(record.situation)
+      || normalizeSpacing(record.symptoms)
+      || normalizeSpacing(record.treatmentProcess)
+      || normalizeSpacing(record.diagnosis);
+
+    const medicalInfo = {
+      hospital,
+      diagnosis,
+      doctor,
+      symptoms,
+      treatmentProcess,
+      followUpPlan
+    };
+
+    Object.keys(medicalInfo).forEach((key) => {
+      if (!medicalInfo[key]) {
+        delete medicalInfo[key];
+      }
+    });
+
+    acc.push({
+      intakeId: `excel_${group.key || 'patient'}_${index}`,
+      intakeTime: admissionTimestamp || null,
+      admissionDate: admissionDateText,
+      status: 'excel-import',
+      hospital,
+      diagnosis,
+      doctor,
+      symptoms,
+      treatmentProcess,
+      followUpPlan,
+      situation: situationText,
+      medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
+      intakeInfo: situationText || followUpPlan
+        ? {
+            intakeTime: admissionTimestamp || null,
+            situation: situationText,
+            followUpPlan
+          }
+        : undefined
+    });
+
+    return acc;
+  }, []);
 
   return {
     patient: {

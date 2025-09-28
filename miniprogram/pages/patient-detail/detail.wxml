@@ -141,86 +141,20 @@
           </view>
         </view>
 
-        <!-- 医疗信息 -->
-        <view class="record-section" wx:if="{{item.currentCondition || item.careLevel || item.medicalHistoryDisplay}}">
-          <text class="record-section-title">医疗状况</text>
-          <view class="record-field" wx:if="{{item.currentCondition}}">
-            <text class="field-label">当前状况：</text>
-            <text class="field-value">{{item.currentCondition}}</text>
+        <!-- 医疗情况 -->
+        <view class="record-section" wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}">
+          <text class="record-section-title">医疗情况</text>
+          <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
+            <text class="field-label">症状详情：</text>
+            <text class="field-value">{{item.symptomDetailDisplay}}</text>
           </view>
-          <view class="record-field" wx:if="{{item.careLevel}}">
-            <text class="field-label">护理等级：</text>
-            <text class="field-value">{{item.careLevel}}</text>
+          <view class="record-field" wx:if="{{item.treatmentProcessDisplay}}">
+            <text class="field-label">医治过程：</text>
+            <text class="field-value">{{item.treatmentProcessDisplay}}</text>
           </view>
-          <view class="record-field" wx:if="{{item.medicalHistoryDisplay}}">
-            <text class="field-label">病史：</text>
-            <text class="field-value">{{item.medicalHistoryDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.medicationsDisplay}}">
-            <text class="field-label">用药：</text>
-            <text class="field-value">{{item.medicationsDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.allergiesDisplay}}">
-            <text class="field-label">过敏：</text>
-            <text class="field-value">{{item.allergiesDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.disabilitiesDisplay}}">
-            <text class="field-label">功能障碍：</text>
-            <text class="field-value">{{item.disabilitiesDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.situation}}">
-            <text class="field-label">情况说明：</text>
-            <text class="field-value">{{item.situation}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.followUpPlan}}">
-            <text class="field-label">后续计划：</text>
-            <text class="field-value">{{item.followUpPlan}}</text>
-          </view>
-        </view>
-
-        <!-- 就诊信息 -->
-        <view class="record-section" wx:if="{{item.visitReason || item.symptoms || item.diagnosis || item.treatmentPlan}}">
-          <text class="record-section-title">就诊信息</text>
-          <view class="record-field" wx:if="{{item.visitReason}}">
-            <text class="field-label">就诊原因：</text>
-            <text class="field-value">{{item.visitReason}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.symptoms}}">
-            <text class="field-label">症状：</text>
-            <text class="field-value">{{item.symptoms}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.diagnosis}}">
-            <text class="field-label">诊断：</text>
-            <text class="field-value">{{item.diagnosis}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.treatmentPlan}}">
-            <text class="field-label">治疗方案：</text>
-            <text class="field-value">{{item.treatmentPlan}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.doctorNotes}}">
-            <text class="field-label">医生备注：</text>
-            <text class="field-value">{{item.doctorNotes}}</text>
-          </view>
-        </view>
-
-        <!-- 联系信息 -->
-        <view class="record-section" wx:if="{{item.primaryPhone || item.emergencyContact}}">
-          <text class="record-section-title">联系信息</text>
-          <view class="record-field" wx:if="{{item.primaryPhone}}">
-            <text class="field-label">联系电话：</text>
-            <text class="field-value">{{item.primaryPhone}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.backupPhone}}">
-            <text class="field-label">备用电话：</text>
-            <text class="field-value">{{item.backupPhone}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.emergencyContact}}">
-            <text class="field-label">紧急联系人：</text>
-            <text class="field-value">{{item.emergencyContact}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.emergencyPhone}}">
-            <text class="field-label">紧急电话：</text>
-            <text class="field-value">{{item.emergencyPhone}}</text>
+          <view class="record-field" wx:if="{{item.followUpPlanDisplay}}">
+            <text class="field-label">后续治疗安排：</text>
+            <text class="field-value">{{item.followUpPlanDisplay}}</text>
           </view>
         </view>
 

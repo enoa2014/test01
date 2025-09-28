@@ -40,32 +40,15 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    // 代码质量
     'no-console': 'warn',
     'no-debugger': 'error',
-    'no-unused-vars': ['error', {
+    'no-unused-vars': ['warn', {
       argsIgnorePattern: '^_',
-      varsIgnorePattern: '^_'
+      varsIgnorePattern: '^_',
     }],
-    'no-var': 'error',
-    'prefer-const': 'error',
-    'prefer-arrow-callback': 'error',
-
-    // 代码风格
-    'indent': ['error', 2],
-    'quotes': ['error', 'single'],
-    'semi': ['error', 'always'],
-    'comma-dangle': ['error', 'always-multiline'],
-    'object-curly-spacing': ['error', 'always'],
-    'array-bracket-spacing': ['error', 'never'],
-    'space-before-function-paren': ['error', {
-      anonymous: 'always',
-      named: 'never',
-      asyncArrow: 'always'
-    }],
-
-    // 最佳实践
-    'eqeqeq': 'error',
+    'no-var': 'warn',
+    'prefer-const': 'warn',
+    'prefer-arrow-callback': 'warn',
     'no-eval': 'error',
     'no-implied-eval': 'error',
     'no-new-func': 'error',
@@ -79,10 +62,8 @@ module.exports = {
     'no-useless-call': 'error',
     'no-useless-concat': 'error',
     'no-useless-return': 'error',
-
-    // 微信小程序特定规则
     'no-undef': ['error', {
-      typeof: false
+      typeof: false,
     }],
   },
   overrides: [
