@@ -583,12 +583,58 @@ Page({
       }));
 
       const intakeRecordsData = (intakeRecordsRes && intakeRecordsRes.result && intakeRecordsRes.result.data) || {};
-      const allIntakeRecords = (intakeRecordsData.records || []).map((record) => {
+      let allIntakeRecords = (intakeRecordsData.records || []).map((record) => {
         const medicalInfo = record.medicalInfo || {};
         const intakeInfo = record.intakeInfo || {};
-        const hospitalDisplay = coalesceValue(record.hospital, medicalInfo.hospital);
-        const diagnosisDisplay = coalesceValue(record.diagnosis, medicalInfo.diagnosis, intakeInfo.visitReason);
-        const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor);
+
+        // 查找匹配的 profileResult 记录来补充医生信息
+        let profileRecord = null;
+        if (Array.isArray(profileResult.records)) {
+          profileRecord = profileResult.records.find(pr =>
+            pr.diagnosis === record.diagnosis ||
+            pr.hospital === record.hospital ||
+            (pr.intakeTime && record.intakeTime && Math.abs(pr.intakeTime - record.intakeTime) < 86400000) // 同一天
+          );
+
+          // 如果没有找到精确匹配，使用第一个有医生信息的记录作为fallback
+          if (!profileRecord || !profileRecord.doctor) {
+            profileRecord = profileResult.records.find(pr => pr.doctor) || profileResult.records[0];
+          }
+        }
+
+        const hospitalDisplay = coalesceValue(
+          record.hospital,
+          medicalInfo.hospital,
+          profileRecord?.hospital
+        );
+        const diagnosisDisplay = coalesceValue(
+          record.diagnosis,
+          medicalInfo.diagnosis,
+          intakeInfo.visitReason,
+          profileRecord?.diagnosis
+        );
+        const doctorDisplay = coalesceValue(
+          record.doctor,
+          medicalInfo.doctor,
+          profileRecord?.doctor  // 从 profileResult 补充医生信息
+        );
+        const symptomDetailDisplay = coalesceValue(
+          medicalInfo.symptoms,
+          record.symptoms,
+          intakeInfo.situation,
+          profileRecord?.symptoms
+        );
+        const treatmentProcessDisplay = coalesceValue(
+          medicalInfo.treatmentProcess,
+          record.treatmentProcess,
+          profileRecord?.treatmentProcess
+        );
+        const followUpPlanDisplay = coalesceValue(
+          medicalInfo.followUpPlan,
+          record.followUpPlan,
+          intakeInfo.followUpPlan,
+          profileRecord?.followUpPlan
+        );
 
         return {
           ...record,
@@ -597,20 +643,61 @@ Page({
           hospitalDisplay,
           diagnosisDisplay,
           doctorDisplay,
-          medicalHistoryDisplay: Array.isArray(record.medicalHistory)
-            ? record.medicalHistory.join('、')
-            : record.medicalHistory || '',
-          medicationsDisplay: Array.isArray(record.medications)
-            ? record.medications.join('、')
-            : record.medications || '',
-          allergiesDisplay: Array.isArray(record.allergies)
-            ? record.allergies.join('、')
-            : record.allergies || '',
-          disabilitiesDisplay: Array.isArray(record.disabilities)
-            ? record.disabilities.join('、')
-            : record.disabilities || ''
+          symptomDetailDisplay,
+          treatmentProcessDisplay,
+          followUpPlanDisplay,
+          followUpPlan: followUpPlanDisplay
         };
       });
+
+      if (!allIntakeRecords.length && Array.isArray(profileResult.records) && profileResult.records.length) {
+        allIntakeRecords = profileResult.records.map((record, index) => {
+          const medicalInfo = record.medicalInfo || {};
+          const intakeInfo = record.intakeInfo || {};
+          const intakeTime = Number(record.intakeTime || record.admissionTimestamp || intakeInfo.intakeTime) || Date.now();
+          const hospitalDisplay = coalesceValue(record.hospital, medicalInfo.hospital);
+          const diagnosisDisplay = coalesceValue(record.diagnosis, medicalInfo.diagnosis, intakeInfo.visitReason);
+          const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor);
+          const situationDisplay = coalesceValue(
+            record.situation,
+            intakeInfo.situation,
+            medicalInfo.symptoms,
+            record.symptoms
+          );
+          const symptomDetailDisplay = coalesceValue(
+            medicalInfo.symptoms,
+            record.symptoms,
+            situationDisplay
+          );
+          const treatmentProcessDisplay = coalesceValue(
+            medicalInfo.treatmentProcess,
+            record.treatmentProcess
+          );
+          const followUpPlanDisplay = coalesceValue(
+            medicalInfo.followUpPlan,
+            record.followUpPlan,
+            intakeInfo.followUpPlan
+          );
+
+          return {
+            ...record,
+            intakeId: record.intakeId || `excel_${record.patientKey || 'record'}_${index}`,
+            status: record.status || 'excel-import',
+            intakeTime,
+            displayTime: formatDateTime(intakeTime),
+            updatedAt: record.updatedAt || intakeTime,
+            updatedTime: formatDateTime(record.updatedAt || intakeTime),
+            hospitalDisplay,
+            diagnosisDisplay,
+            doctorDisplay,
+            situation: situationDisplay,
+            followUpPlan: followUpPlanDisplay,
+            symptomDetailDisplay,
+            treatmentProcessDisplay,
+            followUpPlanDisplay
+          };
+        });
+      }
 
       this.allIntakeRecordsSource = allIntakeRecords;
       const currentOrder = this.data.recordsSortOrder || 'desc';
