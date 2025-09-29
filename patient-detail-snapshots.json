@@ -1,0 +1,231 @@
+[
+  {
+    "key": "胡矩豪",
+    "detail": {
+      "success": true,
+      "patient": {
+        "key": "胡矩豪",
+        "patientName": "胡矩豪",
+        "gender": "男",
+        "birthDate": "2014.3.27",
+        "idNumber": "450921201403271215",
+        "latestHospital": "",
+        "latestDoctor": ""
+      },
+      "basicInfo": [
+        {
+          "label": "Gender",
+          "value": "男"
+        },
+        {
+          "label": "Birth date",
+          "value": "2014.3.27"
+        },
+        {
+          "label": "ID number",
+          "value": "450921201403271215"
+        },
+        {
+          "label": "Native place",
+          "value": "中国"
+        },
+        {
+          "label": "Ethnicity",
+          "value": "汉"
+        }
+      ],
+      "familyInfo": [
+        {
+          "label": "Address",
+          "value": "广西玉林容县石寨镇石寨村塘排队",
+          "details": [
+            {
+              "admissionDate": "2020-06-03",
+              "diagnosis": "急性淋巴细胞白血病阳性"
+            },
+            {
+              "admissionDate": "2020-07-28",
+              "diagnosis": "急性淋巴细胞白血病"
+            },
+            {
+              "admissionDate": "2021-03-10",
+              "diagnosis": "急性淋巴细胞白血病"
+            },
+            {
+              "admissionDate": "2021-05-08",
+              "diagnosis": "急性淋巴细胞白血病"
+            }
+          ]
+        },
+        {
+          "label": "Address",
+          "value": "广西玉林容县石寨塘排队",
+          "details": [
+            {
+              "admissionDate": "2020-09-22",
+              "diagnosis": "急性淋巴细胞白血病"
+            },
+            {
+              "admissionDate": "2020-11-16",
+              "diagnosis": "急性淋巴细胞白血病"
+            },
+            {
+              "admissionDate": "2021-01-12",
+              "diagnosis": "急性淋巴细胞白血病"
+            }
+          ]
+        }
+      ],
+      "economicInfo": [
+        {
+          "label": "Economic status",
+          "value": "父亲打散工，每月一千多，母亲在家照顾小孩"
+        }
+      ],
+      "records": [
+        {
+          "admissionDate": "2020-06-03",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病阳性",
+          "doctor": "",
+          "symptoms": "已进入维持辽，定期返院复查",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2020-07-28",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "患儿已经化疗完成，现在是维持辽，在家服药",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2020-09-22",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "一切都恢复得挺好的，饮食正常，睡眠质量挺好，白细胞不正常",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2020-11-16",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "饮食正常，睡眠质量正常，白细胞低、肝功能损坏",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2021-01-12",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "一切正常，饮食正常，睡眠质量挺好",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2021-03-10",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2021-05-08",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        }
+      ]
+    }
+  },
+  {
+    "key": "卢全艺",
+    "detail": {
+      "success": true,
+      "patient": {
+        "key": "卢全艺",
+        "patientName": "卢全艺",
+        "gender": "男",
+        "birthDate": "2017.4.15",
+        "idNumber": "450124201704153314",
+        "latestHospital": "",
+        "latestDoctor": ""
+      },
+      "basicInfo": [
+        {
+          "label": "Gender",
+          "value": "男"
+        },
+        {
+          "label": "Birth date",
+          "value": "2017.4.15"
+        },
+        {
+          "label": "ID number",
+          "value": "450124201704153314"
+        },
+        {
+          "label": "Native place",
+          "value": "马山"
+        },
+        {
+          "label": "Ethnicity",
+          "value": "壮"
+        }
+      ],
+      "familyInfo": [
+        {
+          "label": "Address",
+          "value": "广西南宁市马山县永州镇永田街136号",
+          "details": [
+            {
+              "admissionDate": "2020-07-06",
+              "diagnosis": "急性淋巴细胞白血病"
+            },
+            {
+              "admissionDate": "2020-08-12",
+              "diagnosis": ""
+            }
+          ]
+        }
+      ],
+      "economicInfo": [
+        {
+          "label": "Economic status",
+          "value": "爸爸在饭店上班一个月大概4000左右"
+        }
+      ],
+      "records": [
+        {
+          "admissionDate": "2020-07-06",
+          "hospital": "",
+          "diagnosis": "急性淋巴细胞白血病",
+          "doctor": "",
+          "symptoms": "饮食正常，睡眠质量好，血项正常",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        },
+        {
+          "admissionDate": "2020-08-12",
+          "hospital": "",
+          "diagnosis": "",
+          "doctor": "",
+          "symptoms": "饮食正常，睡眠质量好，白细胞正常",
+          "treatmentProcess": "",
+          "followUpPlan": ""
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudrun Debug Panel</title>
+    <script src="https://weda.cloud.tencent.com/third-party/axios.min.js"></script>
+</head>
+
+<body style="height: 100vh;">
+    <iframe srcdoc="<!DOCTYPE html>
+    <head>
+    <meta charset=&quot;UTF-8&quot;>
+    <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+    <title>Http Client</title>
+    </head>
+    <body>
+    <div id=&quot;app&quot;></div>
+    <script>
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'loadScript') {
+            const script = document.createElement('script');
+            script.src = event.data.url;
+            document.body.appendChild(script);
+        }
+    });
+    </script>
+    </body>
+    </html>" style="width: 100%; height: 100%; border: none;"></iframe>
+
+    <script>
+        // 获取当前页面的 URL 参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type');       // 获取 type 参数
+        const agentId = urlParams.get('agentId'); // 获取 agentId 参数
+        const envId = urlParams.get('envId');     // 获取 envId 参数
+        const port = urlParams.get('port');       // 获取 port 参数
+
+        const EList = {
+            HTTP: 'HTTP',
+            WEBSOCKET: 'WebSocket',
+            SSE: 'Server-sent Event',
+            AGENT: 'AGENT',
+        };
+
+        // 监听来自VSCode扩展的消息
+        window.addEventListener('message', (event) => {
+            const message = event.data;
+
+            if (message.type === 'request') {
+                handleRequest(message, iframe.contentWindow);
+            }
+
+            // 处理ready类型的消息
+            if (message.type === 'ready') {
+                iframe.contentWindow.postMessage({
+                    success: true,
+                    id: message.id,
+                    data: {
+                        url: `http://127.0.0.1:${port}${type === 'agent' ? `/v1/aibot/bots/${agentId}/send-message` : ''}`,
+                        resourceType: 'FunctionV2',
+                        body: type === "agent" ? { botId: agentId, msg: 'hi', searchEnable: false, files: [] } : {},
+                        defaultType: type === 'agent' ? EList.AGENT : EList.HTTP,
+                        agentConfig: {
+                            uin: '',
+                            envId,
+                            ibotId: agentId,
+                        },
+                        options: { showTabs: type === 'agent' ? [EList.AGENT, EList.SSE, EList.HTTP] : null },
+                    }
+                });
+            }
+        });
+
+        const iframe = document.querySelector('iframe');
+        iframe.addEventListener('load', () => {
+            try {
+                const iframeWindow = iframe.contentWindow;
+                window.setState = (state) => { }
+                iframeWindow.acquireVsCodeApi = () => window
+                iframeWindow.postMessage({
+                    type: 'loadScript',
+                    url: 'https://weda.cloud.tencent.com/code_studio_webview/app.js'
+                }, '*');
+            } catch (error) {
+                console.error('挂载vscodeRef失败:', error);
+            }
+        });
+
+        // 在head中添加axios和URLParse的CDN引用
+        const HTTP_METHODS = {
+            GET: 'get',
+            POST: 'post',
+            PUT: 'put',
+            PATCH: 'patch',
+            DELETE: 'delete',
+            HEAD: 'head',
+            OPTIONS: 'options'
+        };
+
+        function getRequestConfig(state) {
+            const url = new URL(state.url);
+
+            if (!url.protocol) {
+                url.protocol = 'http:';
+            }
+
+            const headers = {};
+            state.request.headers.forEach(({ key, value, checked }) => {
+                if (checked) {
+                    headers[key] = value;
+                }
+            });
+
+            const config = {
+                url: url.href,
+                method: state.method,
+                headers,
+                params: JSON.parse(JSON.stringify(state.request.params)),
+                validateStatus: () => true,
+                paramsSerializer: function (params) {
+                    const param = {};
+                    params.forEach((i) => {
+                        if (!i.checked) {
+                            return;
+                        }
+                        param[i.key] = i.value;
+                    });
+                    return new URLSearchParams(param).toString();
+                }
+            };
+
+            if (![HTTP_METHODS.GET, HTTP_METHODS.DELETE, HTTP_METHODS.OPTIONS].includes(state.method)) {
+                const type = state.request.body.type;
+                let body = state.request.body[type];
+                let data;
+
+                if (type === 'X_WWW_FORM_URLENCODED') {
+                    data = body
+                        .filter(i => i.checked)
+                        .map(i => `${encodeURIComponent(i.key)}=${encodeURIComponent(i.value)}`)
+                        .join('&');
+                }
+
+                if (type === 'RAW') {
+                    try {
+                        data = JSON.parse(body.value);
+                    } catch (e) {
+                        throw new Error('JSON 格式错误');
+                    }
+                }
+
+                if (data) {
+                    config.data = data;
+                }
+            }
+
+            return config;
+        }
+
+        async function handleRequest({ id, payload }, panel) {
+            let message;
+
+            try {
+                const config = getRequestConfig(payload);
+                const { data, status, statusText, headers } = await axios(config);
+
+                message = {
+                    success: true,
+                    id,
+                    data: {
+                        data: typeof data === 'object' ? JSON.stringify(data) : data,
+                        status,
+                        statusText,
+                        headers,
+                    },
+                };
+            } catch (e) {
+                message = {
+                    success: false,
+                    id,
+                    error: { message: e.message },
+                };
+            }
+
+            panel.postMessage(message);
+        }
+
+    </script>
+</body>
+
+</html>

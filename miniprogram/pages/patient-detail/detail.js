@@ -1,412 +1,41 @@
-﻿const MAX_UPLOAD_BATCH = 5;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const SIGNED_URL_TTL = 5 * 60 * 1000;
-
-const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
-const DOCUMENT_EXTENSIONS = ["txt", "pdf", "doc", "docx", "xls", "xlsx"];
-
-const {
+﻿const {
+  MAX_UPLOAD_BATCH,
   PATIENT_FIELD_CONFIG,
   CONTACT_FIELD_CONFIG,
   INTAKE_FIELD_CONFIG
-} = require("../../config/patient-detail-fields.js");
+} = require("./constants.js");
 
-const FIELD_CONFIG_MAP = {};
-[...PATIENT_FIELD_CONFIG, ...CONTACT_FIELD_CONFIG, ...INTAKE_FIELD_CONFIG].forEach((item) => {
-  FIELD_CONFIG_MAP[item.key] = item;
-});
+const {
+  normalizeString,
+  formatDateTime,
+  toTimestampFromDateInput,
+  sanitizeFileName,
+  inferMimeType
+} = require("./helpers.js");
 
-const FORM_FIELD_KEYS = Array.from(new Set([
-  ...PATIENT_FIELD_CONFIG.map((item) => item.key),
-  ...CONTACT_FIELD_CONFIG.map((item) => item.key),
-  ...INTAKE_FIELD_CONFIG.map((item) => item.key),
-  'medicalHistory',
-  'attachments'
-]));
+const {
+  buildEditForm,
+  cloneForm,
+  detectFormChanges,
+  buildPickerIndexMap,
+  collectChangedFormKeys,
+  getFieldConfig: getFieldConfigUtil,
+  validateField: validateFieldUtil,
+  validateAllFields: validateAllFieldsUtil
+} = require("./form-utils.js");
 
-const EXTENSION_MIME_MAP = {
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  txt: "text/plain",
-  pdf: "application/pdf",
-  doc: "application/msword",
-  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  xls: "application/vnd.ms-excel",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-};
+const {
+  findValueByLabels,
+  coalesceValue,
+  sortIntakeRecords,
+  pushDisplayItem
+} = require("./data-mappers.js");
 
-function normalizeString(value) {
-  if (value === undefined || value === null) {
-    return "";
-  }
-  return String(value).trim();
-}
-
-function generateUuid() {
-  const timePart = Date.now().toString(16);
-  const randomPart = Math.floor(Math.random() * 0xffffffff)
-    .toString(16)
-    .padStart(8, "0");
-  return `${timePart}${randomPart}`;
-}
-
-function formatFileSize(bytes) {
-  const size = Number(bytes) || 0;
-  if (size >= 1024 * 1024) {
-    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-  }
-  if (size >= 1024) {
-    return `${(size / 1024).toFixed(1)} KB`;
-  }
-  return `${size} B`;
-}
-
-function formatDateTime(timestamp) {
-  const timeValue = Number(timestamp);
-  if (!Number.isFinite(timeValue)) {
-    return "";
-  }
-  const date = new Date(timeValue);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const hour = `${date.getHours()}`.padStart(2, "0");
-  const minute = `${date.getMinutes()}`.padStart(2, "0");
-  return `${year}-${month}-${day} ${hour}:${minute}`;
-}
-
-function formatDateForInput(value) {
-  if (!value) {
-    return "";
-  }
-  if (typeof value === "number") {
-    const date = new Date(value);
-    if (!Number.isNaN(date.getTime())) {
-      return [date.getFullYear(), `${date.getMonth() + 1}`.padStart(2, "0"), `${date.getDate()}`.padStart(2, "0")].join("-");
-    }
-  }
-  if (typeof value === "string" && value.length >= 8) {
-    const normalized = value.replace(/[./]/g, "-");
-    const date = new Date(normalized);
-    if (!Number.isNaN(date.getTime())) {
-      return [date.getFullYear(), `${date.getMonth() + 1}`.padStart(2, "0"), `${date.getDate()}`.padStart(2, "0")].join("-");
-    }
-  }
-  return "";
-}
-
-function toTimestampFromDateInput(value) {
-  if (!value) {
-    return undefined;
-  }
-  const normalized = `${value}`.replace(/[./]/g, "-");
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) {
-    return undefined;
-  }
-  return date.getTime();
-}
-
-function buildEditForm(patient = {}, intake = {}, fallbackPatient = {}) {
-  const intakeInfo = intake.intakeInfo || {};
-
-  // 优先使用patient数据，如果为空则使用fallbackPatient
-  const patientName = patient.patientName || fallbackPatient.patientName || "";
-  const gender = patient.gender || fallbackPatient.gender || "";
-  const birthDate = patient.birthDate || fallbackPatient.birthDate || "";
-
-  return {
-    patientName,
-    idType: patient.idType || "身份证",
-    idNumber: patient.idNumber || "",
-    gender,
-    birthDate: formatDateForInput(birthDate),
-    phone: patient.phone || "",
-    address: patient.address || "",
-    emergencyContact: patient.emergencyContact || "",
-    emergencyPhone: patient.emergencyPhone || "",
-    backupContact: patient.backupContact || "",
-    backupPhone: patient.backupPhone || "",
-    intakeTime: formatDateForInput(intakeInfo.intakeTime || intake.lastIntakeTime),
-    narrative: intakeInfo.situation || intake.narrative || patient.lastIntakeNarrative || "",
-    followUpPlan: intakeInfo.followUpPlan || "",
-    medicalHistory: Array.isArray(intakeInfo.medicalHistory) ? intakeInfo.medicalHistory : [],
-    attachments: Array.isArray(intakeInfo.attachments) ? intakeInfo.attachments : [],
-    intakeId: intake.intakeId || intake._id || null,
-    intakeUpdatedAt: intake.updatedAt || (intake.metadata && intake.metadata.lastModifiedAt) || null,
-    patientUpdatedAt: patient.updatedAt || null
-  };
-}
-
-function cloneForm(form) {
-  return JSON.parse(JSON.stringify(form || {}));
-}
-
-function detectFormChanges(current, original) {
-  if (!original) {
-    return true;
-  }
-  const keys = Object.keys(current || {});
-  for (const key of keys) {
-    const currentValue = current[key];
-    const originalValue = original[key];
-    if (Array.isArray(currentValue) && Array.isArray(originalValue)) {
-      if (currentValue.length !== originalValue.length) {
-        return true;
-      }
-      for (let i = 0; i < currentValue.length; i += 1) {
-        if (JSON.stringify(currentValue[i]) !== JSON.stringify(originalValue[i])) {
-          return true;
-        }
-      }
-    } else if (currentValue !== originalValue) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function buildPickerIndexMap(form) {
-  const map = {};
-  [...PATIENT_FIELD_CONFIG, ...CONTACT_FIELD_CONFIG, ...INTAKE_FIELD_CONFIG].forEach((config) => {
-    if (config.type === 'picker' && Array.isArray(config.options)) {
-      const currentValue = form[config.key];
-      const index = config.options.indexOf(currentValue);
-      map[config.key] = index >= 0 ? index : 0;
-    }
-  });
-  return map;
-}
-
-function collectChangedFormKeys(current = {}, original = {}) {
-  const changed = [];
-  FORM_FIELD_KEYS.forEach((key) => {
-    const currentValue = current[key];
-    const originalValue = original[key];
-    if (Array.isArray(currentValue) || Array.isArray(originalValue)) {
-      const currentJson = JSON.stringify(currentValue || []);
-      const originalJson = JSON.stringify(originalValue || []);
-      if (currentJson !== originalJson) {
-        changed.push(key);
-      }
-    } else {
-      const normalizedCurrent = currentValue === undefined || currentValue === null ? '' : currentValue;
-      const normalizedOriginal = originalValue === undefined || originalValue === null ? '' : originalValue;
-      if (normalizedCurrent !== normalizedOriginal) {
-        changed.push(key);
-      }
-    }
-  });
-  return changed;
-}
-
-
-function sanitizeFileName(name) {
-  const value = normalizeString(name);
-  if (!value) {
-    return "";
-  }
-  return value.split(/[\\/]/).pop();
-}
-
-function inferExtension(fileName) {
-  const sanitized = sanitizeFileName(fileName).toLowerCase();
-  const match = sanitized.match(/\.([a-z0-9]+)$/);
-  return match ? match[1] : "";
-}
-
-function inferMimeType(fileName, fallback) {
-  const ext = inferExtension(fileName);
-  if (ext && EXTENSION_MIME_MAP[ext]) {
-    return EXTENSION_MIME_MAP[ext];
-  }
-  const normalizedFallback = normalizeString(fallback).toLowerCase();
-  if (normalizedFallback) {
-    return normalizedFallback;
-  }
-  return "";
-}
-
-function isImageExtension(ext) {
-  return IMAGE_EXTENSIONS.includes(ext);
-}
-
-function isDocumentExtension(ext) {
-  return DOCUMENT_EXTENSIONS.includes(ext);
-}
-
-function getDefaultQuota() {
-  return {
-    totalCount: 0,
-    totalBytes: 0,
-    maxCount: 20,
-    maxBytes: 30 * 1024 * 1024,
-    remainingCount: 20,
-    remainingBytes: 30 * 1024 * 1024,
-    totalBytesText: formatFileSize(0),
-    maxBytesText: formatFileSize(30 * 1024 * 1024),
-    remainingBytesText: formatFileSize(30 * 1024 * 1024)
-  };
-}
-
-function makeQuotaPayload(quota) {
-  const normalized = quota || {};
-  const totalCount = Number(normalized.totalCount) || 0;
-  const totalBytes = Number(normalized.totalBytes) || 0;
-  const maxCount = Number(normalized.maxCount) || 20;
-  const maxBytes = Number(normalized.maxBytes) || 30 * 1024 * 1024;
-  const remainingCount = Number.isFinite(normalized.remainingCount)
-    ? normalized.remainingCount
-    : Math.max(maxCount - totalCount, 0);
-  const remainingBytes = Number.isFinite(normalized.remainingBytes)
-    ? normalized.remainingBytes
-    : Math.max(maxBytes - totalBytes, 0);
-  return {
-    totalCount,
-    totalBytes,
-    maxCount,
-    maxBytes,
-    remainingCount,
-    remainingBytes,
-    totalBytesText: formatFileSize(totalBytes),
-    maxBytesText: formatFileSize(maxBytes),
-    remainingBytesText: formatFileSize(remainingBytes)
-  };
-}
-
-function mapMediaRecord(record) {
-  if (!record) {
-    return null;
-  }
-  const id = record.id || record._id || "";
-  const createdAt = Number(record.createdAt || Date.now());
-  const displayName = normalizeString(record.displayName || record.filename) || "未命名文件";
-  const mimeType = inferMimeType(record.filename || displayName, record.mimeType);
-  const extension = inferExtension(record.filename || displayName);
-  const sizeBytes = Number(record.sizeBytes) || 0;
-  return {
-    id,
-    patientKey: record.patientKey,
-    category: record.category,
-    displayName,
-    filename: record.filename || displayName,
-    mimeType,
-    extension,
-    typeText: extension ? extension.toUpperCase() : (record.category === "image" ? "IMAGE" : "FILE"),
-    sizeBytes,
-    sizeText: formatFileSize(sizeBytes),
-    uploadedAt: createdAt,
-    uploadedAtText: formatDateTime(createdAt),
-    uploaderId: record.uploaderId || "",
-    uploaderDisplay: record.uploaderId || "未知",
-    thumbnailUrl: record.thumbnailUrl || "",
-    thumbnailExpiresAt: Number(record.thumbnailExpiresAt || 0),
-    previewUrl: record.previewUrl || "",
-    previewExpiresAt: Number(record.previewExpiresAt || 0),
-    textPreviewAvailable: !!record.textPreviewAvailable || mimeType === "text/plain",
-    downloadCount: record.downloadCount || 0,
-    hasThumbnail: !!(record.thumbnailUrl && record.thumbnailUrl.length),
-    downloading: false,
-    deleting: false,
-    previewLoading: false
-  };
-}
-
-function mergeFamilyAddresses(entries) {
-  if (!Array.isArray(entries)) {
-    return [];
-  }
-  return entries
-    .filter((entry) => entry && typeof entry === 'object')
-    .map((entry) => ({
-      label: entry.label || '',
-      value: entry.value || ''
-    }))
-    .filter((entry) => entry.label && entry.value);
-}
-
-function safeTrim(value) {
-  if (value === undefined || value === null) {
-    return '';
-  }
-  return String(value).trim();
-}
-
-function findValueByLabels(list, candidates) {
-  if (!Array.isArray(list) || !candidates || !candidates.length) {
-    return '';
-  }
-  for (const item of list) {
-    if (!item || typeof item !== 'object') {
-      continue;
-    }
-    const label = safeTrim(item.label);
-    const value = safeTrim(item.value);
-    if (!label || !value) {
-      continue;
-    }
-    const lowerLabel = label.toLowerCase();
-    const matched = candidates.some((candidate) => {
-      const normalized = String(candidate || '').toLowerCase();
-      return lowerLabel.includes(normalized) || label.includes(candidate);
-    });
-    if (matched) {
-      return value;
-    }
-  }
-  return '';
-}
-
-function coalesceValue(...values) {
-  for (const value of values) {
-    const normalized = safeTrim(value);
-    if (normalized) {
-      return normalized;
-    }
-  }
-  return '';
-}
-
-function extractRecordTimestamp(record = {}) {
-  const candidates = [
-    record.intakeTime,
-    record.admissionTimestamp,
-    record.updatedAt,
-    record.createdAt,
-    record.displayTime ? Date.parse(record.displayTime) : null,
-    record.metadata && record.metadata.intakeTime
-  ];
-
-  for (const candidate of candidates) {
-    const numeric = Number(candidate);
-    if (Number.isFinite(numeric) && numeric > 0) {
-      return numeric;
-    }
-  }
-  return 0;
-}
-
-function sortIntakeRecords(records = [], order = 'desc') {
-  const normalizedOrder = order === 'asc' ? 'asc' : 'desc';
-  const sorted = [...records];
-  sorted.sort((a, b) => {
-    const diff = extractRecordTimestamp(a) - extractRecordTimestamp(b);
-    return normalizedOrder === 'asc' ? diff : -diff;
-  });
-  return sorted;
-}
-
-function pushDisplayItem(target = [], label, value) {
-  const normalized = safeTrim(value);
-  if (normalized) {
-    target.push({ label, value: normalized });
-  }
-}
+const {
+  getDefaultQuota,
+  makeQuotaPayload,
+  createMediaService
+} = require("./media-service.js");
 
 Page({
   data: {
@@ -461,6 +90,7 @@ Page({
     this.mediaInitialized = false;
     this.originalEditForm = null;
     this.allIntakeRecordsSource = [];
+    this.mediaService = createMediaService(this);
 
     if (!this.profileKey && !this.patientKey) {
       this.setData({ loading: false, error: "缺少患者标识" });
@@ -528,9 +158,6 @@ Page({
         patientDisplay.recordKey = this.profileKey;
       }
 
-      const basicInfo = (profileResult.basicInfo || []).map((item) =>
-        item && typeof item === "object" ? { ...item } : { label: "", value: item || "" }
-      );
 
       let patientRes = null;
       let intakeRecordsRes = null;
@@ -856,80 +483,15 @@ Page({
   },
 
   getFieldConfig(key) {
-    return FIELD_CONFIG_MAP[key] || null;
+    return getFieldConfigUtil(key);
   },
 
   validateField(key, value, form) {
-    const config = this.getFieldConfig(key);
-    if (!config) {
-      return "";
-    }
-    let currentValue = value;
-    if (config.type === "textarea" || config.type === "text") {
-      currentValue = normalizeString(value);
-    }
-
-    if (config.required && !currentValue) {
-      return `${config.label}不能为空`;
-    }
-
-    if (config.maxLength && currentValue && currentValue.length > config.maxLength) {
-      return `${config.label}不能超过${config.maxLength}个字符`;
-    }
-
-    if (key === "idNumber" && form.idType === "身份证" && currentValue) {
-      if (!/^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/.test(currentValue)) {
-        return "身份证号码格式不正确";
-      }
-    }
-
-    if ((key === "phone" || key === "emergencyPhone" || key === "backupPhone") && currentValue) {
-      if (!/^1[3-9]\d{9}$/.test(currentValue)) {
-        return "手机号格式不正确";
-      }
-    }
-
-    if (key === "birthDate" && currentValue) {
-      const ts = toTimestampFromDateInput(currentValue);
-      if (ts === undefined) {
-        return "出生日期格式不正确";
-      }
-      if (ts > Date.now()) {
-        return "出生日期不能晚于今天";
-      }
-    }
-
-    if (key === "intakeTime" && currentValue) {
-      if (toTimestampFromDateInput(currentValue) === undefined) {
-        return "入住时间格式不正确";
-      }
-    }
-
-    if (key === "narrative") {
-      const text = normalizeString(value);
-      if (!text) {
-        return "情况说明不能为空";
-      }
-      if (text.length < 30) {
-        return "情况说明至少需要 30 个字符";
-      }
-      if (text.length > 500) {
-        return "情况说明不能超过 500 个字符";
-      }
-    }
-
-    return "";
+    return validateFieldUtil(key, value, form);
   },
 
   validateAllFields(form) {
-    const errors = {};
-    [...PATIENT_FIELD_CONFIG, ...CONTACT_FIELD_CONFIG, ...INTAKE_FIELD_CONFIG].forEach((field) => {
-      const message = this.validateField(field.key, form[field.key], form);
-      if (message) {
-        errors[field.key] = message;
-      }
-    });
-    return errors;
+    return validateAllFieldsUtil(form);
   },
 
   updateEditFormValue(key, value) {
@@ -1166,87 +728,19 @@ Page({
   },
 
   setMediaState(patch) {
-    const updates = {};
-    Object.keys(patch).forEach((key) => {
-      updates[`media.${key}`] = patch[key];
-    });
-    this.setData(updates);
+    this.mediaService.setMediaState(patch);
   },
 
   async initMediaSection() {
-    if (!this.patientKey) {
-      return;
-    }
-    this.setMediaState({ loading: true, error: '', accessChecked: true, allowed: true });
-    try {
-      await this.refreshMediaList();
-    } catch (error) {
-      this.setMediaState({
-        error: normalizeString(error.message) || '????????????',
-        loading: false
-      });
-    }
+    return this.mediaService.initMediaSection();
   },
 
   async refreshMediaList() {
-    this.setMediaState({ loading: true, error: "" });
-    try {
-      const data = await this.callPatientMedia("list");
-      const images = (data.images || [])
-        .map((item) => {
-          const record = mapMediaRecord(item);
-          if (record) {
-            record.thumbnailUrl = item.thumbnailUrl || record.thumbnailUrl;
-            record.thumbnailExpiresAt = Number(item.thumbnailExpiresAt || record.thumbnailExpiresAt || 0);
-            record.textPreviewAvailable = item.textPreviewAvailable || record.textPreviewAvailable;
-          }
-          return record;
-        })
-        .filter(Boolean);
-      const documents = (data.documents || []).map(mapMediaRecord).filter(Boolean);
-      const quota = makeQuotaPayload(data.quota);
-
-      this.setData({
-        "media.images": images,
-        "media.documents": documents,
-        "media.quota": quota,
-        "media.loading": false,
-        "media.error": "",
-        "media.accessChecked": true,
-        "media.allowed": true
-      });
-    } catch (error) {
-      console.error("加载附件失败", error);
-      this.setMediaState({
-        error: normalizeString(error.message) || "加载附件失败，请稍后重试",
-        loading: false
-      });
-    }
+    return this.mediaService.refreshMediaList();
   },
 
   async callPatientMedia(action, payload = {}) {
-    const data = { ...payload, action, patientKey: this.patientKey };
-    try {
-      const res = await wx.cloud.callFunction({ name: "patientMedia", data });
-      const result = res && res.result;
-      if (!result) {
-        throw new Error("服务无响应");
-      }
-      if (result.success === false) {
-        const err = new Error((result.error && result.error.message) || "操作失败");
-        err.code = result.error && result.error.code;
-        err.details = result.error && result.error.details;
-        throw err;
-      }
-      return result.data || {};
-    } catch (error) {
-      if (error && error.errMsg) {
-        const err = new Error(error.errMsg.replace("cloud.callFunction:fail ", "") || "云函数调用失败");
-        err.code = error.errCode || error.code;
-        throw err;
-      }
-      throw error;
-    }
+    return this.mediaService.callPatientMedia(action, payload);
   },
 
   onMediaRetry() {
@@ -1299,7 +793,7 @@ Page({
             path,
             mimeType: inferMimeType(path)
           }));
-      await this.processUploads(files, "image");
+      await this.mediaService.processUploads(files, "image");
     } catch (error) {
       if (error && /cancel/.test(error.errMsg || "")) {
         return;
@@ -1328,7 +822,7 @@ Page({
         path: item.path,
         mimeType: inferMimeType(item.name || item.path, item.type)
       }));
-      await this.processUploads(files, "document");
+      await this.mediaService.processUploads(files, "document");
     } catch (error) {
       if (error && /cancel/.test(error.errMsg || "")) {
         return;
@@ -1337,163 +831,16 @@ Page({
     }
   },
 
-  async processUploads(files, category) {
-    if (!files || !files.length) {
-      return;
-    }
-    const quota = this.data.media.quota || getDefaultQuota();
-    let remainingCount = quota.remainingCount || 0;
-    let remainingBytes = quota.remainingBytes || 0;
-
-    const valid = [];
-    const skipped = [];
-    files.forEach((file) => {
-      const extension = inferExtension(file.name || file.path);
-      if (category === "image" && !isImageExtension(extension)) {
-        skipped.push({ file, reason: "类型不支持" });
-        return;
-      }
-      if (category === "document" && !isDocumentExtension(extension)) {
-        skipped.push({ file, reason: "类型不支持" });
-        return;
-      }
-      if (file.size && file.size > MAX_FILE_SIZE) {
-        skipped.push({ file, reason: "文件超限" });
-        return;
-      }
-      valid.push({
-        ...file,
-        extension,
-        mimeType: inferMimeType(file.name || file.path, file.mimeType)
-      });
-    });
-
-    if (!valid.length) {
-      wx.showToast({ icon: "none", title: "没有可上传的文件" });
-      return;
-    }
-
-    const limited = valid.slice(0, Math.min(valid.length, MAX_UPLOAD_BATCH, remainingCount));
-    this.setMediaState({ uploading: true });
-
-    let successCount = 0;
-    try {
-      for (const file of limited) {
-        if (remainingCount <= 0) {
-          wx.showToast({ icon: "none", title: "数量已满" });
-          break;
-        }
-        if (file.size && file.size > remainingBytes) {
-          wx.showToast({ icon: "none", title: "容量不足" });
-          break;
-        }
-        const fileName = sanitizeFileName(file.name) || `${category}-${generateUuid()}.${file.extension}`;
-        try {
-          const prepare = await this.callPatientMedia("prepareUpload", {
-            fileName,
-            sizeBytes: file.size,
-            mimeType: file.mimeType
-          });
-          const uploadRes = await wx.cloud.uploadFile({
-            cloudPath: prepare.cloudPath,
-            filePath: file.path
-          });
-          if (!uploadRes || !uploadRes.fileID) {
-            throw new Error("上传失败");
-          }
-          const complete = await this.callPatientMedia("completeUpload", {
-            fileUuid: prepare.fileUuid,
-            storagePath: prepare.storagePath,
-            fileID: uploadRes.fileID,
-            fileName,
-            displayName: fileName,
-            mimeType: file.mimeType,
-            sizeBytes: file.size
-          });
-          const record = mapMediaRecord(complete.media);
-          const quotaPayload = makeQuotaPayload(complete.quota);
-          if (record) {
-            if (category === "image") {
-              const images = [record, ...this.data.media.images];
-              this.setData({ "media.images": images });
-            } else {
-              const documents = [record, ...this.data.media.documents];
-              this.setData({ "media.documents": documents });
-            }
-          }
-          this.setData({ "media.quota": quotaPayload });
-          remainingCount = quotaPayload.remainingCount;
-          remainingBytes = quotaPayload.remainingBytes;
-          successCount += 1;
-        } catch (error) {
-          this.handleMediaError(error, "上传");
-        }
-      }
-    } finally {
-      this.setMediaState({ uploading: false });
-    }
-
-    if (successCount > 0) {
-      wx.showToast({ icon: "success", title: `上传成功${successCount}个` });
-    }
-
-    if (skipped.length) {
-      wx.showToast({ icon: "none", title: `${skipped.length}个文件已跳过` });
-    }
-  },
-
   updateMediaRecord(category, index, updates) {
-    const listKey = category === "image" ? "images" : "documents";
-    const list = this.data.media[listKey];
-    if (!Array.isArray(list) || index < 0 || index >= list.length) {
-      return;
-    }
-    const updated = { ...list[index], ...updates };
-    const newList = list.slice();
-    newList[index] = updated;
-    const dataKey = `media.${listKey}`;
-    this.setData({ [dataKey]: newList });
+    this.mediaService.updateMediaRecord(category, index, updates);
   },
 
   removeMediaRecord(category, id) {
-    const listKey = category === "image" ? "images" : "documents";
-    const list = this.data.media[listKey];
-    if (!Array.isArray(list)) {
-      return;
-    }
-    const newList = list.filter((item) => item.id !== id);
-    const dataKey = `media.${listKey}`;
-    this.setData({ [dataKey]: newList });
+    this.mediaService.removeMediaRecord(category, id);
   },
 
   async ensureImagePreviewUrls() {
-    const images = this.data.media.images || [];
-    const now = Date.now();
-    const pending = images
-      .map((item, index) => ({ item, index }))
-      .filter(
-        ({ item }) =>
-          !item.previewUrl ||
-          !item.previewExpiresAt ||
-          item.previewExpiresAt <= now + 5000
-      );
-
-    for (const { item, index } of pending) {
-      try {
-        const data = await this.callPatientMedia("preview", {
-          mediaId: item.id,
-          variant: "original"
-        });
-        if (data && data.url) {
-          this.updateMediaRecord("image", index, {
-            previewUrl: data.url,
-            previewExpiresAt: data.expiresAt || Date.now() + SIGNED_URL_TTL
-          });
-        }
-      } catch (error) {
-        console.warn("获取原图预览失败", error);
-      }
-    }
+    return this.mediaService.ensureImagePreviewUrls();
   },
 
   async onImagePreviewTap(event) {
@@ -1570,36 +917,7 @@ Page({
   },
 
   downloadMediaFile(record, url) {
-    return new Promise((resolve, reject) => {
-      if (!url) {
-        reject(new Error("下载地址无效"));
-        return;
-      }
-      wx.downloadFile({
-        url,
-        success: (res) => {
-          if (res.statusCode !== 200 || !res.tempFilePath) {
-            reject(new Error("下载失败"));
-            return;
-          }
-          if (record.category === "image") {
-            wx.previewImage({
-              urls: [res.tempFilePath],
-              success: resolve,
-              fail: reject
-            });
-          } else {
-            wx.openDocument({
-              filePath: res.tempFilePath,
-              showMenu: true,
-              success: resolve,
-              fail: reject
-            });
-          }
-        },
-        fail: reject
-      });
-    });
+    return this.mediaService.downloadMediaFile(record, url);
   },
 
   async onDeleteMediaTap(event) {
@@ -1668,19 +986,7 @@ Page({
   },
 
   handleMediaError(error, context) {
-    const code = error && error.code;
-    let message = normalizeString((error && error.message)) || `${context}失败`;
-    if (code === "MEDIA_QUOTA_EXCEEDED") {
-      message = "配额不足";
-    } else if (code === "MEDIA_DUPLICATE") {
-      message = "已存在相同文件";
-    } else if (code === "FILE_TOO_LARGE") {
-      message = "文件超过10MB限制";
-    } else if (code === "UNSUPPORTED_FILE_TYPE") {
-      message = "文件类型不支持";
-    }
-    const display = message.length > 14 ? `${message.slice(0, 13)}…` : message;
-    wx.showToast({ icon: "none", title: display || `${context}失败` });
+    this.mediaService.handleMediaError(error, context);
   },
 
   noop() {}

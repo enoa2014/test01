@@ -1,0 +1,40 @@
+diff --git a/node_modules/@musistudio/claude-code-router/dist/cli.js b/node_modules/@musistudio/claude-code-router/dist/cli.js
+index 77916f5..c77eff0 100755
+--- a/node_modules/@musistudio/claude-code-router/dist/cli.js
++++ b/node_modules/@musistudio/claude-code-router/dist/cli.js
+@@ -77869,7 +77869,7 @@ async function main() {
+       if (!isServiceRunning()) {
+         console.log("Service not running, starting service...");
+         const cliPath2 = (0, import_path6.join)(__dirname, "cli.js");
+-        const startProcess2 = (0, import_child_process3.spawn)("node", [cliPath2, "start"], {
++        const startProcess2 = (0, import_child_process3.spawn)("ccr", ["start"], {
+           detached: true,
+           stdio: "ignore"
+         });
+@@ -77896,7 +77896,7 @@ async function main() {
+       if (!isServiceRunning()) {
+         console.log("Service not running, starting service...");
+         const cliPath2 = (0, import_path6.join)(__dirname, "cli.js");
+-        const startProcess2 = (0, import_child_process3.spawn)("node", [cliPath2, "start"], {
++        const startProcess2 = (0, import_child_process3.spawn)("ccr", ["start"], {
+           detached: true,
+           stdio: "ignore"
+         });
+@@ -77933,7 +77933,7 @@ async function main() {
+             console.log(
+               "Please edit this file with your actual configuration."
+             );
+-            const restartProcess = (0, import_child_process3.spawn)("node", [cliPath2, "start"], {
++            const restartProcess = (0, import_child_process3.spawn)("ccr", ["start"], {
+               detached: true,
+               stdio: "ignore"
+             });
+@@ -78004,7 +78004,7 @@ async function main() {
+       }
+       console.log("Starting claude code router service...");
+       const cliPath = (0, import_path6.join)(__dirname, "cli.js");
+-      const startProcess = (0, import_child_process3.spawn)("node", [cliPath, "start"], {
++      const startProcess = (0, import_child_process3.spawn)("ccr", ["start"], {
+         detached: true,
+         stdio: "ignore"
+       });

@@ -1,0 +1,12 @@
+cloudfunctions/**
+scripts/**
+tools/**
+TESTING-INTAKE-RECORDS.md
+patient-detail-snapshots.json
+patient-excel-rows.json
+verify-intake-records.js
+tests/e2e/**
+prepare/**
+cloudbase-cli-*.tgz
+
+# 保留 miniprogram、docs、tests/unit 等目录的 lint
