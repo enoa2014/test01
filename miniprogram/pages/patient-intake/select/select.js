@@ -1,5 +1,5 @@
 // 患者选择页面
-const logger = require('../../utils/logger.js');
+const logger = require('../../../utils/logger');
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_CACHE_TTL = 5 * 60 * 1000;
