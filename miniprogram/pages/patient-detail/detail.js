@@ -136,12 +136,7 @@ Page({
   },
 
   onUnload() {
-    if (wx.disableAlertBeforeUnload) {
-      wx.disableAlertBeforeUnload();
-    }
-  },
-
-  onShow() {
+    this.mediaInitialized = false;
     if (wx.disableAlertBeforeUnload) {
       wx.disableAlertBeforeUnload();
     }
@@ -654,6 +649,7 @@ Page({
       this.originalEditForm = cloneForm(form);
     }
 
+    this.mediaInitialized = false;
     if (wx.enableAlertBeforeUnload) {
       wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
     }
