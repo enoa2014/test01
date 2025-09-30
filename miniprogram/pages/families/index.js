@@ -1,5 +1,5 @@
 // 家庭档案列表页面逻辑
-const logger = require('../../utils/logger');
+const logger = require('../../utils/logger.js');
 Page({
   /**
    * 页面的初始数据

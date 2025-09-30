@@ -1,4 +1,4 @@
-﻿const logger = require('../../utils/logger');
+﻿const logger = require('../../utils/logger.js');
 
 const AGE_BUCKETS = [
   { label: '0-5岁', min: 0, max: 5 },

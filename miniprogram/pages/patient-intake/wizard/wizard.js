@@ -22,7 +22,7 @@ function getVisibleSteps(steps) {
 const INITIAL_STEPS = buildSteps(false);
 const INITIAL_VISIBLE_STEPS = getVisibleSteps(INITIAL_STEPS);
 
-const logger = require('../../utils/logger');
+const logger = require('../../utils/logger.js');
 
 const DRAFT_STORAGE_KEY = 'patient_intake_draft';
 const DRAFT_EXPIRE_DAYS = 7;

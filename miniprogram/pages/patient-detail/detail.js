@@ -1,4 +1,4 @@
-﻿const logger = require('../../utils/logger');
+﻿const logger = require('../../utils/logger.js');
 
 const {
   MAX_UPLOAD_BATCH,
