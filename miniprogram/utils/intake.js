@@ -1,4 +1,5 @@
 // 患者录入相关工具函数
+const logger = require('./logger');
 
 // 证件号码校验
 function validateIdNumber(idType, idNumber) {
@@ -419,7 +420,7 @@ async function callPatientMedia(action, data = {}) {
 
     return res.result.data;
   } catch (error) {
-    console.error('patientMedia 调用失败:', error);
+    logger.error('patientMedia 调用失败:', error);
     throw error;
   }
 }
@@ -443,7 +444,7 @@ async function callPatientIntake(action, data = {}) {
 
     return res.result.data;
   } catch (error) {
-    console.error('patientIntake 调用失败:', error);
+    logger.error('patientIntake 调用失败:', error);
     throw error;
   }
 }

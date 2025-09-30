@@ -22,6 +22,8 @@ function getVisibleSteps(steps) {
 const INITIAL_STEPS = buildSteps(false);
 const INITIAL_VISIBLE_STEPS = getVisibleSteps(INITIAL_STEPS);
 
+const logger = require('../../utils/logger');
+
 const DRAFT_STORAGE_KEY = 'patient_intake_draft';
 const DRAFT_EXPIRE_DAYS = 7;
 
@@ -183,7 +185,7 @@ Page({
         }
       }
     } catch (error) {
-      console.error('加载配置失败', error);
+      logger.error('加载配置失败', error);
       // 使用默认配置
     }
   },
@@ -223,7 +225,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('恢复草稿失败', error);
+      logger.error('恢复草稿失败', error);
       this.setData({ showDraftModal: false });
     }
   },
@@ -413,7 +415,6 @@ Page({
       const patient = payload.patient || {};
       const basicInfoList = Array.isArray(payload.basicInfo) ? payload.basicInfo : [];
       const familyInfoList = Array.isArray(payload.familyInfo) ? payload.familyInfo : [];
-      const medicalInfoList = Array.isArray(payload.medicalInfo) ? payload.medicalInfo : [];
       const records = Array.isArray(payload.records) ? payload.records : [];
 
       // 辅助函数:从信息列表中查找值
@@ -557,7 +558,7 @@ Page({
 
       this.updateRequiredFields();
     } catch (error) {
-      console.error('[预填充] 加载患者数据失败', error);
+      logger.error('[预填充] 加载患者数据失败', error);
       if (!hasPrefilled) {
         wx.showToast({
           title: error.message || '加载失败',
@@ -942,7 +943,7 @@ Page({
         that.uploadFiles(res.tempFiles);
       },
       fail(error) {
-        console.error('选择文件失败', error);
+        logger.error('选择文件失败', error);
         wx.showToast({
           title: '选择文件失败',
           icon: 'error',
@@ -965,7 +966,7 @@ Page({
       try {
         await this.uploadSingleFile(file);
       } catch (error) {
-        console.error('上传文件失败', error);
+        logger.error('上传文件失败', error);
         wx.showToast({
           title: `上传${file.name}失败`,
           icon: 'error',
@@ -1067,7 +1068,7 @@ Page({
         url: target,
       });
     } catch (error) {
-      console.error('提交失败', error);
+      logger.error('提交失败', error);
       wx.showToast({
         title: error.message || '提交失败，请重试',
         icon: 'error',
@@ -1099,7 +1100,7 @@ Page({
         });
       } else {
         // 如果自动填充失败,给出明确提示
-        console.error('无法自动填充紧急联系人,患者档案中未找到父母联系方式');
+        logger.error('无法自动填充紧急联系人,患者档案中未找到父母联系方式');
         throw new Error(
           '紧急联系人不能为空。系统无法从患者档案中自动获取父母联系方式,请手动填写紧急联系人信息。'
         );

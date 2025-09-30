@@ -1,4 +1,6 @@
 // 患者选择页面
+const logger = require('../../utils/logger');
+
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_CACHE_TTL = 5 * 60 * 1000;
 
@@ -172,7 +174,7 @@ Page({
       // 更新缓存
       writePatientsCache(patients);
     } catch (error) {
-      console.error('Failed to load patients', error);
+      logger.error('Failed to load patients', error);
       const errorMessage = (error && error.errMsg) || '读取患者数据失败，请稍后重试';
 
       if (!silent) {

@@ -1,4 +1,6 @@
-﻿const SORT_OPTIONS = [
+﻿const logger = require('../../utils/logger');
+
+const SORT_OPTIONS = [
   { label: '默认排序', value: 'default' },
   { label: '按入院次数排序', value: 'admissionCountDesc' },
   { label: '按最近入院时间排序', value: 'latestAdmissionDesc' },
@@ -155,7 +157,7 @@ Page({
       });
       writePatientsCache(patients);
     } catch (error) {
-      console.error('Failed to load patients', error);
+      logger.error('Failed to load patients', error);
       const errorMessage = (error && error.errMsg) || '读取患者数据失败，请稍后重试';
       const hasPatients = Array.isArray(this.data.patients) && this.data.patients.length > 0;
       if (!silent || !hasPatients) {

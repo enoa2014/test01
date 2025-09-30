@@ -1,4 +1,6 @@
-﻿const AGE_BUCKETS = [
+﻿const logger = require('../../utils/logger');
+
+const AGE_BUCKETS = [
   { label: '0-5岁', min: 0, max: 5 },
   { label: '6-12岁', min: 6, max: 12 },
   { label: '13-17岁', min: 13, max: 17 },
@@ -208,7 +210,7 @@ Page({
       const panels = this.buildPanels(patients);
       this.setData({ patients, panels, loading: false });
     } catch (error) {
-      console.error('Failed to load analysis data', error);
+      logger.error('Failed to load analysis data', error);
       this.setData({
         loading: false,
         error: (error && error.errMsg) || '加载分析数据失败，请稍后重试'

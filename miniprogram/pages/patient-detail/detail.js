@@ -1,4 +1,6 @@
-﻿const {
+﻿const logger = require('../../utils/logger');
+
+const {
   MAX_UPLOAD_BATCH,
   PATIENT_FIELD_CONFIG,
   CONTACT_FIELD_CONFIG,
@@ -159,7 +161,7 @@ Page({
           });
           profileResult = (profileRes && profileRes.result) || profileResult;
         } catch (profileError) {
-          console.error('Failed to load profile detail', profileError);
+          logger.error('Failed to load profile detail', profileError);
         }
       }
 
@@ -215,7 +217,7 @@ Page({
             }),
           ]);
         } catch (intakeError) {
-          console.error('Failed to load intake records from patientIntake', intakeError);
+          logger.error('Failed to load intake records from patientIntake', intakeError);
           patientRes = null;
           intakeRecordsRes = null;
         }
@@ -535,7 +537,7 @@ Page({
         }
       );
     } catch (error) {
-      console.error('Failed to load patient detail', error);
+      logger.error('Failed to load patient detail', error);
       this.setData({
         loading: false,
         error: (error && (error.errMsg || error.message)) || '加载患者详情失败，请稍后重试',
@@ -797,7 +799,7 @@ Page({
       this.resetEditState();
       await this.fetchPatientDetail();
     } catch (error) {
-      console.error('update patient failed', error);
+      logger.error('update patient failed', error);
       wx.showToast({ icon: 'none', title: (error && error.message) || '保存失败，请稍后再试' });
       this.setData({ saving: false });
     }

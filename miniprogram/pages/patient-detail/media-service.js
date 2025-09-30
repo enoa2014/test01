@@ -1,3 +1,5 @@
+const logger = require('../../utils/logger');
+
 const { MAX_UPLOAD_BATCH, MAX_FILE_SIZE, SIGNED_URL_TTL } = require('./constants.js');
 
 const {
@@ -118,7 +120,7 @@ function createMediaService(page) {
         'media.allowed': true,
       });
     } catch (error) {
-      console.error('加载附件失败', error);
+      logger.error('加载附件失败', error);
       setMediaState({
         error: normalizeString(error.message) || '加载附件失败，请稍后重试',
         loading: false,
@@ -292,7 +294,7 @@ function createMediaService(page) {
           });
         }
       } catch (error) {
-        console.error('获取原图预览失败', error);
+        logger.error('获取原图预览失败', error);
       }
     }
   }

@@ -9,7 +9,11 @@ App({
 
   onLaunch() {
     if (!wx.cloud) {
-      console.warn("The current WeChat base library version is too low. Please upgrade to 2.2.3 or above to use cloud capabilities.");
+      wx.showModal({
+        title: '提示',
+        content: '当前微信基础库版本过低，请升级至 2.2.3 及以上再使用云开发能力。',
+        showCancel: false
+      });
       return;
     }
 

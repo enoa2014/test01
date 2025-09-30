@@ -1,6 +1,5 @@
 // 家庭档案列表页面逻辑
-const app = getApp();
-
+const logger = require('../../utils/logger');
 Page({
   /**
    * 页面的初始数据
@@ -75,7 +74,7 @@ Page({
   /**
    * 生命周期函数--监听页面加载
    */
-  onLoad(options) {
+  onLoad() {
     this.loadFamilyList();
   },
 
@@ -199,7 +198,7 @@ Page({
     wx.makePhoneCall({
       phoneNumber: phone,
       fail: err => {
-        console.error('拨打电话失败:', err);
+        logger.error('拨打电话失败:', err);
         this.showToast('拨打电话失败', 'error');
       },
     });
@@ -306,7 +305,7 @@ Page({
         wx.stopPullDownRefresh();
       }
     } catch (error) {
-      console.error('加载家庭列表失败:', error);
+      logger.error('加载家庭列表失败:', error);
 
       this.setData({
         loading: false,

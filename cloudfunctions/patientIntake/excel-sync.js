@@ -459,6 +459,11 @@
             'metadata.lastModifiedAt': 1,
             status: 1,
             'metadata.submittedAt': 1,
+            'metadata.excelRecordId': 1,
+            'metadata.source': 1,
+            'metadata.submittedBy': 1,
+            'metadata.importMode': 1,
+            _id: 1,
           })
           .skip(i * batchSize)
           .limit(batchSize)
@@ -466,11 +471,24 @@
 
         const records = Array.isArray(res && res.data) ? res.data : [];
         const activeRecords = records.filter(record => !isDraftStatus(record && record.status));
-        if (!activeRecords.length) {
+        const cleanedRecords = activeRecords.filter(record => {
+          const metadata = record && record.metadata ? record.metadata : {};
+          const recordId = typeof record._id === 'string' ? record._id : '';
+          const isAggregatedBySource =
+            metadata.source === 'excel-import' &&
+            !metadata.excelRecordId &&
+            recordId.startsWith(`${normalizedKey}-excel`);
+          const isAggregatedBySubmitter =
+            (metadata.submittedBy === 'excel-import' || metadata.importMode === 'excel-import') &&
+            recordId.endsWith('-excel') && !metadata.excelRecordId;
+          const isAggregatedByIdSuffix = recordId.endsWith('-excel') && !metadata.excelRecordId;
+          return !(isAggregatedBySource || isAggregatedBySubmitter || isAggregatedByIdSuffix);
+        });
+        if (!cleanedRecords.length) {
           continue;
         }
 
-        allActiveRecords.push(...activeRecords);
+        allActiveRecords.push(...cleanedRecords);
       } catch (error) {
         console.warn('summarizeIntakeHistory batch failed', normalizedKey, error);
       }
