@@ -261,7 +261,7 @@
 
 - [ ] E2E 数据清理与自动触发诊断
   - [ ] 调研 `mpflow-service test:e2e` 二次触发原因，关闭 watch 或退出自动化
-  - [ ] 在测试收尾阶段执行 `scripts/e2e/verify-cleanup.js --cleanup`，清理自动化生成的患者
+  - [x] 在测试收尾阶段执行 `scripts/e2e/verify-cleanup.js --cleanup`，清理自动化生成的患者
 
 - [ ] **性能优化**
   - [ ] 使用开发者工具检查动画性能
