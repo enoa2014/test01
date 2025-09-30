@@ -1,4 +1,4 @@
-﻿const logger = require('../../utils/logger.js');
+﻿const logger = require('../../utils/logger');
 
 const SORT_OPTIONS = [
   { label: '默认排序', value: 'default' },

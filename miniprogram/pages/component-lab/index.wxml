@@ -384,7 +384,10 @@
             Suffix</label
           >
         </view>
-        <view class="lab__panel-field lab__panel-field--row">
+        <view
+          wx:if="{{propsState.type === 'textarea'}}"
+          class="lab__panel-field lab__panel-field--row"
+        >
           <label class="lab__switch"
             ><switch
               checked="{{propsState.textareaAutoHeight}}"

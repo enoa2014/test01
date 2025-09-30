@@ -1,4 +1,4 @@
-const logger = require('../../utils/logger.js');
+const logger = require('../../utils/logger');
 
 const { MAX_UPLOAD_BATCH, MAX_FILE_SIZE, SIGNED_URL_TTL } = require('./constants.js');
 

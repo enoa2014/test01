@@ -14,7 +14,7 @@
   - [x] 梳理 `getAllIntakeRecords` 返回的 imported/active/excel 记录结构
   - [x] 调整 `dedupeIntakeRecords` 逻辑，基于 intakeTime+诊断等字段去重并优先保留有效记录
   - [x] 恢复云函数 `handleSubmitIntake` 对 `admissionCount` 的自增，确认“已有患者新增入住”不会漏记次数
-  - [ ] 回归患者详情页与患者列表页，确保历史条数与入住次数一致
+  - [x] 回归患者详情页与患者列表页，确保历史条数与入住次数一致
 - [x] 排查并修复“胡矩豪入院记录不一致”事件（高优优先）
   - [x] `patientIntake.getAllIntakeRecords` 过滤掉 `_id` 以 `-excel` 结尾的聚合记录，并保留 doctor/hospital 字段
   - [x] 调整详情页记录展示逻辑，直接使用接口返回信息避免跨记录回填
@@ -249,7 +249,7 @@
 
 - [ ] 将现有 textarea 使用场景迁移为 `pm-input` 的 `type="textarea"`，验证自动高度与校验体验
 - [x] 更新组件文档与 Component Lab 示例，补充 textarea 属性（`maxlength`、`textareaAutoHeight` 等）
-  - [ ] Component Lab：当输入类型非 `textarea` 时禁用或隐藏 `textareaAutoHeight`、`showConfirmBar` 控制，避免误用
+  - [x] Component Lab：当输入类型非 `textarea` 时禁用或隐藏 `textareaAutoHeight`、`showConfirmBar` 控制，避免误用
 
 ### 3.6 下一阶段建议（2025-09-30 更新）
 
