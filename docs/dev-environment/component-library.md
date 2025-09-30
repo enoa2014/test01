@@ -41,7 +41,7 @@ miniprogram/components
 ## 依赖与工具
 - 推荐使用 TypeScript 编写逻辑（通过 `miniprogramRoot` 支持）。
 - 公共逻辑与常量放置于 `miniprogram/utils`，避免重复实现。
-- 主题配色、间距统一从 `styles/tokens.wxss` 引入，禁止硬编码。
+- 主题配色、间距统一由 `design-tokens.json` 驱动，通过 `npm run tokens:generate` 生成的 `miniprogram/styles/generated/tokens.wxss` 及基础样式文件提供，禁止硬编码。
 - 若需第三方库，优先选择轻量包并评估微信小程序兼容性。
 
 ## 组件开发约定
@@ -56,7 +56,7 @@ miniprogram/components
    - 对外暴露的事件统一使用 `bind:` 前缀，命名 `bind:click`, `bind:submit`。
 
 2. 样式规范
-   - 引入全局变量：`@import "../../styles/tokens.wxss";`
+- 引入全局变量：`@import "../../styles/generated/tokens.wxss"; @import "../../styles/foundation.wxss";`（按需追加 `utilities.wxss`）。
    - 避免使用 `px`，统一使用 `rpx`。
    - 使用 BEM 或 `pm-` 前缀，防止样式污染。
 
@@ -106,6 +106,11 @@ miniprogram/components
 - 每月例行 Review 组件 API 与使用情况，淘汰冗余实现。
 
 ## 示例实现
+
+### 基础组件能力
+- `pm-button`：支持 `type` (default/primary/secondary)、`size`、`block`、`ghost`、`loading`、`disabled` 以及自定义 slot。
+- `pm-input`：支持 `helper`、`error`、`prefix/ suffix` slot、`block` 布局与清空功能。
+- `pm-card`：新增 `header/footer` slot，可通过 `status` 控制语义颜色。
 
 - `pm-button`、`pm-input`、`pm-card` 位于 `miniprogram/components/base/` 目录，作为 Story 001.3 的基础示例。
 - 对应测试文件位于 `tests/unit/components/`，可作为新增组件单测的模板。

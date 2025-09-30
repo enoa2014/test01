@@ -16,7 +16,8 @@
 - **阴影系统**: 建立了8个层级的阴影效果
 
 #### 核心文件
-- `miniprogram/styles/tokens.wxss` - 主设计令牌文件
+- `design-tokens.json` - 设计令牌原始定义
+- `miniprogram/styles/generated/tokens.wxss` - 自动生成的样式变量
 - `docs/design-system/design-tokens-spec.md` - 令牌命名规范文档
 - `docs/design-system/figma-tokens-guide.md` - Figma实施指南
 

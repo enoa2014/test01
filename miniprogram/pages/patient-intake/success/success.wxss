@@ -56,7 +56,7 @@
   border-radius: 16rpx;
   padding: 40rpx;
   margin-bottom: 30rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-floating);
 }
 
 .card-header {
@@ -140,7 +140,7 @@
   margin-bottom: 30rpx;
   display: flex;
   gap: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-floating);
 }
 
 .reminder-icon {
@@ -179,7 +179,7 @@
   border-radius: 16rpx;
   padding: 40rpx;
   margin-bottom: 40rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-floating);
 }
 
 .action-title {

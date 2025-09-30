@@ -1,8 +1,8 @@
-﻿<view class="analysis-container">
+﻿<view class="theme-root analysis-container stack gap-4">
   <view wx:if="{{loading}}" class="placeholder">正在生成分析数据…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y class="panel-container">
-    <view class="analysis-panel" wx:for="{{panels}}" wx:key="title" wx:for-index="panelIndex">
+    <view class="section analysis-panel" wx:for="{{panels}}" wx:key="title" wx:for-index="panelIndex">
       <text class="panel-title">{{item.title}}</text>
       <block wx:if="{{item.stats && item.stats.length}}">
         <scroll-view scroll-x class="stat-scroll" enable-flex="true">

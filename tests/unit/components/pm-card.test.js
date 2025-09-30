@@ -10,28 +10,30 @@ describe('pm-card component definition', () => {
     }
   });
 
-  it('registers default props', () => {
+  it('registers default properties', () => {
     require(componentPath);
     const config = global.Component.mock.calls[0][0];
     expect(config.properties.status.value).toBe('default');
-    expect(config.properties.clickable.value).toBe(false);
+    expect(config.properties.useSlot.value).toBe(false);
+    expect(config.properties.useHeaderSlot.value).toBe(false);
+    expect(config.properties.useFooterSlot.value).toBe(false);
+  });
+
+  it('prevents tap when not clickable', () => {
+    require(componentPath);
+    const config = global.Component.mock.calls[0][0];
+    const tapSpy = jest.fn();
+    const ctx = { data: { clickable: false }, triggerEvent: tapSpy };
+    config.methods.handleTap.call(ctx);
+    expect(tapSpy).not.toHaveBeenCalled();
   });
 
   it('emits tap when clickable', () => {
     require(componentPath);
     const config = global.Component.mock.calls[0][0];
     const tapSpy = jest.fn();
-    const context = { data: { clickable: true }, triggerEvent: tapSpy };
-    config.methods.handleTap.call(context);
+    const ctx = { data: { clickable: true }, triggerEvent: tapSpy };
+    config.methods.handleTap.call(ctx);
     expect(tapSpy).toHaveBeenCalledWith('tap');
-  });
-
-  it('ignores tap when not clickable', () => {
-    require(componentPath);
-    const config = global.Component.mock.calls[0][0];
-    const tapSpy = jest.fn();
-    const context = { data: { clickable: false }, triggerEvent: tapSpy };
-    config.methods.handleTap.call(context);
-    expect(tapSpy).not.toHaveBeenCalled();
   });
 });

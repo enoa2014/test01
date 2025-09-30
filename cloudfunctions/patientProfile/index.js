@@ -186,18 +186,27 @@ async function buildPatientsFromDatabase(options = {}) {
       gender: 1,
       birthDate: 1,
       idNumber: 1,
+      recordKey: 1,
+      firstAdmissionDate: 1,
+      latestAdmissionDate: 1,
+      latestAdmissionTimestamp: 1,
+      firstHospital: 1,
       latestHospital: 1,
       latestDoctor: 1,
-      firstHospital: 1,
-      latestDiagnosis: 1,
       firstDiagnosis: 1,
+      latestDiagnosis: 1,
       admissionCount: 1,
       summaryCaregivers: 1,
       lastIntakeNarrative: 1,
-      'data.admissionCount': 1,
       'data.firstAdmissionDate': 1,
       'data.latestAdmissionDate': 1,
       'data.latestAdmissionTimestamp': 1,
+      'data.firstHospital': 1,
+      'data.latestHospital': 1,
+      'data.latestDoctor': 1,
+      'data.firstDiagnosis': 1,
+      'data.latestDiagnosis': 1,
+      'data.admissionCount': 1,
       'data.summaryCaregivers': 1,
       'data.lastIntakeNarrative': 1
     })
@@ -270,6 +279,13 @@ async function buildPatientsFromDatabase(options = {}) {
     const nativePlace = doc.nativePlace || data.nativePlace || (excelInfo && excelInfo.nativePlace) || '';
     const ethnicity = doc.ethnicity || data.ethnicity || (excelInfo && excelInfo.ethnicity) || '';
 
+    // 优先从data字段获取诊断和医院信息，如果没有则从doc根级字段获取
+    const firstDiagnosis = data.firstDiagnosis || doc.firstDiagnosis || '';
+    const latestDiagnosis = data.latestDiagnosis || doc.latestDiagnosis || '';
+    const firstHospital = data.firstHospital || doc.firstHospital || '';
+    const latestHospital = data.latestHospital || doc.latestHospital || '';
+    const latestDoctor = data.latestDoctor || doc.latestDoctor || '';
+
     summaries.push({
       key: nameKey,
       patientKey: docId,
@@ -283,11 +299,11 @@ async function buildPatientsFromDatabase(options = {}) {
       ethnicity,
       firstAdmissionDate: firstTs || null,
       latestAdmissionDate: latestTs || null,
-      firstDiagnosis: doc.firstDiagnosis || '',
-      latestDiagnosis: doc.latestDiagnosis || '',
-      firstHospital: doc.firstHospital || '',
-      latestHospital: doc.latestHospital || '',
-      latestDoctor: doc.latestDoctor || '',
+      firstDiagnosis,
+      latestDiagnosis,
+      firstHospital,
+      latestHospital,
+      latestDoctor,
       admissionCount,
       summaryCaregivers,
       latestAdmissionTimestamp: latestTimestamp || null,

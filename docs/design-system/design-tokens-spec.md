@@ -4,6 +4,19 @@
 
 本文档定义了公益小家患者档案管理系统设计令牌的命名规范和管理规则，确保设计系统的一致性和可维护性。
 
+设计令牌的唯一来源（Single Source of Truth）位于 `design-tokens.json`，通过 `scripts/generate-tokens.js` 转换为：
+
+- `miniprogram/styles/generated/tokens.wxss`（运行时注入 `.theme-root` / `page` 自定义属性）
+- `miniprogram/styles/generated/tokens.js`（逻辑层读取）
+
+请在更新令牌后执行：
+
+```bash
+npm run tokens:generate
+```
+
+命令会自动写入上述产物，禁止直接在 WXSS/JS 文件中手工修改变量定义。
+
 ## 命名原则
 
 ### 1. 层级结构
@@ -30,35 +43,35 @@ Global Tokens (全局令牌)
 ### 色彩令牌 (Color Tokens)
 
 #### 全局色彩
-```css
-/* 主色调 */
---color-primary: #2E86AB;     /* 温暖蓝色 - 专业信赖 */
---color-secondary: #F24236;   /* 温馨橙色 - 关爱温暖 */
-
-/* 功能色彩 */
---color-success: #52C41A;     /* 成功绿 */
---color-warning: #FAAD14;     /* 警告黄 */
---color-error: #FF4D4F;       /* 错误红 */
---color-info: #1890FF;        /* 信息蓝 */
+```jsonc
+// design-tokens.json → colors
+{
+  "primary": "#2E86AB",        // 温暖蓝色 - 专业信赖
+  "secondary": "#F24236",      // 温馨橙色 - 关爱温暖
+  "success": "#52C41A",        // 成功绿
+  "warning": "#FAAD14",        // 警告黄
+  "danger": "#FF4D4F",         // 错误红
+  "info": "#1890FF"            // 信息蓝
+}
 ```
 
+转换后在 WXSS 中可通过 `var(--color-primary)` 等变量访问。
+
 #### 语义色彩
-```css
-/* 文本色彩 */
---color-text-primary: #262626;    /* 主要文本 */
---color-text-secondary: #595959;  /* 次要文本 */
---color-text-tertiary: #8C8C8C;   /* 辅助文本 */
---color-text-disabled: #BFBFBF;   /* 禁用文本 */
-
-/* 背景色彩 */
---color-bg-primary: #FFFFFF;      /* 主要背景 */
---color-bg-secondary: #FAFAFA;    /* 次要背景 */
---color-bg-tertiary: #F5F5F5;     /* 辅助背景 */
-
-/* 边框色彩 */
---color-border-primary: #D9D9D9;    /* 主要边框 */
---color-border-secondary: #F0F0F0;  /* 次要边框 */
---color-border-tertiary: #FAFAFA;   /* 辅助边框 */
+```jsonc
+// design-tokens.json → colors（节选）
+{
+  "textPrimary": "#262626",
+  "textSecondary": "#595959",
+  "textTertiary": "#8C8C8C",
+  "textDisabled": "#BFBFBF",
+  "bgPrimary": "#FFFFFF",
+  "bgSecondary": "#FAFAFA",
+  "bgTertiary": "#F5F5F5",
+  "borderPrimary": "#D9D9D9",
+  "borderSecondary": "#F0F0F0",
+  "borderTertiary": "#FAFAFA"
+}
 ```
 
 ### 字体令牌 (Typography Tokens)

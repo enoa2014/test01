@@ -27,6 +27,7 @@ const {
 const {
   findValueByLabels,
   coalesceValue,
+  dedupeIntakeRecords,
   sortIntakeRecords,
   pushDisplayItem
 } = require("./data-mappers.js");
@@ -36,6 +37,37 @@ const {
   makeQuotaPayload,
   createMediaService
 } = require("./media-service.js");
+
+function formatRecordStatus(status) {
+  if (!status) {
+    return '';
+  }
+
+  const normalized = String(status).toLowerCase();
+
+  if (normalized.includes('import')) {
+    return '系统导入';
+  }
+  if (normalized === 'draft') {
+    return '草稿';
+  }
+  if (normalized === 'submitted') {
+    return '已提交';
+  }
+
+  return status;
+}
+
+function shouldDisplayIntakeRecord(record) {
+  if (!record) {
+    return false;
+  }
+  const status = (record.status || '').toLowerCase();
+  if (status && status !== 'submitted') {
+    return false;
+  }
+  return true;
+}
 
 Page({
   data: {
@@ -273,9 +305,13 @@ Page({
           symptomDetailDisplay,
           treatmentProcessDisplay,
           followUpPlanDisplay,
+          statusDisplay: formatRecordStatus(record.status),
           followUpPlan: followUpPlanDisplay
         };
       });
+
+      allIntakeRecords = allIntakeRecords.filter(shouldDisplayIntakeRecord);
+      allIntakeRecords = dedupeIntakeRecords(allIntakeRecords);
 
       if (!allIntakeRecords.length && Array.isArray(profileResult.records) && profileResult.records.length) {
         allIntakeRecords = profileResult.records.map((record, index) => {
@@ -309,7 +345,7 @@ Page({
           return {
             ...record,
             intakeId: record.intakeId || `excel_${record.patientKey || 'record'}_${index}`,
-            status: record.status || 'excel-import',
+            status: 'submitted',
             intakeTime,
             displayTime: formatDateTime(intakeTime),
             updatedAt: record.updatedAt || intakeTime,
@@ -321,10 +357,14 @@ Page({
             followUpPlan: followUpPlanDisplay,
             symptomDetailDisplay,
             treatmentProcessDisplay,
-            followUpPlanDisplay
+            followUpPlanDisplay,
+            statusDisplay: formatRecordStatus('submitted')
           };
         });
       }
+
+      allIntakeRecords = allIntakeRecords.filter(shouldDisplayIntakeRecord);
+      allIntakeRecords = dedupeIntakeRecords(allIntakeRecords);
 
       this.allIntakeRecordsSource = allIntakeRecords;
       const currentOrder = this.data.recordsSortOrder || 'desc';

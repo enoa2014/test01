@@ -28,7 +28,7 @@
 - 提交应保证 `npm run test:unit` 通过，避免带入破坏性更改。
 
 ## 4. 小程序代码规范
-- **结构**：组件/页面以 `index.js` + `index.wxml` + `index.wxss` + `index.json` 组成；引用全局设计令牌 `@import "../../styles/tokens.wxss"`。
+- **结构**：组件/页面以 `index.js` + `index.wxml` + `index.wxss` + `index.json` 组成；样式需 `@import "../../styles/generated/tokens.wxss"` 并结合 `foundation.wxss`、`utilities.wxss` 使用设计令牌。
 - **数据绑定**：避免在模板中执行复杂逻辑，预先在 `data` 中准备展示数据。
 - **事件**：统一使用 `bindtap`、`bind:change` 等语义化事件并在 JS 中定义同名方法；禁止内联匿名函数。
 - **状态管理**：优先使用页面 `setData`；跨组件状态通过事件/全局 Store（参见 Integration Guide）。

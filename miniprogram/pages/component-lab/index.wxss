@@ -1,5 +1,7 @@
+@import "../../styles/generated/tokens.wxss";
+@import "../../styles/foundation.wxss";
+@import "../../styles/utilities.wxss";
 @import "../../styles/responsive.wxss";
-@import "../../styles/tokens.wxss";
 
 .lab {
   display: flex;
@@ -123,4 +125,35 @@
 .lab__link {
   color: var(--color-primary);
   margin-left: var(--space-2);
+}
+
+.lab__button-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lab__affix {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.lab__card-header {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-semibold);
+}
+
+.lab__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.lab__card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }

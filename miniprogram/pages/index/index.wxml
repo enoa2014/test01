@@ -1,4 +1,4 @@
-﻿<view class="container">
+﻿<view class="theme-root container stack gap-4">
   <view class="hero">
     <text class="title">患者档案</text>
     <text class="subtitle">汇总每位患者的住院记录</text>
@@ -40,7 +40,7 @@
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y class="patient-list">
     <view
-      class="patient-item"
+      class="section patient-item"
       wx:for="{{displayPatients}}"
       wx:key="patientKey"
       data-key="{{item.key}}"

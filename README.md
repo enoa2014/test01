@@ -48,10 +48,19 @@ tests/
 
 ## 常用命令
 
+### 基础开发命令
+- `npm run tokens:generate`：根据 `design-tokens.json` 生成小程序可用的样式令牌文件。
 - `npm run sync-config`：根据 `.env` 同步 `project.config.json` 及环境配置文件。
 - `npm run fix-encoding`：遍历 `miniprogram/` 和 `cloudfunctions/`，将 JSON/WXML/WXSS/JS 文件统一写成 UTF-8 无 BOM。
+
+### 测试命令
 - `npm run test:e2e:patients`：生成测试患者数据、执行端到端测试并在结束后自动清理。
 - `npm run test:e2e` 或 `npm test`：执行端到端测试套件（自动启动微信开发者工具 CLI）。
+
+### 数据库管理命令
+- `npm run database:reinit`：完整的数据库重新初始化（清空→导入→验证）。
+- `npm run database:backup`：带备份的数据库重新初始化（备份→清空→导入→验证）。
+- `npm run database:verify`：仅验证当前数据库数据完整性，不执行任何修改操作。
 
 ## 端到端测试
 
@@ -128,7 +137,54 @@ excel_records → patientProfile(list/detail) → 前端业务
 
 ## 患者资料管理
 
-- 在患者详情页的“资料管理”模块上传/浏览图片与文档，支持 JPG/PNG/WebP 及 TXT/PDF/Word/Excel。
+- 在患者详情页的"资料管理"模块上传/浏览图片与文档，支持 JPG/PNG/WebP 及 TXT/PDF/Word/Excel。
 - 单个文件不超过 10MB，单次最多 5 个，系统自动校验总数量（20）和总容量（30MB）。
 - 支持缩略图展示、原图预览与下载，TXT 文档在线预览。
 - 仅后台授权用户可操作，云函数位于 `cloudfunctions/patientMedia`，前端入口在 `miniprogram/pages/patient-detail`。
+
+## 数据库管理
+
+### 数据库集合说明
+
+项目使用以下云数据库集合：
+
+| 集合名称 | 用途 | 记录类型 |
+|---------|------|----------|
+| `excel_records` | Excel原始数据存储 | 患者入院记录原始数据 |
+| `excel_cache` | 患者汇总缓存 | 30分钟TTL的患者列表缓存 |
+| `patients` | 患者档案 | 去重后的患者基本信息 |
+| `patient_intake_records` | 入住记录 | 患者入住流程记录 |
+
+### 数据库重新初始化
+
+当需要清空数据库并重新从Excel文件导入数据时，可以使用以下命令：
+
+```bash
+# 完整重新初始化（推荐）
+npm run database:reinit
+
+# 带数据备份的重新初始化（重要数据场景）
+npm run database:backup
+
+# 仅验证数据完整性（不修改数据）
+npm run database:verify
+```
+
+### 重新初始化流程
+
+1. **数据清空**：删除所有相关集合中的数据
+2. **数据导入**：从Excel文件重新读取并导入原始数据
+3. **数据同步**：生成患者档案和入住记录
+4. **缓存重建**：生成新的缓存数据
+5. **完整性验证**：确保数据一致性和完整性
+
+### 故障排除
+
+如果重新初始化后前端显示数据不完整，请检查：
+
+1. **环境变量**：确保 `TCB_ENV`、`TENCENTCLOUD_SECRETID`、`TENCENTCLOUD_SECRETKEY` 正确设置
+2. **Excel文件**：确认 `EXCEL_FILE_ID` 指向正确的云存储文件
+3. **云函数部署**：确保 `readExcel` 和 `patientProfile` 云函数已部署最新版本
+4. **缓存清理**：运行 `npm run database:verify` 检查数据状态
+
+详细的操作指南请参阅：[docs/database-reinit-guide.md](docs/database-reinit-guide.md)

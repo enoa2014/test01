@@ -443,6 +443,15 @@
   box-sizing: border-box;
 }
 
+.btn::after {
+  border: none;
+}
+
+.btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .btn-sm {
   padding: var(--space-2) var(--space-4);
   font-size: var(--text-sm);
@@ -484,5 +493,4 @@
   border-color: var(--color-primary);
   box-shadow: 0 0 0 6rpx rgba(255, 107, 53, 0.1);
 }
-
 

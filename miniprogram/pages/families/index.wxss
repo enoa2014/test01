@@ -1,7 +1,9 @@
 /* 家庭档案列表页面样式 */
 /* 使用设计令牌工具类 */
 
-@import '/styles/tokens.wxss';
+@import "../../styles/generated/tokens.wxss";
+@import "../../styles/foundation.wxss";
+@import "../../styles/utilities.wxss";
 
 /* 页面容器 */
 .page {
@@ -63,7 +65,7 @@
   background: linear-gradient(135deg, var(--color-primary), var(--color-warning));
   color: white;
   border: none;
-  box-shadow: 0 8rpx 32rpx rgba(255, 107, 53, 0.3);
+  box-shadow: var(--shadow-secondary);
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -87,7 +89,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--bg-surface-translucent);
   display: flex;
   align-items: center;
   justify-content: center;

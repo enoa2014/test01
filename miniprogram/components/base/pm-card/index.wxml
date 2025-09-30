@@ -1,4 +1,13 @@
 <view class="pm-card pm-card--{{status}} {{clickable ? 'pm-card--clickable' : ''}}" bindtap="handleTap">
-  <view class="pm-card__header">{{title}}</view>
-  <view class="pm-card__body">{{description}}</view>
+  <view wx:if="{{useHeaderSlot || title}}" class="pm-card__header">
+    <slot wx:if="{{useHeaderSlot}}" name="header"></slot>
+    <block wx:elif="{{title}}">{{title}}</block>
+  </view>
+  <view class="pm-card__body">
+    <slot wx:if="{{useSlot}}"></slot>
+    <block wx:else>{{description}}</block>
+  </view>
+  <view wx:if="{{useFooterSlot}}" class="pm-card__footer">
+    <slot name="footer"></slot>
+  </view>
 </view>

@@ -26,7 +26,7 @@
 ## 证据附件
 - 组件映射表：`miniprogram/mapping.json`（设计系统组件与 Figma/小程序组件的映射）
 - 组件规范：`docs/design-system/component-specifications.md`
-- 样式实现：`miniprogram/styles/tokens.wxss`、`miniprogram/styles/responsive.wxss`
+- 样式实现：`design-tokens.json` → `npm run tokens:generate` 产出的 `miniprogram/styles/generated/tokens.wxss` 与 `miniprogram/styles/responsive.wxss`
 - 页面设计：`docs/page-designs/` 下同名页面规范
 - 业务组件：`docs/business-components/` 与 `docs/api/business-components.md`
 

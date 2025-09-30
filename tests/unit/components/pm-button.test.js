@@ -17,6 +17,9 @@ describe('pm-button component definition', () => {
     expect(config.properties.type.value).toBe('default');
     expect(config.properties.size.value).toBe('medium');
     expect(config.properties.loading.value).toBe(false);
+    expect(config.properties.block.value).toBe(false);
+    expect(config.properties.ghost.value).toBe(false);
+    expect(config.properties.useSlot.value).toBe(false);
   });
 
   it('emits tap event when enabled', () => {

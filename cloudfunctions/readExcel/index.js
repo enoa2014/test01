@@ -86,14 +86,16 @@ function sanitizeIdentifier(value, fallbackSeed) {
   const base = normalizeSpacing(value);
   if (base) {
     const sanitized = base.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (sanitized) {
+    const meaningful = sanitized.replace(/^excel_?/, '');
+    if (sanitized && meaningful) {
       return sanitized;
     }
   }
   const seed = normalizeSpacing(fallbackSeed);
   if (seed) {
     const sanitizedSeed = seed.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (sanitizedSeed) {
+    const meaningfulSeed = sanitizedSeed.replace(/^excel_?/, '');
+    if (sanitizedSeed && meaningfulSeed) {
       return sanitizedSeed;
     }
   }
@@ -643,6 +645,11 @@ function buildPatientPayload(group, latestRecord) {
     admissionCount: group.admissionCount || 0,
     firstAdmissionDate: group.firstAdmissionTimestamp,
     latestAdmissionDate: group.latestAdmissionTimestamp,
+    firstDiagnosis: group.firstDiagnosis || '',
+    latestDiagnosis: group.latestDiagnosis || '',
+    firstHospital: group.firstHospital || '',
+    latestHospital: group.latestHospital || '',
+    latestDoctor: group.latestDoctor || '',
     recordKey: normalizeSpacing(group.patientName),
     createdAt: Date.now(),
     updatedAt: Date.now()

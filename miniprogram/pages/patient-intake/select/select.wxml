@@ -1,5 +1,5 @@
 <!--患者选择页面-->
-<view class="select-container">
+<view class="theme-root select-container">
   <view class="header">
     <view class="title">患者入住登记</view>
     <view class="subtitle">请选择患者或创建新患者</view>

@@ -1,4 +1,4 @@
-<view class="lab">
+<view class="theme-root lab">
   <view class="lab__sidebar">
     <view class="lab__sidebar-title">组件列表</view>
     <block wx:for="{{components}}" wx:key="id">
@@ -11,7 +11,7 @@
   <view class="lab__content">
     <view class="lab__preview">
       <view class="lab__preview-header">
-        <text class="lab__preview-title">{{current.name || '选择一个组件'}}</text>
+        <text class="lab__preview-title">{{current.name || '选择一个组件'}} </text>
         <text class="lab__preview-path" wx:if="{{current.componentPath}}">{{current.componentPath}}</text>
       </view>
       <view class="lab__preview-body">
@@ -21,9 +21,17 @@
           size="{{propsState.size}}"
           loading="{{propsState.loading}}"
           disabled="{{propsState.disabled}}"
-          text="{{propsState.text}}"
+          block="{{propsState.block}}"
+          ghost="{{propsState.ghost}}"
+          use-slot="{{propsState.useSlot}}"
           bindtap="handleDemoTap"
-        ></pm-button>
+          text="{{propsState.useSlot ? '' : propsState.text}}"
+        >
+          <view wx:if="{{propsState.useSlot}}" class="lab__button-slot">
+            <text class="lab__slot-icon">🔔</text>
+            <text class="lab__slot-text">{{propsState.text}}</text>
+          </view>
+        </pm-button>
         <pm-input
           wx:elif="{{current.id === 'pm-input'}}"
           label="{{propsState.label}}"
@@ -32,15 +40,38 @@
           type="{{propsState.type}}"
           disabled="{{propsState.disabled}}"
           clearable="{{propsState.clearable}}"
+          helper="{{propsState.helper}}"
+          error="{{propsState.error}}"
+          block="{{propsState.block}}"
+          use-prefix-slot="{{propsState.usePrefixSlot}}"
+          use-suffix-slot="{{propsState.useSuffixSlot}}"
           bindchange="handleInputChange"
-        ></pm-input>
+        >
+          <view wx:if="{{propsState.usePrefixSlot}}" slot="prefix" class="lab__affix">+86</view>
+          <view wx:if="{{propsState.useSuffixSlot}}" slot="suffix" class="lab__affix">岁</view>
+        </pm-input>
         <pm-card
           wx:elif="{{current.id === 'pm-card'}}"
-          title="{{propsState.title}}"
-          description="{{propsState.description}}"
+          title="{{propsState.useHeaderSlot ? '' : propsState.title}}"
+          description="{{propsState.useSlot ? '' : propsState.description}}"
           status="{{propsState.status}}"
           clickable="{{propsState.clickable}}"
-        ></pm-card>
+          use-slot="{{propsState.useSlot}}"
+          use-header-slot="{{propsState.useHeaderSlot}}"
+          use-footer-slot="{{propsState.useFooterSlot}}"
+        >
+          <view wx:if="{{propsState.useHeaderSlot}}" slot="header" class="lab__card-header">
+            <text class="lab__slot-icon">🩺</text>
+            <text>重点关注患者</text>
+          </view>
+          <view wx:if="{{propsState.useSlot}}" class="lab__card-body">
+            <text>• 今日需联系家属确认随访时间</text>
+            <text>• 上传最新化验单至媒体库</text>
+          </view>
+          <view wx:if="{{propsState.useFooterSlot}}" slot="footer" class="lab__card-footer">
+            <pm-button size="small" type="primary" text="查看详情" bindtap="handleDemoTap"></pm-button>
+          </view>
+        </pm-card>
         <view wx:else class="lab__empty">请选择需要预览的组件</view>
       </view>
     </view>
@@ -62,14 +93,15 @@
           </picker>
         </view>
         <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch">
-            <switch checked="{{propsState.loading}}" data-prop="loading" bindchange="handleToggle"/> Loading
-          </label>
-          <label class="lab__switch">
-            <switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled
-          </label>
+          <label class="lab__switch"><switch checked="{{propsState.loading}}" data-prop="loading" bindchange="handleToggle"/> Loading</label>
+          <label class="lab__switch"><switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled</label>
+          <label class="lab__switch"><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle"/> Block</label>
+          <label class="lab__switch"><switch checked="{{propsState.ghost}}" data-prop="ghost" bindchange="handleToggle"/> Ghost</label>
         </view>
-        <view class="lab__panel-field">
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"><switch checked="{{propsState.useSlot}}" data-prop="useSlot" bindchange="handleToggle"/> 使用自定义内容</label>
+        </view>
+        <view class="lab__panel-field" wx:if="{{!propsState.useSlot}}">
           <text class="lab__panel-label">文案</text>
           <input value="{{propsState.text}}" data-key="text" bindinput="handleTextInput" placeholder="按钮文本" />
         </view>
@@ -94,13 +126,22 @@
             <view class="lab__picker">{{propsState.type}}</view>
           </picker>
         </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">辅助文本</text>
+          <input value="{{propsState.helper}}" data-key="helper" bindinput="handleTextInput" placeholder="辅助说明" />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">错误提示</text>
+          <input value="{{propsState.error}}" data-key="error" bindinput="handleTextInput" placeholder="填写错误提示" />
+        </view>
         <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch">
-            <switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled
-          </label>
-          <label class="lab__switch">
-            <switch checked="{{propsState.clearable}}" data-prop="clearable" bindchange="handleToggle"/> Clearable
-          </label>
+          <label class="lab__switch"><switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled</label>
+          <label class="lab__switch"><switch checked="{{propsState.clearable}}" data-prop="clearable" bindchange="handleToggle"/> Clearable</label>
+          <label class="lab__switch"><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle"/> Block</label>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"><switch checked="{{propsState.usePrefixSlot}}" data-prop="usePrefixSlot" bindchange="handleToggle"/> Prefix</label>
+          <label class="lab__switch"><switch checked="{{propsState.useSuffixSlot}}" data-prop="useSuffixSlot" bindchange="handleToggle"/> Suffix</label>
         </view>
       </block>
 
@@ -119,10 +160,11 @@
             <view class="lab__picker">{{propsState.status}}</view>
           </picker>
         </view>
-        <view class="lab__panel-field">
-          <label class="lab__switch">
-            <switch checked="{{propsState.clickable}}" data-prop="clickable" bindchange="handleToggle"/> Clickable
-          </label>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"><switch checked="{{propsState.clickable}}" data-prop="clickable" bindchange="handleToggle"/> Clickable</label>
+          <label class="lab__switch"><switch checked="{{propsState.useSlot}}" data-prop="useSlot" bindchange="handleToggle"/> 自定义内容</label>
+          <label class="lab__switch"><switch checked="{{propsState.useHeaderSlot}}" data-prop="useHeaderSlot" bindchange="handleToggle"/> 自定义头部</label>
+          <label class="lab__switch"><switch checked="{{propsState.useFooterSlot}}" data-prop="useFooterSlot" bindchange="handleToggle"/> 自定义底部</label>
         </view>
       </block>
 

@@ -1,6 +1,9 @@
 /* 导入设计系统 */
+@import "styles/generated/tokens.wxss";
 @import "styles/tokens.wxss";
 @import "styles/responsive.wxss";
+@import "styles/foundation.wxss";
+@import "styles/utilities.wxss";
 
 /* 全局页面样式 */
 page {
@@ -12,24 +15,4 @@ page {
   line-height: 1.5;
 }
 
-/* 重置按钮样式 */
-button {
-  background-color: var(--color-primary);
-  color: #ffffff;
-  border: none;
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
-  transition: var(--transition-colors);
-  min-height: 88rpx; /* 触摸目标最小尺寸 */
-}
-
-button::after {
-  border: none;
-}
-
-button[disabled] {
-  background-color: var(--color-text-disabled);
-  color: var(--color-text-tertiary);
-}
+/* 若需统一按钮风格，请使用 utilities 中的 .btn 相关类或 pm-button 组件 */

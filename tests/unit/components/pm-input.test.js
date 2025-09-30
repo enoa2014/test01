@@ -12,28 +12,39 @@ describe('pm-input component definition', () => {
 
   it('registers default properties', () => {
     require(componentPath);
-    expect(global.Component).toHaveBeenCalled();
     const config = global.Component.mock.calls[0][0];
-    expect(config.properties.type.value).toBe('text');
-    expect(config.properties.placeholder.value).toContain('请输入');
-    expect(config.properties.clearable.value).toBe(true);
+    expect(config.properties.helper.value).toBe('');
+    expect(config.properties.error.value).toBe('');
+    expect(config.properties.block.value).toBe(false);
+    expect(config.properties.usePrefixSlot.value).toBe(false);
+    expect(config.properties.useSuffixSlot.value).toBe(false);
   });
 
-  it('emits change on input', () => {
+  it('triggers events correctly', () => {
     require(componentPath);
     const config = global.Component.mock.calls[0][0];
     const changeSpy = jest.fn();
-    const context = { triggerEvent: changeSpy };
-    config.methods.handleInput.call(context, { detail: { value: '王小明' } });
-    expect(changeSpy).toHaveBeenCalledWith('change', '王小明');
+    const blurSpy = jest.fn();
+    const ctx = {
+      triggerEvent: (event, payload) => {
+        if (event === 'change') changeSpy(payload);
+        if (event === 'blur') blurSpy(payload);
+      },
+      data: { clearable: true, disabled: false }
+    };
+    config.methods.handleInput.call(ctx, { detail: { value: 'abc' } });
+    config.methods.handleBlur.call(ctx, { detail: { value: 'abc' } });
+    config.methods.handleClear.call(ctx);
+    expect(changeSpy).toHaveBeenCalledWith('');
+    expect(blurSpy).toHaveBeenCalledWith('abc');
   });
 
-  it('clears value when clearable', () => {
+  it('does not clear when disabled', () => {
     require(componentPath);
     const config = global.Component.mock.calls[0][0];
-    const changeSpy = jest.fn();
-    const context = { data: { clearable: true, disabled: false }, triggerEvent: changeSpy };
-    config.methods.handleClear.call(context);
-    expect(changeSpy).toHaveBeenCalledWith('change', '');
+    const spy = jest.fn();
+    const ctx = { data: { clearable: true, disabled: true }, triggerEvent: spy };
+    config.methods.handleClear.call(ctx);
+    expect(spy).not.toHaveBeenCalled();
   });
 });

@@ -112,6 +112,85 @@ function extractRecordTimestamp(record = {}) {
   return 0;
 }
 
+function toIntakeRecordKey(record = {}) {
+  if (!record || typeof record !== "object") {
+    return `empty-${Math.random()}`;
+  }
+
+  const candidates = [
+    record.intakeId,
+    record._id,
+    record.id,
+    record.metadata && record.metadata.intakeId
+  ].filter(Boolean);
+
+  if (candidates.length) {
+    return candidates[0];
+  }
+
+  const time = extractRecordTimestamp(record);
+  if (time) {
+    const normalizedTime = Math.round(time / 60000);
+    const identifier = safeTrim(record.patientKey) || safeTrim(record.patientName) || "";
+    return `time:${normalizedTime}-${identifier}`;
+  }
+
+  const admissionDate = safeTrim(record.displayTime) || safeTrim(record.admissionDate) || "";
+  const diagnosis = safeTrim(record.diagnosis) || safeTrim(record.diagnosisDisplay) || "";
+  const hospital = safeTrim(record.hospital) || safeTrim(record.hospitalDisplay) || "";
+
+  return `fallback:${admissionDate}-${diagnosis}-${hospital}`;
+}
+
+function isActiveStatus(status) {
+  if (!status) {
+    return false;
+  }
+  const normalized = String(status).toLowerCase();
+  return normalized === "active";
+}
+
+function dedupeIntakeRecords(records = []) {
+  if (!Array.isArray(records) || records.length <= 1) {
+    return Array.isArray(records) ? records : [];
+  }
+
+  const map = new Map();
+
+  records.forEach((record) => {
+    if (!record) {
+      return;
+    }
+    const key = toIntakeRecordKey(record);
+    if (!map.has(key)) {
+      map.set(key, record);
+      return;
+    }
+
+    const existing = map.get(key);
+    const existingIsActive = isActiveStatus(existing.status);
+    const candidateIsActive = isActiveStatus(record.status);
+
+    if (existingIsActive && !candidateIsActive) {
+      map.set(key, record);
+      return;
+    }
+
+    if (!existing.updatedAt && record.updatedAt) {
+      map.set(key, record);
+      return;
+    }
+
+    const existingTime = extractRecordTimestamp(existing);
+    const candidateTime = extractRecordTimestamp(record);
+    if (candidateTime > existingTime) {
+      map.set(key, record);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
 function sortIntakeRecords(records = [], order = "desc") {
   const normalizedOrder = order === "asc" ? "asc" : "desc";
   const sorted = [...records];
@@ -134,6 +213,7 @@ module.exports = {
   mergeFamilyAddresses,
   findValueByLabels,
   coalesceValue,
+  dedupeIntakeRecords,
   sortIntakeRecords,
   pushDisplayItem
 };

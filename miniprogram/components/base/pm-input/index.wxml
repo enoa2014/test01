@@ -1,6 +1,9 @@
-<view class="pm-input {{disabled ? 'pm-input--disabled' : ''}}">
+<view class="pm-input {{disabled ? 'pm-input--disabled' : ''}} {{block ? 'pm-input--block' : ''}}">
   <label wx:if="{{label}}" class="pm-input__label">{{label}}</label>
   <view class="pm-input__control">
+    <view wx:if="{{usePrefixSlot}}" class="pm-input__affix pm-input__affix--prefix">
+      <slot name="prefix"></slot>
+    </view>
     <input
       class="pm-input__field"
       value="{{value}}"
@@ -15,5 +18,10 @@
       class="pm-input__clear"
       bindtap="handleClear"
     >×</view>
+    <view wx:if="{{useSuffixSlot}}" class="pm-input__affix pm-input__affix--suffix">
+      <slot name="suffix"></slot>
+    </view>
   </view>
+  <view wx:if="{{helper && !error}}" class="pm-input__helper">{{helper}}</view>
+  <view wx:if="{{error}}" class="pm-input__error">{{error}}</view>
 </view>

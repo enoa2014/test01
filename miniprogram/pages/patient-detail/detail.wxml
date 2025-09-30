@@ -1,7 +1,7 @@
-﻿<view class="detail-container">
+﻿<view class="theme-root detail-container">
   <view wx:if="{{loading}}" class="placeholder">正在加载患者信息…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
-  <scroll-view wx:else scroll-y class="detail-scroll">
+  <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
     <view class="patient-header">
       <view class="patient-header-row">
         <text class="patient-detail-name">{{editMode ? editForm.patientName : (patient.patientName || '')}}</text>
@@ -122,7 +122,7 @@
       <view class="intake-record-item" wx:for="{{allIntakeRecords}}" wx:key="intakeId">
         <view class="record-header">
           <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
-          <text class="record-status" wx:if="{{item.status}}">{{item.status}}</text>
+          <text class="record-status" wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}">{{item.statusDisplay}}</text>
         </view>
 
         <!-- 就诊情况 -->
@@ -159,9 +159,7 @@
           </view>
         </view>
 
-        <view class="record-footer" wx:if="{{item.updatedTime}}">
-          <text class="update-time">最后更新：{{item.updatedTime}}</text>
-        </view>
+
       </view>
     </view>
 
@@ -271,7 +269,7 @@
         <text class="text-preview-title">{{textPreview.title}}</text>
         <view class="text-preview-close" bindtap="onTextPreviewClose">关闭</view>
       </view>
-      <scroll-view scroll-y class="text-preview-content">
+      <scroll-view scroll-y enable-flex class="text-preview-content">
         <text>{{textPreview.content}}</text>
       </scroll-view>
     </view>

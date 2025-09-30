@@ -1,5 +1,5 @@
 <!--患者录入向导界面-->
-<view class="wizard-container">
+<view class="theme-root wizard-container">
   <!-- 顶部进度指示器 -->
   <view class="progress-header">
     <view class="progress-steps">

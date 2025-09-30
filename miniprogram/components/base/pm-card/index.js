@@ -1,6 +1,7 @@
 Component({
   options: {
-    addGlobalClass: true
+    addGlobalClass: true,
+    multipleSlots: true
   },
   properties: {
     title: {
@@ -16,6 +17,18 @@ Component({
       value: 'default'
     },
     clickable: {
+      type: Boolean,
+      value: false
+    },
+    useSlot: {
+      type: Boolean,
+      value: false
+    },
+    useHeaderSlot: {
+      type: Boolean,
+      value: false
+    },
+    useFooterSlot: {
       type: Boolean,
       value: false
     }

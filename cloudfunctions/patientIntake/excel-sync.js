@@ -7,7 +7,7 @@
 
   const command = db.command;
 
-  function normalizeExcelValue(value) {
+  const normalizeExcelValue = (value) => {
     if (value === undefined || value === null) {
       return '';
     }
@@ -16,15 +16,15 @@
       return '';
     }
     return str;
-  }
+  };
 
-  function normalizeExcelSpacing(value) {
+  const normalizeExcelSpacing = (value) => {
     const normalized = normalizeExcelValue(value);
     if (!normalized) {
       return '';
     }
     return normalized.replace(/\s+/g, ' ').trim();
-  }
+  };
 
   function toTimestampFromExcel(value) {
     if (value === undefined || value === null) {
@@ -676,7 +676,8 @@
     ensurePatientDoc,
     syncExcelRecordsToIntake,
     syncPatientAggregates,
-    fetchExcelRecordsByKey
+    fetchExcelRecordsByKey,
+    normalizeExcelSpacing
   };
 }
 

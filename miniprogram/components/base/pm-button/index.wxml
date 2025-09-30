@@ -1,4 +1,12 @@
-<view class="pm-button pm-button--{{type}} pm-button--{{size}} {{disabled || loading ? 'pm-button--disabled' : ''}}" bindtap="handleTap">
+<view
+  class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}}"
+  bindtap="handleTap"
+>
   <view wx:if="{{loading}}" class="pm-button__spinner"></view>
-  <text class="pm-button__text">{{text}}</text>
+  <view wx:if="{{useSlot}}" class="pm-button__slot">
+    <slot></slot>
+  </view>
+  <block wx:elif="{{text}}">
+    <text class="pm-button__text">{{text}}</text>
+  </block>
 </view>

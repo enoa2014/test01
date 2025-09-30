@@ -22,6 +22,18 @@ Component({
     text: {
       type: String,
       value: '按钮'
+    },
+    block: {
+      type: Boolean,
+      value: false
+    },
+    ghost: {
+      type: Boolean,
+      value: false
+    },
+    useSlot: {
+      type: Boolean,
+      value: false
     }
   },
   methods: {

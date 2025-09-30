@@ -30,8 +30,8 @@
    - 共用基础组件：KPI 卡片、快速操作面板、智能搜索框、步骤向导、时间轴。
    - 页面容器：仪表盘容器、列表容器、详情信息分组、入住向导步骤页。
 2. **样式与布局**
-   - 复用 `miniprogram/styles/tokens.wxss` 与 `responsive.wxss`。
-   - 新增组件建议放置在 `miniprogram/styles/components/` 子目录。
+   - 令牌来源：维护 `design-tokens.json`，执行 `npm run tokens:generate` 生成 `miniprogram/styles/generated/tokens.{wxss,js}`，再由页面/组件通过 `@import "../../styles/generated/tokens.wxss"` 与 `foundation.wxss`、`utilities.wxss` 引入。
+   - 响应式与工具类统一复用 `miniprogram/styles/responsive.wxss`、`foundation.wxss`、`utilities.wxss`，必要时在 `miniprogram/styles/components/` 下新增局部样式。
 3. **状态管理**
    - 仪表盘与列表建议使用状态缓存，减少重复请求。
    - 入住流程使用分段提交，必要时落地本地草稿。

@@ -26,6 +26,26 @@ Component({
     clearable: {
       type: Boolean,
       value: true
+    },
+    helper: {
+      type: String,
+      value: ''
+    },
+    error: {
+      type: String,
+      value: ''
+    },
+    block: {
+      type: Boolean,
+      value: false
+    },
+    usePrefixSlot: {
+      type: Boolean,
+      value: false
+    },
+    useSuffixSlot: {
+      type: Boolean,
+      value: false
     }
   },
   methods: {

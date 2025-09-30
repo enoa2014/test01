@@ -132,6 +132,30 @@ Page({
     return `${year}-${month}-${day}`;
   },
 
+  // 去除 Excel 导入数据中的多余空格/全角空格
+  normalizeExcelSpacing(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value === 'number') {
+      return String(value).trim();
+    }
+
+    if (typeof value !== 'string') {
+      return String(value || '').trim();
+    }
+
+    return value
+      .replace(/\u3000/g, ' ')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\r\n|\r/g, '\n')
+      .split('\n')
+      .map(segment => segment.trim())
+      .filter(segment => segment.length > 0)
+      .join('\n');
+  },
+
   // 加载配置
   async loadConfig() {
     try {
@@ -355,18 +379,18 @@ Page({
 
       const nextFormData = {
         ...this.data.formData,
-        patientName: patient.patientName || '',
-        idType: patient.idType || '身份证',
-        idNumber: patient.idNumber || '',
-        gender: patient.gender || '',
+        patientName: this.normalizeExcelSpacing(patient.patientName) || '',
+        idType: this.normalizeExcelSpacing(patient.idType) || '身份证',
+        idNumber: this.normalizeExcelSpacing(patient.idNumber) || '',
+        gender: this.normalizeExcelSpacing(patient.gender) || '',
         birthDate: normalizedBirthDate,
-        phone: patient.phone || '',
-        address: patient.address || '',
-        emergencyContact: patient.emergencyContact || '',
-        emergencyPhone: patient.emergencyPhone || '',
-        backupContact: patient.backupContact || '',
-        backupPhone: patient.backupPhone || '',
-        situation: situationText,
+        phone: this.normalizeExcelSpacing(patient.phone) || '',
+        address: this.normalizeExcelSpacing(patient.address) || '',
+        emergencyContact: this.normalizeExcelSpacing(patient.emergencyContact) || '',
+        emergencyPhone: this.normalizeExcelSpacing(patient.emergencyPhone) || '',
+        backupContact: this.normalizeExcelSpacing(patient.backupContact) || '',
+        backupPhone: this.normalizeExcelSpacing(patient.backupPhone) || '',
+        situation: this.normalizeExcelSpacing(situationText),
       };
 
       const idTypeIndex = this.data.idTypes.indexOf(nextFormData.idType || '身份证');
