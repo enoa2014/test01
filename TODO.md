@@ -246,6 +246,7 @@
 
 - [ ] 将现有 textarea 使用场景迁移为 `pm-input` 的 `type="textarea"`，验证自动高度与校验体验
 - [x] 更新组件文档与 Component Lab 示例，补充 textarea 属性（`maxlength`、`textareaAutoHeight` 等）
+  - [ ] Component Lab：当输入类型非 `textarea` 时禁用或隐藏 `textareaAutoHeight`、`showConfirmBar` 控制，避免误用
 
 ### 3.6 下一阶段建议（2025-09-30 更新）
 
