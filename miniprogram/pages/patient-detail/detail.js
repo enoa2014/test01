@@ -141,6 +141,12 @@ Page({
     }
   },
 
+  onShow() {
+    if (wx.disableAlertBeforeUnload) {
+      wx.disableAlertBeforeUnload();
+    }
+  },
+
   async fetchPatientDetail() {
     this.setData({ loading: true, error: '' });
 
