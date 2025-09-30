@@ -63,6 +63,17 @@ Page({
     });
   },
 
+  handleNumberInput(event) {
+    const { key = 'maxlength' } = event.currentTarget.dataset;
+    const rawValue = event.detail?.value ?? '';
+    const parsed = parseInt(rawValue, 10);
+    const next = Number.isNaN(parsed) ? -1 : parsed;
+    this.setData({
+      [`propsState.${key}`]: next,
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+  },
+
   handleDemoTap() {
     if (typeof wx?.showToast === 'function') {
       wx.showToast({ title: '演示点击', icon: 'none' });

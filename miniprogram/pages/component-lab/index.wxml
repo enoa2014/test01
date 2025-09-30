@@ -50,11 +50,15 @@
           clearable="{{propsState.clearable}}"
           helper="{{propsState.helper}}"
           error="{{propsState.error || ''}}"
+          hint="{{propsState.hint}}"
           block="{{propsState.block}}"
           use-prefix-slot="{{propsState.usePrefixSlot}}"
           use-suffix-slot="{{propsState.useSuffixSlot}}"
           prefix-icon="{{propsState.prefixIcon}}"
           suffix-icon="{{propsState.suffixIcon}}"
+          maxlength="{{propsState.maxlength}}"
+          textarea-auto-height="{{propsState.textareaAutoHeight}}"
+          show-confirm-bar="{{propsState.showConfirmBar}}"
           bindinput="handleInputChange"
         >
           <view wx:if="{{propsState.usePrefixSlot}}" slot="prefix" class="lab__affix">+86</view>
@@ -295,12 +299,31 @@
           />
         </view>
         <view class="lab__panel-field">
+          <text class="lab__panel-label">提示文案</text>
+          <input
+            value="{{propsState.hint}}"
+            data-key="hint"
+            bindinput="handleTextInput"
+            placeholder="展示在输入框下方的提示"
+          />
+        </view>
+        <view class="lab__panel-field">
           <text class="lab__panel-label">错误提示</text>
           <input
             value="{{propsState.error}}"
             data-key="error"
             bindinput="handleTextInput"
             placeholder="填写错误提示"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">最大长度</text>
+          <input
+            type="number"
+            value="{{propsState.maxlength}}"
+            data-key="maxlength"
+            bindinput="handleNumberInput"
+            placeholder="-1 表示不限制"
           />
         </view>
         <view class="lab__panel-field">
@@ -359,6 +382,24 @@
               bindchange="handleToggle"
             />
             Suffix</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.textareaAutoHeight}}"
+              data-prop="textareaAutoHeight"
+              bindchange="handleToggle"
+            />
+            AutoHeight</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.showConfirmBar}}"
+              data-prop="showConfirmBar"
+              bindchange="handleToggle"
+            />
+            ConfirmBar</label
           >
         </view>
       </block>

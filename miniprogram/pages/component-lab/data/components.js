@@ -85,6 +85,10 @@ module.exports = [
       useSuffixSlot: false,
       prefixIcon: '',
       suffixIcon: '',
+      hint: '',
+      maxlength: -1,
+      textareaAutoHeight: true,
+      showConfirmBar: true,
     },
     options: {
       type: { values: ['text', 'number', 'idcard', 'textarea'] },
@@ -99,6 +103,7 @@ module.exports = [
       'error',
       'prefixIcon',
       'suffixIcon',
+      'hint',
       'maxlength',
     ],
     toggles: [

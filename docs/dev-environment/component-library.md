@@ -127,6 +127,31 @@ miniprogram/components
 - `pm-input`：除 `helper`、`error`、`prefix/ suffix` slot、`block` 布局与清除按钮外，已支持 `type="textarea"` 多行模式，可通过 `maxlength`、`textareaAutoHeight`、`showConfirmBar` 等属性控制字数上限、自动高度与工具栏展示。
 - `pm-card`：新增 `header/footer` slot，可通过 `status` 控制语义颜色。
 
+#### pm-input：textarea 重点属性
+
+| 属性                 | 类型    | 默认值 | 说明                                                           |
+| -------------------- | ------- | ------ | -------------------------------------------------------------- |
+| `maxlength`          | Number  | `-1`   | 输入上限，`-1` 表示不限制；可结合提示信息展示剩余字数策略      |
+| `textareaAutoHeight` | Boolean | `true` | 开启后根据内容自动撑高，多行场景下避免滚动条                   |
+| `showConfirmBar`     | Boolean | `true` | 控制软键盘确认栏，移动端表单可按需关闭                         |
+| `hint`               | String  | `''`   | 与 `helper` 互斥，优先在底部展示提示文案，常用于字数或格式说明 |
+
+示例：
+
+```xml
+<pm-input
+  label="情况说明"
+  type="textarea"
+  value="{{intakeForm.situation}}"
+  placeholder="请填写患者近期护理情况"
+  hint="不少于 30 个字符"
+  maxlength="300"
+  textarea-auto-height="{{true}}"
+  show-confirm-bar="{{false}}"
+  bind:input="handleSituationChange"
+/>
+```
+
 - `pm-button`、`pm-input`、`pm-card` 位于 `miniprogram/components/base/` 目录，作为 Story 001.3 的基础示例。
 - 对应测试文件位于 `tests/unit/components/`，可作为新增组件单测的模板。
 - Component Lab 页面默认加载上述组件，便于产品与设计快速预览。
