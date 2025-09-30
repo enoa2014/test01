@@ -1,7 +1,11 @@
 const path = require('path');
 
 describe('pm-button component definition', () => {
-  const componentPath = path.resolve(__dirname, '../../..', 'miniprogram/components/base/pm-button/index.js');
+  const componentPath = path.resolve(
+    __dirname,
+    '../../..',
+    'miniprogram/components/base/pm-button/index.js'
+  );
 
   beforeEach(() => {
     jest.resetModules();
@@ -20,6 +24,9 @@ describe('pm-button component definition', () => {
     expect(config.properties.block.value).toBe(false);
     expect(config.properties.ghost.value).toBe(false);
     expect(config.properties.useSlot.value).toBe(false);
+    expect(config.properties.icon.value).toBe('');
+    expect(config.properties.iconPosition.value).toBe('left');
+    expect(config.properties.elevated.value).toBe(false);
   });
 
   it('emits tap event when enabled', () => {

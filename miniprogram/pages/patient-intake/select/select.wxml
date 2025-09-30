@@ -2,7 +2,7 @@
 <view class="theme-root select-container">
   <view class="header">
     <view class="title">患者入住登记</view>
-    <view class="subtitle">请选择患者或创建新患者</view>
+    <view class="select-subtitle">请选择患者或创建新患者</view>
   </view>
 
   <!-- 搜索区域 -->
@@ -21,7 +21,12 @@
   </view>
 
   <!-- 患者列表 -->
-  <scroll-view class="patient-list" scroll-y enable-lower-action="{{hasMore}}" bindscrolltolower="onLoadMore">
+  <scroll-view
+    class="patient-list"
+    scroll-y
+    enable-lower-action="{{hasMore}}"
+    bindscrolltolower="onLoadMore"
+  >
     <view wx:if="{{loading && patients.length === 0}}" class="loading-state">
       <view class="loading-text">加载中...</view>
     </view>
@@ -80,10 +85,14 @@
 
   <!-- 底部操作 -->
   <view class="action-bar">
-    <button class="create-btn" bindtap="onCreateNewPatient">
-      <view class="btn-icon">👤</view>
-      <view class="btn-text">创建新患者</view>
-    </button>
+    <pm-button
+      class="action-bar__button"
+      type="primary"
+      size="small"
+      icon="👤"
+      text="创建新患者"
+      bindtap="onCreateNewPatient"
+    ></pm-button>
   </view>
 </view>
 
@@ -123,8 +132,22 @@
     </view>
 
     <view class="modal-actions">
-      <button class="modal-btn secondary" bindtap="onCancelSelect">取消</button>
-      <button class="modal-btn primary" bindtap="onConfirmSelect">确认入住</button>
+      <pm-button
+        class="modal-action modal-action--cancel"
+        type="default"
+        size="small"
+        block="{{true}}"
+        bindtap="onCancelSelect"
+        text="取消"
+      ></pm-button>
+      <pm-button
+        class="modal-action modal-action--confirm"
+        type="primary"
+        size="small"
+        block="{{true}}"
+        bindtap="onConfirmSelect"
+        text="确认入住"
+      ></pm-button>
     </view>
   </view>
 </view>

@@ -2,7 +2,11 @@
   <view class="lab__sidebar">
     <view class="lab__sidebar-title">组件列表</view>
     <block wx:for="{{components}}" wx:key="id">
-      <view class="lab__item {{item.id === activeId ? 'lab__item--active' : ''}}" data-id="{{item.id}}" bindtap="handleSelect">
+      <view
+        class="lab__item {{item.id === activeId ? 'lab__item--active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="handleSelect"
+      >
         {{item.name}}
       </view>
     </block>
@@ -12,7 +16,9 @@
     <view class="lab__preview">
       <view class="lab__preview-header">
         <text class="lab__preview-title">{{current.name || '选择一个组件'}} </text>
-        <text class="lab__preview-path" wx:if="{{current.componentPath}}">{{current.componentPath}}</text>
+        <text class="lab__preview-path" wx:if="{{current.componentPath}}"
+          >{{current.componentPath}}</text
+        >
       </view>
       <view class="lab__preview-body">
         <pm-button
@@ -38,14 +44,18 @@
           value="{{propsState.value}}"
           placeholder="{{propsState.placeholder}}"
           type="{{propsState.type}}"
+          size="{{propsState.size}}"
+          label-position="{{propsState.labelPosition}}"
           disabled="{{propsState.disabled}}"
           clearable="{{propsState.clearable}}"
           helper="{{propsState.helper}}"
-          error="{{propsState.error}}"
+          error="{{propsState.error || ''}}"
           block="{{propsState.block}}"
           use-prefix-slot="{{propsState.usePrefixSlot}}"
           use-suffix-slot="{{propsState.useSuffixSlot}}"
-          bindchange="handleInputChange"
+          prefix-icon="{{propsState.prefixIcon}}"
+          suffix-icon="{{propsState.suffixIcon}}"
+          bindinput="handleInputChange"
         >
           <view wx:if="{{propsState.usePrefixSlot}}" slot="prefix" class="lab__affix">+86</view>
           <view wx:if="{{propsState.useSuffixSlot}}" slot="suffix" class="lab__affix">岁</view>
@@ -55,6 +65,7 @@
           title="{{propsState.useHeaderSlot ? '' : propsState.title}}"
           description="{{propsState.useSlot ? '' : propsState.description}}"
           status="{{propsState.status}}"
+          variant="{{propsState.variant}}"
           clickable="{{propsState.clickable}}"
           use-slot="{{propsState.useSlot}}"
           use-header-slot="{{propsState.useHeaderSlot}}"
@@ -69,7 +80,12 @@
             <text>• 上传最新化验单至媒体库</text>
           </view>
           <view wx:if="{{propsState.useFooterSlot}}" slot="footer" class="lab__card-footer">
-            <pm-button size="small" type="primary" text="查看详情" bindtap="handleDemoTap"></pm-button>
+            <pm-button
+              size="small"
+              type="primary"
+              text="查看详情"
+              bindtap="handleDemoTap"
+            ></pm-button>
           </view>
         </pm-card>
         <view wx:else class="lab__empty">请选择需要预览的组件</view>
@@ -79,92 +95,350 @@
     <view class="lab__panel" wx:if="{{current.id}}">
       <view class="lab__panel-title">属性调节</view>
 
+      <view class="lab__preset-section" wx:if="{{current.presets && current.presets.length}}">
+        <text class="lab__panel-label">快速示例</text>
+        <view class="lab__preset-list">
+          <view
+            class="lab__preset {{activePresetId === presetBaseId ? 'lab__preset--active' : ''}}"
+            data-id="{{presetBaseId}}"
+            bindtap="handlePresetSelect"
+            >默认</view
+          >
+          <view
+            wx:for="{{current.presets}}"
+            wx:key="id"
+            class="lab__preset {{item.id === activePresetId ? 'lab__preset--active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="handlePresetSelect"
+            >{{item.label}}</view
+          >
+          <view
+            wx:if="{{activePresetId === presetCustomId}}"
+            class="lab__preset lab__preset--custom"
+            >自定义</view
+          >
+        </view>
+      </view>
+
       <block wx:if="{{current.id === 'pm-button'}}">
         <view class="lab__panel-field">
           <text class="lab__panel-label">类型</text>
-          <picker mode="selector" range="{{current.options.type.values}}" value="{{optionIndexes.type}}" data-key="type" bindchange="handleOptionChange">
+          <picker
+            mode="selector"
+            range="{{current.options.type.values}}"
+            value="{{optionIndexes.type}}"
+            data-key="type"
+            bindchange="handleOptionChange"
+          >
             <view class="lab__picker">{{propsState.type}}</view>
           </picker>
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">尺寸</text>
-          <picker mode="selector" range="{{current.options.size.values}}" value="{{optionIndexes.size}}" data-key="size" bindchange="handleOptionChange">
+          <picker
+            mode="selector"
+            range="{{current.options.size.values}}"
+            value="{{optionIndexes.size}}"
+            data-key="size"
+            bindchange="handleOptionChange"
+          >
             <view class="lab__picker">{{propsState.size}}</view>
           </picker>
         </view>
-        <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch"><switch checked="{{propsState.loading}}" data-prop="loading" bindchange="handleToggle"/> Loading</label>
-          <label class="lab__switch"><switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled</label>
-          <label class="lab__switch"><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle"/> Block</label>
-          <label class="lab__switch"><switch checked="{{propsState.ghost}}" data-prop="ghost" bindchange="handleToggle"/> Ghost</label>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">图标</text>
+          <input
+            value="{{propsState.icon}}"
+            data-key="icon"
+            bindinput="handleTextInput"
+            placeholder="例如：⚡ 或 icon 名称"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">图标位置</text>
+          <picker
+            mode="selector"
+            range="{{current.options.iconPosition.values}}"
+            value="{{optionIndexes.iconPosition}}"
+            data-key="iconPosition"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.iconPosition}}</view>
+          </picker>
         </view>
         <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch"><switch checked="{{propsState.useSlot}}" data-prop="useSlot" bindchange="handleToggle"/> 使用自定义内容</label>
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.loading}}"
+              data-prop="loading"
+              bindchange="handleToggle"
+            />
+            Loading</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.disabled}}"
+              data-prop="disabled"
+              bindchange="handleToggle"
+            />
+            Disabled</label
+          >
+          <label class="lab__switch"
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            Block</label
+          >
+          <label class="lab__switch"
+            ><switch checked="{{propsState.ghost}}" data-prop="ghost" bindchange="handleToggle" />
+            Ghost</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.elevated}}"
+              data-prop="elevated"
+              bindchange="handleToggle"
+            />
+            Elevated</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            使用自定义内容</label
+          >
         </view>
         <view class="lab__panel-field" wx:if="{{!propsState.useSlot}}">
           <text class="lab__panel-label">文案</text>
-          <input value="{{propsState.text}}" data-key="text" bindinput="handleTextInput" placeholder="按钮文本" />
+          <input
+            value="{{propsState.text}}"
+            data-key="text"
+            bindinput="handleTextInput"
+            placeholder="按钮文本"
+          />
         </view>
       </block>
 
       <block wx:elif="{{current.id === 'pm-input'}}">
         <view class="lab__panel-field">
           <text class="lab__panel-label">标签</text>
-          <input value="{{propsState.label}}" data-key="label" bindinput="handleTextInput" placeholder="标签" />
+          <input
+            value="{{propsState.label}}"
+            data-key="label"
+            bindinput="handleTextInput"
+            placeholder="标签"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">占位符</text>
-          <input value="{{propsState.placeholder}}" data-key="placeholder" bindinput="handleTextInput" placeholder="请输入占位文本" />
+          <input
+            value="{{propsState.placeholder}}"
+            data-key="placeholder"
+            bindinput="handleTextInput"
+            placeholder="请输入占位文本"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">内容</text>
-          <input value="{{propsState.value}}" data-key="value" bindinput="handleTextInput" placeholder="示例内容" />
+          <input
+            value="{{propsState.value}}"
+            data-key="value"
+            bindinput="handleTextInput"
+            placeholder="示例内容"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">类型</text>
-          <picker mode="selector" range="{{current.options.type.values}}" value="{{optionIndexes.type}}" data-key="type" bindchange="handleOptionChange">
+          <picker
+            mode="selector"
+            range="{{current.options.type.values}}"
+            value="{{optionIndexes.type}}"
+            data-key="type"
+            bindchange="handleOptionChange"
+          >
             <view class="lab__picker">{{propsState.type}}</view>
           </picker>
         </view>
         <view class="lab__panel-field">
+          <text class="lab__panel-label">尺寸</text>
+          <picker
+            mode="selector"
+            range="{{current.options.size.values}}"
+            value="{{optionIndexes.size}}"
+            data-key="size"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.size}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标签位置</text>
+          <picker
+            mode="selector"
+            range="{{current.options.labelPosition.values}}"
+            value="{{optionIndexes.labelPosition}}"
+            data-key="labelPosition"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.labelPosition}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
           <text class="lab__panel-label">辅助文本</text>
-          <input value="{{propsState.helper}}" data-key="helper" bindinput="handleTextInput" placeholder="辅助说明" />
+          <input
+            value="{{propsState.helper}}"
+            data-key="helper"
+            bindinput="handleTextInput"
+            placeholder="辅助说明"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">错误提示</text>
-          <input value="{{propsState.error}}" data-key="error" bindinput="handleTextInput" placeholder="填写错误提示" />
+          <input
+            value="{{propsState.error}}"
+            data-key="error"
+            bindinput="handleTextInput"
+            placeholder="填写错误提示"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">前缀图标</text>
+          <input
+            value="{{propsState.prefixIcon}}"
+            data-key="prefixIcon"
+            bindinput="handleTextInput"
+            placeholder="如：☎️"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">后缀图标</text>
+          <input
+            value="{{propsState.suffixIcon}}"
+            data-key="suffixIcon"
+            bindinput="handleTextInput"
+            placeholder="如：年"
+          />
         </view>
         <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch"><switch checked="{{propsState.disabled}}" data-prop="disabled" bindchange="handleToggle"/> Disabled</label>
-          <label class="lab__switch"><switch checked="{{propsState.clearable}}" data-prop="clearable" bindchange="handleToggle"/> Clearable</label>
-          <label class="lab__switch"><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle"/> Block</label>
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.disabled}}"
+              data-prop="disabled"
+              bindchange="handleToggle"
+            />
+            Disabled</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.clearable}}"
+              data-prop="clearable"
+              bindchange="handleToggle"
+            />
+            Clearable</label
+          >
+          <label class="lab__switch"
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            Block</label
+          >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch"><switch checked="{{propsState.usePrefixSlot}}" data-prop="usePrefixSlot" bindchange="handleToggle"/> Prefix</label>
-          <label class="lab__switch"><switch checked="{{propsState.useSuffixSlot}}" data-prop="useSuffixSlot" bindchange="handleToggle"/> Suffix</label>
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.usePrefixSlot}}"
+              data-prop="usePrefixSlot"
+              bindchange="handleToggle"
+            />
+            Prefix</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSuffixSlot}}"
+              data-prop="useSuffixSlot"
+              bindchange="handleToggle"
+            />
+            Suffix</label
+          >
         </view>
       </block>
 
       <block wx:elif="{{current.id === 'pm-card'}}">
         <view class="lab__panel-field">
           <text class="lab__panel-label">标题</text>
-          <input value="{{propsState.title}}" data-key="title" bindinput="handleTextInput" placeholder="卡片标题" />
+          <input
+            value="{{propsState.title}}"
+            data-key="title"
+            bindinput="handleTextInput"
+            placeholder="卡片标题"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">描述</text>
-          <textarea value="{{propsState.description}}" data-key="description" bindinput="handleTextInput" placeholder="卡片描述" />
+          <textarea
+            value="{{propsState.description}}"
+            data-key="description"
+            bindinput="handleTextInput"
+            placeholder="卡片描述"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">状态</text>
-          <picker mode="selector" range="{{current.options.status.values}}" value="{{optionIndexes.status}}" data-key="status" bindchange="handleOptionChange">
+          <picker
+            mode="selector"
+            range="{{current.options.status.values}}"
+            value="{{optionIndexes.status}}"
+            data-key="status"
+            bindchange="handleOptionChange"
+          >
             <view class="lab__picker">{{propsState.status}}</view>
           </picker>
         </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">样式</text>
+          <picker
+            mode="selector"
+            range="{{current.options.variant.values}}"
+            value="{{optionIndexes.variant}}"
+            data-key="variant"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.variant}}</view>
+          </picker>
+        </view>
         <view class="lab__panel-field lab__panel-field--row">
-          <label class="lab__switch"><switch checked="{{propsState.clickable}}" data-prop="clickable" bindchange="handleToggle"/> Clickable</label>
-          <label class="lab__switch"><switch checked="{{propsState.useSlot}}" data-prop="useSlot" bindchange="handleToggle"/> 自定义内容</label>
-          <label class="lab__switch"><switch checked="{{propsState.useHeaderSlot}}" data-prop="useHeaderSlot" bindchange="handleToggle"/> 自定义头部</label>
-          <label class="lab__switch"><switch checked="{{propsState.useFooterSlot}}" data-prop="useFooterSlot" bindchange="handleToggle"/> 自定义底部</label>
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.clickable}}"
+              data-prop="clickable"
+              bindchange="handleToggle"
+            />
+            Clickable</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            自定义内容</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useHeaderSlot}}"
+              data-prop="useHeaderSlot"
+              bindchange="handleToggle"
+            />
+            自定义头部</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useFooterSlot}}"
+              data-prop="useFooterSlot"
+              bindchange="handleToggle"
+            />
+            自定义底部</label
+          >
         </view>
       </block>
 

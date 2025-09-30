@@ -155,7 +155,6 @@
   margin-left: var(--space-1);
 }
 
-.form-input,
 .form-picker,
 .form-textarea {
   width: 100%;
@@ -167,7 +166,6 @@
   color: var(--color-text-primary);
 }
 
-.form-input,
 .form-picker {
   min-height: 80rpx;
   padding: 0 var(--space-3);
@@ -185,7 +183,6 @@
   min-height: 200rpx;
 }
 
-.form-input.error,
 .form-picker.error,
 .form-textarea.error {
   border-color: var(--color-danger);

@@ -1,9 +1,9 @@
 /* 家庭档案列表页面样式 */
 /* 使用设计令牌工具类 */
 
-@import "../../styles/generated/tokens.wxss";
-@import "../../styles/foundation.wxss";
-@import "../../styles/utilities.wxss";
+@import '../../styles/generated/tokens.wxss';
+@import '../../styles/foundation.wxss';
+@import '../../styles/utilities.wxss';
 
 /* 页面容器 */
 .page {
@@ -63,7 +63,7 @@
   height: 112rpx;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--color-primary), var(--color-warning));
-  color: white;
+  color: var(--color-bg-primary);
   border: none;
   box-shadow: var(--shadow-secondary);
   transition: all 0.3s ease;
@@ -123,11 +123,21 @@
   animation: fadeInUp 0.3s ease forwards;
 }
 
-.family-list > view:nth-child(1) { animation-delay: 0.1s; }
-.family-list > view:nth-child(2) { animation-delay: 0.2s; }
-.family-list > view:nth-child(3) { animation-delay: 0.3s; }
-.family-list > view:nth-child(4) { animation-delay: 0.4s; }
-.family-list > view:nth-child(5) { animation-delay: 0.5s; }
+.family-list > view:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.family-list > view:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.family-list > view:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.family-list > view:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.family-list > view:nth-child(5) {
+  animation-delay: 0.5s;
+}
 
 @keyframes fadeInUp {
   to {

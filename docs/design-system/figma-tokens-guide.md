@@ -11,6 +11,7 @@
 #### 1. 创建颜色集合
 
 **主色调集合 (Primary Colors)**:
+
 ```
 Collection: Primary Colors
 ├── primary/base: #2E86AB
@@ -27,6 +28,7 @@ Collection: Primary Colors
 ```
 
 **次要色调集合 (Secondary Colors)**:
+
 ```
 Collection: Secondary Colors
 ├── secondary/base: #F24236
@@ -43,6 +45,7 @@ Collection: Secondary Colors
 ```
 
 **功能色彩集合 (Functional Colors)**:
+
 ```
 Collection: Status Colors
 ├── success: #52C41A
@@ -52,6 +55,7 @@ Collection: Status Colors
 ```
 
 **语义色彩集合 (Semantic Colors)**:
+
 ```
 Collection: Text Colors
 ├── text/primary: #262626
@@ -73,6 +77,7 @@ Collection: Border Colors
 ### 字体令牌 (Typography Variables)
 
 #### 字体大小集合 (Font Size)
+
 ```
 Collection: Font Sizes
 ├── text/xs: 10
@@ -86,6 +91,7 @@ Collection: Font Sizes
 ```
 
 #### 字体重量集合 (Font Weight)
+
 ```
 Collection: Font Weights
 ├── font/light: 300
@@ -130,20 +136,24 @@ Collection: Border Radius
 ### 主题模式配置
 
 **Light Mode (Default)**:
+
 - 所有颜色变量使用默认值
 - 主要用于日间使用场景
 
 **Dark Mode (Future)**:
+
 - 为后续暗色主题预留
 - 当前阶段可以先创建模式，使用相同值
 
 ### 响应式模式配置
 
 **Mobile (Default)**:
+
 - 字体大小使用基础值
 - 间距使用标准值
 
 **Desktop**:
+
 - 字体大小可以适当增大
 - 间距可以相应调整
 
@@ -163,6 +173,7 @@ Collection: Border Radius
 ### 组件库分类
 
 #### 基础组件 (Foundations)
+
 ```
 📁 Foundations/
 ├── Colors/
@@ -182,6 +193,7 @@ Collection: Border Radius
 ```
 
 #### 原子组件 (Atoms)
+
 ```
 📁 Atoms/
 ├── Button/
@@ -210,6 +222,7 @@ Collection: Border Radius
 ```
 
 #### 分子组件 (Molecules)
+
 ```
 📁 Molecules/
 ├── Form Group/
@@ -224,6 +237,7 @@ Collection: Border Radius
 ```
 
 #### 有机组件 (Organisms)
+
 ```
 📁 Organisms/
 ├── Header/
@@ -256,6 +270,7 @@ Collection: Border Radius
 ```
 
 **示例**:
+
 - `color/primary/base`
 - `color/text/primary`
 - `space/padding/base`
@@ -268,6 +283,7 @@ Collection: Border Radius
 ```
 
 **示例**:
+
 - `atom/button/primary`
 - `molecule/input-group/error`
 - `organism/patient-card/summary`
@@ -282,9 +298,10 @@ Collection: Border Radius
    - 确保命名与 CSS custom properties 一致
 
 2. **代码同步**:
-   - JSON tokens 转换为 WXSS variables
-   - 更新 `tokens.wxss` 文件
-   - 验证视觉一致性
+   - 将导出的 JSON 合并至仓库根目录的 `design-tokens.json`
+   - 运行 `npm run tokens:generate`，自动生成 `miniprogram/styles/generated/tokens.{wxss,js}`
+   - 页面/组件通过 `@import "../../styles/generated/tokens.wxss"`、`foundation.wxss`、`utilities.wxss` 接入变量
+   - 禁止手动修改 legacy `styles/tokens.wxss`
 
 3. **质量检查**:
    - 对比设计稿与实现效果
@@ -337,24 +354,28 @@ Collection: Border Radius
 ## 实施步骤
 
 ### Phase 1: 建立基础 (1周)
+
 1. 创建 Variables Collections
 2. 设置所有基础 tokens
 3. 配置 modes (light/mobile)
 4. 创建基础文档
 
 ### Phase 2: 原子组件 (2周)
+
 1. 创建所有原子组件
 2. 应用 variables 到组件
 3. 创建组件变体
 4. 建立使用示例
 
 ### Phase 3: 复合组件 (2周)
+
 1. 构建分子组件
 2. 组合有机组件
 3. 创建页面模板
 4. 完善交互规范
 
 ### Phase 4: 验证优化 (1周)
+
 1. 全面质量检查
 2. 无障碍性测试
 3. 开发团队协作验证
@@ -363,16 +384,19 @@ Collection: Border Radius
 ## 维护指南
 
 ### 日常维护
+
 - 每周检查组件使用情况
 - 及时更新过时的设计
 - 收集团队反馈并改进
 
 ### 版本升级
+
 - 主要变更需要版本标记
 - 保持向后兼容性
 - 提供迁移指南
 
 ### 团队协作
+
 - 定期设计评审会议
 - 开发设计同步会议
 - 持续改进工作流程

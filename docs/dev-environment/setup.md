@@ -1,20 +1,23 @@
 ﻿# 开发环境配置与优化指南
 
 ## 目标
+
 - 快速搭建统一的本地开发环境，降低新成员加入成本。
 - 通过自动化工具保障代码风格、质量与性能基线。
 - 为 CI/CD 流水线提供可复制的环境规范。
 
 ## 必备工具
-| 工具 | 版本建议 | 用途 |
-|------|----------|------|
-| Node.js | 18 LTS | 运行脚本、打包与测试 |
-| pnpm | 8.x | 工作区依赖管理（推荐） |
-| 微信开发者工具 | 最新稳定版 | 运行与调试小程序 |
-| Git | 2.40+ | 版本控制 |
-| VS Code | 最新稳定版 | 推荐编辑器，配套插件如下 |
+
+| 工具           | 版本建议   | 用途                     |
+| -------------- | ---------- | ------------------------ |
+| Node.js        | 18 LTS     | 运行脚本、打包与测试     |
+| pnpm           | 8.x        | 工作区依赖管理（推荐）   |
+| 微信开发者工具 | 最新稳定版 | 运行与调试小程序         |
+| Git            | 2.40+      | 版本控制                 |
+| VS Code        | 最新稳定版 | 推荐编辑器，配套插件如下 |
 
 ### VS Code 推荐插件
+
 - ESLint
 - Prettier - Code formatter
 - minapp
@@ -22,6 +25,7 @@
 - DotENV
 
 ## 项目结构约定
+
 ```
 root
 ├─ docs/                        # 文档与规范
@@ -45,6 +49,7 @@ root
 ```
 
 ## 依赖管理
+
 - 使用 `pnpm install` 安装依赖，确保锁定版本一致性。
 - 项目需支持 `npm install` 作为 fallback，但默认文档、脚本以 `pnpm` 为准。
 - 推荐引入以下依赖（若未存在于 package.json）：
@@ -56,25 +61,27 @@ root
   - `zx` 或 `tsx`：编写工具脚本
 
 ## 脚本约定
-在 package.json 中新增或确认以下脚本（示例）：
+
+在 `package.json` 中新增或确认以下脚本（示例）：
+
 ```json
 {
   "scripts": {
-    "dev": "pnpm --filter miniprogram dev",            // 结合微信开发者工具 CLI
-    "lint": "pnpm lint:js && pnpm lint:style",
-    "lint:js": "eslint \"miniprogram/**/*.{js,ts}\"",
+    "dev": "npm run build:dev", // 示例：结合微信开发者工具 CLI
+    "lint": "npm run lint:fix && npm run lint:style",
+    "lint:fix": "eslint --no-error-on-unmatched-pattern miniprogram/ cloudfunctions/ scripts/ --ext .js --fix",
     "lint:style": "stylelint \"miniprogram/**/*.{wxss,css}\"",
     "format": "prettier --write .",
-    "test": "pnpm test:unit",
-    "test:unit": "jest --runInBand",
-    "test:coverage": "jest --coverage",
-    "analyze": "node scripts/bundle-report.js",
+    "test": "npm run test:unit",
+    "test:unit": "jest --config tests/unit/jest.config.js",
+    "test:coverage": "jest --config tests/unit/jest.config.js --coverage",
     "prepare": "husky install"
   }
 }
 ```
 
 ## 代码格式与校验
+
 1. ESLint：
    - 基于 `@tencent/eslint-config-wxa` 或自定义规则。
    - 开启 `no-undef`, `no-unused-vars`, `eqeqeq`, `prefer-const`。
@@ -87,37 +94,42 @@ root
    ```json
    {
      "lint-staged": {
-       "miniprogram/**/*.{js,ts}": ["eslint --fix", "prettier --write"],
-       "miniprogram/**/*.{wxss,css}": ["stylelint --fix", "prettier --write"],
-       "**/*.{md,json}": ["prettier --write"]
+       "*.js": ["eslint --fix", "prettier --write"],
+       "*.{wxss,css}": ["stylelint --fix", "prettier --write"],
+       "*.{json,wxml,md}": ["prettier --write"]
      }
    }
    ```
 
 ## Git Hooks
+
 - `pre-commit`：运行 lint-staged。
 - `commit-msg`：使用 commitlint 检查信息，例如 `type(scope): subject`。
 - `pre-push`：可选执行单元测试与构建。
 
 ## 环境变量与配置
+
 - `.env.example`：列出必须的配置，如 API 网关、静态资源域名、CI Token。
 - 本地 `.env.local`：开发者自定义，禁止提交。
 - 微信开发者工具导出的 `project.config.json` 建议纳入版本库（敏感字段置空），统一编译配置。
 
 ## 缓存与提速建议
+
 - 使用 `pnpm store path` + CI 缓存策略缩短安装时间。
 - 在微信开发者工具中启用“增量编译”与“文件监听忽略 node_modules”。
 - 对频繁更新的模拟接口使用本地 `json-server` 或轻量 Node 服务，避免线上依赖。
 
 ## 常见问题排查
-| 现象 | 原因 | 解决方案 |
-|------|------|----------|
-| ESLint 未生效 | VS Code 未启用工作区设置 | 检查 `.vscode/settings.json` 是否配置 `  eslint.validate` |
-| 提交被拒绝 | lint-staged 或 commitlint 未通过 | 运行 `pnpm lint` / `pnpm test` 修复后重试 |
-| 微信开发者工具卡顿 | 缓存过大或识别 node_modules | 清理缓存，并在项目设置中排除大型目录 |
-| Jest 无法识别小程序 API | 未 mock 全局对象 | 在 `tests/setup.ts` 中补充 `wx` 模拟 |
+
+| 现象                    | 原因                             | 解决方案                                                  |
+| ----------------------- | -------------------------------- | --------------------------------------------------------- |
+| ESLint 未生效           | VS Code 未启用工作区设置         | 检查 `.vscode/settings.json` 是否配置 `  eslint.validate` |
+| 提交被拒绝              | lint-staged 或 commitlint 未通过 | 运行 `pnpm lint` / `pnpm test` 修复后重试                 |
+| 微信开发者工具卡顿      | 缓存过大或识别 node_modules      | 清理缓存，并在项目设置中排除大型目录                      |
+| Jest 无法识别小程序 API | 未 mock 全局对象                 | 在 `tests/setup.ts` 中补充 `wx` 模拟                      |
 
 ## 后续工作
+
 - 将本指南纳入入职 checklist。
 - 在 CI 中校验 Node 与 pnpm 版本，避免版本漂移。
 - 每季度审查依赖与工具版本，关注安全公告。

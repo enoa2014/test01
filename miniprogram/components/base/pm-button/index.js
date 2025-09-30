@@ -1,40 +1,52 @@
 Component({
   options: {
-    addGlobalClass: true
+    addGlobalClass: true,
   },
   properties: {
     type: {
       type: String,
-      value: 'default'
+      value: 'default',
     },
     size: {
       type: String,
-      value: 'medium'
+      value: 'medium',
     },
     loading: {
       type: Boolean,
-      value: false
+      value: false,
     },
     disabled: {
       type: Boolean,
-      value: false
+      value: false,
     },
     text: {
       type: String,
-      value: '按钮'
+      value: '按钮',
     },
     block: {
       type: Boolean,
-      value: false
+      value: false,
     },
     ghost: {
       type: Boolean,
-      value: false
+      value: false,
     },
     useSlot: {
       type: Boolean,
-      value: false
-    }
+      value: false,
+    },
+    icon: {
+      type: String,
+      value: '',
+    },
+    iconPosition: {
+      type: String,
+      value: 'left',
+    },
+    elevated: {
+      type: Boolean,
+      value: false,
+    },
   },
   methods: {
     handleTap() {
@@ -42,6 +54,6 @@ Component({
         return;
       }
       this.triggerEvent('tap');
-    }
-  }
+    },
+  },
 });

@@ -59,11 +59,12 @@
   "radius": {
     "none": "0",
     "sm": "8rpx",
-    "base": "16rpx",
-    "md": "24rpx",
-    "lg": "32rpx",
-    "xl": "40rpx",
-    "full": "50%"
+    "base": "12rpx",
+    "md": "16rpx",
+    "lg": "20rpx",
+    "xl": "24rpx",
+    "xxl": "32rpx",
+    "full": "9999rpx"
   },
   "shadow": {
     "none": "none",
@@ -109,6 +110,16 @@
     "infoLight": "linear-gradient(145deg, rgba(24, 144, 255, 0.05), rgba(24, 144, 255, 0.10))",
     "infoLightHover": "linear-gradient(145deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.12))",
     "successLight": "linear-gradient(145deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.10))",
-    "successLightHover": "linear-gradient(145deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.12))"
+    "successLightHover": "linear-gradient(145deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.12))",
+    "primaryButton": "linear-gradient(135deg, #2E86AB 0%, #2D8BBA 100%)"
+  },
+  "interaction": {
+    "hoverPrimaryLight": "rgba(45, 139, 186, 0.05)",
+    "hoverSecondaryLight": "rgba(0, 0, 0, 0.05)",
+    "hoverDangerLight": "rgba(220, 53, 69, 0.05)",
+    "shadowPrimary": "rgba(45, 139, 186, 0.25)",
+    "shadowPrimaryHover": "rgba(45, 139, 186, 0.3)",
+    "shadowGeneral": "rgba(0, 0, 0, 0.12)",
+    "shadowGenericHover": "rgba(0, 0, 0, 0.1)"
   }
 }

@@ -1,5 +1,5 @@
 <view
-  class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}}"
+  class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}} {{elevated ? 'pm-button--elevated' : ''}}"
   bindtap="handleTap"
 >
   <view wx:if="{{loading}}" class="pm-button__spinner"></view>
@@ -7,6 +7,18 @@
     <slot></slot>
   </view>
   <block wx:elif="{{text}}">
-    <text class="pm-button__text">{{text}}</text>
+    <view class="pm-button__content">
+      <text
+        wx:if="{{icon && iconPosition !== 'right'}}"
+        class="pm-button__icon pm-button__icon--left"
+        >{{icon}}</text
+      >
+      <text class="pm-button__text">{{text}}</text>
+      <text
+        wx:if="{{icon && iconPosition === 'right'}}"
+        class="pm-button__icon pm-button__icon--right"
+        >{{icon}}</text
+      >
+    </view>
   </block>
 </view>

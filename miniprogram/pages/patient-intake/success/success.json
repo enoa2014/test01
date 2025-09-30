@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "入住成功",
   "backgroundColor": "#f0f9ff",
-  "backgroundTextStyle": "dark"
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "pm-button": "/components/base/pm-button/index"
+  }
 }

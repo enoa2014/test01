@@ -1,7 +1,7 @@
-@import "../../styles/generated/tokens.wxss";
-@import "../../styles/foundation.wxss";
-@import "../../styles/utilities.wxss";
-@import "../../styles/responsive.wxss";
+@import '../../styles/generated/tokens.wxss';
+@import '../../styles/foundation.wxss';
+@import '../../styles/utilities.wxss';
+@import '../../styles/responsive.wxss';
 
 .lab {
   display: flex;
@@ -28,7 +28,7 @@
 
 .lab__item--active {
   background: var(--color-primary-light);
-  color: #ffffff;
+  color: var(--color-bg-primary);
 }
 
 .lab__content {
@@ -86,6 +86,39 @@
 .lab__panel-title {
   font-weight: var(--font-semibold);
   margin-bottom: var(--space-4);
+}
+
+.lab__preset-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.lab__preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.lab__preset {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-base);
+  border: 2rpx solid var(--color-border-secondary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.lab__preset--active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--bg-info-soft);
+}
+
+.lab__preset--custom {
+  border-style: dashed;
+  color: var(--color-text-tertiary);
 }
 
 .lab__panel-field {

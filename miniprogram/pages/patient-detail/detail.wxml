@@ -4,12 +4,17 @@
   <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
     <view class="patient-header">
       <view class="patient-header-row">
-        <text class="patient-detail-name">{{editMode ? editForm.patientName : (patient.patientName || '')}}</text>
+        <text class="patient-detail-name"
+          >{{editMode ? editForm.patientName : (patient.patientName || '')}}</text
+        >
         <view class="edit-toolbar">
           <view wx:if="{{!editMode}}" class="edit-button" bindtap="onEditStart">编辑资料</view>
           <block wx:else>
             <view class="edit-button plain" bindtap="onEditCancel">放弃</view>
-            <view class="edit-button primary {{(!editCanSave || saving) ? 'disabled' : ''}}" bindtap="onSaveTap">
+            <view
+              class="edit-button primary {{(!editCanSave || saving) ? 'disabled' : ''}}"
+              bindtap="onSaveTap"
+            >
               {{saving ? '保存中…' : '保存'}}
             </view>
           </block>
@@ -23,64 +28,163 @@
     <view wx:if="{{editMode}}" class="form-section">
       <text class="form-section-title">基本信息</text>
       <block wx:for="{{patientFieldConfig}}" wx:key="key">
-        <view class="form-field">
-          <text class="field-label">{{item.label}}</text>
-          <block wx:if="{{item.type === 'picker'}}">
-            <picker mode="selector" range="{{item.options}}" value="{{editPickerIndex[item.key] || 0}}" data-key="{{item.key}}" data-options="{{item.options}}" bindchange="onPickerChange">
-              <view class="picker-value">{{editForm[item.key] || item.options[0] || '请选择'}}</view>
+        <block wx:if="{{item.type === 'picker'}}">
+          <view class="form-field">
+            <text class="field-label">{{item.label}}</text>
+            <picker
+              mode="selector"
+              range="{{item.options}}"
+              value="{{editPickerIndex[item.key] || 0}}"
+              data-key="{{item.key}}"
+              data-options="{{item.options}}"
+              bindchange="onPickerChange"
+            >
+              <view class="picker-value"
+                >{{editForm[item.key] || item.options[0] || '请选择'}}</view
+              >
             </picker>
-          </block>
-          <block wx:elif="{{item.type === 'date'}}">
-            <picker mode="date" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindchange="onDatePickerChange">
+            <text wx:if="{{editErrors[item.key]}}" class="field-error"
+              >{{editErrors[item.key]}}</text
+            >
+          </view>
+        </block>
+        <block wx:elif="{{item.type === 'date'}}">
+          <view class="form-field">
+            <text class="field-label">{{item.label}}</text>
+            <picker
+              mode="date"
+              value="{{editForm[item.key]}}"
+              data-key="{{item.key}}"
+              bindchange="onDatePickerChange"
+            >
               <view class="picker-value">{{editForm[item.key] || '请选择日期'}}</view>
             </picker>
-          </block>
-          <block wx:elif="{{item.type === 'textarea'}}">
-            <textarea class="text-area" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput"></textarea>
-          </block>
-          <block wx:else>
-            <input class="text-input" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput" type="{{item.keyboard === 'number' ? 'number' : 'text'}}" />
-          </block>
-          <text wx:if="{{editErrors[item.key]}}" class="field-error">{{editErrors[item.key]}}</text>
-        </view>
+            <text wx:if="{{editErrors[item.key]}}" class="field-error"
+              >{{editErrors[item.key]}}</text
+            >
+          </view>
+        </block>
+        <block wx:elif="{{item.type === 'textarea'}}">
+          <view class="form-field">
+            <text class="field-label">{{item.label}}</text>
+            <textarea
+              class="text-area"
+              auto-height="{{item.autoHeight}}"
+              value="{{editForm[item.key]}}"
+              data-key="{{item.key}}"
+              bindinput="onEditFieldInput"
+            ></textarea>
+            <text wx:if="{{editErrors[item.key]}}" class="field-error"
+              >{{editErrors[item.key]}}</text
+            >
+          </view>
+        </block>
+        <block wx:else>
+          <pm-input
+            label="{{item.label}}"
+            value="{{editForm[item.key]}}"
+            placeholder="请输入{{item.label}}"
+            type="{{item.keyboard === 'number' ? 'number' : 'text'}}"
+            data-key="{{item.key}}"
+            bindinput="onEditFieldInput"
+            error="{{editErrors[item.key] || ''}}"
+            clearable="{{true}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
+        </block>
       </block>
 
       <text class="form-section-title">联系与紧急联系人</text>
       <block wx:for="{{contactFieldConfig}}" wx:key="key">
-        <view class="form-field">
-          <text class="field-label">{{item.label}}</text>
-          <block wx:if="{{item.type === 'textarea'}}">
-            <textarea class="text-area" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput"></textarea>
-          </block>
-          <block wx:else>
-            <input class="text-input" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput" type="{{item.keyboard === 'number' ? 'number' : 'text'}}" />
-          </block>
-          <text wx:if="{{editErrors[item.key]}}" class="field-error">{{editErrors[item.key]}}</text>
-        </view>
+        <block wx:if="{{item.type === 'textarea'}}">
+          <view class="form-field">
+            <text class="field-label">{{item.label}}</text>
+            <textarea
+              class="text-area"
+              auto-height="{{item.autoHeight}}"
+              value="{{editForm[item.key]}}"
+              data-key="{{item.key}}"
+              bindinput="onEditFieldInput"
+            ></textarea>
+            <text wx:if="{{editErrors[item.key]}}" class="field-error"
+              >{{editErrors[item.key]}}</text
+            >
+          </view>
+        </block>
+        <block wx:else>
+          <pm-input
+            label="{{item.label}}"
+            value="{{editForm[item.key]}}"
+            placeholder="请输入{{item.label}}"
+            type="{{item.keyboard === 'number' ? 'number' : 'text'}}"
+            data-key="{{item.key}}"
+            bindinput="onEditFieldInput"
+            error="{{editErrors[item.key] || ''}}"
+            clearable="{{true}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
+        </block>
       </block>
 
       <text class="form-section-title">入住补充信息</text>
       <block wx:for="{{intakeFieldConfig}}" wx:key="key">
-        <view class="form-field">
-          <text class="field-label">{{item.label}}</text>
-          <block wx:if="{{item.type === 'date'}}">
-            <picker mode="date" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindchange="onDatePickerChange">
+        <block wx:if="{{item.type === 'date'}}">
+          <view class="form-field">
+            <text class="field-label">{{item.label}}</text>
+            <picker
+              mode="date"
+              value="{{editForm[item.key]}}"
+              data-key="{{item.key}}"
+              bindchange="onDatePickerChange"
+            >
               <view class="picker-value">{{editForm[item.key] || '请选择日期'}}</view>
             </picker>
-          </block>
-          <block wx:elif="{{item.type === 'textarea'}}">
-        <block wx:if="{{item.key === 'narrative'}}">
-          <textarea class="text-area narrative" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onNarrativeInput"></textarea>
+            <text wx:if="{{editErrors[item.key]}}" class="field-error"
+              >{{editErrors[item.key]}}</text
+            >
+          </view>
+        </block>
+        <block wx:elif="{{item.type === 'textarea'}}">
+          <view class="form-field">
+            <text class="field-label">{{item.label}}</text>
+            <block wx:if="{{item.key === 'narrative'}}">
+              <textarea
+                class="text-area narrative"
+                auto-height="{{item.autoHeight}}"
+                value="{{editForm[item.key]}}"
+                data-key="{{item.key}}"
+                bindinput="onNarrativeInput"
+              ></textarea>
+            </block>
+            <block wx:else>
+              <textarea
+                class="text-area"
+                auto-height="{{item.autoHeight}}"
+                value="{{editForm[item.key]}}"
+                data-key="{{item.key}}"
+                bindinput="onEditFieldInput"
+              ></textarea>
+            </block>
+            <text wx:if="{{editErrors[item.key]}}" class="field-error"
+              >{{editErrors[item.key]}}</text
+            >
+          </view>
         </block>
         <block wx:else>
-          <textarea class="text-area" auto-height="{{item.autoHeight}}" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput"></textarea>
+          <pm-input
+            label="{{item.label}}"
+            value="{{editForm[item.key]}}"
+            placeholder="请输入{{item.label}}"
+            data-key="{{item.key}}"
+            bindinput="onEditFieldInput"
+            error="{{editErrors[item.key] || ''}}"
+            clearable="{{true}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
         </block>
-      </block>
-          <block wx:else>
-            <input class="text-input" value="{{editForm[item.key]}}" data-key="{{item.key}}" bindinput="onEditFieldInput" />
-          </block>
-          <text wx:if="{{editErrors[item.key]}}" class="field-error">{{editErrors[item.key]}}</text>
-        </view>
       </block>
     </view>
 
@@ -114,7 +218,10 @@
     <view class="intake-records-section" wx:if="{{allIntakeRecords.length}}">
       <view class="section-header">
         <text class="section-title">入住记录历史（{{allIntakeRecords.length}}条）</text>
-        <view class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}" bindtap="onToggleRecordsSort">
+        <view
+          class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}"
+          bindtap="onToggleRecordsSort"
+        >
           <text class="sort-icon">{{recordsSortOrder === 'desc' ? '▼' : '▲'}}</text>
           <text class="sort-text">{{recordsSortOrder === 'desc' ? '最新在前' : '最早在前'}}</text>
         </view>
@@ -122,11 +229,18 @@
       <view class="intake-record-item" wx:for="{{allIntakeRecords}}" wx:key="intakeId">
         <view class="record-header">
           <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
-          <text class="record-status" wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}">{{item.statusDisplay}}</text>
+          <text
+            class="record-status"
+            wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}"
+            >{{item.statusDisplay}}</text
+          >
         </view>
 
         <!-- 就诊情况 -->
-        <view class="record-section" wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}">
+        <view
+          class="record-section"
+          wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
+        >
           <text class="record-section-title">就诊情况</text>
           <view class="record-field" wx:if="{{item.hospitalDisplay}}">
             <text class="field-label">就诊医院：</text>
@@ -143,7 +257,10 @@
         </view>
 
         <!-- 医疗情况 -->
-        <view class="record-section" wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}">
+        <view
+          class="record-section"
+          wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}"
+        >
           <text class="record-section-title">医疗情况</text>
           <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
             <text class="field-label">症状详情：</text>
@@ -158,8 +275,6 @@
             <text class="field-value">{{item.followUpPlanDisplay}}</text>
           </view>
         </view>
-
-
       </view>
     </view>
 
@@ -176,36 +291,72 @@
 
     <view class="media-section">
       <text class="section-title">资料管理</text>
-      <view wx:if="{{media.loading && !media.accessChecked}}" class="placeholder">正在检查权限…</view>
+      <view wx:if="{{media.loading && !media.accessChecked}}" class="placeholder"
+        >正在检查权限…</view
+      >
       <view wx:elif="{{media.loading}}" class="placeholder">正在加载附件…</view>
       <view wx:elif="{{media.error}}" class="error">
         {{media.error}}
         <view class="media-retry" bindtap="onMediaRetry">重新加载</view>
       </view>
-      <view wx:elif="{{media.accessChecked && !media.allowed}}" class="placeholder">当前账号暂无权限查看附件。</view>
+      <view wx:elif="{{media.accessChecked && !media.allowed}}" class="placeholder"
+        >当前账号暂无权限查看附件。</view
+      >
       <view wx:else>
         <view class="media-header">
           <view class="media-quota">
-            <text>数量：{{media.quota.totalCount}} / {{media.quota.maxCount}}（剩余 {{media.quota.remainingCount}}）</text>
-            <text>容量：{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}（剩余 {{media.quota.remainingBytesText}}）</text>
+            <text
+              >数量：{{media.quota.totalCount}} / {{media.quota.maxCount}}（剩余
+              {{media.quota.remainingCount}}）</text
+            >
+            <text
+              >容量：{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}（剩余
+              {{media.quota.remainingBytesText}}）</text
+            >
           </view>
           <view class="media-tabs">
-            <view class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}" data-tab="images" bindtap="onMediaTabChange">照片墙</view>
-            <view class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}" data-tab="documents" bindtap="onMediaTabChange">文档列表</view>
+            <view
+              class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}"
+              data-tab="images"
+              bindtap="onMediaTabChange"
+              >照片墙</view
+            >
+            <view
+              class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}"
+              data-tab="documents"
+              bindtap="onMediaTabChange"
+              >文档列表</view
+            >
           </view>
         </view>
 
         <view wx:if="{{media.uploading}}" class="media-status">正在上传，请稍候…</view>
 
         <view class="media-actions">
-          <view wx:if="{{media.tab === 'images'}}" class="media-action-button {{media.uploading ? 'disabled' : ''}}" bindtap="onUploadImagesTap">上传图片</view>
-          <view wx:elif="{{media.tab === 'documents'}}" class="media-action-button {{media.uploading ? 'disabled' : ''}}" bindtap="onUploadDocumentsTap">上传文档</view>
+          <view
+            wx:if="{{media.tab === 'images'}}"
+            class="media-action-button {{media.uploading ? 'disabled' : ''}}"
+            bindtap="onUploadImagesTap"
+            >上传图片</view
+          >
+          <view
+            wx:elif="{{media.tab === 'documents'}}"
+            class="media-action-button {{media.uploading ? 'disabled' : ''}}"
+            bindtap="onUploadDocumentsTap"
+            >上传文档</view
+          >
         </view>
 
         <view wx:if="{{media.tab === 'images'}}">
           <view class="media-upload-hint">单次最多 5 个，支持 JPG/PNG/WebP，单个文件 ≤ 10MB。</view>
           <view wx:if="{{media.images.length}}" class="media-grid">
-            <view class="media-card" wx:for="{{media.images}}" wx:key="id" data-index="{{index}}" bindtap="onImagePreviewTap">
+            <view
+              class="media-card"
+              wx:for="{{media.images}}"
+              wx:key="id"
+              data-index="{{index}}"
+              bindtap="onImagePreviewTap"
+            >
               <image src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
               <view class="media-card-info">
                 <text class="media-card-name">{{item.displayName}}</text>
@@ -213,10 +364,21 @@
                 <text class="media-card-meta">上传人：{{item.uploaderDisplay}}</text>
               </view>
               <view class="media-card-actions">
-                <view class="media-card-button {{item.downloading ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" catchtap="onImageDownloadTap">
+                <view
+                  class="media-card-button {{item.downloading ? 'loading' : ''}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  catchtap="onImageDownloadTap"
+                >
                   {{item.downloading ? '下载中…' : '下载'}}
                 </view>
-                <view class="media-card-button danger {{item.deleting ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" data-category="image" catchtap="onDeleteMediaTap">
+                <view
+                  class="media-card-button danger {{item.deleting ? 'loading' : ''}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  data-category="image"
+                  catchtap="onDeleteMediaTap"
+                >
                   {{item.deleting ? '处理中…' : '删除'}}
                 </view>
               </view>
@@ -226,7 +388,9 @@
         </view>
 
         <view wx:elif="{{media.tab === 'documents'}}">
-          <view class="media-upload-hint">支持 TXT / PDF / Word / Excel，单次最多 5 个，单个文件 ≤ 10MB。</view>
+          <view class="media-upload-hint"
+            >支持 TXT / PDF / Word / Excel，单次最多 5 个，单个文件 ≤ 10MB。</view
+          >
           <view wx:if="{{media.documents.length}}" class="media-table">
             <view class="media-table-header">
               <view class="media-cell name">文件名</view>
@@ -238,20 +402,38 @@
             </view>
             <view class="media-table-row" wx:for="{{media.documents}}" wx:key="id">
               <view class="media-cell name">
-                <text class="doc-name {{item.isText ? 'interactive' : 'disabled'}}" data-id="{{item.id}}" data-index="{{index}}" bindtap="onDocumentNameTap">
+                <text
+                  class="doc-name {{item.isText ? 'interactive' : 'disabled'}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  bindtap="onDocumentNameTap"
+                >
                   {{item.displayName}}
                 </text>
-                <text wx:if="{{item.isText}}" class="doc-preview-hint">{{item.previewLoading ? '预览中…' : '支持在线预览'}}</text>
+                <text wx:if="{{item.isText}}" class="doc-preview-hint"
+                  >{{item.previewLoading ? '预览中…' : '支持在线预览'}}</text
+                >
               </view>
               <view class="media-cell type">{{item.typeText}}</view>
               <view class="media-cell size">{{item.sizeText}}</view>
               <view class="media-cell time">{{item.uploadedAtText}}</view>
               <view class="media-cell uploader">{{item.uploaderDisplay}}</view>
               <view class="media-cell actions">
-                <view class="doc-action-button {{item.downloading ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" catchtap="onDocumentDownloadTap">
+                <view
+                  class="doc-action-button {{item.downloading ? 'loading' : ''}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  catchtap="onDocumentDownloadTap"
+                >
                   {{item.downloading ? '下载中…' : '下载'}}
                 </view>
-                <view class="doc-action-button danger {{item.deleting ? 'loading' : ''}}" data-id="{{item.id}}" data-index="{{index}}" data-category="document" catchtap="onDeleteMediaTap">
+                <view
+                  class="doc-action-button danger {{item.deleting ? 'loading' : ''}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  data-category="document"
+                  catchtap="onDeleteMediaTap"
+                >
                   {{item.deleting ? '处理中…' : '删除'}}
                 </view>
               </view>

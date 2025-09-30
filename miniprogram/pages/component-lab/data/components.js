@@ -13,14 +13,55 @@ module.exports = [
       block: false,
       ghost: false,
       useSlot: false,
-      text: '按钮'
+      elevated: false,
+      icon: '',
+      iconPosition: 'left',
+      text: '按钮',
     },
     options: {
-      type: { values: ['default', 'primary', 'secondary'] },
-      size: { values: ['small', 'medium', 'large'] }
+      type: { values: ['default', 'primary', 'secondary', 'danger'] },
+      size: { values: ['small', 'medium', 'large'] },
+      iconPosition: { values: ['left', 'right'] },
     },
-    textFields: ['text'],
-    toggles: ['loading', 'disabled', 'block', 'ghost', 'useSlot']
+    textFields: ['text', 'icon'],
+    toggles: ['loading', 'disabled', 'block', 'ghost', 'useSlot', 'elevated'],
+    presets: [
+      {
+        id: 'primary-action',
+        label: '主操作按钮',
+        props: { type: 'primary', text: '确认提交', elevated: false },
+      },
+      {
+        id: 'default-action',
+        label: '默认按钮',
+        props: { type: 'default', text: '取消操作' },
+      },
+      {
+        id: 'primary-loading',
+        label: '加载状态',
+        props: { type: 'primary', text: '提交中…', loading: true },
+      },
+      {
+        id: 'ghost',
+        label: 'Ghost按钮',
+        props: { ghost: true, text: '次要操作', type: 'primary' },
+      },
+      {
+        id: 'with-icon',
+        label: '带图标',
+        props: { type: 'primary', icon: '✓', text: '已完成', iconPosition: 'left' },
+      },
+      {
+        id: 'danger-elevated',
+        label: '危险操作',
+        props: { type: 'danger', icon: '⚠️', text: '删除数据', elevated: true },
+      },
+      {
+        id: 'block-button',
+        label: '块级按钮',
+        props: { type: 'primary', block: true, text: '开始入住登记' },
+      },
+    ],
   },
   {
     id: 'pm-input',
@@ -33,19 +74,96 @@ module.exports = [
       value: '',
       placeholder: '请输入患者姓名',
       type: 'text',
+      size: 'medium',
+      labelPosition: 'top',
       disabled: false,
       clearable: true,
       helper: '示例：与证件一致',
       error: '',
       block: true,
       usePrefixSlot: false,
-      useSuffixSlot: false
+      useSuffixSlot: false,
+      prefixIcon: '',
+      suffixIcon: '',
     },
     options: {
-      type: { values: ['text', 'number', 'idcard'] }
+      type: { values: ['text', 'number', 'idcard'] },
+      size: { values: ['small', 'medium', 'large'] },
+      labelPosition: { values: ['top', 'left'] },
     },
-    textFields: ['label', 'placeholder', 'value', 'helper', 'error'],
-    toggles: ['disabled', 'clearable', 'block', 'usePrefixSlot', 'useSuffixSlot']
+    textFields: ['label', 'placeholder', 'value', 'helper', 'error', 'prefixIcon', 'suffixIcon'],
+    toggles: ['disabled', 'clearable', 'block', 'usePrefixSlot', 'useSuffixSlot'],
+    presets: [
+      {
+        id: 'basic',
+        label: '基础输入',
+        props: {
+          label: '患者姓名',
+          placeholder: '请输入患者姓名',
+          helper: '必填项，请与证件一致',
+          prefixIcon: '👤',
+          clearable: true,
+        },
+      },
+      {
+        id: 'with-value',
+        label: '带内容',
+        props: {
+          label: '联系电话',
+          value: '13800138000',
+          placeholder: '请输入电话',
+          prefixIcon: '☎️',
+          clearable: true,
+        },
+      },
+      {
+        id: 'with-error',
+        label: '错误提示',
+        props: {
+          label: '身份证号',
+          type: 'idcard',
+          value: '123456',
+          error: '身份证号码格式不正确，请检查',
+          helper: '',
+          suffixIcon: '🆔',
+          clearable: true,
+        },
+      },
+      {
+        id: 'with-slots',
+        label: '插槽示例',
+        props: {
+          label: '患者年龄',
+          usePrefixSlot: false,
+          useSuffixSlot: true,
+          placeholder: '请输入年龄',
+          size: 'medium',
+          type: 'number',
+        },
+      },
+      {
+        id: 'disabled',
+        label: '禁用状态',
+        props: {
+          label: '家庭住址',
+          value: '广西玉林市容县石寨镇',
+          disabled: true,
+          helper: '系统自动填充',
+          labelPosition: 'left',
+        },
+      },
+      {
+        id: 'large-input',
+        label: '大尺寸',
+        props: {
+          label: '备注信息',
+          placeholder: '请输入备注',
+          size: 'large',
+          helper: '最多200字',
+          clearable: true,
+        },
+      },
+    ],
   },
   {
     id: 'pm-card',
@@ -57,15 +175,97 @@ module.exports = [
       title: '患者提醒',
       description: '今日需跟踪患者家庭情况并更新护理记录。',
       status: 'default',
+      variant: 'default',
       clickable: true,
       useSlot: false,
       useHeaderSlot: false,
-      useFooterSlot: false
+      useFooterSlot: false,
     },
     options: {
-      status: { values: ['default', 'success', 'warning'] }
+      status: { values: ['default', 'success', 'warning', 'danger', 'info'] },
+      variant: { values: ['default', 'outlined', 'elevated'] },
     },
-    textFields: ['title', 'description'],
-    toggles: ['clickable', 'useSlot', 'useHeaderSlot', 'useFooterSlot']
-  }
+    textFields: ['title', 'description', 'padding'],
+    toggles: ['clickable', 'useSlot', 'useHeaderSlot', 'useFooterSlot'],
+    presets: [
+      {
+        id: 'default',
+        label: '默认卡片',
+        props: {
+          title: '患者跟进提醒',
+          description: '今日需联系患者家属确认随访时间，并更新护理记录。',
+          status: 'default',
+          clickable: true,
+          variant: 'default',
+        },
+      },
+      {
+        id: 'info-card',
+        label: '信息卡片',
+        props: {
+          title: '待办事项',
+          description: '请及时完成患者入住登记和资料上传。',
+          status: 'info',
+          clickable: true,
+          variant: 'default',
+        },
+      },
+      {
+        id: 'success',
+        label: '成功状态',
+        props: {
+          status: 'success',
+          title: '资料已齐全',
+          description: '患者所有入住资料已审核完成，可以开始护理服务。',
+          clickable: false,
+          variant: 'outlined',
+        },
+      },
+      {
+        id: 'warning',
+        label: '警告状态',
+        props: {
+          status: 'warning',
+          title: '信息待完善',
+          description: '患者紧急联系人信息缺失，请尽快补充。',
+          clickable: true,
+          variant: 'default',
+        },
+      },
+      {
+        id: 'danger',
+        label: '危险状态',
+        props: {
+          status: 'danger',
+          title: '重要提醒',
+          description: '该患者需要特殊护理，请查看详细医嘱。',
+          clickable: true,
+          variant: 'elevated',
+        },
+      },
+      {
+        id: 'elevated',
+        label: '投影卡片',
+        props: {
+          title: '护理计划',
+          description: '本周护理重点：日常生活照料、康复训练、心理疏导。',
+          status: 'default',
+          clickable: true,
+          variant: 'elevated',
+        },
+      },
+      {
+        id: 'with-slots',
+        label: '自定义内容',
+        props: {
+          status: 'info',
+          variant: 'default',
+          clickable: false,
+          useSlot: true,
+          useHeaderSlot: true,
+          useFooterSlot: true,
+        },
+      },
+    ],
+  },
 ];
