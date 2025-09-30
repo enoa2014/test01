@@ -5,9 +5,14 @@ const { spawn } = require('child_process');
 const cloudbase = require('@cloudbase/node-sdk');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-const COLLECTION = 'excel_records';
+const COLLECTIONS = ['excel_records', 'patient_intake_records', 'excel_cache', 'patients'];
 const TEST_PREFIX = 'TEST_AUTOMATION_';
-const RUN_ID = TEST_PREFIX + new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+const RUN_ID =
+  TEST_PREFIX +
+  new Date()
+    .toISOString()
+    .replace(/[-:.TZ]/g, '')
+    .slice(0, 14);
 
 function requireEnv(name) {
   if (!process.env[name]) {
@@ -32,7 +37,7 @@ function toTimestamp(dateText) {
 }
 
 function buildPatientRecords() {
-  const patientBase = (suffix) => RUN_ID + '_' + suffix;
+  const patientBase = suffix => RUN_ID + '_' + suffix;
 
   const admissionsA = [
     {
@@ -42,7 +47,7 @@ function buildPatientRecords() {
       doctor: '李勇',
       symptoms: '持续发热、血象异常',
       treatmentProcess: '完成初步骨髓穿刺和化疗方案讨论',
-      followUpPlan: '两周后复诊确认疗程'
+      followUpPlan: '两周后复诊确认疗程',
     },
     {
       date: '2024-09-12',
@@ -51,8 +56,8 @@ function buildPatientRecords() {
       doctor: '李勇',
       symptoms: '食欲恢复良好，轻微乏力',
       treatmentProcess: '调整抗排异药物剂量，进行免疫抑制监测',
-      followUpPlan: '一个月后门诊复查'
-    }
+      followUpPlan: '一个月后门诊复查',
+    },
   ];
 
   const admissionsB = [
@@ -63,7 +68,7 @@ function buildPatientRecords() {
       doctor: '王珊',
       symptoms: '术后肢体活动受限',
       treatmentProcess: '制定物理治疗计划，安排康复训练课程',
-      followUpPlan: '每周两次复查训练效果'
+      followUpPlan: '每周两次复查训练效果',
     },
     {
       date: '2024-10-18',
@@ -72,41 +77,42 @@ function buildPatientRecords() {
       doctor: '王珊',
       symptoms: '肌力提升明显，仍伴随轻度疼痛',
       treatmentProcess: '增加水疗课程，评估疼痛管理方案',
-      followUpPlan: '半月后复诊，必要时调整训练强度'
-    }
+      followUpPlan: '半月后复诊，必要时调整训练强度',
+    },
   ];
 
-  const toRecords = (suffix, profile, admissions) => admissions.map((item, index) => ({
-    key: patientBase(suffix),
-    patientName: profile.name,
-    gender: profile.gender,
-    birthDate: profile.birthDate,
-    nativePlace: profile.nativePlace,
-    ethnicity: profile.ethnicity,
-    caregivers: profile.caregivers,
-    address: profile.address,
-    fatherInfo: profile.fatherInfo,
-    motherInfo: profile.motherInfo,
-    otherGuardian: profile.otherGuardian,
-    familyEconomy: profile.familyEconomy,
-    admissionDate: item.date,
-    admissionTimestamp: toTimestamp(item.date),
-    hospital: item.hospital,
-    diagnosis: item.diagnosis,
-    doctor: item.doctor,
-    symptoms: item.symptoms,
-    treatmentProcess: item.treatmentProcess,
-    followUpPlan: item.followUpPlan,
-    identitySignature: {
-      id: '',
-      father: profile.fatherKey,
-      mother: profile.motherKey
-    },
-    testMarker: RUN_ID,
-    _source: 'automation',
-    _runId: RUN_ID,
-    _admissionIndex: index + 1
-  }));
+  const toRecords = (suffix, profile, admissions) =>
+    admissions.map((item, index) => ({
+      key: patientBase(suffix),
+      patientName: profile.name,
+      gender: profile.gender,
+      birthDate: profile.birthDate,
+      nativePlace: profile.nativePlace,
+      ethnicity: profile.ethnicity,
+      caregivers: profile.caregivers,
+      address: profile.address,
+      fatherInfo: profile.fatherInfo,
+      motherInfo: profile.motherInfo,
+      otherGuardian: profile.otherGuardian,
+      familyEconomy: profile.familyEconomy,
+      admissionDate: item.date,
+      admissionTimestamp: toTimestamp(item.date),
+      hospital: item.hospital,
+      diagnosis: item.diagnosis,
+      doctor: item.doctor,
+      symptoms: item.symptoms,
+      treatmentProcess: item.treatmentProcess,
+      followUpPlan: item.followUpPlan,
+      identitySignature: {
+        id: '',
+        father: profile.fatherKey,
+        mother: profile.motherKey,
+      },
+      testMarker: RUN_ID,
+      _source: 'automation',
+      _runId: RUN_ID,
+      _admissionIndex: index + 1,
+    }));
 
   const patientA = {
     name: patientBase('ALPHA'),
@@ -121,7 +127,7 @@ function buildPatientRecords() {
     otherGuardian: '',
     familyEconomy: '家庭月收入 8000 元，需慈善支持',
     fatherKey: RUN_ID + '_ALPHA_FATHER',
-    motherKey: RUN_ID + '_ALPHA_MOTHER'
+    motherKey: RUN_ID + '_ALPHA_MOTHER',
   };
 
   const patientB = {
@@ -137,18 +143,18 @@ function buildPatientRecords() {
     otherGuardian: '祖母 13700003333',
     familyEconomy: '主要依靠亲属支援',
     fatherKey: RUN_ID + '_BETA_FATHER',
-    motherKey: RUN_ID + '_BETA_MOTHER'
+    motherKey: RUN_ID + '_BETA_MOTHER',
   };
 
   return {
     records: [
       ...toRecords('ALPHA', patientA, admissionsA),
-      ...toRecords('BETA', patientB, admissionsB)
+      ...toRecords('BETA', patientB, admissionsB),
     ],
     meta: {
       alpha: patientA,
-      beta: patientB
-    }
+      beta: patientB,
+    },
   };
 }
 
@@ -157,7 +163,11 @@ async function removeExistingTestData(collection, command, db) {
     { testMarker: command.exists(true) },
     { ['data.testMarker']: command.exists(true) },
     { key: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-    { ['data.key']: db.RegExp({ regexp: '^' + TEST_PREFIX }) }
+    { ['data.key']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+    { patientKey: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+    { ['data.patientKey']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+    { patientName: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+    { ['data.patientName']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
   ]);
 
   try {
@@ -169,7 +179,10 @@ async function removeExistingTestData(collection, command, db) {
       }
     }
   } catch (error) {
-    console.warn('[run-patient-suite] Bulk remove fallback:', error && error.message ? error.message : error);
+    console.warn(
+      '[run-patient-suite] Bulk remove fallback:',
+      error && error.message ? error.message : error
+    );
   }
 
   const batchSize = 100;
@@ -196,13 +209,26 @@ async function insertRecords(collection, records) {
       try {
         await collection.doc(res.id).update({ key: record.key, testMarker: RUN_ID });
       } catch (updateError) {
-        console.warn('[run-patient-suite] Unable to set root fields for doc', res.id, updateError.message || updateError);
+        console.warn(
+          '[run-patient-suite] Unable to set root fields for doc',
+          res.id,
+          updateError.message || updateError
+        );
       }
     } else if (res && Array.isArray(res.ids)) {
       console.log('[run-patient-suite] Inserted doc ids', res.ids.join(', '));
-      const batchUpdate = res.ids.map((id) => collection.doc(id).update({ key: record.key, testMarker: RUN_ID }).catch((err) => {
-        console.warn('[run-patient-suite] Unable to set root fields for doc', id, err.message || err);
-      }));
+      const batchUpdate = res.ids.map(id =>
+        collection
+          .doc(id)
+          .update({ key: record.key, testMarker: RUN_ID })
+          .catch(err => {
+            console.warn(
+              '[run-patient-suite] Unable to set root fields for doc',
+              id,
+              err.message || err
+            );
+          })
+      );
       await Promise.all(batchUpdate);
     }
     if (res && Array.isArray(res.ids)) {
@@ -218,16 +244,14 @@ async function insertRecords(collection, records) {
 
 function runE2ESuite(envExtra = {}) {
   const isWin = process.platform === 'win32';
-  const command = isWin ? (process.env.COMSPEC || 'cmd.exe') : 'npx';
-  const args = isWin
-    ? ['/c', 'npx', 'mpflow-service', 'test:e2e']
-    : ['mpflow-service', 'test:e2e'];
+  const command = isWin ? process.env.COMSPEC || 'cmd.exe' : 'npx';
+  const args = isWin ? ['/c', 'npx', 'mpflow-service', 'test:e2e'] : ['mpflow-service', 'test:e2e'];
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'test', ...envExtra }
+      env: { ...process.env, NODE_ENV: 'test', ...envExtra },
     });
-    child.on('exit', (code) => {
+    child.on('exit', code => {
       if (code === 0) {
         resolve();
       } else {
@@ -242,21 +266,30 @@ async function main() {
   console.log('[run-patient-suite] Start run id ' + RUN_ID);
   const { app, envId } = connectCloudBase();
   const db = app.database({ env: envId });
-  const collection = db.collection(COLLECTION);
   const command = db.command;
 
   const { records, meta } = buildPatientRecords();
-  const patientKeys = Array.from(new Set(records.map((record) => record.key)));
+  const patientKeys = Array.from(new Set(records.map(record => record.key)));
   let testError;
 
   try {
-    console.log('[run-patient-suite] Cleaning existing automation records...');
-    await removeExistingTestData(collection, command, db);
+    console.log('[run-patient-suite] Cleaning existing automation records from all collections...');
+    for (const collectionName of COLLECTIONS) {
+      const collection = db.collection(collectionName);
+      await removeExistingTestData(collection, command, db);
+    }
 
-    console.log('[run-patient-suite] Inserting ' + records.length + ' test admissions for ' + patientKeys.length + ' patients...');
+    console.log(
+      '[run-patient-suite] Inserting ' +
+        records.length +
+        ' test admissions for ' +
+        patientKeys.length +
+        ' patients...'
+    );
+    const collection = db.collection('excel_records');
     const inserted = await insertRecords(collection, records);
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
       console.log('[run-patient-suite] Triggering patientIntake.syncFromExcel ...');
@@ -265,12 +298,15 @@ async function main() {
         data: {
           action: 'syncFromExcel',
           syncBatchId: RUN_ID,
-          forceRefresh: true
-        }
+          forceRefresh: true,
+        },
       });
       console.log('[run-patient-suite] syncFromExcel completed.');
     } catch (syncError) {
-      console.warn('[run-patient-suite] syncFromExcel failed:', syncError && syncError.message ? syncError.message : syncError);
+      console.warn(
+        '[run-patient-suite] syncFromExcel failed:',
+        syncError && syncError.message ? syncError.message : syncError
+      );
     }
 
     try {
@@ -281,16 +317,25 @@ async function main() {
           action: 'list',
           forceRefresh: true,
           includeTotal: true,
-          pageSize: 80
-        }
+          pageSize: 80,
+        },
       });
       console.log('[run-patient-suite] patientProfile cache refresh request completed.');
     } catch (cacheError) {
-      console.warn('[run-patient-suite] patientProfile cache refresh failed:', cacheError && cacheError.message ? cacheError.message : cacheError);
+      console.warn(
+        '[run-patient-suite] patientProfile cache refresh failed:',
+        cacheError && cacheError.message ? cacheError.message : cacheError
+      );
     }
 
     const verify = await collection.where({ ['data.testMarker']: RUN_ID }).get();
-    console.log('[run-patient-suite] Verification query returned ' + verify.data.length + ' documents (expected ' + inserted + ').');
+    console.log(
+      '[run-patient-suite] Verification query returned ' +
+        verify.data.length +
+        ' documents (expected ' +
+        inserted +
+        ').'
+    );
 
     console.log('[run-patient-suite] Executing E2E suite...');
     await runE2ESuite({
@@ -302,19 +347,28 @@ async function main() {
       E2E_AUTOMATION_PATIENT_ALPHA_ECONOMY: meta.alpha.familyEconomy,
       E2E_AUTOMATION_PATIENT_ALPHA_NATIVE: meta.alpha.nativePlace,
       E2E_AUTOMATION_PATIENT_ALPHA_ETHNICITY: meta.alpha.ethnicity,
-      E2E_AUTOMATION_PATIENT_ALPHA_CAREGIVERS: meta.alpha.caregivers
+      E2E_AUTOMATION_PATIENT_ALPHA_CAREGIVERS: meta.alpha.caregivers,
     });
     console.log('[run-patient-suite] E2E suite completed successfully.');
   } catch (error) {
     testError = error;
-    console.error('[run-patient-suite] E2E suite failed:', error && error.message ? error.message : error);
+    console.error(
+      '[run-patient-suite] E2E suite failed:',
+      error && error.message ? error.message : error
+    );
   } finally {
     try {
-      console.log('[run-patient-suite] Removing automation records...');
-      await removeExistingTestData(collection, command, db);
+      console.log('[run-patient-suite] Removing automation records from all collections...');
+      for (const collectionName of COLLECTIONS) {
+        const collection = db.collection(collectionName);
+        await removeExistingTestData(collection, command, db);
+      }
       console.log('[run-patient-suite] Cleanup completed.');
     } catch (cleanupError) {
-      console.error('[run-patient-suite] Cleanup encountered an error:', cleanupError && cleanupError.message ? cleanupError.message : cleanupError);
+      console.error(
+        '[run-patient-suite] Cleanup encountered an error:',
+        cleanupError && cleanupError.message ? cleanupError.message : cleanupError
+      );
       if (!testError) {
         testError = cleanupError;
       }

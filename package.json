@@ -80,6 +80,8 @@
     "tokens:generate": "node scripts/generate-tokens.js",
     "database:reinit": "node scripts/database-reinit.js",
     "database:backup": "node scripts/database-reinit.js --backup",
-    "database:verify": "node scripts/database-reinit.js --verify-only"
+    "database:verify": "node scripts/database-reinit.js --verify-only",
+    "test:cleanup-verify": "node scripts/e2e/verify-cleanup.js",
+    "test:cleanup": "node scripts/e2e/verify-cleanup.js --cleanup"
   }
 }

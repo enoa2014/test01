@@ -65,7 +65,7 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
   }
 
   const patientData = {
-    patientName: randomString('PATIENT'),
+    patientName: randomString('TEST_AUTOMATION'),
     idNumber: generateIdNumber(),
     birthDate: '2012-04-16',
     phone: generateMobile(),
