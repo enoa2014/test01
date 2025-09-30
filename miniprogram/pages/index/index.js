@@ -1,7 +1,7 @@
 ﻿const SORT_OPTIONS = [
   { label: '默认排序', value: 'default' },
   { label: '按入院次数排序', value: 'admissionCountDesc' },
-  { label: '按最近入院时间排序', value: 'latestAdmissionDesc' }
+  { label: '按最近入院时间排序', value: 'latestAdmissionDesc' },
 ];
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
@@ -18,7 +18,6 @@ function readPatientsCache() {
     }
     return cache.patients;
   } catch (error) {
-    console.warn('readPatientsCache failed', error);
     return null;
   }
 }
@@ -27,10 +26,10 @@ function writePatientsCache(patients) {
   try {
     wx.setStorageSync(PATIENT_CACHE_KEY, {
       patients: Array.isArray(patients) ? patients : [],
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
   } catch (error) {
-    console.warn('writePatientsCache failed', error);
+    // ignore cache write errors
   }
 }
 
@@ -99,7 +98,7 @@ Page({
     error: '',
     searchKeyword: '',
     sortOptions: SORT_OPTIONS,
-    sortIndex: 0
+    sortIndex: 0,
   },
 
   onLoad() {
@@ -123,13 +122,17 @@ Page({
     try {
       const res = await wx.cloud.callFunction({
         name: 'patientProfile',
-        data: { action: 'list', forceRefresh: !silent, pageSize: 80 }
+        data: { action: 'list', forceRefresh: !silent, pageSize: 80 },
       });
       const result = res && res.result ? res.result : {};
       const sourcePatients = Array.isArray(result.patients) ? result.patients : [];
-      const patients = sourcePatients.map((item) => {
-        const latestAdmissionDateFormatted = formatDate(item.latestAdmissionDate || item.firstAdmissionDate);
-        const firstAdmissionDateFormatted = formatDate(item.firstAdmissionDate || item.latestAdmissionDate);
+      const patients = sourcePatients.map(item => {
+        const latestAdmissionDateFormatted = formatDate(
+          item.latestAdmissionDate || item.firstAdmissionDate
+        );
+        const firstAdmissionDateFormatted = formatDate(
+          item.firstAdmissionDate || item.latestAdmissionDate
+        );
         const firstDiagnosis = item.firstDiagnosis || item.latestDiagnosis || '';
         const latestDiagnosis = item.latestDiagnosis || item.firstDiagnosis || '';
         const firstHospital = item.firstHospital || item.latestHospital || '';
@@ -144,7 +147,7 @@ Page({
           latestDiagnosis,
           firstHospital,
           latestHospital,
-          latestDoctor
+          latestDoctor,
         };
       });
       this.setData({ patients, loading: false }, () => {
@@ -160,7 +163,7 @@ Page({
           patients: hasPatients ? this.data.patients : [],
           displayPatients: hasPatients ? this.data.displayPatients : [],
           loading: false,
-          error: errorMessage
+          error: errorMessage,
         });
       } else {
         this.setData({ loading: false, error: errorMessage });
@@ -176,7 +179,7 @@ Page({
     let list = patients.slice();
 
     if (keyword) {
-      list = list.filter((item) => {
+      list = list.filter(item => {
         const name = (item.patientName || '').toLowerCase();
         const firstDiagnosis = (item.firstDiagnosis || '').toLowerCase();
         const latestDiagnosis = (item.latestDiagnosis || '').toLowerCase();
@@ -203,8 +206,10 @@ Page({
         if (bTs !== aTs) {
           return bTs - aTs;
         }
-        const bDate = new Date(b.latestAdmissionDateFormatted || b.latestAdmissionDate || '').getTime() || 0;
-        const aDate = new Date(a.latestAdmissionDateFormatted || a.latestAdmissionDate || '').getTime() || 0;
+        const bDate =
+          new Date(b.latestAdmissionDateFormatted || b.latestAdmissionDate || '').getTime() || 0;
+        const aDate =
+          new Date(a.latestAdmissionDateFormatted || a.latestAdmissionDate || '').getTime() || 0;
         return bDate - aDate;
       });
     }
@@ -236,13 +241,13 @@ Page({
 
   onAnalysisTap() {
     wx.navigateTo({
-      url: '/pages/analysis/index'
+      url: '/pages/analysis/index',
     });
   },
 
   onIntakeTap() {
     wx.navigateTo({
-      url: '/pages/patient-intake/select/select'
+      url: '/pages/patient-intake/select/select',
     });
   },
 
@@ -265,7 +270,5 @@ Page({
     }
 
     wx.navigateTo({ url });
-  }
+  },
 });
-
-

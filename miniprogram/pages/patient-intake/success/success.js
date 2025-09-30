@@ -8,7 +8,7 @@ Page({
     uploadCount: 0,
     situationSummary: '',
     recordId: '',
-    patientKey: ''
+    patientKey: '',
   },
 
   onLoad(options) {
@@ -21,16 +21,15 @@ Page({
       uploadCount = '0',
       situationSummary = '',
       recordId = '',
-      patientKey = ''
+      patientKey = '',
     } = options;
 
     // 格式化入住时间
     const formattedTime = intakeTime ? this.formatIntakeTime(intakeTime) : this.getCurrentTime();
 
     // 截取情况说明摘要（前50字）
-    const summary = situationSummary.length > 50
-      ? situationSummary.substring(0, 50) + '...'
-      : situationSummary;
+    const summary =
+      situationSummary.length > 50 ? situationSummary.substring(0, 50) + '...' : situationSummary;
 
     this.setData({
       patientName: decodeURIComponent(patientName),
@@ -40,14 +39,14 @@ Page({
       uploadCount: parseInt(uploadCount) || 0,
       situationSummary: summary,
       recordId: decodeURIComponent(recordId),
-      patientKey: decodeURIComponent(patientKey)
+      patientKey: decodeURIComponent(patientKey),
     });
   },
 
   onShow() {
     // 设置导航栏标题
     wx.setNavigationBarTitle({
-      title: '入住成功'
+      title: '入住成功',
     });
   },
 
@@ -88,12 +87,12 @@ Page({
     const { patientKey } = this.data;
     if (patientKey) {
       wx.redirectTo({
-        url: `/pages/patient-detail/detail?key=${encodeURIComponent(patientKey)}&patientId=${encodeURIComponent(patientKey)}`
+        url: `/pages/patient-detail/detail?key=${encodeURIComponent(patientKey)}&patientId=${encodeURIComponent(patientKey)}`,
       });
     } else {
       wx.showToast({
         title: '患者信息不完整',
-        icon: 'error'
+        icon: 'error',
       });
     }
   },
@@ -101,19 +100,19 @@ Page({
   // 继续添加患者
   onAddAnother() {
     wx.redirectTo({
-      url: '/pages/patient-intake/select/select'
+      url: '/pages/patient-intake/select/select',
     });
   },
 
   // 返回首页
   onBackToHome() {
     wx.switchTab({
-      url: '/pages/index/index'
+      url: '/pages/index/index',
     });
   },
 
   // 阻止用户通过手势返回
   onBackPress() {
     return true; // 阻止默认返回行为
-  }
+  },
 });

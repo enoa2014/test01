@@ -14,7 +14,6 @@ function readPatientsCache() {
     }
     return cache.patients;
   } catch (error) {
-    console.warn('readPatientsCache failed', error);
     return null;
   }
 }
@@ -23,10 +22,10 @@ function writePatientsCache(patients) {
   try {
     wx.setStorageSync(PATIENT_CACHE_KEY, {
       patients: Array.isArray(patients) ? patients : [],
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
   } catch (error) {
-    console.warn('writePatientsCache failed', error);
+    // ignore cache write errors
   }
 }
 
@@ -100,7 +99,7 @@ Page({
 
     // 选择状态
     selectedPatient: null,
-    showConfirmModal: false
+    showConfirmModal: false,
   },
 
   onLoad() {
@@ -113,7 +112,7 @@ Page({
       this.setData({
         patients: cachedPatients,
         filteredPatients: cachedPatients.slice(0, this.data.pageSize),
-        loading: false
+        loading: false,
       });
     }
 
@@ -138,34 +137,40 @@ Page({
     try {
       const res = await wx.cloud.callFunction({
         name: 'patientProfile',
-        data: { action: 'list', forceRefresh: true }
+        data: { action: 'list', forceRefresh: true },
       });
 
       const result = res && res.result ? res.result : {};
       const sourcePatients = Array.isArray(result.patients) ? result.patients : [];
 
-      const patients = sourcePatients.map((item) => {
-        const latestAdmissionDateFormatted = formatDate(item.latestAdmissionDate || item.firstAdmissionDate);
-        const firstAdmissionDateFormatted = formatDate(item.firstAdmissionDate || item.latestAdmissionDate);
+      const patients = sourcePatients.map(item => {
+        const latestAdmissionDateFormatted = formatDate(
+          item.latestAdmissionDate || item.firstAdmissionDate
+        );
+        const firstAdmissionDateFormatted = formatDate(
+          item.firstAdmissionDate || item.latestAdmissionDate
+        );
 
         return {
           ...item,
           ageText: formatAge(item.birthDate),
           latestAdmissionDateFormatted,
-          firstAdmissionDateFormatted
+          firstAdmissionDateFormatted,
         };
       });
 
-      this.setData({
-        patients,
-        loading: false
-      }, () => {
-        this.applySearch();
-      });
+      this.setData(
+        {
+          patients,
+          loading: false,
+        },
+        () => {
+          this.applySearch();
+        }
+      );
 
       // 更新缓存
       writePatientsCache(patients);
-
     } catch (error) {
       console.error('Failed to load patients', error);
       const errorMessage = (error && error.errMsg) || '读取患者数据失败，请稍后重试';
@@ -173,7 +178,7 @@ Page({
       if (!silent) {
         wx.showToast({
           title: errorMessage,
-          icon: 'error'
+          icon: 'error',
         });
       }
 
@@ -184,23 +189,29 @@ Page({
   // 搜索输入
   onSearchInput(e) {
     const keyword = e.detail.value;
-    this.setData({
-      searchKeyword: keyword,
-      currentPage: 0
-    }, () => {
-      this.applySearch();
-    });
+    this.setData(
+      {
+        searchKeyword: keyword,
+        currentPage: 0,
+      },
+      () => {
+        this.applySearch();
+      }
+    );
   },
 
   // 清除搜索
   onClearSearch() {
-    this.setData({
-      searchKeyword: '',
-      searchFocus: true,
-      currentPage: 0
-    }, () => {
-      this.applySearch();
-    });
+    this.setData(
+      {
+        searchKeyword: '',
+        searchFocus: true,
+        currentPage: 0,
+      },
+      () => {
+        this.applySearch();
+      }
+    );
   },
 
   // 应用搜索过滤
@@ -211,16 +222,12 @@ Page({
     let filtered = patients;
 
     if (keyword) {
-      filtered = patients.filter((item) => {
+      filtered = patients.filter(item => {
         const name = (item.patientName || '').toLowerCase();
         const idNumber = (item.idNumber || '').toLowerCase();
         const phone = (item.phone || '').toLowerCase();
 
-        return (
-          name.includes(keyword) ||
-          idNumber.includes(keyword) ||
-          phone.includes(keyword)
-        );
+        return name.includes(keyword) || idNumber.includes(keyword) || phone.includes(keyword);
       });
     }
 
@@ -232,7 +239,7 @@ Page({
       filteredPatients: filtered,
       patients: displayPatients,
       hasMore,
-      currentPage: 0
+      currentPage: 0,
     });
   },
 
@@ -259,7 +266,7 @@ Page({
     this.setData({
       patients: allPatients,
       currentPage: nextPage,
-      hasMore
+      hasMore,
     });
   },
 
@@ -268,7 +275,7 @@ Page({
     const patient = e.currentTarget.dataset.patient;
     this.setData({
       selectedPatient: patient,
-      showConfirmModal: true
+      showConfirmModal: true,
     });
   },
 
@@ -276,7 +283,7 @@ Page({
   onCancelSelect() {
     this.setData({
       selectedPatient: null,
-      showConfirmModal: false
+      showConfirmModal: false,
     });
   },
 
@@ -290,7 +297,7 @@ Page({
     // 跳转到向导页面，传递患者信息
     const targetKey = selectedPatient.patientKey || selectedPatient.key;
     wx.navigateTo({
-      url: `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(targetKey)}&mode=existing`
+      url: `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(targetKey)}&mode=existing`,
     });
   },
 
@@ -298,7 +305,7 @@ Page({
   onCreateNewPatient() {
     // 跳转到向导页面，创建新患者
     wx.navigateTo({
-      url: '/pages/patient-intake/wizard/wizard?mode=new'
+      url: '/pages/patient-intake/wizard/wizard?mode=new',
     });
   },
 
@@ -307,5 +314,5 @@ Page({
     this.fetchPatients({ silent: false }).finally(() => {
       wx.stopPullDownRefresh();
     });
-  }
+  },
 });

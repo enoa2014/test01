@@ -2,16 +2,16 @@
   MAX_UPLOAD_BATCH,
   PATIENT_FIELD_CONFIG,
   CONTACT_FIELD_CONFIG,
-  INTAKE_FIELD_CONFIG
-} = require("./constants.js");
+  INTAKE_FIELD_CONFIG,
+} = require('./constants.js');
 
 const {
   normalizeString,
   formatDateTime,
   toTimestampFromDateInput,
   sanitizeFileName,
-  inferMimeType
-} = require("./helpers.js");
+  inferMimeType,
+} = require('./helpers.js');
 
 const {
   buildEditForm,
@@ -21,22 +21,18 @@ const {
   collectChangedFormKeys,
   getFieldConfig: getFieldConfigUtil,
   validateField: validateFieldUtil,
-  validateAllFields: validateAllFieldsUtil
-} = require("./form-utils.js");
+  validateAllFields: validateAllFieldsUtil,
+} = require('./form-utils.js');
 
 const {
   findValueByLabels,
   coalesceValue,
   dedupeIntakeRecords,
   sortIntakeRecords,
-  pushDisplayItem
-} = require("./data-mappers.js");
+  pushDisplayItem,
+} = require('./data-mappers.js');
 
-const {
-  getDefaultQuota,
-  makeQuotaPayload,
-  createMediaService
-} = require("./media-service.js");
+const { getDefaultQuota, makeQuotaPayload, createMediaService } = require('./media-service.js');
 
 function formatRecordStatus(status) {
   if (!status) {
@@ -63,7 +59,8 @@ function shouldDisplayIntakeRecord(record) {
     return false;
   }
   const status = (record.status || '').toLowerCase();
-  if (status && status !== 'submitted') {
+  // 只过滤掉 draft 状态的记录,其他状态都显示
+  if (status === 'draft') {
     return false;
   }
   return true;
@@ -72,7 +69,7 @@ function shouldDisplayIntakeRecord(record) {
 Page({
   data: {
     loading: true,
-    error: "",
+    error: '',
     patient: null,
     basicInfo: [],
     familyInfo: [],
@@ -89,7 +86,7 @@ Page({
     editCanSave: false,
     editMetadata: {
       patientUpdatedAt: null,
-      intakeUpdatedAt: null
+      intakeUpdatedAt: null,
     },
     editPickerIndex: {},
     patientFieldConfig: PATIENT_FIELD_CONFIG,
@@ -99,33 +96,33 @@ Page({
       accessChecked: false,
       allowed: false,
       loading: false,
-      error: "",
-      tab: "images",
+      error: '',
+      tab: 'images',
       uploading: false,
       images: [],
       documents: [],
-      quota: getDefaultQuota()
+      quota: getDefaultQuota(),
     },
     textPreview: {
       visible: false,
-      title: "",
-      content: ""
-    }
+      title: '',
+      content: '',
+    },
   },
 
   onLoad(options) {
-    const rawKey = (options && options.key) ? decodeURIComponent(options.key) : "";
-    const rawPatientId = (options && options.patientId) ? decodeURIComponent(options.patientId) : "";
+    const rawKey = options && options.key ? decodeURIComponent(options.key) : '';
+    const rawPatientId = options && options.patientId ? decodeURIComponent(options.patientId) : '';
 
-    this.profileKey = rawKey || rawPatientId || "";
-    this.patientKey = rawPatientId || rawKey || "";
+    this.profileKey = rawKey || rawPatientId || '';
+    this.patientKey = rawPatientId || rawKey || '';
     this.mediaInitialized = false;
     this.originalEditForm = null;
     this.allIntakeRecordsSource = [];
     this.mediaService = createMediaService(this);
 
     if (!this.profileKey && !this.patientKey) {
-      this.setData({ loading: false, error: "缺少患者标识" });
+      this.setData({ loading: false, error: '缺少患者标识' });
       return;
     }
 
@@ -143,7 +140,7 @@ Page({
   },
 
   async fetchPatientDetail() {
-    this.setData({ loading: true, error: "" });
+    this.setData({ loading: true, error: '' });
 
     try {
       let profileResult = {
@@ -151,28 +148,28 @@ Page({
         basicInfo: [],
         familyInfo: [],
         economicInfo: [],
-        records: []
+        records: [],
       };
 
       if (this.profileKey) {
         try {
           const profileRes = await wx.cloud.callFunction({
-            name: "patientProfile",
-            data: { action: "detail", key: this.profileKey }
+            name: 'patientProfile',
+            data: { action: 'detail', key: this.profileKey },
           });
           profileResult = (profileRes && profileRes.result) || profileResult;
         } catch (profileError) {
-          console.warn("Failed to load profile detail", profileError);
+          console.error('Failed to load profile detail', profileError);
         }
       }
 
       const resolvedPatientKey =
-        (profileResult && (
-          profileResult.patientKey ||
-          (profileResult.patient && (profileResult.patient.key || profileResult.patient.patientKey))
-        )) ||
+        (profileResult &&
+          (profileResult.patientKey ||
+            (profileResult.patient &&
+              (profileResult.patient.key || profileResult.patient.patientKey)))) ||
         this.patientKey ||
-        "";
+        '';
 
       if (resolvedPatientKey) {
         this.patientKey = resolvedPatientKey;
@@ -190,7 +187,6 @@ Page({
         patientDisplay.recordKey = this.profileKey;
       }
 
-
       let patientRes = null;
       let intakeRecordsRes = null;
       const recordKeyForExcel = this.profileKey || '';
@@ -200,26 +196,26 @@ Page({
         try {
           [patientRes, intakeRecordsRes] = await Promise.all([
             wx.cloud.callFunction({
-              name: "patientIntake",
+              name: 'patientIntake',
               data: {
-                action: "getPatientDetail",
+                action: 'getPatientDetail',
                 patientKey: this.patientKey,
                 recordKey: recordKeyForExcel,
-                patientName: patientNameForExcel
-              }
+                patientName: patientNameForExcel,
+              },
             }),
             wx.cloud.callFunction({
-              name: "patientIntake",
+              name: 'patientIntake',
               data: {
-                action: "getAllIntakeRecords",
+                action: 'getAllIntakeRecords',
                 patientKey: this.patientKey,
                 recordKey: recordKeyForExcel,
-                patientName: patientNameForExcel
-              }
-            })
+                patientName: patientNameForExcel,
+              },
+            }),
           ]);
         } catch (intakeError) {
-          console.warn("Failed to load intake records from patientIntake", intakeError);
+          console.error('Failed to load intake records from patientIntake', intakeError);
           patientRes = null;
           intakeRecordsRes = null;
         }
@@ -236,63 +232,82 @@ Page({
       }
 
       const latestIntakeRaw = detailData.latestIntake || null;
-      const operationLogs = (detailData.operationLogs || []).map((log) => ({
+      const operationLogs = (detailData.operationLogs || []).map(log => ({
         ...log,
-        timeText: formatDateTime(log.createdAt)
+        timeText: formatDateTime(log.createdAt),
       }));
 
-      const intakeRecordsData = (intakeRecordsRes && intakeRecordsRes.result && intakeRecordsRes.result.data) || {};
-      let allIntakeRecords = (intakeRecordsData.records || []).map((record) => {
+      const intakeRecordsData =
+        (intakeRecordsRes && intakeRecordsRes.result && intakeRecordsRes.result.data) || {};
+      let allIntakeRecords = (intakeRecordsData.records || []).map(record => {
         const medicalInfo = record.medicalInfo || {};
         const intakeInfo = record.intakeInfo || {};
 
         // 查找匹配的 profileResult 记录来补充医生信息
         let profileRecord = null;
         if (Array.isArray(profileResult.records)) {
-          profileRecord = profileResult.records.find(pr =>
-            pr.diagnosis === record.diagnosis ||
-            pr.hospital === record.hospital ||
-            (pr.intakeTime && record.intakeTime && Math.abs(pr.intakeTime - record.intakeTime) < 86400000) // 同一天
+          profileRecord = profileResult.records.find(
+            pr =>
+              pr.diagnosis === record.diagnosis ||
+              pr.hospital === record.hospital ||
+              (pr.intakeTime &&
+                record.intakeTime &&
+                Math.abs(pr.intakeTime - record.intakeTime) < 86400000) // 同一天
           );
 
           // 如果没有找到精确匹配，使用第一个有医生信息的记录作为fallback
+          // ❌ 注意:这里的fallback逻辑可能导致新记录显示错误的医院/诊断信息
+          // 只在确实需要补充医生信息时才使用fallback
           if (!profileRecord || !profileRecord.doctor) {
-            profileRecord = profileResult.records.find(pr => pr.doctor) || profileResult.records[0];
+            // 只有当记录本身没有医院和诊断信息时,才使用fallback
+            if (!record.hospital && !record.diagnosis && !record.doctor) {
+              profileRecord =
+                profileResult.records.find(pr => pr.doctor) || profileResult.records[0];
+            }
           }
         }
 
+        // 优先使用记录自己的数据,只有在缺失时才从profileRecord补充
         const hospitalDisplay = coalesceValue(
           record.hospital,
           medicalInfo.hospital,
-          profileRecord?.hospital
+          record.hospital || medicalInfo.hospital ? null : profileRecord?.hospital // 只在记录本身没有医院信息时才使用profileRecord
         );
         const diagnosisDisplay = coalesceValue(
           record.diagnosis,
           medicalInfo.diagnosis,
           intakeInfo.visitReason,
-          profileRecord?.diagnosis
+          record.diagnosis || medicalInfo.diagnosis || intakeInfo.visitReason
+            ? null
+            : profileRecord?.diagnosis
         );
         const doctorDisplay = coalesceValue(
           record.doctor,
           medicalInfo.doctor,
-          profileRecord?.doctor  // 从 profileResult 补充医生信息
+          record.doctor || medicalInfo.doctor ? null : profileRecord?.doctor
         );
         const symptomDetailDisplay = coalesceValue(
           medicalInfo.symptoms,
           record.symptoms,
           intakeInfo.situation,
-          profileRecord?.symptoms
+          medicalInfo.symptoms || record.symptoms || intakeInfo.situation
+            ? null
+            : profileRecord?.symptoms
         );
         const treatmentProcessDisplay = coalesceValue(
           medicalInfo.treatmentProcess,
           record.treatmentProcess,
-          profileRecord?.treatmentProcess
+          medicalInfo.treatmentProcess || record.treatmentProcess
+            ? null
+            : profileRecord?.treatmentProcess
         );
         const followUpPlanDisplay = coalesceValue(
           medicalInfo.followUpPlan,
           record.followUpPlan,
           intakeInfo.followUpPlan,
-          profileRecord?.followUpPlan
+          medicalInfo.followUpPlan || record.followUpPlan || intakeInfo.followUpPlan
+            ? null
+            : profileRecord?.followUpPlan
         );
 
         return {
@@ -306,20 +321,30 @@ Page({
           treatmentProcessDisplay,
           followUpPlanDisplay,
           statusDisplay: formatRecordStatus(record.status),
-          followUpPlan: followUpPlanDisplay
+          followUpPlan: followUpPlanDisplay,
         };
       });
 
       allIntakeRecords = allIntakeRecords.filter(shouldDisplayIntakeRecord);
       allIntakeRecords = dedupeIntakeRecords(allIntakeRecords);
 
-      if (!allIntakeRecords.length && Array.isArray(profileResult.records) && profileResult.records.length) {
+      if (
+        !allIntakeRecords.length &&
+        Array.isArray(profileResult.records) &&
+        profileResult.records.length
+      ) {
         allIntakeRecords = profileResult.records.map((record, index) => {
           const medicalInfo = record.medicalInfo || {};
           const intakeInfo = record.intakeInfo || {};
-          const intakeTime = Number(record.intakeTime || record.admissionTimestamp || intakeInfo.intakeTime) || Date.now();
+          const intakeTime =
+            Number(record.intakeTime || record.admissionTimestamp || intakeInfo.intakeTime) ||
+            Date.now();
           const hospitalDisplay = coalesceValue(record.hospital, medicalInfo.hospital);
-          const diagnosisDisplay = coalesceValue(record.diagnosis, medicalInfo.diagnosis, intakeInfo.visitReason);
+          const diagnosisDisplay = coalesceValue(
+            record.diagnosis,
+            medicalInfo.diagnosis,
+            intakeInfo.visitReason
+          );
           const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor);
           const situationDisplay = coalesceValue(
             record.situation,
@@ -358,12 +383,13 @@ Page({
             symptomDetailDisplay,
             treatmentProcessDisplay,
             followUpPlanDisplay,
-            statusDisplay: formatRecordStatus('submitted')
+            statusDisplay: formatRecordStatus('submitted'),
           };
         });
       }
 
       allIntakeRecords = allIntakeRecords.filter(shouldDisplayIntakeRecord);
+
       allIntakeRecords = dedupeIntakeRecords(allIntakeRecords);
 
       this.allIntakeRecordsSource = allIntakeRecords;
@@ -374,81 +400,129 @@ Page({
 
       this.originalEditForm = cloneForm(editForm);
 
-      const profileBasicInfo = Array.isArray(profileResult.basicInfo) ? profileResult.basicInfo : [];
-      const profileFamilyInfo = Array.isArray(profileResult.familyInfo) ? profileResult.familyInfo : [];
-      const profileEconomicInfo = Array.isArray(profileResult.economicInfo) ? profileResult.economicInfo : [];
+      const profileBasicInfo = Array.isArray(profileResult.basicInfo)
+        ? profileResult.basicInfo
+        : [];
+      const profileFamilyInfo = Array.isArray(profileResult.familyInfo)
+        ? profileResult.familyInfo
+        : [];
+      const profileEconomicInfo = Array.isArray(profileResult.economicInfo)
+        ? profileResult.economicInfo
+        : [];
 
       const basicInfoDisplay = [];
 
-      pushDisplayItem(basicInfoDisplay, '性别', coalesceValue(
-        patientForEdit.gender,
-        patientDisplay.gender,
-        findValueByLabels(profileBasicInfo, ['gender', '性别'])
-      ));
+      pushDisplayItem(
+        basicInfoDisplay,
+        '性别',
+        coalesceValue(
+          patientForEdit.gender,
+          patientDisplay.gender,
+          findValueByLabels(profileBasicInfo, ['gender', '性别'])
+        )
+      );
 
-      pushDisplayItem(basicInfoDisplay, '出生日期', coalesceValue(
-        patientForEdit.birthDate,
-        patientDisplay.birthDate,
-        findValueByLabels(profileBasicInfo, ['birth date', '出生', 'birthday'])
-      ));
+      pushDisplayItem(
+        basicInfoDisplay,
+        '出生日期',
+        coalesceValue(
+          patientForEdit.birthDate,
+          patientDisplay.birthDate,
+          findValueByLabels(profileBasicInfo, ['birth date', '出生', 'birthday'])
+        )
+      );
 
-      pushDisplayItem(basicInfoDisplay, '身份证号', coalesceValue(
-        patientForEdit.idNumber,
-        patientDisplay.idNumber,
-        findValueByLabels(profileBasicInfo, ['id number', '证件', '身份证'])
-      ));
+      pushDisplayItem(
+        basicInfoDisplay,
+        '身份证号',
+        coalesceValue(
+          patientForEdit.idNumber,
+          patientDisplay.idNumber,
+          findValueByLabels(profileBasicInfo, ['id number', '证件', '身份证'])
+        )
+      );
 
-      pushDisplayItem(basicInfoDisplay, '籍贯', coalesceValue(
-        patientForEdit.nativePlace,
-        patientDisplay.nativePlace,
-        findValueByLabels(profileBasicInfo, ['native place', '籍贯'])
-      ));
+      pushDisplayItem(
+        basicInfoDisplay,
+        '籍贯',
+        coalesceValue(
+          patientForEdit.nativePlace,
+          patientDisplay.nativePlace,
+          findValueByLabels(profileBasicInfo, ['native place', '籍贯'])
+        )
+      );
 
-      pushDisplayItem(basicInfoDisplay, '民族', coalesceValue(
-        patientForEdit.ethnicity,
-        patientDisplay.ethnicity,
-        findValueByLabels(profileBasicInfo, ['ethnicity', '民族'])
-      ));
+      pushDisplayItem(
+        basicInfoDisplay,
+        '民族',
+        coalesceValue(
+          patientForEdit.ethnicity,
+          patientDisplay.ethnicity,
+          findValueByLabels(profileBasicInfo, ['ethnicity', '民族'])
+        )
+      );
 
-      pushDisplayItem(basicInfoDisplay, '主要照护人', coalesceValue(
-        patientDisplay.summaryCaregivers,
-        findValueByLabels(profileBasicInfo, ['caregivers', '照护', '监护'])
-      ));
+      pushDisplayItem(
+        basicInfoDisplay,
+        '主要照护人',
+        coalesceValue(
+          patientDisplay.summaryCaregivers,
+          findValueByLabels(profileBasicInfo, ['caregivers', '照护', '监护'])
+        )
+      );
 
       const familyInfoDisplay = [];
       const pushFamily = (label, value) => pushDisplayItem(familyInfoDisplay, label, value);
 
-      pushFamily('家庭地址', coalesceValue(
-        patientForEdit.address,
-        patientDisplay.address,
-        findValueByLabels(profileFamilyInfo, ['address', '家庭地址'])
-      ));
+      pushFamily(
+        '家庭地址',
+        coalesceValue(
+          patientForEdit.address,
+          patientDisplay.address,
+          findValueByLabels(profileFamilyInfo, ['address', '家庭地址'])
+        )
+      );
 
-      pushFamily('父亲联系方式', coalesceValue(
-        patientForEdit.fatherInfo,
-        patientDisplay.fatherInfo,
-        findValueByLabels(profileFamilyInfo, ['father', '父亲'])
-      ));
-      pushFamily('母亲联系方式', coalesceValue(
-        patientForEdit.motherInfo,
-        patientDisplay.motherInfo,
-        findValueByLabels(profileFamilyInfo, ['mother', '母亲'])
-      ));
-      pushFamily('其他监护人', coalesceValue(
-        patientForEdit.otherGuardian,
-        patientDisplay.otherGuardian,
-        findValueByLabels(profileFamilyInfo, ['other guardian', '其他监护', '祖母', '祖父', 'guardian'])
-      ));
+      pushFamily(
+        '父亲联系方式',
+        coalesceValue(
+          patientForEdit.fatherInfo,
+          patientDisplay.fatherInfo,
+          findValueByLabels(profileFamilyInfo, ['father', '父亲'])
+        )
+      );
+      pushFamily(
+        '母亲联系方式',
+        coalesceValue(
+          patientForEdit.motherInfo,
+          patientDisplay.motherInfo,
+          findValueByLabels(profileFamilyInfo, ['mother', '母亲'])
+        )
+      );
+      pushFamily(
+        '其他监护人',
+        coalesceValue(
+          patientForEdit.otherGuardian,
+          patientDisplay.otherGuardian,
+          findValueByLabels(profileFamilyInfo, [
+            'other guardian',
+            '其他监护',
+            '祖母',
+            '祖父',
+            'guardian',
+          ])
+        )
+      );
 
-      pushFamily('紧急联系人', coalesceValue(
-        patientForEdit.emergencyContact,
-        patientDisplay.emergencyContact
-      ));
+      pushFamily(
+        '紧急联系人',
+        coalesceValue(patientForEdit.emergencyContact, patientDisplay.emergencyContact)
+      );
 
-      pushFamily('紧急联系电话', coalesceValue(
-        patientForEdit.emergencyPhone,
-        patientDisplay.emergencyPhone
-      ));
+      pushFamily(
+        '紧急联系电话',
+        coalesceValue(patientForEdit.emergencyPhone, patientDisplay.emergencyPhone)
+      );
 
       const economicInfoDisplay = [];
       pushDisplayItem(
@@ -483,10 +557,12 @@ Page({
             patientUpdatedAt: patientForEdit.updatedAt || null,
             intakeUpdatedAt:
               (latestIntakeRaw && latestIntakeRaw.updatedAt) ||
-              (latestIntakeRaw && latestIntakeRaw.metadata && latestIntakeRaw.metadata.lastModifiedAt) ||
-              null
+              (latestIntakeRaw &&
+                latestIntakeRaw.metadata &&
+                latestIntakeRaw.metadata.lastModifiedAt) ||
+              null,
           },
-          editPickerIndex: buildPickerIndexMap(editForm)
+          editPickerIndex: buildPickerIndexMap(editForm),
         },
         () => {
           if (!this.mediaInitialized) {
@@ -496,18 +572,16 @@ Page({
         }
       );
     } catch (error) {
-      console.error("Failed to load patient detail", error);
+      console.error('Failed to load patient detail', error);
       this.setData({
         loading: false,
-        error: (error && (error.errMsg || error.message)) || "加载患者详情失败，请稍后重试"
+        error: (error && (error.errMsg || error.message)) || '加载患者详情失败，请稍后重试',
       });
     }
   },
 
   onToggleRecordsSort() {
-    const source = Array.isArray(this.allIntakeRecordsSource)
-      ? this.allIntakeRecordsSource
-      : [];
+    const source = Array.isArray(this.allIntakeRecordsSource) ? this.allIntakeRecordsSource : [];
     if (!source.length) {
       const nextOrder = this.data.recordsSortOrder === 'desc' ? 'asc' : 'desc';
       this.setData({ recordsSortOrder: nextOrder });
@@ -518,7 +592,7 @@ Page({
     const sorted = sortIntakeRecords(source, nextOrder);
     this.setData({
       recordsSortOrder: nextOrder,
-      allIntakeRecords: sorted
+      allIntakeRecords: sorted,
     });
   },
 
@@ -537,7 +611,7 @@ Page({
   updateEditFormValue(key, value) {
     const newForm = {
       ...this.data.editForm,
-      [key]: value
+      [key]: value,
     };
     const newErrors = { ...this.data.editErrors };
     const message = this.validateField(key, value, newForm);
@@ -558,7 +632,7 @@ Page({
       editErrors: newErrors,
       editDirty: dirty,
       editCanSave: dirty && Object.keys(newErrors).length === 0,
-      ...pickerIndexUpdates
+      ...pickerIndexUpdates,
     });
   },
 
@@ -578,7 +652,7 @@ Page({
     if (!key || !Array.isArray(options)) {
       return;
     }
-    const selected = options[index] || options[0] || "";
+    const selected = options[index] || options[0] || '';
     this.updateEditFormValue(key, selected);
   },
 
@@ -594,7 +668,7 @@ Page({
   onNarrativeInput(event) {
     const key = event.currentTarget.dataset.key;
     const value = event.detail.value;
-    this.updateEditFormValue(key || "narrative", value);
+    this.updateEditFormValue(key || 'narrative', value);
   },
 
   onEditStart() {
@@ -605,13 +679,12 @@ Page({
     // 如果原始editForm为空或缺少关键数据，重新构建
     let form = cloneForm(this.originalEditForm || {});
     if (!form.patientName && this.data.patient) {
-      console.log('重新构建编辑表单，使用患者显示数据');
       form = buildEditForm({}, {}, this.data.patient);
       this.originalEditForm = cloneForm(form);
     }
 
     if (wx.enableAlertBeforeUnload) {
-      wx.enableAlertBeforeUnload({ message: "当前编辑内容尚未保存，确定离开吗？" });
+      wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
     }
     this.setData({
       editMode: true,
@@ -619,7 +692,7 @@ Page({
       editErrors: {},
       editDirty: false,
       editCanSave: false,
-      editPickerIndex: buildPickerIndexMap(form)
+      editPickerIndex: buildPickerIndexMap(form),
     });
   },
 
@@ -635,7 +708,7 @@ Page({
       editErrors: {},
       editDirty: false,
       editCanSave: false,
-      editPickerIndex: buildPickerIndexMap(form)
+      editPickerIndex: buildPickerIndexMap(form),
     });
   },
 
@@ -645,10 +718,10 @@ Page({
     }
     if (this.data.editDirty) {
       const res = await wx.showModal({
-        title: "放弃修改",
-        content: "当前修改尚未保存，确认要放弃吗？",
-        confirmText: "放弃",
-        cancelText: "继续编辑"
+        title: '放弃修改',
+        content: '当前修改尚未保存，确认要放弃吗？',
+        confirmText: '放弃',
+        cancelText: '继续编辑',
       });
       if (!res.confirm) {
         return;
@@ -669,11 +742,11 @@ Page({
     if (Object.keys(errors).length > 0) {
       this.setData({ editErrors: errors, editDirty: true });
       this.setData({ editCanSave: false });
-      wx.showToast({ icon: "none", title: "请修正校验错误后再保存" });
+      wx.showToast({ icon: 'none', title: '请修正校验错误后再保存' });
       return;
     }
     if (!this.data.editDirty) {
-      wx.showToast({ icon: "none", title: "没有需要保存的修改" });
+      wx.showToast({ icon: 'none', title: '没有需要保存的修改' });
       return;
     }
 
@@ -697,12 +770,12 @@ Page({
           backupContact: form.backupContact,
           backupPhone: form.backupPhone,
           lastIntakeNarrative: form.narrative,
-          expectedUpdatedAt: this.data.editMetadata.patientUpdatedAt
+          expectedUpdatedAt: this.data.editMetadata.patientUpdatedAt,
         },
         audit: {
           message: '患者详情页内联编辑',
-          changes: changedFields
-        }
+          changes: changedFields,
+        },
       };
 
       if (form.intakeId) {
@@ -715,28 +788,28 @@ Page({
             idNumber: form.idNumber,
             gender: form.gender,
             birthDate: form.birthDate,
-            phone: form.phone
+            phone: form.phone,
           },
           contactInfo: {
             address: form.address,
             emergencyContact: form.emergencyContact,
             emergencyPhone: form.emergencyPhone,
             backupContact: form.backupContact,
-            backupPhone: form.backupPhone
+            backupPhone: form.backupPhone,
           },
           intakeInfo: {
             intakeTime: toTimestampFromDateInput(form.intakeTime) || undefined,
             followUpPlan: form.followUpPlan,
-            situation: form.narrative
+            situation: form.narrative,
           },
           medicalHistory: Array.isArray(form.medicalHistory) ? form.medicalHistory : undefined,
-          attachments: Array.isArray(form.attachments) ? form.attachments : undefined
+          attachments: Array.isArray(form.attachments) ? form.attachments : undefined,
         };
       }
 
       const res = await wx.cloud.callFunction({
         name: 'patientIntake',
-        data: payload
+        data: payload,
       });
 
       const result = (res && res.result) || {};
@@ -746,7 +819,7 @@ Page({
           wx.showModal({
             title: '数据已更新',
             content: '当前资料已被其他人更新，请刷新后重试。',
-            showCancel: false
+            showCancel: false,
           });
         } else if (error.code === 'NO_CHANGES') {
           wx.showToast({ icon: 'none', title: '没有检测到变更' });
@@ -795,7 +868,7 @@ Page({
     if (!tab || tab === this.data.media.tab) {
       return;
     }
-    if (tab !== "images" && tab !== "documents") {
+    if (tab !== 'images' && tab !== 'documents') {
       return;
     }
     this.setMediaState({ tab });
@@ -808,37 +881,37 @@ Page({
     const quota = this.data.media.quota || getDefaultQuota();
     const remainingCount = quota.remainingCount || 0;
     if (remainingCount <= 0) {
-      wx.showToast({ icon: "none", title: "数量已达上限" });
+      wx.showToast({ icon: 'none', title: '数量已达上限' });
       return;
     }
     const count = Math.min(MAX_UPLOAD_BATCH, remainingCount);
     try {
       const res = await wx.chooseImage({
         count,
-        sizeType: ["compressed", "original"],
-        sourceType: ["album", "camera"]
+        sizeType: ['compressed', 'original'],
+        sourceType: ['album', 'camera'],
       });
       const rawFiles = (res && res.tempFiles) || [];
       const fallbackPaths = (res && res.tempFilePaths) || [];
       const files = rawFiles.length
-        ? rawFiles.map((item) => ({
+        ? rawFiles.map(item => ({
             name: sanitizeFileName(item.path),
             size: item.size,
             path: item.path,
-            mimeType: inferMimeType(item.path, item.type)
+            mimeType: inferMimeType(item.path, item.type),
           }))
-        : fallbackPaths.map((path) => ({
+        : fallbackPaths.map(path => ({
             name: sanitizeFileName(path),
             size: 0,
             path,
-            mimeType: inferMimeType(path)
+            mimeType: inferMimeType(path),
           }));
-      await this.mediaService.processUploads(files, "image");
+      await this.mediaService.processUploads(files, 'image');
     } catch (error) {
-      if (error && /cancel/.test(error.errMsg || "")) {
+      if (error && /cancel/.test(error.errMsg || '')) {
         return;
       }
-      this.handleMediaError(error, "上传");
+      this.handleMediaError(error, '上传');
     }
   },
 
@@ -849,25 +922,25 @@ Page({
     const quota = this.data.media.quota || getDefaultQuota();
     const remainingCount = quota.remainingCount || 0;
     if (remainingCount <= 0) {
-      wx.showToast({ icon: "none", title: "数量已达上限" });
+      wx.showToast({ icon: 'none', title: '数量已达上限' });
       return;
     }
     const count = Math.min(MAX_UPLOAD_BATCH, remainingCount);
     try {
-      const res = await wx.chooseMessageFile({ count, type: "file" });
+      const res = await wx.chooseMessageFile({ count, type: 'file' });
       const filesSource = (res && res.tempFiles) || (res && res.files) || [];
-      const files = filesSource.map((item) => ({
+      const files = filesSource.map(item => ({
         name: sanitizeFileName(item.name || item.path),
         size: item.size,
         path: item.path,
-        mimeType: inferMimeType(item.name || item.path, item.type)
+        mimeType: inferMimeType(item.name || item.path, item.type),
       }));
-      await this.mediaService.processUploads(files, "document");
+      await this.mediaService.processUploads(files, 'document');
     } catch (error) {
-      if (error && /cancel/.test(error.errMsg || "")) {
+      if (error && /cancel/.test(error.errMsg || '')) {
         return;
       }
-      this.handleMediaError(error, "上传");
+      this.handleMediaError(error, '上传');
     }
   },
 
@@ -892,22 +965,22 @@ Page({
     if (!images.length || !images[index]) {
       return;
     }
-    wx.showLoading({ title: "加载中…", mask: true });
+    wx.showLoading({ title: '加载中…', mask: true });
     try {
       await this.ensureImagePreviewUrls();
       const refreshed = this.data.media.images || [];
-      const urls = refreshed.map((item) => item.previewUrl || item.thumbnailUrl).filter(Boolean);
+      const urls = refreshed.map(item => item.previewUrl || item.thumbnailUrl).filter(Boolean);
       if (!urls.length) {
-        wx.showToast({ icon: "none", title: "暂无可预览图片" });
+        wx.showToast({ icon: 'none', title: '暂无可预览图片' });
         return;
       }
       const currentUrl = refreshed[index].previewUrl || refreshed[index].thumbnailUrl;
       wx.previewImage({
         current: currentUrl,
-        urls
+        urls,
       });
     } catch (error) {
-      this.handleMediaError(error, "预览");
+      this.handleMediaError(error, '预览');
     } finally {
       wx.hideLoading();
     }
@@ -923,15 +996,15 @@ Page({
     if (!record) {
       return;
     }
-    this.updateMediaRecord("image", index, { downloading: true });
+    this.updateMediaRecord('image', index, { downloading: true });
     try {
-      const data = await this.callPatientMedia("download", { mediaId: id });
+      const data = await this.callPatientMedia('download', { mediaId: id });
       await this.downloadMediaFile(record, data.url);
-      wx.showToast({ icon: "success", title: "已下载" });
+      wx.showToast({ icon: 'success', title: '已下载' });
     } catch (error) {
-      this.handleMediaError(error, "下载");
+      this.handleMediaError(error, '下载');
     } finally {
-      this.updateMediaRecord("image", index, { downloading: false });
+      this.updateMediaRecord('image', index, { downloading: false });
     }
   },
 
@@ -945,14 +1018,14 @@ Page({
     if (!record) {
       return;
     }
-    this.updateMediaRecord("document", index, { downloading: true });
+    this.updateMediaRecord('document', index, { downloading: true });
     try {
-      const data = await this.callPatientMedia("download", { mediaId: id });
+      const data = await this.callPatientMedia('download', { mediaId: id });
       await this.downloadMediaFile(record, data.url);
     } catch (error) {
-      this.handleMediaError(error, "下载");
+      this.handleMediaError(error, '下载');
     } finally {
-      this.updateMediaRecord("document", index, { downloading: false });
+      this.updateMediaRecord('document', index, { downloading: false });
     }
   },
 
@@ -964,29 +1037,29 @@ Page({
     const id = normalizeString(event.currentTarget.dataset.id);
     const category = normalizeString(event.currentTarget.dataset.category);
     const index = Number(event.currentTarget.dataset.index);
-    if (!id || (category !== "image" && category !== "document")) {
+    if (!id || (category !== 'image' && category !== 'document')) {
       return;
     }
     const confirmRes = await wx.showModal({
-      title: "确认删除",
-      content: "删除后不可恢复，是否继续？",
-      confirmText: "删除",
-      cancelText: "取消",
-      confirmColor: "#e64340"
+      title: '确认删除',
+      content: '删除后不可恢复，是否继续？',
+      confirmText: '删除',
+      cancelText: '取消',
+      confirmColor: '#e64340',
     });
     if (!confirmRes.confirm) {
       return;
     }
     this.updateMediaRecord(category, index, { deleting: true });
     try {
-      const data = await this.callPatientMedia("delete", { mediaId: id });
+      const data = await this.callPatientMedia('delete', { mediaId: id });
       this.removeMediaRecord(category, id);
       if (data && data.quota) {
-        this.setData({ "media.quota": makeQuotaPayload(data.quota) });
+        this.setData({ 'media.quota': makeQuotaPayload(data.quota) });
       }
-      wx.showToast({ icon: "success", title: "已删除" });
+      wx.showToast({ icon: 'success', title: '已删除' });
     } catch (error) {
-      this.handleMediaError(error, "删除");
+      this.handleMediaError(error, '删除');
       this.updateMediaRecord(category, index, { deleting: false });
     }
   },
@@ -1001,20 +1074,20 @@ Page({
     if (!record || !record.textPreviewAvailable) {
       return;
     }
-    this.updateMediaRecord("document", index, { previewLoading: true });
+    this.updateMediaRecord('document', index, { previewLoading: true });
     try {
-      const data = await this.callPatientMedia("previewTxt", { mediaId: id });
+      const data = await this.callPatientMedia('previewTxt', { mediaId: id });
       this.setData({
         textPreview: {
           visible: true,
           title: record.displayName,
-          content: (data && data.content) || ""
-        }
+          content: (data && data.content) || '',
+        },
       });
     } catch (error) {
-      this.handleMediaError(error, "预览");
+      this.handleMediaError(error, '预览');
     } finally {
-      this.updateMediaRecord("document", index, { previewLoading: false });
+      this.updateMediaRecord('document', index, { previewLoading: false });
     }
   },
 
@@ -1022,22 +1095,12 @@ Page({
     if (!this.data.textPreview.visible) {
       return;
     }
-    this.setData({ "textPreview.visible": false });
+    this.setData({ 'textPreview.visible': false });
   },
 
   handleMediaError(error, context) {
     this.mediaService.handleMediaError(error, context);
   },
 
-  noop() {}
+  noop() {},
 });
-
-
-
-
-
-
-
-
-
-

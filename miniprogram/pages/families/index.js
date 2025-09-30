@@ -1,5 +1,5 @@
 // 家庭档案列表页面逻辑
-const app = getApp()
+const app = getApp();
 
 Page({
   /**
@@ -18,9 +18,9 @@ Page({
         options: [
           { label: '全部', value: '' },
           { label: '在住', value: 'in' },
-          { label: '已离院', value: 'out' }
+          { label: '已离院', value: 'out' },
         ],
-        value: ''
+        value: '',
       },
       {
         key: 'diseaseType',
@@ -30,9 +30,9 @@ Page({
           { label: '血液肿瘤', value: 'blood_tumor' },
           { label: '实体肿瘤', value: 'solid_tumor' },
           { label: '先天性疾病', value: 'congenital' },
-          { label: '其他', value: 'other' }
+          { label: '其他', value: 'other' },
         ],
-        value: []
+        value: [],
       },
       {
         key: 'region',
@@ -43,10 +43,10 @@ Page({
           { label: '华东地区', value: 'east' },
           { label: '华南地区', value: 'south' },
           { label: '西南地区', value: 'southwest' },
-          { label: '其他地区', value: 'other' }
+          { label: '其他地区', value: 'other' },
         ],
-        value: []
-      }
+        value: [],
+      },
     ],
 
     // 列表数据
@@ -68,16 +68,15 @@ Page({
     toast: {
       show: false,
       type: 'info',
-      message: ''
-    }
+      message: '',
+    },
   },
 
   /**
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    console.log('页面加载参数:', options)
-    this.loadFamilyList()
+    this.loadFamilyList();
   },
 
   /**
@@ -86,8 +85,8 @@ Page({
   onReady() {
     // 设置导航栏
     wx.setNavigationBarTitle({
-      title: '家庭档案'
-    })
+      title: '家庭档案',
+    });
   },
 
   /**
@@ -95,23 +94,21 @@ Page({
    */
   onShow() {
     // 页面显示时刷新数据
-    this.refreshData()
+    this.refreshData();
   },
 
   /**
    * 页面相关事件处理函数--监听用户下拉动作
    */
   onPullDownRefresh() {
-    console.log('用户下拉刷新')
-    this.refreshData()
+    this.refreshData();
   },
 
   /**
    * 页面上拉触底事件的处理函数
    */
   onReachBottom() {
-    console.log('页面触底')
-    this.onLoadMore()
+    this.onLoadMore();
   },
 
   /**
@@ -120,23 +117,22 @@ Page({
   onShareAppMessage() {
     return {
       title: '公益小家 - 家庭档案',
-      path: '/pages/families/index'
-    }
+      path: '/pages/families/index',
+    };
   },
 
   /**
    * 搜索处理
    */
   onSearch(e) {
-    const keyword = e.detail.keyword
-    console.log('搜索关键词:', keyword)
+    const keyword = e.detail.keyword;
 
     this.setData({
       searchKeyword: keyword,
-      page: 1
-    })
+      page: 1,
+    });
 
-    this.loadFamilyList(true)
+    this.loadFamilyList(true);
   },
 
   /**
@@ -144,8 +140,8 @@ Page({
    */
   onShowFilter() {
     this.setData({
-      showFilterPanel: true
-    })
+      showFilterPanel: true,
+    });
   },
 
   /**
@@ -153,86 +149,80 @@ Page({
    */
   onHideFilter() {
     this.setData({
-      showFilterPanel: false
-    })
+      showFilterPanel: false,
+    });
   },
 
   /**
    * 筛选条件变化
    */
   onFilterChange(e) {
-    const filters = e.detail.filters
-    console.log('筛选条件变化:', filters)
+    const filters = e.detail.filters;
 
     // 计算激活的筛选条件数量
-    let activeCount = 0
+    let activeCount = 0;
     filters.forEach(filter => {
       if (filter.type === 'radio' && filter.value) {
-        activeCount++
+        activeCount++;
       } else if (filter.type === 'checkbox' && filter.value.length > 0) {
-        activeCount++
+        activeCount++;
       }
-    })
+    });
 
     this.setData({
       filterOptions: filters,
       activeFilterCount: activeCount,
       showFilterPanel: false,
-      page: 1
-    })
+      page: 1,
+    });
 
-    this.loadFamilyList(true)
+    this.loadFamilyList(true);
   },
 
   /**
    * 家庭卡片点击
    */
   onFamilyTap(e) {
-    const family = e.currentTarget.dataset.family
-    console.log('点击家庭:', family)
+    const family = e.currentTarget.dataset.family;
 
     wx.navigateTo({
-      url: `/pages/families/detail?id=${family.id}`
-    })
+      url: `/pages/families/detail?id=${family.id}`,
+    });
   },
 
   /**
    * 联系监护人
    */
   onCallGuardian(e) {
-    const phone = e.detail.phone
-    console.log('拨打电话:', phone)
+    const phone = e.detail.phone;
 
     wx.makePhoneCall({
       phoneNumber: phone,
-      fail: (err) => {
-        console.error('拨打电话失败:', err)
-        this.showToast('拨打电话失败', 'error')
-      }
-    })
+      fail: err => {
+        console.error('拨打电话失败:', err);
+        this.showToast('拨打电话失败', 'error');
+      },
+    });
   },
 
   /**
    * 查看详情
    */
   onViewDetail(e) {
-    const familyId = e.detail.familyId
-    console.log('查看详情:', familyId)
+    const familyId = e.detail.familyId;
 
     wx.navigateTo({
-      url: `/pages/families/detail?id=${familyId}`
-    })
+      url: `/pages/families/detail?id=${familyId}`,
+    });
   },
 
   /**
    * 添加新家庭
    */
   onAddFamily() {
-    console.log('添加新家庭')
-
     wx.navigateTo({
-      url: '/pages/families/add'
-    })
+      url: '/pages/families/add',
+    });
   },
 
   /**
@@ -240,15 +230,15 @@ Page({
    */
   onLoadMore() {
     if (this.data.loadingMore || !this.data.hasMore) {
-      return
+      return;
     }
 
     this.setData({
       loadingMore: true,
-      page: this.data.page + 1
-    })
+      page: this.data.page + 1,
+    });
 
-    this.loadFamilyList(false)
+    this.loadFamilyList(false);
   },
 
   /**
@@ -256,21 +246,21 @@ Page({
    */
   refreshData() {
     this.setData({
-      page: 1
-    })
+      page: 1,
+    });
 
-    this.loadFamilyList(true)
+    this.loadFamilyList(true);
   },
 
   /**
    * 加载家庭列表
    */
   async loadFamilyList(reset = false) {
-    const { page, pageSize, searchKeyword, filterOptions } = this.data
+    const { page, pageSize, searchKeyword, filterOptions } = this.data;
 
     // 设置加载状态
     if (reset) {
-      this.setData({ loading: true })
+      this.setData({ loading: true });
     }
 
     try {
@@ -278,30 +268,28 @@ Page({
       const params = {
         page,
         pageSize,
-        keyword: searchKeyword
-      }
+        keyword: searchKeyword,
+      };
 
       // 添加筛选条件
       filterOptions.forEach(filter => {
         if (filter.type === 'radio' && filter.value) {
-          params[filter.key] = filter.value
+          params[filter.key] = filter.value;
         } else if (filter.type === 'checkbox' && filter.value.length > 0) {
-          params[filter.key] = filter.value.join(',')
+          params[filter.key] = filter.value.join(',');
         }
-      })
-
-      console.log('请求参数:', params)
+      });
 
       // 调用云函数
       const result = await wx.cloud.callFunction({
         name: 'getFamilyList',
-        data: params
-      })
+        data: params,
+      });
 
-      const { families, total, statistics } = result.result
+      const { families, total, statistics } = result.result;
 
       // 更新数据
-      const newFamilyList = reset ? families : [...this.data.familyList, ...families]
+      const newFamilyList = reset ? families : [...this.data.familyList, ...families];
 
       this.setData({
         familyList: newFamilyList,
@@ -310,32 +298,26 @@ Page({
         outCount: statistics.outCount,
         hasMore: families.length === pageSize,
         loading: false,
-        loadingMore: false
-      })
+        loadingMore: false,
+      });
 
       // 停止下拉刷新
       if (reset) {
-        wx.stopPullDownRefresh()
+        wx.stopPullDownRefresh();
       }
-
-      console.log('加载成功:', {
-        total: newFamilyList.length,
-        hasMore: this.data.hasMore
-      })
-
     } catch (error) {
-      console.error('加载家庭列表失败:', error)
+      console.error('加载家庭列表失败:', error);
 
       this.setData({
         loading: false,
-        loadingMore: false
-      })
+        loadingMore: false,
+      });
 
-      this.showToast('加载失败，请重试', 'error')
+      this.showToast('加载失败，请重试', 'error');
 
       // 停止下拉刷新
       if (reset) {
-        wx.stopPullDownRefresh()
+        wx.stopPullDownRefresh();
       }
     }
   },
@@ -348,14 +330,14 @@ Page({
       toast: {
         show: true,
         type,
-        message
-      }
-    })
+        message,
+      },
+    });
 
     // 3秒后自动关闭
     setTimeout(() => {
-      this.onToastClose()
-    }, 3000)
+      this.onToastClose();
+    }, 3000);
   },
 
   /**
@@ -363,7 +345,7 @@ Page({
    */
   onToastClose() {
     this.setData({
-      'toast.show': false
-    })
-  }
-})
+      'toast.show': false,
+    });
+  },
+});
