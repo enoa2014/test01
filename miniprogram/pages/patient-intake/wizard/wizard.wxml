@@ -124,16 +124,21 @@
     <!-- 第2步：家庭与联系人 -->
     <view wx:if="{{currentStep === 1}}" class="form-section">
       <view class="form-group">
-        <label class="form-label required">常住地址</label>
-        <textarea
-          class="form-textarea {{errors.address ? 'error' : ''}}"
+        <pm-input
+          label="常住地址"
+          required="{{true}}"
+          type="textarea"
           value="{{formData.address}}"
+          placeholder="请输入详细地址"
           data-field="address"
           bindinput="onInputChange"
-          placeholder="请输入详细地址"
+          error="{{errors.address || ''}}"
           maxlength="200"
-        />
-        <text class="error-text" wx:if="{{errors.address}}">{{errors.address}}</text>
+          textarea-auto-height="{{true}}"
+          clearable="{{false}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
       </view>
 
       <view class="form-group">
@@ -200,17 +205,23 @@
     <!-- 第3步：情况说明 -->
     <view wx:if="{{currentStep === 2}}" class="form-section">
       <view class="form-group">
-        <label class="form-label required">入住理由说明</label>
         <view class="textarea-container">
-          <textarea
-            class="form-textarea large {{errors.situation ? 'error' : ''}}"
+          <pm-input
+            label="入住理由说明"
+            required="{{true}}"
+            type="textarea"
             value="{{formData.situation}}"
+            placeholder="请详细描述入住理由和患者情况，包含护理需求或症状信息"
             data-field="situation"
             bindinput="onInputChange"
-            placeholder="请详细描述入住理由和患者情况，包含护理需求或症状信息"
+            error="{{errors.situation || ''}}"
             maxlength="{{situationConfig.maxLength}}"
+            textarea-auto-height="{{true}}"
             show-confirm-bar="{{false}}"
-          />
+            clearable="{{false}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
           <view class="char-count">
             {{formData.situation.length}}/{{situationConfig.maxLength}}字
             <text class="min-hint">(最少{{situationConfig.minLength}}字)</text>

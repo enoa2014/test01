@@ -65,19 +65,19 @@
           </view>
         </block>
         <block wx:elif="{{item.type === 'textarea'}}">
-          <view class="form-field">
-            <text class="field-label">{{item.label}}</text>
-            <textarea
-              class="text-area"
-              auto-height="{{item.autoHeight}}"
-              value="{{editForm[item.key]}}"
-              data-key="{{item.key}}"
-              bindinput="onEditFieldInput"
-            ></textarea>
-            <text wx:if="{{editErrors[item.key]}}" class="field-error"
-              >{{editErrors[item.key]}}</text
-            >
-          </view>
+          <pm-input
+            label="{{item.label}}"
+            type="textarea"
+            value="{{editForm[item.key]}}"
+            placeholder="请输入{{item.label}}"
+            data-key="{{item.key}}"
+            bindinput="onEditFieldInput"
+            error="{{editErrors[item.key] || ''}}"
+            clearable="{{false}}"
+            textarea-auto-height="{{item.autoHeight}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
         </block>
         <block wx:else>
           <pm-input
@@ -98,19 +98,19 @@
       <text class="form-section-title">联系与紧急联系人</text>
       <block wx:for="{{contactFieldConfig}}" wx:key="key">
         <block wx:if="{{item.type === 'textarea'}}">
-          <view class="form-field">
-            <text class="field-label">{{item.label}}</text>
-            <textarea
-              class="text-area"
-              auto-height="{{item.autoHeight}}"
-              value="{{editForm[item.key]}}"
-              data-key="{{item.key}}"
-              bindinput="onEditFieldInput"
-            ></textarea>
-            <text wx:if="{{editErrors[item.key]}}" class="field-error"
-              >{{editErrors[item.key]}}</text
-            >
-          </view>
+          <pm-input
+            label="{{item.label}}"
+            type="textarea"
+            value="{{editForm[item.key]}}"
+            placeholder="请输入{{item.label}}"
+            data-key="{{item.key}}"
+            bindinput="onEditFieldInput"
+            error="{{editErrors[item.key] || ''}}"
+            clearable="{{false}}"
+            textarea-auto-height="{{item.autoHeight}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
         </block>
         <block wx:else>
           <pm-input
@@ -147,30 +147,36 @@
           </view>
         </block>
         <block wx:elif="{{item.type === 'textarea'}}">
-          <view class="form-field">
-            <text class="field-label">{{item.label}}</text>
-            <block wx:if="{{item.key === 'narrative'}}">
-              <textarea
-                class="text-area narrative"
-                auto-height="{{item.autoHeight}}"
-                value="{{editForm[item.key]}}"
-                data-key="{{item.key}}"
-                bindinput="onNarrativeInput"
-              ></textarea>
-            </block>
-            <block wx:else>
-              <textarea
-                class="text-area"
-                auto-height="{{item.autoHeight}}"
-                value="{{editForm[item.key]}}"
-                data-key="{{item.key}}"
-                bindinput="onEditFieldInput"
-              ></textarea>
-            </block>
-            <text wx:if="{{editErrors[item.key]}}" class="field-error"
-              >{{editErrors[item.key]}}</text
-            >
-          </view>
+          <block wx:if="{{item.key === 'narrative'}}">
+            <pm-input
+              label="{{item.label}}"
+              type="textarea"
+              value="{{editForm[item.key]}}"
+              placeholder="请输入{{item.label}}"
+              data-key="{{item.key}}"
+              bindinput="onNarrativeInput"
+              error="{{editErrors[item.key] || ''}}"
+              clearable="{{false}}"
+              textarea-auto-height="{{item.autoHeight}}"
+              label-position="top"
+              block="{{true}}"
+            ></pm-input>
+          </block>
+          <block wx:else>
+            <pm-input
+              label="{{item.label}}"
+              type="textarea"
+              value="{{editForm[item.key]}}"
+              placeholder="请输入{{item.label}}"
+              data-key="{{item.key}}"
+              bindinput="onEditFieldInput"
+              error="{{editErrors[item.key] || ''}}"
+              clearable="{{false}}"
+              textarea-auto-height="{{item.autoHeight}}"
+              label-position="top"
+              block="{{true}}"
+            ></pm-input>
+          </block>
         </block>
         <block wx:else>
           <pm-input

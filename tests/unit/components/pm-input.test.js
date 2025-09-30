@@ -9,6 +9,9 @@ describe('pm-input component definition', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    if (!global.Component) {
+      global.Component = jest.fn();
+    }
     if (global.Component && typeof global.Component.mock === 'function') {
       global.Component.mockClear();
     }
@@ -28,6 +31,7 @@ describe('pm-input component definition', () => {
     expect(config.properties.suffixIcon.value).toBe('');
     expect(config.properties.maxlength.value).toBe(-1);
     expect(config.properties.textareaAutoHeight.value).toBe(true);
+    expect(config.properties.showConfirmBar.value).toBe(true);
     expect(config.data.rootClass).toContain('pm-input--size-medium');
     expect(config.data.controlClass).toBe('pm-input__control');
     expect(config.data.isTextarea).toBe(false);

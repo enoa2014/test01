@@ -1,4 +1,4 @@
-﻿const cloud = require("wx-server-sdk");
+﻿const cloud = require('wx-server-sdk');
 const { v4: uuidv4 } = require('uuid');
 
 const createExcelSync = require('./excel-sync');
@@ -9,18 +9,29 @@ const db = cloud.database();
 const _ = db.command;
 
 // 集合名称
-const PATIENTS_COLLECTION = "patients";
-const PATIENT_INTAKE_COLLECTION = "patient_intake_records";
-const PATIENT_INTAKE_DRAFTS_COLLECTION = "patient_intake_drafts";
-const INTAKE_CONFIG_COLLECTION = "intake_config";
-const EXCEL_RECORDS_COLLECTION = "excel_records";
-const PATIENT_OPERATION_LOGS_COLLECTION = "patient_operation_logs";
+const PATIENTS_COLLECTION = 'patients';
+const PATIENT_INTAKE_COLLECTION = 'patient_intake_records';
+const PATIENT_INTAKE_DRAFTS_COLLECTION = 'patient_intake_drafts';
+const INTAKE_CONFIG_COLLECTION = 'intake_config';
+const EXCEL_RECORDS_COLLECTION = 'excel_records';
+const PATIENT_OPERATION_LOGS_COLLECTION = 'patient_operation_logs';
 
 // 配置常量
 const DRAFT_EXPIRE_DAYS = 7;
 const SITUATION_MIN_LENGTH = 30;
 const SITUATION_MAX_LENGTH = 500;
-const SITUATION_KEYWORDS = ['护理', '症状', '康复', '治疗', '病情', '照顾', '功能', '障碍', '需要', '协助'];
+const SITUATION_KEYWORDS = [
+  '护理',
+  '症状',
+  '康复',
+  '治疗',
+  '病情',
+  '照顾',
+  '功能',
+  '障碍',
+  '需要',
+  '协助',
+];
 const MAX_INTAKE_QUERY_LIMIT = 100; // fetch limit for intake history queries
 
 // 工具函数
@@ -35,7 +46,7 @@ function makeError(code, message, details) {
 
 function normalizeString(value) {
   if (value === undefined || value === null) {
-    return "";
+    return '';
   }
   return String(value).trim();
 }
@@ -56,7 +67,8 @@ async function ensureCollectionExists(name) {
   } catch (error) {
     const code = error && (error.errCode !== undefined ? error.errCode : error.code);
     const message = error && error.errMsg ? error.errMsg : '';
-    const notExists = code === -502005 ||
+    const notExists =
+      code === -502005 ||
       (message && message.indexOf('DATABASE_COLLECTION_NOT_EXIST') >= 0) ||
       (message && message.indexOf('collection not exists') >= 0);
 
@@ -65,7 +77,9 @@ async function ensureCollectionExists(name) {
         await db.createCollection(name);
         return false;
       } catch (createError) {
-        const createCode = createError && (createError.errCode !== undefined ? createError.errCode : createError.code);
+        const createCode =
+          createError &&
+          (createError.errCode !== undefined ? createError.errCode : createError.code);
         const alreadyExists = createCode === -502002;
         if (!alreadyExists) {
           console.warn('createCollection failed', name, createError);
@@ -85,8 +99,8 @@ const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = cr
   collections: {
     PATIENTS_COLLECTION,
     PATIENT_INTAKE_COLLECTION,
-    EXCEL_RECORDS_COLLECTION
-  }
+    EXCEL_RECORDS_COLLECTION,
+  },
 });
 
 async function writePatientOperationLog(logEntry) {
@@ -100,7 +114,7 @@ async function writePatientOperationLog(logEntry) {
     changes: Array.isArray(logEntry.changes) ? logEntry.changes : [],
     message: logEntry.message || '',
     createdAt: now,
-    extra: logEntry.extra || {}
+    extra: logEntry.extra || {},
   };
 
   await db.collection(PATIENT_OPERATION_LOGS_COLLECTION).add({ data: entry });
@@ -110,7 +124,7 @@ function assignNestedUpdates(target, source, prefix, allowedKeys) {
   if (!source || typeof source !== 'object') {
     return;
   }
-  allowedKeys.forEach((key) => {
+  allowedKeys.forEach(key => {
     if (Object.prototype.hasOwnProperty.call(source, key) && source[key] !== undefined) {
       target[`${prefix}.${key}`] = source[key];
     }
@@ -130,7 +144,7 @@ function validateFormData(formData) {
     { key: 'address', label: '常住地址' },
     { key: 'emergencyContact', label: '紧急联系人' },
     { key: 'emergencyPhone', label: '紧急联系人电话' },
-    { key: 'situation', label: '情况说明' }
+    { key: 'situation', label: '情况说明' },
   ];
 
   for (const field of requiredFields) {
@@ -203,20 +217,18 @@ async function handleGetPatients(event) {
   // 搜索过滤
   if (searchKeyword) {
     const keyword = normalizeString(searchKeyword).toLowerCase();
-    query = query.where(_.or([
-      { patientName: db.RegExp({ regexp: keyword, options: 'i' }) },
-      { idNumber: db.RegExp({ regexp: keyword, options: 'i' }) },
-      { phone: db.RegExp({ regexp: keyword, options: 'i' }) }
-    ]));
+    query = query.where(
+      _.or([
+        { patientName: db.RegExp({ regexp: keyword, options: 'i' }) },
+        { idNumber: db.RegExp({ regexp: keyword, options: 'i' }) },
+        { phone: db.RegExp({ regexp: keyword, options: 'i' }) },
+      ])
+    );
   }
 
   // 分页查询
   const skip = page * pageSize;
-  const res = await query
-    .orderBy('updatedAt', 'desc')
-    .skip(skip)
-    .limit(pageSize)
-    .get();
+  const res = await query.orderBy('updatedAt', 'desc').skip(skip).limit(pageSize).get();
 
   const patients = (res.data || []).map(patient => ({
     key: patient._id,
@@ -227,18 +239,17 @@ async function handleGetPatients(event) {
     phone: patient.phone,
     admissionCount: patient.admissionCount || 0,
     latestAdmissionDate: patient.latestAdmissionDate,
-    updatedAt: patient.updatedAt
+    updatedAt: patient.updatedAt,
   }));
 
   return {
     success: true,
     data: {
       patients,
-      hasMore: patients.length === pageSize
-    }
+      hasMore: patients.length === pageSize,
+    },
   };
 }
-
 
 async function handleGetAllIntakeRecords(event) {
   const { patientKey, recordKey, patientName } = event;
@@ -266,12 +277,18 @@ async function handleGetAllIntakeRecords(event) {
     syncExcelKeys.push(patientDoc.patientName);
   }
 
-  await syncExcelRecordsToIntake(resolvedPatientKey, { patientDoc, excelKeys: syncExcelKeys });
+  await syncExcelRecordsToIntake(resolvedPatientKey, {
+    patientDoc,
+    excelKeys: syncExcelKeys,
+    forceSummary: true,
+  });
 
   await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
 
   try {
-    const baseQuery = db.collection(PATIENT_INTAKE_COLLECTION).where({ patientKey: resolvedPatientKey });
+    const baseQuery = db
+      .collection(PATIENT_INTAKE_COLLECTION)
+      .where({ patientKey: resolvedPatientKey });
     const countRes = await baseQuery.count();
     const total = (countRes && countRes.total) || 0;
 
@@ -281,8 +298,8 @@ async function handleGetAllIntakeRecords(event) {
         data: {
           patientKey: resolvedPatientKey,
           totalCount: 0,
-          records: []
-        }
+          records: [],
+        },
       };
     }
 
@@ -292,7 +309,8 @@ async function handleGetAllIntakeRecords(event) {
 
     for (let i = 0; i < batchTimes; i++) {
       tasks.push(
-        db.collection(PATIENT_INTAKE_COLLECTION)
+        db
+          .collection(PATIENT_INTAKE_COLLECTION)
           .where({ patientKey: resolvedPatientKey })
           .orderBy('updatedAt', 'desc')
           .orderBy('metadata.lastModifiedAt', 'desc')
@@ -305,42 +323,37 @@ async function handleGetAllIntakeRecords(event) {
     const queryResults = await Promise.all(tasks);
     const rawIntakeRecords = [];
 
-    queryResults.forEach((res) => {
+    queryResults.forEach(res => {
       if (res && Array.isArray(res.data)) {
         rawIntakeRecords.push(...res.data);
       }
     });
 
     rawIntakeRecords.sort((a, b) => {
-      const timeOf = (record) => {
+      const timeOf = record => {
         if (!record) {
           return 0;
         }
         const meta = record.metadata || {};
-        return (
-          record.updatedAt ||
-          meta.lastModifiedAt ||
-          meta.submittedAt ||
-          record.createdAt ||
-          0
-        );
+        return record.updatedAt || meta.lastModifiedAt || meta.submittedAt || record.createdAt || 0;
       };
       return timeOf(b) - timeOf(a);
     });
 
-    const filteredRawRecords = rawIntakeRecords.filter((rawIntake) => {
+    const filteredRawRecords = rawIntakeRecords.filter(rawIntake => {
       if (!rawIntake) {
         return false;
       }
       const metadata = rawIntake.metadata || {};
-      const isLegacyAggregated = metadata.source === 'excel-import'
-        && !metadata.excelRecordId
-        && rawIntake._id
-        && rawIntake._id.indexOf(`${resolvedPatientKey}-excel`) === 0;
+      const isLegacyAggregated =
+        metadata.source === 'excel-import' &&
+        !metadata.excelRecordId &&
+        rawIntake._id &&
+        rawIntake._id.indexOf(`${resolvedPatientKey}-excel`) === 0;
       return !isLegacyAggregated;
     });
 
-    const intakeRecords = filteredRawRecords.map((rawIntake) => {
+    const intakeRecords = filteredRawRecords.map(rawIntake => {
       const metadata = rawIntake.metadata || {};
       const intakeInfo = rawIntake.intakeInfo || {};
       const basicInfo = rawIntake.basicInfo || {};
@@ -373,7 +386,7 @@ async function handleGetAllIntakeRecords(event) {
         doctorNotes: medicalInfo.doctorNotes,
         createdAt: metadata.submittedAt || rawIntake.createdAt,
         updatedAt: rawIntake.updatedAt || metadata.lastModifiedAt,
-        status: rawIntake.status || 'active'
+        status: rawIntake.status || 'active',
       };
 
       const filteredRecord = {};
@@ -392,8 +405,8 @@ async function handleGetAllIntakeRecords(event) {
       data: {
         patientKey: resolvedPatientKey,
         totalCount: intakeRecords.length,
-        records: intakeRecords
-      }
+        records: intakeRecords,
+      },
     };
   } catch (error) {
     console.error('Failed to get intake records', resolvedPatientKey, error);
@@ -402,13 +415,11 @@ async function handleGetAllIntakeRecords(event) {
       data: {
         patientKey: resolvedPatientKey,
         totalCount: 0,
-        records: []
-      }
+        records: [],
+      },
     };
   }
 }
-
-
 
 // 获取患者详情
 async function handleGetPatientDetail(event) {
@@ -444,7 +455,7 @@ async function handleGetPatientDetail(event) {
   const syncResult = await syncExcelRecordsToIntake(resolvedPatientKey, {
     patientDoc: patient,
     excelKeys: syncExcelKeys,
-    forceSummary: !patient || !patient.data || typeof patient.data.admissionCount !== 'number'
+    forceSummary: true,
   });
   const syncSummary = syncResult && syncResult.summary;
 
@@ -481,7 +492,8 @@ async function handleGetPatientDetail(event) {
   let latestIntake = null;
   try {
     await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
-    const intakeRes = await db.collection(PATIENT_INTAKE_COLLECTION)
+    const intakeRes = await db
+      .collection(PATIENT_INTAKE_COLLECTION)
       .where({ patientKey: resolvedPatientKey })
       .orderBy('updatedAt', 'desc')
       .orderBy('metadata.lastModifiedAt', 'desc')
@@ -490,16 +502,14 @@ async function handleGetPatientDetail(event) {
     if (Array.isArray(intakeRes.data) && intakeRes.data.length > 0) {
       const rawIntake = intakeRes.data[0];
       const metadata = rawIntake.metadata || {};
-      const lastModifiedAt = metadata.lastModifiedAt
-        || rawIntake.updatedAt
-        || metadata.submittedAt
-        || null;
+      const lastModifiedAt =
+        metadata.lastModifiedAt || rawIntake.updatedAt || metadata.submittedAt || null;
       latestIntake = {
         ...rawIntake,
         metadata: {
           ...metadata,
-          lastModifiedAt
-        }
+          lastModifiedAt,
+        },
       };
     }
   } catch (error) {
@@ -509,14 +519,17 @@ async function handleGetPatientDetail(event) {
   let operationLogs = [];
   try {
     await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
-    const logsRes = await db.collection(PATIENT_OPERATION_LOGS_COLLECTION)
+    const logsRes = await db
+      .collection(PATIENT_OPERATION_LOGS_COLLECTION)
       .where({ patientKey: resolvedPatientKey })
       .orderBy('createdAt', 'desc')
       .limit(20)
       .get();
-    operationLogs = Array.isArray(logsRes.data) ? logsRes.data.map((log) => ({
-      ...log
-    })) : [];
+    operationLogs = Array.isArray(logsRes.data)
+      ? logsRes.data.map(log => ({
+          ...log,
+        }))
+      : [];
   } catch (error) {
     console.warn('加载患者操作日志失败', resolvedPatientKey, error);
   }
@@ -539,14 +552,13 @@ async function handleGetPatientDetail(event) {
         backupPhone: patient.backupPhone,
         lastIntakeNarrative: patient.lastIntakeNarrative || '',
         updatedAt: patient.updatedAt || null,
-        createdAt: patient.createdAt || null
+        createdAt: patient.createdAt || null,
       },
       latestIntake,
-      operationLogs
-    }
+      operationLogs,
+    },
   };
 }
-
 
 // 保存草稿
 async function handleSaveDraft(event) {
@@ -558,37 +570,38 @@ async function handleSaveDraft(event) {
   await ensureCollectionExists(PATIENT_INTAKE_DRAFTS_COLLECTION);
 
   const now = Date.now();
-  const expiresAt = now + (DRAFT_EXPIRE_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = now + DRAFT_EXPIRE_DAYS * 24 * 60 * 60 * 1000;
 
   const draftRecord = {
     sessionId,
     draftData,
     createdAt: now,
     updatedAt: now,
-    expiresAt
+    expiresAt,
   };
 
   try {
     // 尝试更新现有草稿
-    await db.collection(PATIENT_INTAKE_DRAFTS_COLLECTION)
+    await db
+      .collection(PATIENT_INTAKE_DRAFTS_COLLECTION)
       .where({ sessionId })
       .update({
         data: {
           draftData,
           updatedAt: now,
-          expiresAt
-        }
+          expiresAt,
+        },
       });
   } catch (error) {
     // 如果没有现有草稿，创建新的
     await db.collection(PATIENT_INTAKE_DRAFTS_COLLECTION).add({
-      data: draftRecord
+      data: draftRecord,
     });
   }
 
   return {
     success: true,
-    data: { savedAt: now }
+    data: { savedAt: now },
   };
 }
 
@@ -602,10 +615,11 @@ async function handleGetDraft(event) {
   await ensureCollectionExists(PATIENT_INTAKE_DRAFTS_COLLECTION);
 
   const now = Date.now();
-  const res = await db.collection(PATIENT_INTAKE_DRAFTS_COLLECTION)
+  const res = await db
+    .collection(PATIENT_INTAKE_DRAFTS_COLLECTION)
     .where({
       sessionId,
-      expiresAt: _.gt(now)
+      expiresAt: _.gt(now),
     })
     .orderBy('updatedAt', 'desc')
     .limit(1)
@@ -614,13 +628,13 @@ async function handleGetDraft(event) {
   if (!res.data || res.data.length === 0) {
     return {
       success: true,
-      data: { draft: null }
+      data: { draft: null },
     };
   }
 
   return {
     success: true,
-    data: { draft: res.data[0].draftData }
+    data: { draft: res.data[0].draftData },
   };
 }
 
@@ -639,7 +653,7 @@ async function handleSubmitIntake(event) {
   let finalPatientKey = patientKey;
 
   // 开始事务
-  const result = await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async transaction => {
     await ensureCollectionExists(PATIENTS_COLLECTION);
     await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
 
@@ -657,16 +671,18 @@ async function handleSubmitIntake(event) {
       patientRecord = patientDoc.data;
 
       // 更新患者基础信息
-      const toNumber = (value) => {
+      const toNumber = value => {
         const num = Number(value);
         return Number.isFinite(num) ? num : null;
       };
       const dataSnapshot = patientRecord.data || {};
       const baseCount = toNumber(patientRecord.admissionCount);
       const fallbackCount = baseCount !== null ? baseCount : toNumber(dataSnapshot.admissionCount);
-      const newAdmissionCount = (fallbackCount !== null ? fallbackCount : 0) + 1;
+      const effectiveCount = fallbackCount !== null ? fallbackCount : 0;
+      const newAdmissionCount = effectiveCount + 1;
       const baseFirstDate = toNumber(dataSnapshot.firstAdmissionDate);
-      const fallbackFirstDate = baseFirstDate !== null ? baseFirstDate : toNumber(patientRecord.firstAdmissionDate);
+      const fallbackFirstDate =
+        baseFirstDate !== null ? baseFirstDate : toNumber(patientRecord.firstAdmissionDate);
       const normalizedFirstAdmissionDate = fallbackFirstDate !== null ? fallbackFirstDate : now;
 
       await patientRef.update({
@@ -690,8 +706,8 @@ async function handleSubmitIntake(event) {
           'data.latestAdmissionDate': now,
           'data.latestAdmissionTimestamp': now,
           'data.firstAdmissionDate': normalizedFirstAdmissionDate,
-          'data.updatedAt': now
-        }
+          'data.updatedAt': now,
+        },
       });
     } else {
       // 创建新患者
@@ -720,12 +736,12 @@ async function handleSubmitIntake(event) {
           firstAdmissionDate: now,
           latestAdmissionDate: now,
           latestAdmissionTimestamp: now,
-          updatedAt: now
-        }
+          updatedAt: now,
+        },
       };
 
       await transaction.collection(PATIENTS_COLLECTION).doc(finalPatientKey).set({
-        data: patientRecord
+        data: patientRecord,
       });
     }
 
@@ -744,14 +760,14 @@ async function handleSubmitIntake(event) {
         idNumber: formData.idNumber,
         gender: formData.gender,
         birthDate: formData.birthDate,
-        phone: formData.phone || ''
+        phone: formData.phone || '',
       },
       contactInfo: {
         address: formData.address,
         emergencyContact: formData.emergencyContact,
         emergencyPhone: formData.emergencyPhone,
         backupContact: formData.backupContact || '',
-        backupPhone: formData.backupPhone || ''
+        backupPhone: formData.backupPhone || '',
       },
       intakeInfo: {
         intakeTime: normalizedIntakeTime,
@@ -762,28 +778,28 @@ async function handleSubmitIntake(event) {
           id: file.id,
           displayName: file.displayName,
           category: file.category,
-          uploadTime: now
-        }))
+          uploadTime: now,
+        })),
       },
       metadata: {
         isEditingExisting,
         submittedAt: now,
         lastModifiedAt: now,
-        submittedBy: 'patient-intake-wizard'
+        submittedBy: 'patient-intake-wizard',
       },
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     await transaction.collection(PATIENT_INTAKE_COLLECTION).add({
-      data: intakeRecord
+      data: intakeRecord,
     });
 
     return {
       patientKey: finalPatientKey,
       intakeId,
       patientName: formData.patientName,
-      intakeTime: now
+      intakeTime: now,
     };
   });
 
@@ -791,7 +807,7 @@ async function handleSubmitIntake(event) {
   try {
     summary = await syncPatientAggregates(result.patientKey, {
       patientDoc: { _id: result.patientKey },
-      serverDate: Date.now()
+      serverDate: Date.now(),
     });
   } catch (error) {
     console.warn('submitIntake aggregates failed', result.patientKey, error);
@@ -804,7 +820,7 @@ async function handleSubmitIntake(event) {
   }
   return {
     success: true,
-    data: result
+    data: result,
   };
 }
 
@@ -814,7 +830,7 @@ async function handleUpdatePatient(event = {}) {
     patientUpdates = {},
     intakeUpdates = {},
     audit = {},
-    expectedPatientUpdatedAt
+    expectedPatientUpdatedAt,
   } = event;
 
   if (!patientKey) {
@@ -826,7 +842,7 @@ async function handleUpdatePatient(event = {}) {
   await ensureCollectionExists(PATIENTS_COLLECTION);
   await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
 
-  const transactionResult = await db.runTransaction(async (transaction) => {
+  const transactionResult = await db.runTransaction(async transaction => {
     const patientRef = transaction.collection(PATIENTS_COLLECTION).doc(patientKey);
     const patientDoc = await patientRef.get();
 
@@ -835,26 +851,50 @@ async function handleUpdatePatient(event = {}) {
     }
 
     const patientSnapshot = patientDoc.data;
-    const expectedPatientTs = patientUpdates.expectedUpdatedAt !== undefined
-      ? patientUpdates.expectedUpdatedAt
-      : expectedPatientUpdatedAt;
+    const expectedPatientTs =
+      patientUpdates.expectedUpdatedAt !== undefined
+        ? patientUpdates.expectedUpdatedAt
+        : expectedPatientUpdatedAt;
 
-    if (expectedPatientTs !== undefined && patientSnapshot.updatedAt !== undefined
-      && Number(patientSnapshot.updatedAt) !== Number(expectedPatientTs)) {
+    if (
+      expectedPatientTs !== undefined &&
+      patientSnapshot.updatedAt !== undefined &&
+      Number(patientSnapshot.updatedAt) !== Number(expectedPatientTs)
+    ) {
       throw makeError('VERSION_CONFLICT', '患者信息已被其他人更新', {
-        latestUpdatedAt: patientSnapshot.updatedAt
+        latestUpdatedAt: patientSnapshot.updatedAt,
       });
     }
 
-    const patientFields = ['patientName', 'idType', 'idNumber', 'gender', 'birthDate', 'phone', 'address', 'emergencyContact', 'emergencyPhone', 'backupContact', 'backupPhone', 'lastIntakeNarrative'];
+    const patientFields = [
+      'patientName',
+      'idType',
+      'idNumber',
+      'gender',
+      'birthDate',
+      'phone',
+      'address',
+      'emergencyContact',
+      'emergencyPhone',
+      'backupContact',
+      'backupPhone',
+      'lastIntakeNarrative',
+    ];
     const patientUpdateData = {};
-    patientFields.forEach((field) => {
-      if (Object.prototype.hasOwnProperty.call(patientUpdates, field) && patientUpdates[field] !== undefined) {
+    patientFields.forEach(field => {
+      if (
+        Object.prototype.hasOwnProperty.call(patientUpdates, field) &&
+        patientUpdates[field] !== undefined
+      ) {
         patientUpdateData[field] = patientUpdates[field];
       }
     });
 
-    if (intakeUpdates && intakeUpdates.narrative !== undefined && !Object.prototype.hasOwnProperty.call(patientUpdateData, 'lastIntakeNarrative')) {
+    if (
+      intakeUpdates &&
+      intakeUpdates.narrative !== undefined &&
+      !Object.prototype.hasOwnProperty.call(patientUpdateData, 'lastIntakeNarrative')
+    ) {
       patientUpdateData.lastIntakeNarrative = intakeUpdates.narrative;
     }
 
@@ -869,7 +909,9 @@ async function handleUpdatePatient(event = {}) {
     let updatedIntakeId = intakeUpdates.intakeId || null;
 
     if (intakeUpdates && intakeUpdates.intakeId) {
-      const intakeRef = transaction.collection(PATIENT_INTAKE_COLLECTION).doc(intakeUpdates.intakeId);
+      const intakeRef = transaction
+        .collection(PATIENT_INTAKE_COLLECTION)
+        .doc(intakeUpdates.intakeId);
       const intakeDoc = await intakeRef.get();
 
       if (!intakeDoc.data) {
@@ -881,16 +923,32 @@ async function handleUpdatePatient(event = {}) {
       }
 
       const expectedIntakeTs = intakeUpdates.expectedUpdatedAt;
-      if (expectedIntakeTs !== undefined && intakeDoc.data.updatedAt !== undefined
-        && Number(intakeDoc.data.updatedAt) !== Number(expectedIntakeTs)) {
+      if (
+        expectedIntakeTs !== undefined &&
+        intakeDoc.data.updatedAt !== undefined &&
+        Number(intakeDoc.data.updatedAt) !== Number(expectedIntakeTs)
+      ) {
         throw makeError('INTAKE_VERSION_CONFLICT', '入住记录已被其他人更新', {
-          latestUpdatedAt: intakeDoc.data.updatedAt
+          latestUpdatedAt: intakeDoc.data.updatedAt,
         });
       }
 
       const intakeUpdateData = {};
-      assignNestedUpdates(intakeUpdateData, intakeUpdates.basicInfo, 'basicInfo', ['patientName', 'idType', 'idNumber', 'gender', 'birthDate', 'phone']);
-      assignNestedUpdates(intakeUpdateData, intakeUpdates.contactInfo, 'contactInfo', ['address', 'emergencyContact', 'emergencyPhone', 'backupContact', 'backupPhone']);
+      assignNestedUpdates(intakeUpdateData, intakeUpdates.basicInfo, 'basicInfo', [
+        'patientName',
+        'idType',
+        'idNumber',
+        'gender',
+        'birthDate',
+        'phone',
+      ]);
+      assignNestedUpdates(intakeUpdateData, intakeUpdates.contactInfo, 'contactInfo', [
+        'address',
+        'emergencyContact',
+        'emergencyPhone',
+        'backupContact',
+        'backupPhone',
+      ]);
 
       if (intakeUpdates.intakeInfo && typeof intakeUpdates.intakeInfo === 'object') {
         const intakeInfo = intakeUpdates.intakeInfo;
@@ -948,16 +1006,17 @@ async function handleUpdatePatient(event = {}) {
       patientChanged,
       intakeChanged,
       updatedAt: now,
-      intakeId: updatedIntakeId
+      intakeId: updatedIntakeId,
     };
   });
 
-  const changesForLog = Array.isArray(audit.changes) && audit.changes.length
-    ? audit.changes
-    : [
-        ...(transactionResult.patientChanged ? ['patient'] : []),
-        ...(transactionResult.intakeChanged ? ['intake'] : [])
-      ];
+  const changesForLog =
+    Array.isArray(audit.changes) && audit.changes.length
+      ? audit.changes
+      : [
+          ...(transactionResult.patientChanged ? ['patient'] : []),
+          ...(transactionResult.intakeChanged ? ['intake'] : []),
+        ];
 
   await writePatientOperationLog({
     patientKey,
@@ -966,7 +1025,7 @@ async function handleUpdatePatient(event = {}) {
     message: audit.message || '更新患者资料',
     action: 'patient-detail-edit',
     changes: changesForLog,
-    extra: audit.extra || {}
+    extra: audit.extra || {},
   });
 
   return {
@@ -976,8 +1035,8 @@ async function handleUpdatePatient(event = {}) {
       intakeId: transactionResult.intakeId,
       patientUpdated: transactionResult.patientChanged,
       intakeUpdated: transactionResult.intakeChanged,
-      updatedAt: transactionResult.updatedAt
-    }
+      updatedAt: transactionResult.updatedAt,
+    },
   };
 }
 
@@ -986,9 +1045,7 @@ async function handleGetConfig(event) {
   await ensureCollectionExists(INTAKE_CONFIG_COLLECTION);
 
   try {
-    const res = await db.collection(INTAKE_CONFIG_COLLECTION)
-      .doc('default')
-      .get();
+    const res = await db.collection(INTAKE_CONFIG_COLLECTION).doc('default').get();
 
     const config = res.data || {};
 
@@ -999,14 +1056,16 @@ async function handleGetConfig(event) {
           minLength: config.situationMinLength || SITUATION_MIN_LENGTH,
           maxLength: config.situationMaxLength || SITUATION_MAX_LENGTH,
           keywords: config.situationKeywords || SITUATION_KEYWORDS,
-          example: config.situationExample || '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。'
+          example:
+            config.situationExample ||
+            '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。',
         },
         uploadConfig: {
           maxFileSize: 10, // MB
           maxCount: 5,
-          allowedTypes: 'JPG、PNG、PDF、Word、Excel等'
-        }
-      }
+          allowedTypes: 'JPG、PNG、PDF、Word、Excel等',
+        },
+      },
     };
   } catch (error) {
     // 如果配置不存在，返回默认值
@@ -1017,14 +1076,15 @@ async function handleGetConfig(event) {
           minLength: SITUATION_MIN_LENGTH,
           maxLength: SITUATION_MAX_LENGTH,
           keywords: SITUATION_KEYWORDS,
-          example: '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。'
+          example:
+            '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。',
         },
         uploadConfig: {
           maxFileSize: 10,
           maxCount: 5,
-          allowedTypes: 'JPG、PNG、PDF、Word、Excel等'
-        }
-      }
+          allowedTypes: 'JPG、PNG、PDF、Word、Excel等',
+        },
+      },
     };
   }
 }
@@ -1034,9 +1094,10 @@ async function handleCleanupDrafts(event) {
   await ensureCollectionExists(PATIENT_INTAKE_DRAFTS_COLLECTION);
 
   const now = Date.now();
-  const res = await db.collection(PATIENT_INTAKE_DRAFTS_COLLECTION)
+  const res = await db
+    .collection(PATIENT_INTAKE_DRAFTS_COLLECTION)
     .where({
-      expiresAt: _.lt(now)
+      expiresAt: _.lt(now),
     })
     .remove();
 
@@ -1044,8 +1105,8 @@ async function handleCleanupDrafts(event) {
     success: true,
     data: {
       deletedCount: res.stats.removed || 0,
-      cleanupTime: now
-    }
+      cleanupTime: now,
+    },
   };
 }
 
@@ -1060,8 +1121,8 @@ async function handleSyncFromExcel(event) {
       data: {
         action: 'syncPatients',
         syncBatchId,
-        forceRefresh
-      }
+        forceRefresh,
+      },
     });
 
     if (!res.result) {
@@ -1080,12 +1141,15 @@ async function handleSyncFromExcel(event) {
       successCount: (result.sync && result.sync.patients) || 0,
       errorCount: (result.sync && result.sync.errors && result.sync.errors.length) || 0,
       errors: (result.sync && result.sync.errors) || [],
-      status: ((result.sync && result.sync.errors && result.sync.errors.length) || 0) === 0 ? 'success' : 'partial',
+      status:
+        ((result.sync && result.sync.errors && result.sync.errors.length) || 0) === 0
+          ? 'success'
+          : 'partial',
       metadata: {
         calledBy: 'patientIntake',
         totalPatients: result.totalPatients || 0,
-        intakeRecords: (result.sync && result.sync.intakeRecords) || 0
-      }
+        intakeRecords: (result.sync && result.sync.intakeRecords) || 0,
+      },
     };
 
     return {
@@ -1093,8 +1157,8 @@ async function handleSyncFromExcel(event) {
       data: {
         sync: result.sync,
         syncLog,
-        totalPatients: result.totalPatients || 0
-      }
+        totalPatients: result.totalPatients || 0,
+      },
     };
   } catch (error) {
     console.error('Excel同步失败', error);
@@ -1112,8 +1176,8 @@ async function handleSyncFromExcel(event) {
       status: 'failed',
       metadata: {
         calledBy: 'patientIntake',
-        errorDetails: error.details || null
-      }
+        errorDetails: error.details || null,
+      },
     };
 
     return {
@@ -1121,15 +1185,15 @@ async function handleSyncFromExcel(event) {
       error: {
         code: error.code || 'SYNC_ERROR',
         message: error.message || 'Excel同步失败',
-        details: error.details || null
+        details: error.details || null,
       },
-      data: { syncLog }
+      data: { syncLog },
     };
   }
 }
 
 // 主函数
-exports.main = async (event) => {
+exports.main = async event => {
   const action = normalizeString(event.action);
 
   try {
@@ -1164,16 +1228,8 @@ exports.main = async (event) => {
       error: {
         code: error.code || 'INTERNAL_ERROR',
         message: error.message || '服务内部错误',
-        details: error.details || null
-      }
+        details: error.details || null,
+      },
     };
   }
 };
-
-
-
-
-
-
-
-

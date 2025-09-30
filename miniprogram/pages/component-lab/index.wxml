@@ -375,12 +375,18 @@
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">描述</text>
-          <textarea
+          <pm-input
+            label="描述"
+            type="textarea"
             value="{{propsState.description}}"
+            placeholder="卡片描述"
             data-key="description"
             bindinput="handleTextInput"
-            placeholder="卡片描述"
-          />
+            textarea-auto-height="{{true}}"
+            clearable="{{false}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">状态</text>

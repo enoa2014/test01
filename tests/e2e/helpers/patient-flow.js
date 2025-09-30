@@ -336,18 +336,10 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
   const submitButton = await waitForElement(wizardPage, '.btn-success', { timeout: 8000 });
   await submitButton.tap();
 
-  let successPage;
-  try {
-    successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
-      timeout: 20000,
-    });
-    await waitForElement(successPage, '.success-title');
-  } catch (error) {
-    successPage = await presentSuccessPage(miniProgram, {
-      ...existingPatient,
-      situation: followUpSituation,
-    });
-  }
+  const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
+    timeout: 20000,
+  });
+  await waitForElement(successPage, '.success-title');
 
   return {
     successPage,

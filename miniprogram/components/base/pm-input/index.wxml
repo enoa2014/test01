@@ -33,6 +33,7 @@
       disabled="{{disabled}}"
       data-key="{{datasetKey}}"
       data-field="{{datasetField}}"
+      show-confirm-bar="{{showConfirmBar}}"
       bindinput="handleInput"
       bindfocus="handleFocus"
       bindblur="handleBlur"

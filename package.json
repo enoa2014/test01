@@ -16,6 +16,7 @@
   },
   "homepage": "https://github.com/enoa2014/test01#readme",
   "dependencies": {
+    "@cloudbase/manager-node": "^4.6.3",
     "@cloudbase/node-sdk": "^2.10.0",
     "dotenv": "^17.2.2",
     "xlsx": "^0.18.5"

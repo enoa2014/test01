@@ -83,6 +83,10 @@ Component({
       type: Boolean,
       value: true,
     },
+    showConfirmBar: {
+      type: Boolean,
+      value: true,
+    },
   },
   data: {
     rootClass: 'pm-input--size-medium pm-input--layout-top pm-input--block',

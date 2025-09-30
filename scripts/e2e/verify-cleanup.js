@@ -12,7 +12,21 @@ const cloudbase = require('@cloudbase/node-sdk');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const COLLECTIONS = ['excel_records', 'patient_intake_records', 'excel_cache', 'patients'];
-const TEST_PREFIX = 'TEST_AUTOMATION_';
+const TEST_PREFIXES = ['TEST_AUTOMATION_', 'PATIENT_', 'local-'];
+
+function buildPrefixMatchers(db, command) {
+  const matchers = [];
+  TEST_PREFIXES.forEach(prefix => {
+    const regexp = db.RegExp({ regexp: '^' + prefix });
+    matchers.push({ key: regexp });
+    matchers.push({ ['data.key']: regexp });
+    matchers.push({ patientKey: regexp });
+    matchers.push({ ['data.patientKey']: regexp });
+    matchers.push({ patientName: regexp });
+    matchers.push({ ['data.patientName']: regexp });
+  });
+  return matchers;
+}
 
 function requireEnv(name) {
   if (!process.env[name]) {
@@ -33,6 +47,7 @@ function connectCloudBase() {
 async function findTestData(db, command) {
   const results = {};
   let totalCount = 0;
+  const prefixMatchers = buildPrefixMatchers(db, command);
 
   for (const collectionName of COLLECTIONS) {
     const collection = db.collection(collectionName);
@@ -40,12 +55,8 @@ async function findTestData(db, command) {
     const matcher = command.or([
       { testMarker: command.exists(true) },
       { ['data.testMarker']: command.exists(true) },
-      { key: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { ['data.key']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { patientKey: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { ['data.patientKey']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { patientName: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { ['data.patientName']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+      ...prefixMatchers,
+      { ['metadata.submittedBy']: 'patient-intake-wizard' },
     ]);
 
     try {
@@ -75,6 +86,7 @@ async function findTestData(db, command) {
 
 async function cleanupTestData(db, command) {
   let totalRemoved = 0;
+  const prefixMatchers = buildPrefixMatchers(db, command);
 
   for (const collectionName of COLLECTIONS) {
     const collection = db.collection(collectionName);
@@ -82,12 +94,8 @@ async function cleanupTestData(db, command) {
     const matcher = command.or([
       { testMarker: command.exists(true) },
       { ['data.testMarker']: command.exists(true) },
-      { key: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { ['data.key']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { patientKey: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { ['data.patientKey']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { patientName: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
-      { ['data.patientName']: db.RegExp({ regexp: '^' + TEST_PREFIX }) },
+      ...prefixMatchers,
+      { ['metadata.submittedBy']: 'patient-intake-wizard' },
     ]);
 
     try {

@@ -1,13 +1,9 @@
 ﻿function createExcelSync({ db, ensureCollectionExists, normalizeString, collections }) {
-  const {
-    PATIENTS_COLLECTION,
-    PATIENT_INTAKE_COLLECTION,
-    EXCEL_RECORDS_COLLECTION
-  } = collections;
+  const { PATIENTS_COLLECTION, PATIENT_INTAKE_COLLECTION, EXCEL_RECORDS_COLLECTION } = collections;
 
   const command = db.command;
 
-  const normalizeExcelValue = (value) => {
+  const normalizeExcelValue = value => {
     if (value === undefined || value === null) {
       return '';
     }
@@ -18,7 +14,7 @@
     return str;
   };
 
-  const normalizeExcelSpacing = (value) => {
+  const normalizeExcelSpacing = value => {
     const normalized = normalizeExcelValue(value);
     if (!normalized) {
       return '';
@@ -72,7 +68,7 @@
     const limit = 100;
 
     const keysToTry = [];
-    const pushKey = (rawKey) => {
+    const pushKey = rawKey => {
       const normalized = normalizeExcelSpacing(rawKey);
       if (normalized && !keysToTry.includes(normalized)) {
         keysToTry.push(normalized);
@@ -94,7 +90,7 @@
         if (!res.data || res.data.length === 0) {
           break;
         }
-        res.data.forEach((record) => {
+        res.data.forEach(record => {
           const id = record && record._id;
           if (id) {
             if (!seenIds.has(id)) {
@@ -116,8 +112,16 @@
     }
 
     records.sort((a, b) => {
-      const aTime = Number(a && a.admissionTimestamp !== undefined ? a.admissionTimestamp : toTimestampFromExcel(a && a.admissionDate));
-      const bTime = Number(b && b.admissionTimestamp !== undefined ? b.admissionTimestamp : toTimestampFromExcel(b && b.admissionDate));
+      const aTime = Number(
+        a && a.admissionTimestamp !== undefined
+          ? a.admissionTimestamp
+          : toTimestampFromExcel(a && a.admissionDate)
+      );
+      const bTime = Number(
+        b && b.admissionTimestamp !== undefined
+          ? b.admissionTimestamp
+          : toTimestampFromExcel(b && b.admissionDate)
+      );
       return (bTime || 0) - (aTime || 0);
     });
 
@@ -131,8 +135,16 @@
 
     const now = Date.now();
     const sorted = [...records].sort((a, b) => {
-      const aTime = Number(a && a.admissionTimestamp !== undefined ? a.admissionTimestamp : toTimestampFromExcel(a && a.admissionDate));
-      const bTime = Number(b && b.admissionTimestamp !== undefined ? b.admissionTimestamp : toTimestampFromExcel(b && b.admissionDate));
+      const aTime = Number(
+        a && a.admissionTimestamp !== undefined
+          ? a.admissionTimestamp
+          : toTimestampFromExcel(a && a.admissionDate)
+      );
+      const bTime = Number(
+        b && b.admissionTimestamp !== undefined
+          ? b.admissionTimestamp
+          : toTimestampFromExcel(b && b.admissionDate)
+      );
       return (aTime || 0) - (bTime || 0);
     });
     const first = sorted[0] || {};
@@ -154,7 +166,9 @@
       emergencyPhone: '',
       backupContact: '',
       backupPhone: '',
-      lastIntakeNarrative: normalizeExcelSpacing(last.symptoms || last.diagnosis || last.treatmentProcess),
+      lastIntakeNarrative: normalizeExcelSpacing(
+        last.symptoms || last.diagnosis || last.treatmentProcess
+      ),
       admissionCount: records.length,
       firstAdmissionDate: firstTs,
       latestAdmissionDate: lastTs,
@@ -165,13 +179,14 @@
       metadata: {
         source: 'excel-import',
         createdFromExcel: true,
-        excelRecordKey: recordKey
-      }
+        excelRecordKey: recordKey,
+      },
     };
   }
 
   function buildIntakeRecordFromExcel(record, patientKey, patientName, serverDate, excelRecordId) {
-    const admissionTimestamp = record.admissionTimestamp || toTimestampFromExcel(record.admissionDate) || serverDate;
+    const admissionTimestamp =
+      record.admissionTimestamp || toTimestampFromExcel(record.admissionDate) || serverDate;
     const fallbackSeed = `${patientKey || patientName || 'excel'}_${admissionTimestamp || serverDate}`;
     const sanitizedId = sanitizeIdentifier(excelRecordId, fallbackSeed);
     const intakeId = `excel_${sanitizedId}`;
@@ -183,17 +198,18 @@
       treatmentProcess: normalizeExcelSpacing(record.treatmentProcess),
       followUpPlan: normalizeExcelSpacing(record.followUpPlan),
       symptoms: normalizeExcelSpacing(record.symptoms),
-      visitReason: normalizeExcelSpacing(record.visitReason)
+      visitReason: normalizeExcelSpacing(record.visitReason),
     };
-    Object.keys(medicalInfo).forEach((key) => {
+    Object.keys(medicalInfo).forEach(key => {
       if (!medicalInfo[key]) {
         delete medicalInfo[key];
       }
     });
 
-    const situationText = normalizeExcelSpacing(record.symptoms)
-      || normalizeExcelSpacing(record.diagnosis)
-      || normalizeExcelSpacing(record.treatmentProcess);
+    const situationText =
+      normalizeExcelSpacing(record.symptoms) ||
+      normalizeExcelSpacing(record.diagnosis) ||
+      normalizeExcelSpacing(record.treatmentProcess);
 
     return {
       intakeId,
@@ -206,31 +222,31 @@
         idNumber: normalizeExcelSpacing(record.idNumber),
         gender: normalizeExcelSpacing(record.gender),
         birthDate: normalizeExcelSpacing(record.birthDate),
-        phone: ''
+        phone: '',
       },
       contactInfo: {
         address: normalizeExcelSpacing(record.address),
         emergencyContact: normalizeExcelSpacing(record.caregivers),
         emergencyPhone: '',
         backupContact: '',
-        backupPhone: ''
+        backupPhone: '',
       },
       intakeInfo: {
         intakeTime: admissionTimestamp,
         situation: situationText,
         followUpPlan: normalizeExcelSpacing(record.followUpPlan),
         medicalHistory: [],
-        attachments: []
+        attachments: [],
       },
       medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
       metadata: {
         source: 'excel-import',
         excelRecordId,
         lastExcelSyncAt: serverDate,
-        lastExcelSyncBatchId: record.syncBatchId || null
+        lastExcelSyncBatchId: record.syncBatchId || null,
       },
       createdAt: serverDate,
-      updatedAt: serverDate
+      updatedAt: serverDate,
     };
   }
 
@@ -238,17 +254,17 @@
     if (!record || typeof record !== 'object') {
       return null;
     }
-   const metadata = record.metadata || {};
-   const intakeInfo = record.intakeInfo || {};
-   const candidates = [
-     record.intakeTime,
-     intakeInfo.intakeTime,
+    const metadata = record.metadata || {};
+    const intakeInfo = record.intakeInfo || {};
+    const candidates = [
+      record.intakeTime,
+      intakeInfo.intakeTime,
       record.admissionTimestamp,
       record._importedAt,
       metadata.lastModifiedAt,
       record.updatedAt,
       metadata.submittedAt,
-      record.createdAt
+      record.createdAt,
     ];
     for (const candidate of candidates) {
       const ts = toTimestampFromExcel(candidate);
@@ -258,6 +274,132 @@
     }
     return null;
   }
+
+  const isDraftStatus = value => {
+    const normalized = normalizeExcelSpacing(value);
+    if (!normalized) {
+      return false;
+    }
+    return normalized.toLowerCase() === 'draft';
+  };
+
+  const safeTrim = value => {
+    if (value === undefined || value === null) {
+      return '';
+    }
+    return String(value).trim();
+  };
+
+  const extractRecordTimestampForKey = (record = {}) => {
+    const ts = pickRecordTimestamp(record);
+    return Number.isFinite(ts) ? ts : 0;
+  };
+
+  const isActiveStatus = status => {
+    const normalized = normalizeExcelSpacing(status);
+    if (!normalized) {
+      return false;
+    }
+    return normalized.toLowerCase() === 'active';
+  };
+
+  const toIntakeRecordKey = (record = {}) => {
+    if (!record || typeof record !== 'object') {
+      return `empty-${Math.random()}`;
+    }
+
+    const metadata = record.metadata || {};
+    const source = safeTrim(metadata.source).toLowerCase();
+    const intakeId = safeTrim(record.intakeId);
+
+    const excelFlags = [
+      normalizeExcelSpacing(record.status).toLowerCase() === 'imported',
+      (intakeId || '').includes('-excel'),
+      source === 'excel-import',
+      Boolean(metadata.excelRecordId),
+    ];
+    const isExcelImportedRecord = excelFlags.some(Boolean);
+
+    if (isExcelImportedRecord) {
+      const time = extractRecordTimestampForKey(record);
+      if (time) {
+        const normalizedTime = Math.round(time / 60000);
+        const identifier =
+          safeTrim(record.patientKey) ||
+          safeTrim(record.patientName) ||
+          safeTrim(metadata.excelRecordId) ||
+          '';
+        const hospital =
+          safeTrim(record.hospital) ||
+          safeTrim(record.hospitalDisplay) ||
+          safeTrim(record.intakeInfo && record.intakeInfo.hospital) ||
+          '';
+        const diagnosis =
+          safeTrim(record.diagnosis) ||
+          safeTrim(record.diagnosisDisplay) ||
+          safeTrim(record.intakeInfo && record.intakeInfo.visitReason) ||
+          '';
+        return `excel:${normalizedTime}-${identifier}-${hospital}-${diagnosis}`;
+      }
+    }
+
+    const candidates = [record.intakeId, record._id, record.id, metadata.intakeId].filter(Boolean);
+
+    if (candidates.length) {
+      return candidates[0];
+    }
+
+    const time = extractRecordTimestampForKey(record);
+    if (time) {
+      const normalizedTime = Math.round(time / 60000);
+      const identifier = safeTrim(record.patientKey) || safeTrim(record.patientName) || '';
+      return `time:${normalizedTime}-${identifier}`;
+    }
+
+    const admissionDate = safeTrim(record.displayTime) || safeTrim(record.admissionDate) || '';
+    const diagnosis = safeTrim(record.diagnosis) || safeTrim(record.diagnosisDisplay) || '';
+    const hospital = safeTrim(record.hospital) || safeTrim(record.hospitalDisplay) || '';
+
+    return `fallback:${admissionDate}-${diagnosis}-${hospital}`;
+  };
+
+  const dedupeIntakeRecordsForSummary = (records = []) => {
+    if (!Array.isArray(records) || records.length <= 1) {
+      return Array.isArray(records) ? records : [];
+    }
+
+    const map = new Map();
+
+    records.forEach(record => {
+      if (!record) {
+        return;
+      }
+      const key = toIntakeRecordKey(record);
+      if (!map.has(key)) {
+        map.set(key, record);
+        return;
+      }
+
+      const existing = map.get(key);
+      const existingIsActive = isActiveStatus(existing.status);
+      const candidateIsActive = isActiveStatus(record.status);
+
+      if (existingIsActive !== candidateIsActive) {
+        if (candidateIsActive) {
+          map.set(key, record);
+        }
+        return;
+      }
+
+      const existingTime = extractRecordTimestampForKey(existing);
+      const candidateTime = extractRecordTimestampForKey(record);
+      if (candidateTime > existingTime) {
+        map.set(key, record);
+      }
+    });
+
+    return Array.from(map.values());
+  };
 
   async function summarizeIntakeHistory(patientKey) {
     const normalizedKey = normalizeString(patientKey);
@@ -272,7 +414,7 @@
       firstDiagnosis: '',
       firstHospital: '',
       firstDoctor: '',
-      firstNarrative: ''
+      firstNarrative: '',
     };
 
     if (!normalizedKey) {
@@ -291,24 +433,22 @@
       return summary;
     }
 
-    summary.count = count;
-
     if (!count) {
       return summary;
     }
 
     const batchSize = 100;
     const batchTimes = Math.max(1, Math.ceil(count / batchSize));
-    let latestRecord = null;
-    let earliestRecord = null;
+    const allActiveRecords = [];
 
     for (let i = 0; i < batchTimes; i++) {
       try {
-       const res = await collection.where({ patientKey: normalizedKey })
-         .field({
-           patientKey: 1,
-           updatedAt: 1,
-           createdAt: 1,
+        const res = await collection
+          .where({ patientKey: normalizedKey })
+          .field({
+            patientKey: 1,
+            updatedAt: 1,
+            createdAt: 1,
             intakeTime: 1,
             'intakeInfo.intakeTime': 1,
             'intakeInfo.situation': 1,
@@ -317,32 +457,53 @@
             'medicalInfo.diagnosis': 1,
             'medicalInfo.treatmentProcess': 1,
             'metadata.lastModifiedAt': 1,
-            'metadata.submittedAt': 1
+            status: 1,
+            'metadata.submittedAt': 1,
           })
           .skip(i * batchSize)
           .limit(batchSize)
           .get();
 
         const records = Array.isArray(res && res.data) ? res.data : [];
-        if (!records.length) {
+        const activeRecords = records.filter(record => !isDraftStatus(record && record.status));
+        if (!activeRecords.length) {
           continue;
         }
 
-        records.forEach((record) => {
-          const timestamp = pickRecordTimestamp(record);
-          if (timestamp && (!summary.earliestTimestamp || timestamp < summary.earliestTimestamp)) {
-            summary.earliestTimestamp = timestamp;
-            earliestRecord = record;
-          }
-          if (!summary.latestTimestamp || (timestamp && timestamp >= summary.latestTimestamp)) {
-            summary.latestTimestamp = timestamp || summary.latestTimestamp;
-            latestRecord = record;
-          }
-        });
+        allActiveRecords.push(...activeRecords);
       } catch (error) {
         console.warn('summarizeIntakeHistory batch failed', normalizedKey, error);
       }
     }
+
+    if (!allActiveRecords.length) {
+      summary.count = 0;
+      return summary;
+    }
+
+    const dedupedRecords = dedupeIntakeRecordsForSummary(allActiveRecords);
+
+    if (!dedupedRecords.length) {
+      summary.count = 0;
+      return summary;
+    }
+
+    summary.count = dedupedRecords.length;
+
+    let latestRecord = null;
+    let earliestRecord = null;
+
+    dedupedRecords.forEach(record => {
+      const timestamp = pickRecordTimestamp(record);
+      if (timestamp && (!summary.earliestTimestamp || timestamp < summary.earliestTimestamp)) {
+        summary.earliestTimestamp = timestamp;
+        earliestRecord = record;
+      }
+      if (timestamp && (!summary.latestTimestamp || timestamp >= summary.latestTimestamp)) {
+        summary.latestTimestamp = timestamp;
+        latestRecord = record;
+      }
+    });
 
     if (!summary.latestTimestamp) {
       summary.latestTimestamp = Date.now();
@@ -351,13 +512,20 @@
       summary.earliestTimestamp = summary.latestTimestamp;
     }
 
-    const extractMedicalFields = (record) => {
+    if (!latestRecord && dedupedRecords.length) {
+      latestRecord = dedupedRecords[dedupedRecords.length - 1];
+    }
+    if (!earliestRecord) {
+      earliestRecord = latestRecord;
+    }
+
+    const extractMedicalFields = record => {
       if (!record) {
         return {
           narrative: '',
           hospital: '',
           doctor: '',
-          diagnosis: ''
+          diagnosis: '',
         };
       }
       const medicalInfo = record.medicalInfo || {};
@@ -365,20 +533,20 @@
       return {
         narrative: normalizeExcelSpacing(
           intakeInfo.situation ||
-          medicalInfo.diagnosis ||
-          medicalInfo.treatmentProcess ||
-          record.situation ||
-          ''
+            medicalInfo.diagnosis ||
+            medicalInfo.treatmentProcess ||
+            record.situation ||
+            ''
         ),
         hospital: normalizeExcelSpacing(medicalInfo.hospital || record.hospital),
         doctor: normalizeExcelSpacing(medicalInfo.doctor || record.doctor),
         diagnosis: normalizeExcelSpacing(
           medicalInfo.diagnosis ||
-          intakeInfo.diagnosis ||
-          record.diagnosis ||
-          intakeInfo.visitReason ||
-          ''
-        )
+            intakeInfo.diagnosis ||
+            record.diagnosis ||
+            intakeInfo.visitReason ||
+            ''
+        ),
       };
     };
 
@@ -412,7 +580,7 @@
         firstDiagnosis: '',
         firstHospital: '',
         firstDoctor: '',
-        firstNarrative: ''
+        firstNarrative: '',
       };
     }
 
@@ -420,7 +588,8 @@
     const patientDoc = options.patientDoc || null;
     const serverDate = options.serverDate || Date.now();
 
-    let targetDocId = (patientDoc && (patientDoc._id || patientDoc.id || patientDoc.patientKey)) || normalizedKey;
+    let targetDocId =
+      (patientDoc && (patientDoc._id || patientDoc.id || patientDoc.patientKey)) || normalizedKey;
     if (!patientDoc || !patientDoc._id) {
       try {
         const ensured = await ensurePatientDoc(normalizedKey, options.ensureOptions || {});
@@ -440,7 +609,7 @@
       updatedAt: serverDate,
       'data.updatedAt': serverDate,
       admissionCount: summary.count,
-      'data.admissionCount': summary.count
+      'data.admissionCount': summary.count,
     };
 
     if (summary.count > 0) {
@@ -515,7 +684,8 @@
       }
     } catch (error) {
       const code = error && (error.errCode !== undefined ? error.errCode : error.code);
-      const notFound = code === -1 || code === 'DATABASE_DOCUMENT_NOT_EXIST' || code === 'DOCUMENT_NOT_FOUND';
+      const notFound =
+        code === -1 || code === 'DATABASE_DOCUMENT_NOT_EXIST' || code === 'DOCUMENT_NOT_FOUND';
       if (!notFound) {
         console.warn('ensurePatientDoc unexpected error', patientKey, error);
       }
@@ -523,7 +693,11 @@
 
     const recordKey = normalizeExcelSpacing(patientKey);
     if (recordKey) {
-      const byRecordKey = await db.collection(PATIENTS_COLLECTION).where({ recordKey }).limit(1).get();
+      const byRecordKey = await db
+        .collection(PATIENTS_COLLECTION)
+        .where({ recordKey })
+        .limit(1)
+        .get();
       if (byRecordKey.data && byRecordKey.data.length) {
         const doc = byRecordKey.data[0];
         return { patientDoc: doc, patientKey: doc._id || normalizedKey };
@@ -593,16 +767,33 @@
     const serverDate = Date.now();
     const result = { created: 0, updated: 0, skipped: 0 };
 
-    const patientName = normalizeExcelSpacing(patientDoc && patientDoc.patientName) || normalizedKey;
+    const patientName =
+      normalizeExcelSpacing(patientDoc && patientDoc.patientName) || normalizedKey;
 
     for (const record of excelRecords) {
-      const identifierSource = record && (record._id || record.id || `${normalizedKey}_${record._rowIndex || ''}` || `${normalizedKey}_${record.admissionTimestamp || ''}`);
-      const excelRecordId = identifierSource ? String(identifierSource) : `${normalizedKey}_${serverDate}`;
-      const intakeRecord = buildIntakeRecordFromExcel(record, normalizedKey, patientName, serverDate, excelRecordId);
+      const identifierSource =
+        record &&
+        (record._id ||
+          record.id ||
+          `${normalizedKey}_${record._rowIndex || ''}` ||
+          `${normalizedKey}_${record.admissionTimestamp || ''}`);
+      const excelRecordId = identifierSource
+        ? String(identifierSource)
+        : `${normalizedKey}_${serverDate}`;
+      const intakeRecord = buildIntakeRecordFromExcel(
+        record,
+        normalizedKey,
+        patientName,
+        serverDate,
+        excelRecordId
+      );
 
       let existingDoc = null;
       if (excelRecordId) {
-        const existingRes = await collection.where({ 'metadata.excelRecordId': excelRecordId }).limit(1).get();
+        const existingRes = await collection
+          .where({ 'metadata.excelRecordId': excelRecordId })
+          .limit(1)
+          .get();
         if (existingRes && existingRes.data && existingRes.data.length) {
           existingDoc = existingRes.data[0];
         }
@@ -617,7 +808,7 @@
           contactInfo: intakeRecord.contactInfo,
           intakeInfo: intakeRecord.intakeInfo,
           metadata: intakeRecord.metadata,
-          updatedAt: serverDate
+          updatedAt: serverDate,
         };
         if (intakeRecord.medicalInfo !== undefined) {
           updatePayload.medicalInfo = intakeRecord.medicalInfo;
@@ -643,14 +834,16 @@
       }
     }
 
-    const docAdmissionCount = patientDoc && typeof patientDoc === 'object'
-      ? (patientDoc.data && typeof patientDoc.data.admissionCount === 'number'
-        ? patientDoc.data.admissionCount
-        : patientDoc.admissionCount)
-      : null;
+    const docAdmissionCount =
+      patientDoc && typeof patientDoc === 'object'
+        ? patientDoc.data && typeof patientDoc.data.admissionCount === 'number'
+          ? patientDoc.data.admissionCount
+          : patientDoc.admissionCount
+        : null;
 
-    const shouldSyncAggregates = Boolean(options.forceSummary) ||
-      ((result.created || 0) + (result.updated || 0) > 0) ||
+    const shouldSyncAggregates =
+      Boolean(options.forceSummary) ||
+      (result.created || 0) + (result.updated || 0) > 0 ||
       !Number.isFinite(docAdmissionCount);
 
     let summary = null;
@@ -659,7 +852,7 @@
         summary = await syncPatientAggregates(normalizedKey, {
           patientDoc,
           serverDate,
-          ensureOptions: options.ensureOptions || {}
+          ensureOptions: options.ensureOptions || {},
         });
       } catch (error) {
         console.warn('syncExcelRecordsToIntake summary failed', normalizedKey, error);
@@ -668,7 +861,7 @@
 
     return {
       ...result,
-      summary
+      summary,
     };
   }
 
@@ -677,12 +870,8 @@
     syncExcelRecordsToIntake,
     syncPatientAggregates,
     fetchExcelRecordsByKey,
-    normalizeExcelSpacing
+    normalizeExcelSpacing,
   };
 }
 
 module.exports = createExcelSync;
-
-
-
-

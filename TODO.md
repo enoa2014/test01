@@ -2,9 +2,19 @@
 
 ## 0. 当前优先事项（2025-10-02 更新）
 
-- [ ] 排查患者入住向导对“已存在患者”流程偶发未跳转成功页的根因，并移除 E2E 兜底逻辑
-- [ ] 将现有 textarea 场景迁移为 `pm-input` 的 `type="textarea"`，验证自动高度与校验体验
-- [ ] 补充 Component Lab 与文档，覆盖 `pm-input` 新增属性（`maxlength`、`textareaAutoHeight`、textarea 事件）
+- [x] 排查患者入住向导对“已存在患者”流程偶发未跳转成功页的根因，并移除 E2E 兜底逻辑
+  - [ ] 真机环境验证云函数可用时不会触发本地 fallback，并观察日志
+- [x] 将现有 textarea 场景迁移为 `pm-input` 的 `type="textarea"`，验证自动高度与校验体验
+  - [x] Component Lab 中 textarea demo 兼容新版属性（保持体验一致）
+- [x] 补充 Component Lab 与文档，覆盖 `pm-input` 新增属性（`maxlength`、`textareaAutoHeight`、textarea 事件）
+  - [x] 更新组件库文档说明 textarea 能力
+- [ ] 入住次数与历史列表一致性修复（高优先级）
+  - [x] 梳理 `getAllIntakeRecords` 返回的 imported/active/excel 记录结构
+  - [x] 调整 `dedupeIntakeRecords` 逻辑，基于 intakeTime+诊断等字段去重并优先保留有效记录
+  - [x] 梳理 `getAllIntakeRecords` 返回的 imported/active/excel 记录结构
+  - [x] 调整 `dedupeIntakeRecords` 逻辑，基于 intakeTime+诊断等字段去重并优先保留有效记录
+  - [x] 恢复云函数 `handleSubmitIntake` 对 `admissionCount` 的自增，确认“已有患者新增入住”不会漏记次数
+  - [ ] 回归患者详情页与患者列表页，确保历史条数与入住次数一致
 - [ ] 推进 PM-Card 页面替换与回归，完成分析页/患者详情媒体卡片迁移
 - [ ] 完成患者向导/详情页面的手工回归，签出清除按钮、提示文案与错误态
 
