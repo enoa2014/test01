@@ -14,3 +14,5 @@ project.private.config.json.bak
 .claude/
 CLAUDE.md
 nul
+tcb-cli/
+tcb-cli-2-7-8/
