@@ -1,27 +1,50 @@
-<view class="pm-input {{disabled ? 'pm-input--disabled' : ''}} {{block ? 'pm-input--block' : ''}}">
-  <label wx:if="{{label}}" class="pm-input__label">{{label}}</label>
-  <view class="pm-input__control">
-    <view wx:if="{{usePrefixSlot}}" class="pm-input__affix pm-input__affix--prefix">
-      <slot name="prefix"></slot>
+<view class="pm-input {{rootClass}}">
+  <label wx:if="{{label}}" class="pm-input__label">
+    <text wx:if="{{required}}" class="pm-input__required">*</text>
+    {{label}}
+  </label>
+  <view class="{{controlClass}}">
+    <view wx:if="{{hasPrefix}}" class="pm-input__affix pm-input__affix--prefix">
+      <slot wx:if="{{usePrefixSlot}}" name="prefix"></slot>
+      <text wx:elif="{{prefixIcon}}" class="pm-input__icon">{{prefixIcon}}</text>
     </view>
     <input
+      wx:if="{{!isTextarea}}"
       class="pm-input__field"
       value="{{value}}"
       placeholder="{{placeholder}}"
       type="{{type}}"
+      maxlength="{{maxlength}}"
       disabled="{{disabled}}"
+      data-key="{{datasetKey}}"
+      data-field="{{datasetField}}"
       bindinput="handleInput"
+      bindchange="handleChange"
+      bindfocus="handleFocus"
       bindblur="handleBlur"
     />
-    <view
-      wx:if="{{clearable && !disabled && value}}"
-      class="pm-input__clear"
-      bindtap="handleClear"
-    >×</view>
-    <view wx:if="{{useSuffixSlot}}" class="pm-input__affix pm-input__affix--suffix">
-      <slot name="suffix"></slot>
+    <textarea
+      wx:else
+      class="pm-input__field pm-input__field--textarea"
+      value="{{value}}"
+      placeholder="{{placeholder}}"
+      maxlength="{{maxlength}}"
+      auto-height="{{textareaAutoHeight}}"
+      disabled="{{disabled}}"
+      data-key="{{datasetKey}}"
+      data-field="{{datasetField}}"
+      bindinput="handleInput"
+      bindfocus="handleFocus"
+      bindblur="handleBlur"
+    ></textarea>
+    <view wx:if="{{showClear}}" class="pm-input__clear" bindtap="handleClear">×</view>
+    <view wx:if="{{hasSuffix}}" class="pm-input__affix pm-input__affix--suffix">
+      <slot wx:if="{{useSuffixSlot}}" name="suffix"></slot>
+      <text wx:elif="{{suffixIcon}}" class="pm-input__icon">{{suffixIcon}}</text>
     </view>
   </view>
-  <view wx:if="{{helper && !error}}" class="pm-input__helper">{{helper}}</view>
-  <view wx:if="{{error}}" class="pm-input__error">{{error}}</view>
+  <view wx:if="{{error}}" class="pm-input__message pm-input__message--error">{{error}}</view>
+  <view wx:elif="{{hint || helper}}" class="pm-input__message pm-input__message--helper"
+    >{{hint || helper}}</view
+  >
 </view>

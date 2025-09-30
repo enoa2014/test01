@@ -59,21 +59,38 @@
     <view class="quick-actions">
       <view class="action-title">后续操作</view>
       <view class="action-buttons">
-        <button class="action-btn secondary" bindtap="onViewPatient">
-          <view class="btn-icon">👁️</view>
-          <view class="btn-text">查看患者</view>
-        </button>
+        <pm-button
+          class="action-button"
+          type="primary"
+          ghost="{{true}}"
+          size="small"
+          icon="👁️"
+          text="查看患者"
+          bindtap="onViewPatient"
+        ></pm-button>
 
-        <button class="action-btn secondary" bindtap="onAddAnother">
-          <view class="btn-icon">➕</view>
-          <view class="btn-text">继续添加</view>
-        </button>
+        <pm-button
+          class="action-button"
+          type="primary"
+          ghost="{{true}}"
+          size="small"
+          icon="➕"
+          text="继续添加"
+          bindtap="onAddAnother"
+        ></pm-button>
       </view>
     </view>
   </view>
 
   <!-- 底部操作 -->
   <view class="bottom-actions">
-    <button class="primary-btn" bindtap="onBackToHome">返回首页</button>
+    <pm-button
+      class="primary-action primary-btn"
+      type="primary"
+      size="medium"
+      block="{{true}}"
+      text="返回首页"
+      bindtap="onBackToHome"
+    ></pm-button>
   </view>
 </view>
