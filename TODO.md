@@ -15,6 +15,9 @@
   - [x] 调整 `dedupeIntakeRecords` 逻辑，基于 intakeTime+诊断等字段去重并优先保留有效记录
   - [x] 恢复云函数 `handleSubmitIntake` 对 `admissionCount` 的自增，确认“已有患者新增入住”不会漏记次数
   - [ ] 回归患者详情页与患者列表页，确保历史条数与入住次数一致
+- [x] 排查并修复“胡矩豪入院记录不一致”事件（高优优先）
+  - [x] `patientIntake.getAllIntakeRecords` 过滤掉 `_id` 以 `-excel` 结尾的聚合记录，并保留 doctor/hospital 字段
+  - [x] 调整详情页记录展示逻辑，直接使用接口返回信息避免跨记录回填
 - [ ] 推进 PM-Card 页面替换与回归，完成分析页/患者详情媒体卡片迁移
 - [ ] 完成患者向导/详情页面的手工回归，签出清除按钮、提示文案与错误态
 

@@ -243,71 +243,34 @@ Page({
         const medicalInfo = record.medicalInfo || {};
         const intakeInfo = record.intakeInfo || {};
 
-        // 查找匹配的 profileResult 记录来补充医生信息
-        let profileRecord = null;
-        if (Array.isArray(profileResult.records)) {
-          profileRecord = profileResult.records.find(
-            pr =>
-              pr.diagnosis === record.diagnosis ||
-              pr.hospital === record.hospital ||
-              (pr.intakeTime &&
-                record.intakeTime &&
-                Math.abs(pr.intakeTime - record.intakeTime) < 86400000) // 同一天
-          );
-
-          // 如果没有找到精确匹配，使用第一个有医生信息的记录作为fallback
-          // ❌ 注意:这里的fallback逻辑可能导致新记录显示错误的医院/诊断信息
-          // 只在确实需要补充医生信息时才使用fallback
-          if (!profileRecord || !profileRecord.doctor) {
-            // 只有当记录本身没有医院和诊断信息时,才使用fallback
-            if (!record.hospital && !record.diagnosis && !record.doctor) {
-              profileRecord =
-                profileResult.records.find(pr => pr.doctor) || profileResult.records[0];
-            }
-          }
-        }
-
-        // 优先使用记录自己的数据,只有在缺失时才从profileRecord补充
         const hospitalDisplay = coalesceValue(
           record.hospital,
           medicalInfo.hospital,
-          record.hospital || medicalInfo.hospital ? null : profileRecord?.hospital // 只在记录本身没有医院信息时才使用profileRecord
+          intakeInfo.hospital
         );
         const diagnosisDisplay = coalesceValue(
           record.diagnosis,
           medicalInfo.diagnosis,
-          intakeInfo.visitReason,
-          record.diagnosis || medicalInfo.diagnosis || intakeInfo.visitReason
-            ? null
-            : profileRecord?.diagnosis
+          intakeInfo.visitReason
         );
         const doctorDisplay = coalesceValue(
           record.doctor,
           medicalInfo.doctor,
-          record.doctor || medicalInfo.doctor ? null : profileRecord?.doctor
+          intakeInfo.doctor
         );
         const symptomDetailDisplay = coalesceValue(
           medicalInfo.symptoms,
           record.symptoms,
-          intakeInfo.situation,
-          medicalInfo.symptoms || record.symptoms || intakeInfo.situation
-            ? null
-            : profileRecord?.symptoms
+          intakeInfo.situation
         );
         const treatmentProcessDisplay = coalesceValue(
           medicalInfo.treatmentProcess,
-          record.treatmentProcess,
-          medicalInfo.treatmentProcess || record.treatmentProcess
-            ? null
-            : profileRecord?.treatmentProcess
+          record.treatmentProcess
         );
         const followUpPlanDisplay = coalesceValue(
-          medicalInfo.followUpPlan,
           record.followUpPlan,
-          intakeInfo.followUpPlan,
-          medicalInfo.followUpPlan || record.followUpPlan || intakeInfo.followUpPlan
-            ? null
-            : profileRecord?.followUpPlan
+          medicalInfo.followUpPlan,
+          intakeInfo.followUpPlan
         );
 
         return {

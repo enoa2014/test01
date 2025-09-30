@@ -345,12 +345,21 @@ async function handleGetAllIntakeRecords(event) {
         return false;
       }
       const metadata = rawIntake.metadata || {};
-      const isLegacyAggregated =
+      const recordId = typeof rawIntake._id === 'string' ? rawIntake._id : '';
+      const isAggregatedBySource =
         metadata.source === 'excel-import' &&
         !metadata.excelRecordId &&
-        rawIntake._id &&
-        rawIntake._id.indexOf(`${resolvedPatientKey}-excel`) === 0;
-      return !isLegacyAggregated;
+        recordId.indexOf(`${resolvedPatientKey}-excel`) === 0;
+      const isAggregatedBySubmitter =
+        (metadata.submittedBy === 'excel-import' || metadata.importMode === 'excel-import') &&
+        recordId.endsWith('-excel');
+      const isAggregatedByIdSuffix =
+        recordId.endsWith('-excel') && !metadata.excelRecordId;
+
+      if (isAggregatedBySource || isAggregatedBySubmitter || isAggregatedByIdSuffix) {
+        return false;
+      }
+      return true;
     });
 
     const intakeRecords = filteredRawRecords.map(rawIntake => {
@@ -360,11 +369,52 @@ async function handleGetAllIntakeRecords(event) {
       const medicalInfo = rawIntake.medicalInfo || {};
       const contactInfo = rawIntake.contactInfo || {};
 
+      const hospital =
+        medicalInfo.hospital ||
+        rawIntake.hospital ||
+        intakeInfo.hospital ||
+        '';
+      const diagnosis =
+        medicalInfo.diagnosis ||
+        intakeInfo.visitReason ||
+        rawIntake.diagnosis ||
+        '';
+      const doctor =
+        medicalInfo.doctor ||
+        rawIntake.doctor ||
+        intakeInfo.doctor ||
+        '';
+      const followUpPlan =
+        intakeInfo.followUpPlan ||
+        medicalInfo.followUpPlan ||
+        rawIntake.followUpPlan ||
+        '';
+
+      const medicalInfoPayload = {};
+      ['hospital', 'diagnosis', 'doctor', 'symptoms', 'treatmentProcess', 'followUpPlan'].forEach(
+        key => {
+          const value = medicalInfo[key];
+          if (value !== undefined && value !== null && value !== '') {
+            medicalInfoPayload[key] = value;
+          }
+        }
+      );
+      const intakeInfoPayload = { ...intakeInfo };
+      if (!intakeInfoPayload.followUpPlan && followUpPlan) {
+        intakeInfoPayload.followUpPlan = followUpPlan;
+      }
+      if (!intakeInfoPayload.hospital && hospital) {
+        intakeInfoPayload.hospital = hospital;
+      }
+      if (!intakeInfoPayload.doctor && doctor) {
+        intakeInfoPayload.doctor = doctor;
+      }
+
       const record = {
         intakeId: rawIntake._id,
         intakeTime: intakeInfo.intakeTime || rawIntake.intakeTime,
         situation: intakeInfo.situation || rawIntake.narrative,
-        followUpPlan: intakeInfo.followUpPlan,
+        followUpPlan,
         patientName: basicInfo.patientName,
         gender: basicInfo.gender,
         birthDate: basicInfo.birthDate,
@@ -387,7 +437,18 @@ async function handleGetAllIntakeRecords(event) {
         createdAt: metadata.submittedAt || rawIntake.createdAt,
         updatedAt: rawIntake.updatedAt || metadata.lastModifiedAt,
         status: rawIntake.status || 'active',
+        hospital,
+        diagnosis,
+        doctor,
+        metadata,
       };
+
+      if (Object.keys(medicalInfoPayload).length) {
+        record.medicalInfo = medicalInfoPayload;
+      }
+      if (Object.keys(intakeInfoPayload).length) {
+        record.intakeInfo = intakeInfoPayload;
+      }
 
       const filteredRecord = {};
       Object.entries(record).forEach(([key, value]) => {
