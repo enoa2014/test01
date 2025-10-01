@@ -36,6 +36,9 @@ const {
 
 const { getDefaultQuota, makeQuotaPayload, createMediaService } = require('./media-service.js');
 
+const PATIENT_CACHE_KEY = 'patient_list_cache';
+const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
+
 function formatRecordStatus(status) {
   if (!status) {
     return '';
@@ -110,6 +113,7 @@ Page({
       title: '',
       content: '',
     },
+    lastSaveError: null,
   },
 
   onLoad(options) {
@@ -118,6 +122,9 @@ Page({
 
     this.profileKey = rawKey || rawPatientId || '';
     this.patientKey = rawPatientId || rawKey || '';
+    this.familyInfoSource = [];
+    this.patientForEditSource = {};
+    this.patientDisplaySource = {};
     this.mediaInitialized = false;
     this.originalEditForm = null;
     this.allIntakeRecordsSource = [];
@@ -229,9 +236,38 @@ Page({
       if (patientForEdit.key && patientForEdit.key !== this.patientKey) {
         this.patientKey = patientForEdit.key;
       }
-
-      if (!patientDisplay.patientName && patientForEdit.patientName) {
+      if (patientForEdit.patientName) {
         patientDisplay.patientName = patientForEdit.patientName;
+      }
+      if (patientForEdit.gender) {
+        patientDisplay.gender = patientForEdit.gender;
+      }
+      if (patientForEdit.birthDate) {
+        patientDisplay.birthDate = patientForEdit.birthDate;
+      }
+      if (patientForEdit.idNumber) {
+        patientDisplay.idNumber = patientForEdit.idNumber;
+      }
+      if (patientForEdit.phone) {
+        patientDisplay.phone = patientForEdit.phone;
+      }
+      if (patientForEdit.address) {
+        patientDisplay.address = patientForEdit.address;
+      }
+      if (patientForEdit.emergencyContact) {
+        patientDisplay.emergencyContact = patientForEdit.emergencyContact;
+      }
+      if (patientForEdit.emergencyPhone) {
+        patientDisplay.emergencyPhone = patientForEdit.emergencyPhone;
+      }
+      if (patientForEdit.backupContact) {
+        patientDisplay.backupContact = patientForEdit.backupContact;
+      }
+      if (patientForEdit.backupPhone) {
+        patientDisplay.backupPhone = patientForEdit.backupPhone;
+      }
+      if (patientForEdit.lastIntakeNarrative) {
+        patientDisplay.lastIntakeNarrative = patientForEdit.lastIntakeNarrative;
       }
 
       const latestIntakeRaw = detailData.latestIntake || null;
@@ -362,7 +398,25 @@ Page({
       const currentOrder = this.data.recordsSortOrder || 'desc';
       const sortedIntakeRecords = sortIntakeRecords(allIntakeRecords, currentOrder);
 
-      const editForm = buildEditForm(patientForEdit, latestIntakeRaw || {}, patientDisplay);
+      let editForm = buildEditForm(patientForEdit, latestIntakeRaw || {}, patientDisplay);
+
+      const parentFallback = this._extractParentContactFromSources(
+        this.familyInfoSource,
+        this.patientForEditSource,
+        this.patientDisplaySource
+      );
+      if (!normalizeString(editForm.emergencyContact) && parentFallback.emergencyContact) {
+        editForm = {
+          ...editForm,
+          emergencyContact: parentFallback.emergencyContact,
+        };
+      }
+      if (!normalizeString(editForm.emergencyPhone) && parentFallback.emergencyPhone) {
+        editForm = {
+          ...editForm,
+          emergencyPhone: parentFallback.emergencyPhone,
+        };
+      }
 
       this.originalEditForm = cloneForm(editForm);
 
@@ -372,11 +426,28 @@ Page({
       const profileFamilyInfo = Array.isArray(profileResult.familyInfo)
         ? profileResult.familyInfo
         : [];
+      this.familyInfoSource = profileFamilyInfo.map(item => ({
+        label: item && item.label ? item.label : '',
+        value: item && item.value ? item.value : '',
+      }));
+      this.patientForEditSource = { ...patientForEdit };
+      this.patientDisplaySource = { ...patientDisplay };
       const profileEconomicInfo = Array.isArray(profileResult.economicInfo)
         ? profileResult.economicInfo
         : [];
 
       const basicInfoDisplay = [];
+
+      pushDisplayItem(
+        basicInfoDisplay,
+        '姓名',
+        coalesceValue(
+          patientForEdit.patientName,
+          patientDisplay.patientName,
+          profileResult.patientName,
+          patientDisplay.name
+        )
+      );
 
       pushDisplayItem(
         basicInfoDisplay,
@@ -600,6 +671,14 @@ Page({
       editCanSave: dirty && Object.keys(newErrors).length === 0,
       ...pickerIndexUpdates,
     });
+
+    if (wx.enableAlertBeforeUnload && wx.disableAlertBeforeUnload) {
+      if (dirty) {
+        wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
+      } else {
+        wx.disableAlertBeforeUnload();
+      }
+    }
   },
 
   onEditFieldInput(event) {
@@ -650,9 +729,6 @@ Page({
     }
 
     this.mediaInitialized = false;
-    if (wx.enableAlertBeforeUnload) {
-      wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
-    }
     this.setData({
       editMode: true,
       editForm: form,
@@ -701,23 +777,36 @@ Page({
     if (this.data.saving) {
       return;
     }
-    if (!this.data.editCanSave) {
-      return;
-    }
+    this._ensureEmergencyContactFilled();
+
     const form = this.data.editForm || {};
     const errors = this.validateAllFields(form);
-    if (Object.keys(errors).length > 0) {
-      this.setData({ editErrors: errors, editDirty: true });
-      this.setData({ editCanSave: false });
+    const hasErrors = Object.keys(errors).length > 0;
+    const dirty = detectFormChanges(form, this.originalEditForm);
+
+    if (hasErrors) {
+      this.setData({
+        editErrors: errors,
+        editDirty: dirty,
+        editCanSave: false,
+      });
       wx.showToast({ icon: 'none', title: '请修正校验错误后再保存' });
       return;
     }
-    if (!this.data.editDirty) {
+
+    if (!dirty) {
+      this.setData({ editDirty: false, editCanSave: false });
       wx.showToast({ icon: 'none', title: '没有需要保存的修改' });
       return;
     }
 
-    this.setData({ saving: true });
+    this.setData({
+      saving: true,
+      editErrors: {},
+      editDirty: dirty,
+      editCanSave: true,
+      lastSaveError: null,
+    });
 
     try {
       const changedFields = collectChangedFormKeys(form, this.originalEditForm || {});
@@ -737,7 +826,6 @@ Page({
           backupContact: form.backupContact,
           backupPhone: form.backupPhone,
           lastIntakeNarrative: form.narrative,
-          expectedUpdatedAt: this.data.editMetadata.patientUpdatedAt,
         },
         audit: {
           message: '患者详情页内联编辑',
@@ -745,10 +833,11 @@ Page({
         },
       };
 
-      if (form.intakeId) {
+      const intakeDocId = form.intakeDocId || form.intakeId;
+      if (intakeDocId) {
         payload.intakeUpdates = {
-          intakeId: form.intakeId,
-          expectedUpdatedAt: this.data.editMetadata.intakeUpdatedAt,
+          intakeId: intakeDocId,
+          expectedUpdatedAt: form.intakeUpdatedAt,
           basicInfo: {
             patientName: form.patientName,
             idType: form.idType,
@@ -793,18 +882,284 @@ Page({
         } else {
           wx.showToast({ icon: 'none', title: error.message || '保存失败' });
         }
-        this.setData({ saving: false });
+        this.setData({ saving: false, lastSaveError: error || null });
         return;
       }
 
       wx.showToast({ icon: 'success', title: '保存成功' });
+      this.updateDetailSummary(form);
+      this.markPatientListDirty(form);
       this.resetEditState();
       await this.fetchPatientDetail();
     } catch (error) {
       logger.error('update patient failed', error);
       wx.showToast({ icon: 'none', title: (error && error.message) || '保存失败，请稍后再试' });
-      this.setData({ saving: false });
+      this.setData({ saving: false, lastSaveError: error || null });
     }
+  },
+
+  _ensureEmergencyContactFilled() {
+    const currentForm = this.data.editForm || {};
+    const contactEmpty = !normalizeString(currentForm.emergencyContact || '');
+    const phoneEmpty = !normalizeString(currentForm.emergencyPhone || '');
+
+    const fallback = this._extractParentContactFromSources(
+      this.familyInfoSource,
+      this.patientForEditSource,
+      this.patientDisplaySource
+    );
+
+    const nextForm = { ...currentForm };
+    let changed = false;
+
+    if (contactEmpty && fallback.emergencyContact) {
+      nextForm.emergencyContact = fallback.emergencyContact;
+      changed = true;
+    }
+
+    if (phoneEmpty && fallback.emergencyPhone) {
+      nextForm.emergencyPhone = fallback.emergencyPhone;
+      changed = true;
+    }
+
+    const nextErrors = { ...this.data.editErrors };
+    delete nextErrors.emergencyContact;
+    delete nextErrors.emergencyPhone;
+
+    const dirty = detectFormChanges(nextForm, this.originalEditForm);
+    this.setData({
+      editForm: nextForm,
+      editErrors: nextErrors,
+      editDirty: dirty,
+      editCanSave: dirty && Object.keys(nextErrors).length === 0,
+    });
+
+    if (wx.enableAlertBeforeUnload && wx.disableAlertBeforeUnload) {
+      if (dirty) {
+        wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
+      } else {
+        wx.disableAlertBeforeUnload();
+      }
+    }
+
+    return changed;
+  },
+
+  _parseParentContactInfo(raw, fallbackLabel, role) {
+    const text = normalizeString(raw);
+    if (!text) {
+      return null;
+    }
+
+    const phoneMatch = text.match(/1[3-9]\d{9}/);
+    if (!phoneMatch) {
+      return null;
+    }
+    const phone = phoneMatch[0];
+
+    let name = text.replace(phone, ' ');
+    name = name.replace(/\d{15,18}[Xx]?/g, ' ');
+    name = name.replace(/\d{7,}/g, ' ');
+    name = name.replace(/[,:：，、（）()]/g, ' ');
+    name = name.replace(/(联系电话|电话|手机|联系方式)/g, ' ');
+    name = name.replace(/\s+/g, ' ').trim();
+
+    if (!name && fallbackLabel) {
+      name = fallbackLabel;
+    }
+    if (!name) {
+      name = role === 'mother' ? '母亲' : role === 'father' ? '父亲' : '';
+    }
+
+    if (!phone) {
+      return null;
+    }
+
+    return {
+      emergencyContact: name,
+      emergencyPhone: phone,
+      role,
+    };
+  },
+
+  _extractParentContactFromSources(familyInfoList = [], patientForEdit = {}, patientDisplay = {}) {
+    const candidates = [];
+
+    const pushCandidate = (value, fallbackLabel, role) => {
+      const parsed = this._parseParentContactInfo(value, fallbackLabel, role);
+      if (parsed && parsed.emergencyPhone) {
+        candidates.push(parsed);
+      }
+    };
+
+    if (Array.isArray(familyInfoList)) {
+      familyInfoList.forEach(item => {
+        if (!item || typeof item !== 'object') {
+          return;
+        }
+        const label = normalizeString(item.label || '');
+        const value = item.value || '';
+        if (!value) {
+          return;
+        }
+        const lower = (label || '').toLowerCase();
+        if (lower.includes('母') || lower.includes('mother')) {
+          pushCandidate(value, '母亲', 'mother');
+        } else if (lower.includes('父') || lower.includes('father')) {
+          pushCandidate(value, '父亲', 'father');
+        }
+      });
+    }
+
+    const motherCandidates = [patientForEdit.motherInfo, patientDisplay.motherInfo];
+    motherCandidates.forEach(value => pushCandidate(value, '母亲', 'mother'));
+
+    const fatherCandidates = [patientForEdit.fatherInfo, patientDisplay.fatherInfo];
+    fatherCandidates.forEach(value => pushCandidate(value, '父亲', 'father'));
+
+    if (!candidates.length) {
+      return { emergencyContact: '', emergencyPhone: '' };
+    }
+
+    const preferredMother = candidates.find(candidate => candidate.role === 'mother');
+    if (preferredMother) {
+      return {
+        emergencyContact: preferredMother.emergencyContact,
+        emergencyPhone: preferredMother.emergencyPhone,
+      };
+    }
+
+    const firstCandidate = candidates[0];
+    return {
+      emergencyContact: firstCandidate.emergencyContact,
+      emergencyPhone: firstCandidate.emergencyPhone,
+    };
+  },
+
+  markPatientListDirty(form) {
+    const flag = {
+      timestamp: Date.now(),
+      patientKey:
+        this.patientKey ||
+        form.patientKey ||
+        form.key ||
+        (this.data.patient && (this.data.patient.key || this.data.patient.patientKey)) ||
+        '',
+      updates: {
+        patientName: form.patientName,
+        phone: form.phone,
+        address: form.address,
+        gender: form.gender,
+        emergencyContact: form.emergencyContact,
+        emergencyPhone: form.emergencyPhone,
+      },
+    };
+
+    try {
+      wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, flag);
+    } catch (error) {
+      // ignore storage failure
+    }
+
+    try {
+      wx.removeStorageSync(PATIENT_CACHE_KEY);
+    } catch (error) {
+      // ignore cache removal failure
+    }
+  },
+
+  updateDetailSummary(form) {
+    const currentPatient = this.data.patient || {};
+    const nextPatient = {
+      ...currentPatient,
+      patientName: form.patientName,
+      phone: form.phone,
+      address: form.address,
+      emergencyContact: form.emergencyContact,
+      emergencyPhone: form.emergencyPhone,
+    };
+
+    const nextBasicInfo = (this.data.basicInfo || []).map((item) => {
+      if (!item || typeof item !== 'object') {
+        return item;
+      }
+      if (item.label === '姓名') {
+        return { ...item, value: form.patientName || item.value };
+      }
+      if (item.label === '性别') {
+        return { ...item, value: form.gender || item.value };
+      }
+      if (item.label === '出生日期') {
+        return { ...item, value: form.birthDate || item.value };
+      }
+      if (item.label === '身份证号') {
+        return { ...item, value: form.idNumber || item.value };
+      }
+      return item;
+    });
+
+    if (!nextBasicInfo.some(item => item && item.label === '姓名')) {
+      nextBasicInfo.unshift({ label: '姓名', value: form.patientName || '' });
+    }
+
+    const nextFamilyInfo = (this.data.familyInfo || []).map((item) => {
+      if (!item || typeof item !== 'object') {
+        return item;
+      }
+      if (item.label === '家庭地址') {
+        return { ...item, value: form.address || item.value };
+      }
+      if (item.label === '紧急联系人') {
+        return { ...item, value: form.emergencyContact || item.value };
+      }
+      if (item.label === '紧急联系电话') {
+        return { ...item, value: form.emergencyPhone || item.value };
+      }
+      return item;
+    });
+
+    this.setData({
+      patient: nextPatient,
+      basicInfo: nextBasicInfo,
+      familyInfo: nextFamilyInfo,
+    });
+
+    if (form.patientName) {
+      wx.setNavigationBarTitle({ title: form.patientName });
+    }
+
+    this.patientForEditSource = {
+      ...(this.patientForEditSource || {}),
+      patientName: form.patientName,
+      gender: form.gender,
+      birthDate: form.birthDate,
+      phone: form.phone,
+      address: form.address,
+      emergencyContact: form.emergencyContact,
+      emergencyPhone: form.emergencyPhone,
+    };
+
+    this.patientDisplaySource = {
+      ...(this.patientDisplaySource || {}),
+      patientName: form.patientName,
+      gender: form.gender,
+      birthDate: form.birthDate,
+      phone: form.phone,
+      address: form.address,
+      emergencyContact: form.emergencyContact,
+      emergencyPhone: form.emergencyPhone,
+    };
+
+    this.originalEditForm = {
+      ...(this.originalEditForm || {}),
+      patientName: form.patientName,
+      gender: form.gender,
+      birthDate: form.birthDate,
+      phone: form.phone,
+      address: form.address,
+      emergencyContact: form.emergencyContact,
+      emergencyPhone: form.emergencyPhone,
+    };
   },
 
   setMediaState(patch) {

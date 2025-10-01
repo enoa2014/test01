@@ -7,6 +7,7 @@ const SORT_OPTIONS = [
 ];
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
+const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
 const PATIENT_CACHE_TTL = 5 * 60 * 1000;
 
 function readPatientsCache() {
@@ -113,6 +114,10 @@ Page({
     this.fetchPatients({ silent: !!(cachedPatients && cachedPatients.length) });
   },
 
+  onShow() {
+    this.applyPendingUpdates();
+  },
+
   async fetchPatients(options = {}) {
     const silent = !!(options && options.silent);
     if (!silent) {
@@ -156,6 +161,11 @@ Page({
         this.applyFilters();
       });
       writePatientsCache(patients);
+      try {
+        wx.removeStorageSync(PATIENT_LIST_DIRTY_KEY);
+      } catch (error) {
+        // ignore removal errors
+      }
     } catch (error) {
       logger.error('Failed to load patients', error);
       const errorMessage = (error && error.errMsg) || '读取患者数据失败，请稍后重试';
@@ -171,6 +181,58 @@ Page({
         this.setData({ loading: false, error: errorMessage });
       }
     }
+  },
+
+  applyPendingUpdates() {
+    let flag = null;
+    try {
+      flag = wx.getStorageSync(PATIENT_LIST_DIRTY_KEY);
+    } catch (error) {
+      flag = null;
+    }
+
+    if (!flag) {
+      return;
+    }
+
+    try {
+      wx.removeStorageSync(PATIENT_LIST_DIRTY_KEY);
+    } catch (error) {
+      // ignore removal errors
+    }
+
+    const { patientKey, updates } = flag || {};
+    if (!patientKey || !updates) {
+      this.fetchPatients({ silent: false });
+      return;
+    }
+
+    const mergeUpdates = (list = []) =>
+      list.map(item => {
+        const key = item.patientKey || item.key || item.id || item.recordKey;
+        if (!key) {
+          return item;
+        }
+        if (key === patientKey) {
+          return { ...item, ...updates };
+        }
+        return item;
+      });
+
+    const mergedPatients = mergeUpdates(this.data.patients || []);
+    const mergedDisplay = mergeUpdates(this.data.displayPatients || []);
+
+    this.setData(
+      {
+        patients: mergedPatients,
+        displayPatients: mergedDisplay,
+      },
+      () => {
+        this.applyFilters();
+      }
+    );
+
+    this.fetchPatients({ silent: false });
   },
 
   applyFilters() {

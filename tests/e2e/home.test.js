@@ -1,23 +1,22 @@
 ﻿const {
-  delay,
   waitForElement,
   waitForElements,
   waitForPage,
   waitForCondition
 } = require('./helpers/miniapp');
-const { createPatientViaWizard } = require('./helpers/patient-flow');
+const {
+  registerPatientRequirement,
+  getPatientResource,
+} = require('./helpers/resource-manager');
+
+registerPatientRequirement('home-smoke');
 
 describe('home page admissions', () => {
-  let patientName;
-  let successPage;
+  let patientName = '';
 
   beforeAll(async () => {
-    const result = await createPatientViaWizard(miniProgram);
-    successPage = result.successPage;
-    patientName = result.patientData.patientName;
-    const backBtn = await waitForElement(successPage, '.primary-btn');
-    await backBtn.tap();
-    await delay(600);
+    const resource = await getPatientResource('home-smoke');
+    patientName = resource.patientData.patientName;
   }, 300000);
 
   test('patient list renders with automation patient', async () => {

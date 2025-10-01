@@ -72,6 +72,47 @@ function getPatientRef(item) {
   };
 }
 
+const UNKNOWN_LABEL_PATTERN = /(未知|未记录)/;
+
+function decorateStatCards(stats) {
+  if (!stats || !stats.length) {
+    return [];
+  }
+
+  const maxCount = stats.reduce((acc, stat) => {
+    return stat && typeof stat.count === 'number' && stat.count > acc ? stat.count : acc;
+  }, 0);
+
+  return stats.map((stat) => {
+    if (!stat) {
+      return stat;
+    }
+
+    const decorated = { ...stat };
+    decorated.variant = 'default';
+    decorated.status = 'info';
+
+    const labelText = (stat.label || '').trim();
+    if (UNKNOWN_LABEL_PATTERN.test(labelText)) {
+      decorated.status = 'warning';
+      decorated.variant = 'outlined';
+      return decorated;
+    }
+
+    if (maxCount > 0 && stat.count === maxCount) {
+      decorated.status = 'success';
+      decorated.variant = 'elevated';
+      return decorated;
+    }
+
+    if (!stat.count) {
+      decorated.status = 'default';
+    }
+
+    return decorated;
+  });
+}
+
 function toStat(label, patients) {
   if (!patients || !patients.length) {
     return null;
@@ -117,7 +158,7 @@ function buildAgePanel(patients) {
 
   return {
     title: '按年龄段分析',
-    stats,
+    stats: decorateStatCards(stats),
     emptyText: '暂无年龄数据'
   };
 }
@@ -143,7 +184,7 @@ function buildGroupPanel(title, groups, { emptyText = '暂无数据', sortByLabe
   } else if (sortByValueDesc) {
     stats.sort((a, b) => b.count - a.count);
   }
-  return { title, stats, emptyText };
+  return { title, stats: decorateStatCards(stats), emptyText };
 }
 
 function getMonthLabel(item) {

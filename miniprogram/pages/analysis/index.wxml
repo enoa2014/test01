@@ -6,20 +6,33 @@
       <text class="panel-title">{{item.title}}</text>
       <block wx:if="{{item.stats && item.stats.length}}">
         <scroll-view scroll-x class="stat-scroll" enable-flex="true">
-          <view
-            class="stat-card"
+          <pm-card
             wx:for="{{item.stats}}"
             wx:for-item="stat"
             wx:for-index="statIndex"
             wx:key="label"
+            class="analysis-stat-card"
+            variant="{{stat.variant || 'default'}}"
+            status="{{stat.status || 'default'}}"
+            padding="var(--space-4)"
+            clickable="{{true}}"
+            use-slot="{{true}}"
             data-panel-index="{{panelIndex}}"
             data-stat-index="{{statIndex}}"
             bindtap="onStatTap"
           >
-            <text class="stat-label">{{stat.label}}</text>
-            <text class="stat-count">{{stat.count}} 人</text>
-            <text wx:if="{{stat.sampleNames}}" class="stat-samples">{{stat.sampleNames}}</text>
-          </view>
+            <view class="analysis-stat-card__content">
+              <text class="analysis-stat-card__label">{{stat.label}}</text>
+              <view class="analysis-stat-card__count">
+                <text class="analysis-stat-card__figure">{{stat.count}}</text>
+                <text class="analysis-stat-card__unit">人</text>
+              </view>
+              <text
+                wx:if="{{stat.sampleNames}}"
+                class="analysis-stat-card__samples"
+              >{{stat.sampleNames}}</text>
+            </view>
+          </pm-card>
         </scroll-view>
       </block>
       <view wx:else class="panel-placeholder">{{item.emptyText || '暂无数据'}}</view>
@@ -50,4 +63,3 @@
     </view>
   </view>
 </view>
-

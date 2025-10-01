@@ -6,6 +6,12 @@ const {
   createPatientViaWizard,
   continueExistingPatientIntake
 } = require('./helpers/patient-flow');
+const {
+  registerPatientRequirement,
+  getPatientResource,
+} = require('./helpers/resource-manager');
+
+registerPatientRequirement('existing-intake-patient');
 
 describe('patient intake wizard (mpflow)', () => {
   test('completes new patient intake', async () => {
@@ -28,12 +34,12 @@ describe('patient intake wizard (mpflow)', () => {
   }, 300000);
 
   test('existing patient intake skips基础/联系人并能完成提交流程', async () => {
-    const { patientData } = await createPatientViaWizard(miniProgram, { __cacheKey: 'existing-flow' });
+    const resource = await getPatientResource('existing-intake-patient');
 
     const {
       successPage,
       wizardSnapshot
-    } = await continueExistingPatientIntake(miniProgram, patientData);
+    } = await continueExistingPatientIntake(miniProgram, resource.patientData);
 
     expect(Array.isArray(wizardSnapshot.visibleSteps)).toBe(true);
     expect(wizardSnapshot.visibleSteps[0].key).toBe('situation');
@@ -45,6 +51,14 @@ describe('patient intake wizard (mpflow)', () => {
     const titleNode = await waitForElement(successPage, '.success-title', { timeout: 10000 });
     const title = (await titleNode.text()).trim();
     expect(title).toContain('成功');
+
     await delay(200);
+    if (typeof successPage.callMethod === 'function') {
+      try {
+        await successPage.callMethod('handleBackToList');
+      } catch (error) {
+        // ignore when method not available
+      }
+    }
   }, 300000);
 });

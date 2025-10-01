@@ -19,6 +19,7 @@ function buildEditForm(patient = {}, intake = {}, fallbackPatient = {}) {
   const gender = patient.gender || fallbackPatient.gender || "";
   const birthDate = patient.birthDate || fallbackPatient.birthDate || "";
 
+  const intakeDocId = intake._id || intake.intakeDocId || intake.intakeDocumentId || null;
   return {
     patientName,
     idType: patient.idType || "身份证",
@@ -36,7 +37,8 @@ function buildEditForm(patient = {}, intake = {}, fallbackPatient = {}) {
     followUpPlan: intakeInfo.followUpPlan || "",
     medicalHistory: Array.isArray(intakeInfo.medicalHistory) ? intakeInfo.medicalHistory : [],
     attachments: Array.isArray(intakeInfo.attachments) ? intakeInfo.attachments : [],
-    intakeId: intake.intakeId || intake._id || null,
+    intakeId: intake.intakeId || intakeDocId,
+    intakeDocId,
     intakeUpdatedAt: intake.updatedAt || (intake.metadata && intake.metadata.lastModifiedAt) || null,
     patientUpdatedAt: patient.updatedAt || null
   };
@@ -127,7 +129,10 @@ function validateField(key, value, form) {
   }
 
   if (key === "idNumber" && form.idType === "身份证" && currentValue) {
-    if (!/^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/.test(currentValue)) {
+    const value = String(currentValue).trim();
+    const regex18 = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/;
+    const regex15 = /^[1-9]\d{7}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}$/;
+    if (!regex18.test(value) && !regex15.test(value)) {
       return "身份证号码格式不正确";
     }
   }
@@ -157,10 +162,7 @@ function validateField(key, value, form) {
   if (key === "narrative") {
     const text = normalizeString(value);
     if (!text) {
-      return "情况说明不能为空";
-    }
-    if (text.length < 30) {
-      return "情况说明至少需要 30 个字符";
+      return "";
     }
     if (text.length > 500) {
       return "情况说明不能超过 500 个字符";

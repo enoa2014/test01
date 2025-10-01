@@ -98,34 +98,22 @@ async function cleanupTestData(db, command) {
       { ['metadata.submittedBy']: 'patient-intake-wizard' },
     ]);
 
-    try {
-      // 尝试批量删除
-      const bulk = await collection.where(matcher).remove();
-      if (bulk && typeof bulk.deleted === 'number') {
-        console.log(`[verify-cleanup] Removed ${bulk.deleted} documents from ${collectionName}`);
-        totalRemoved += bulk.deleted;
-        continue;
-      }
-    } catch (error) {
-      console.warn(`[verify-cleanup] Bulk remove failed for ${collectionName}, using batch mode`);
-    }
-
-    // 批量删除失败,逐条删除
     const batchSize = 100;
     let removed = 0;
-    while (true) {
+    do {
       const snapshot = await collection.where(matcher).limit(batchSize).get();
       if (!snapshot.data.length) {
         break;
       }
-      for (const doc of snapshot.data) {
+      const docs = snapshot.data;
+      for (const doc of docs) {
         await collection.doc(doc._id).remove();
-        removed++;
+        removed += 1;
       }
-      if (snapshot.data.length < batchSize) {
+      if (docs.length < batchSize) {
         break;
       }
-    }
+    } while (true);
 
     if (removed > 0) {
       console.log(`[verify-cleanup] Removed ${removed} documents from ${collectionName}`);

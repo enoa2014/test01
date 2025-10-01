@@ -20,7 +20,10 @@ module.exports = {
     ...(process.env.WX_DEVTOOLS_CLI ? { cliPath: process.env.WX_DEVTOOLS_CLI } : {}),
     ...(process.env.WX_MINIAPP_PROJECT ? { projectPath: process.env.WX_MINIAPP_PROJECT } : {})
   },
-  setupFilesAfterEnv: [require.resolve('@mpflow/plugin-e2e-test/lib/testSetup.js')],
+  setupFilesAfterEnv: [
+    '<rootDir>/tests/e2e/setup.js',
+    require.resolve('@mpflow/plugin-e2e-test/lib/testSetup.js'),
+    '<rootDir>/tests/e2e/setup-resources.js'
+  ],
   maxWorkers: 1
 };
-

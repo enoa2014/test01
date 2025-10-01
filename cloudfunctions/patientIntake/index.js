@@ -51,6 +51,30 @@ function normalizeString(value) {
   return String(value).trim();
 }
 
+function validateChineseId(idNumber) {
+  if (!idNumber) {
+    return false;
+  }
+  const value = String(idNumber).trim().toUpperCase();
+  const pattern18 = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9X]$/;
+  const pattern15 = /^[1-9]\d{7}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}$/;
+
+  if (pattern15.test(value)) {
+    return true;
+  }
+
+  if (!pattern18.test(value)) {
+    return false;
+  }
+
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+  const validateCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+  const digits = value.split('');
+  const sum = digits.slice(0, 17).reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
+  const code = validateCodes[sum % 11];
+  return code === digits[17];
+}
+
 function generatePatientKey() {
   return `P${Date.now()}_${uuidv4().slice(0, 8)}`;
 }
@@ -144,7 +168,6 @@ function validateFormData(formData) {
     { key: 'address', label: '常住地址' },
     { key: 'emergencyContact', label: '紧急联系人' },
     { key: 'emergencyPhone', label: '紧急联系人电话' },
-    { key: 'situation', label: '情况说明' },
   ];
 
   for (const field of requiredFields) {
@@ -156,7 +179,8 @@ function validateFormData(formData) {
 
   // 证件号码格式校验
   if (formData.idType === '身份证' && formData.idNumber) {
-    if (!/^[1-9]\d{17}$/.test(formData.idNumber)) {
+    const idNumber = normalizeString(formData.idNumber);
+    if (!validateChineseId(idNumber)) {
       errors.idNumber = '身份证号码格式不正确';
     }
   }
@@ -804,6 +828,10 @@ async function handleSubmitIntake(event) {
       await transaction.collection(PATIENTS_COLLECTION).doc(finalPatientKey).set({
         data: patientRecord,
       });
+      console.log('[patientIntake] submitIntake created patient', finalPatientKey, {
+        hasSituation: Boolean(formData.situation),
+        admissionCount: patientRecord.admissionCount,
+      });
     }
 
     // 创建入住记录
@@ -863,6 +891,17 @@ async function handleSubmitIntake(event) {
       intakeTime: now,
     };
   });
+
+  try {
+    const verifySnapshot = await db.collection(PATIENTS_COLLECTION).doc(result.patientKey).get();
+    const exists = Boolean(verifySnapshot && verifySnapshot.data);
+    console.log('[patientIntake] submitIntake verify patient doc', result.patientKey, {
+      exists,
+      intakeId: result.intakeId,
+    });
+  } catch (verifyError) {
+    console.warn('[patientIntake] submitIntake verify failed', result.patientKey, verifyError);
+  }
 
   let summary = null;
   try {

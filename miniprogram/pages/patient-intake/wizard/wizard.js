@@ -622,16 +622,9 @@ Page({
         requiredFields = contactRequired.filter(field => !formData[field.key]);
         break;
       }
-      case 2: {
-        // 情况说明
-        if (
-          !formData.situation ||
-          formData.situation.length < this.data.situationConfig.minLength
-        ) {
-          requiredFields.push({ key: 'situation', label: '情况说明' });
-        }
+      case 2:
+        // 情况说明改为选填
         break;
-      }
       case 3: {
         // 附件上传 - 选填
         break;
@@ -664,7 +657,7 @@ Page({
 
   // 获取所有缺失的必填项
   getAllMissingRequiredFields() {
-    const { formData, situationConfig, isEditingExisting } = this.data;
+    const { formData, isEditingExisting } = this.data;
     const baseAndContactFields = [
       { key: 'patientName', label: '姓名' },
       { key: 'idNumber', label: '证件号码' },
@@ -683,11 +676,6 @@ Page({
           missing.push(field);
         }
       });
-    }
-
-    // 检查情况说明
-    if (!formData.situation || formData.situation.length < situationConfig.minLength) {
-      missing.push({ key: 'situation', label: '情况说明' });
     }
 
     return missing;
@@ -764,8 +752,13 @@ Page({
       case 'idNumber':
         if (!value || !value.trim()) {
           error = '请输入证件号码';
-        } else if (this.data.formData.idType === '身份证' && !/^[1-9]\d{17}$/.test(value)) {
-          error = '身份证号码格式不正确';
+        } else if (this.data.formData.idType === '身份证') {
+          const trimmed = String(value).trim();
+          const regex18 = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/;
+          const regex15 = /^[1-9]\d{7}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}$/;
+          if (!regex18.test(trimmed) && !regex15.test(trimmed)) {
+            error = '身份证号码格式不正确';
+          }
         }
         break;
 
@@ -778,11 +771,6 @@ Page({
         break;
 
       case 'situation':
-        if (value.length < this.data.situationConfig.minLength) {
-          error = `情况说明至少需要${this.data.situationConfig.minLength}字`;
-        } else if (!this.checkSituationKeywords(value)) {
-          error = '情况说明应包含护理需求或症状相关信息';
-        }
         break;
     }
 
@@ -793,23 +781,6 @@ Page({
     }
 
     return !error;
-  },
-
-  // 检查情况说明关键词
-  checkSituationKeywords(text) {
-    const keywords = [
-      '护理',
-      '症状',
-      '康复',
-      '治疗',
-      '病情',
-      '照顾',
-      '功能',
-      '障碍',
-      '需要',
-      '协助',
-    ];
-    return keywords.some(keyword => text.includes(keyword));
   },
 
   // 步骤导航点击
@@ -901,20 +872,8 @@ Page({
         }
         break;
       }
-      case 2: {
-        // 情况说明
-        if (
-          !formData.situation ||
-          formData.situation.length < this.data.situationConfig.minLength
-        ) {
-          errors.situation = `情况说明至少需要${this.data.situationConfig.minLength}字`;
-          isValid = false;
-        } else if (!this.checkSituationKeywords(formData.situation)) {
-          errors.situation = '情况说明应包含护理需求或症状相关信息';
-          isValid = false;
-        }
+      case 2:
         break;
-      }
     }
 
     if (!isValid) {

@@ -75,7 +75,7 @@
     "test": "npm run test:e2e",
     "prepare": "husky install",
     "docs:serve": "node scripts/serve-docs.js",
-    "test:e2e:mpflow": "mpflow-service test:e2e",
+    "test:e2e:mpflow": "cross-env CI=1 mpflow-service test:e2e -- --runInBand",
     "test:e2e": "npm run test:e2e:mpflow && npm run test:cleanup",
     "build:prod": "echo 'Production build'",
     "tokens:generate": "node scripts/generate-tokens.js",

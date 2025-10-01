@@ -186,6 +186,12 @@ async function buildPatientsFromDatabase(options = {}) {
       gender: 1,
       birthDate: 1,
       idNumber: 1,
+      phone: 1,
+      address: 1,
+      emergencyContact: 1,
+      emergencyPhone: 1,
+      backupContact: 1,
+      backupPhone: 1,
       recordKey: 1,
       firstAdmissionDate: 1,
       latestAdmissionDate: 1,
@@ -274,6 +280,12 @@ async function buildPatientsFromDatabase(options = {}) {
 
     const summaryCaregivers = doc.summaryCaregivers || doc.caregivers || data.summaryCaregivers || '';
     const lastNarrative = doc.lastIntakeNarrative || data.lastIntakeNarrative || '';
+    const phone = doc.phone || data.phone || '';
+    const address = doc.address || data.address || '';
+    const emergencyContact = doc.emergencyContact || data.emergencyContact || '';
+    const emergencyPhone = doc.emergencyPhone || data.emergencyPhone || '';
+    const backupContact = doc.backupContact || data.backupContact || '';
+    const backupPhone = doc.backupPhone || data.backupPhone || '';
 
     const excelInfo = excelMeta.get(nameKey) || excelMeta.get(doc.recordKey) || null;
     const nativePlace = doc.nativePlace || data.nativePlace || (excelInfo && excelInfo.nativePlace) || '';
@@ -295,6 +307,12 @@ async function buildPatientsFromDatabase(options = {}) {
       gender: doc.gender || '',
       birthDate: doc.birthDate || '',
       idNumber: doc.idNumber || '',
+      phone,
+      address,
+      emergencyContact,
+      emergencyPhone,
+      backupContact,
+      backupPhone,
       nativePlace,
       ethnicity,
       firstAdmissionDate: firstTs || null,
@@ -503,6 +521,81 @@ async function fetchPatientDetailByKey(recordKey) {
   return formatPatientDetail(group);
 }
 
+async function fetchFallbackPatientDetail(patientKey) {
+  try {
+    await ensureCollectionExists(PATIENTS_COLLECTION);
+    const patientSnapshot = await db.collection(PATIENTS_COLLECTION).doc(patientKey).get();
+    const patientDoc = patientSnapshot && patientSnapshot.data ? patientSnapshot.data : null;
+    if (!patientDoc) {
+      return null;
+    }
+
+    const buildList = (items = []) =>
+      items
+        .map(([label, value]) => ({ label, value: normalizeValue(value) }))
+        .filter(item => item.value);
+
+    const patient = {
+      key: patientDoc._id || patientKey,
+      patientName: patientDoc.patientName || '',
+      gender: patientDoc.gender || '',
+      birthDate: patientDoc.birthDate || '',
+      idNumber: patientDoc.idNumber || '',
+      latestHospital: patientDoc.latestHospital || '',
+      latestDoctor: patientDoc.latestDoctor || ''
+    };
+
+    const basicInfo = buildList([
+      ['性别', patientDoc.gender],
+      ['出生日期', patientDoc.birthDate],
+      ['身份证号', patientDoc.idNumber],
+      ['联系电话', patientDoc.phone]
+    ]);
+
+    const familyInfo = buildList([
+      ['家庭地址', patientDoc.address],
+      ['紧急联系人', patientDoc.emergencyContact],
+      ['紧急联系电话', patientDoc.emergencyPhone],
+      ['备用联系人', patientDoc.backupContact],
+      ['备用联系电话', patientDoc.backupPhone]
+    ]);
+
+    const economicInfo = buildList([
+      ['家庭经济情况', patientDoc.familyEconomy]
+    ]);
+
+    let records = [];
+    try {
+      await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+      const intakeSnapshot = await db
+        .collection(PATIENT_INTAKE_COLLECTION)
+        .where({ patientKey })
+        .orderBy('updatedAt', 'desc')
+        .limit(50)
+        .get();
+      records = Array.isArray(intakeSnapshot.data)
+        ? intakeSnapshot.data.map(item => ({
+            ...item,
+            intakeId: item.intakeId || item._id || ''
+          }))
+        : [];
+    } catch (intakeError) {
+      console.warn('patientProfile fallback failed to load intake records', patientKey, intakeError);
+    }
+
+    return {
+      patient,
+      basicInfo,
+      familyInfo,
+      economicInfo,
+      records
+    };
+  } catch (error) {
+    console.warn('patientProfile fallback failed', patientKey, error);
+    return null;
+  }
+}
+
 // Format patient detail
 function formatPatientDetail(group) {
   const latest = group.records[0] || {};
@@ -684,8 +777,18 @@ async function handleGetPatientDetail(event) {
       ...patientDetail
     };
   } catch (error) {
+    if (error && error.code === 'PATIENT_NOT_FOUND') {
+      const fallbackDetail = await fetchFallbackPatientDetail(key);
+      if (fallbackDetail) {
+        console.warn('patientProfile detail fallback to patients collection', key);
+        return {
+          success: true,
+          ...fallbackDetail
+        };
+      }
+    }
     console.error('Failed to load patient detail', key, error);
-    if (error.code) {
+    if (error && error.code) {
       throw error;
     }
     throw makeError('DETAIL_FAILED', 'Failed to load patient detail', { error: error.message });

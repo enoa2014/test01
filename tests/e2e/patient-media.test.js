@@ -1,21 +1,22 @@
 ﻿const {
-  delay,
   waitForElement,
   waitForElements,
   waitForPage,
   waitForCondition
 } = require('./helpers/miniapp');
-const { createPatientViaWizard } = require('./helpers/patient-flow');
+const {
+  registerPatientRequirement,
+  getPatientResource,
+} = require('./helpers/resource-manager');
+
+registerPatientRequirement('patient-media-base');
 
 describe('patient media management (mpflow)', () => {
   let seededPatient = {};
 
   beforeAll(async () => {
-    const { successPage, patientData } = await createPatientViaWizard(miniProgram);
-    seededPatient = patientData || {};
-    const backBtn = await waitForElement(successPage, '.primary-btn');
-    await backBtn.tap();
-    await delay(600);
+    const resource = await getPatientResource('patient-media-base');
+    seededPatient = resource.patientData || {};
   }, 300000);
 
   test('media section renders and provides fallback data when empty', async () => {

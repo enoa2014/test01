@@ -207,8 +207,7 @@
       <view class="form-group">
         <view class="textarea-container">
           <pm-input
-            label="入住理由说明"
-            required="{{true}}"
+            label="入住理由说明（选填）"
             type="textarea"
             value="{{formData.situation}}"
             placeholder="请详细描述入住理由和患者情况，包含护理需求或症状信息"
@@ -224,7 +223,7 @@
           ></pm-input>
           <view class="char-count">
             {{formData.situation.length}}/{{situationConfig.maxLength}}字
-            <text class="min-hint">(最少{{situationConfig.minLength}}字)</text>
+            <text class="min-hint">(建议不少于{{situationConfig.minLength}}字)</text>
           </view>
         </view>
         <text class="error-text" wx:if="{{errors.situation}}">{{errors.situation}}</text>

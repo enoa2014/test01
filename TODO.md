@@ -198,9 +198,10 @@
   - [ ] **待测试**：向导流程、必填项验证、步骤切换、数据提交
 
 - [ ] **PM-Card 组件推广**（中优先级）
-  - [ ] 分析页统计卡片迁移
-    - [ ] 替换 `.stat-card` 为 PM-Card
-    - [ ] 使用 status 和 variant 属性
+  - [x] 分析页统计卡片迁移
+    - [x] 替换 `.stat-card` 为 PM-Card
+    - [x] 使用 status 和 variant 属性
+    - [ ] 更新 docs/business-components/integration-guide.md 示例，统一说明改用 PM-Card
   - [ ] 患者详情页媒体卡片迁移
     - [ ] 替换 `.media-card` 为 PM-Card + 自定义 slot
     - [ ] 保持现有交互功能
@@ -260,7 +261,8 @@
   - [ ] 记录需要调整的问题
 
 - [ ] E2E 数据清理与自动触发诊断
-  - [ ] 调研 `mpflow-service test:e2e` 二次触发原因，关闭 watch 或退出自动化
+  - [x] 调研 `mpflow-service test:e2e` 二次触发原因，关闭 watch 或退出自动化
+    - [ ] 如后续接入 CI，验证 `CI=1` 脚本对云端流水线的兼容性
   - [x] 在测试收尾阶段执行 `scripts/e2e/verify-cleanup.js --cleanup`，清理自动化生成的患者
 
 - [ ] **性能优化**

@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "患者分析"
+  "navigationBarTitleText": "患者分析",
+  "usingComponents": {
+    "pm-card": "/components/base/pm-card/index"
+  }
 }

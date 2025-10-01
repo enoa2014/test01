@@ -1,31 +1,89 @@
-﻿const { delay, waitForCondition, waitForElement, waitForPage, inputValue } = require('./miniapp');
+const { delay, waitForCondition, waitForElement, waitForPage, inputValue } = require('./miniapp');
 
-const PATIENT_CACHE_KEY = '__E2E_PATIENT_CACHE__';
+let idCounter = 100;
 
-function ensurePatientCache() {
-  if (!global[PATIENT_CACHE_KEY]) {
-    global[PATIENT_CACHE_KEY] = {};
+async function waitForFieldElement(page, field, { timeout = 12000 } = {}) {
+  const selectors = [
+    `input[data-field="${field}"]`,
+    `textarea[data-field="${field}"]`,
+    `.pm-input__field[data-field="${field}"]`
+  ];
+  let lastError = null;
+  for (const selector of selectors) {
+    try {
+      const node = await waitForElement(page, selector, { timeout });
+      if (node) {
+        return node;
+      }
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return global[PATIENT_CACHE_KEY];
+  if (lastError) {
+    throw lastError;
+  }
+  throw new Error(`Field ${field} not found`);
 }
 
-async function presentSuccessPage(miniProgram, patientData) {
-  await miniProgram.reLaunch('/pages/patient-intake/success/success');
-  const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
-    timeout: 20000,
-  });
-  if (typeof successPage.setData === 'function') {
-    await successPage.setData({
-      patientKey: patientData.patientKey || patientData.patientName,
-      patientName: patientData.patientName,
-      summary: {
-        patientName: patientData.patientName,
-        phone: patientData.phone,
-      },
-    });
+async function resolvePatientKey(miniProgram, patientData, successPage) {
+  if (!successPage || !patientData) {
+    return patientData?.patientName || '';
   }
-  await waitForElement(successPage, '.success-title');
-  return successPage;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const response = await successPage.evaluate(
+        (payload) =>
+          new Promise((resolve) => {
+            if (!wx || !wx.cloud || typeof wx.cloud.callFunction !== 'function') {
+              resolve({ error: 'wx.cloud unavailable' });
+              return;
+            }
+            wx.cloud.callFunction({
+              name: 'patientIntake',
+              data: {
+                action: 'getPatients',
+                searchKeyword: payload.patientName,
+                pageSize: 5,
+              },
+              success(res) {
+                resolve({ result: res.result });
+              },
+              fail(err) {
+                resolve({ error: err && err.errMsg ? err.errMsg : 'call_failed' });
+              },
+            });
+          }),
+        { patientName: patientData.patientName }
+      );
+
+      const list =
+        response && response.result && Array.isArray(response.result.patients)
+          ? response.result.patients
+          : [];
+
+      const matched = list.find((item) => {
+        if (!item) return false;
+        const sameName = item.patientName === patientData.patientName;
+        const sameId = item.idNumber === patientData.idNumber;
+        return sameName || sameId;
+      });
+
+      if (matched && matched.key) {
+        return matched.key;
+      }
+
+      if (list.length && list[0].key) {
+        return list[0].key;
+      }
+    } catch (error) {
+      console.warn('[e2e] resolvePatientKey failed', error && error.message);
+    }
+
+    await delay(400);
+  }
+
+  return patientData.patientName;
 }
 
 function randomString(prefix = 'TEST_AUTOMATION') {
@@ -34,11 +92,29 @@ function randomString(prefix = 'TEST_AUTOMATION') {
   return `${prefix}_${now}_${rand}`;
 }
 
-function generateIdNumber() {
-  const base = `${Date.now()}1234567890`;
-  const body = base.slice(0, 17);
-  const checksum = '0';
-  return `1${body.slice(1)}${checksum}`;
+function generateIdNumber(birthDate = '2012-04-16', gender = '女') {
+  const regionCode = '110101';
+  const birth = String(birthDate || '')
+    .replace(/[^0-9]/g, '')
+    .padEnd(8, '0')
+    .slice(0, 8);
+  idCounter = (idCounter % 900) + 101;
+  let seqNumber = idCounter;
+  const female = ['女', 'female', 'f'].includes(String(gender || '').toLowerCase());
+  if (female && seqNumber % 2 === 1) {
+    seqNumber = seqNumber === 999 ? 998 : seqNumber + 1;
+  } else if (!female && seqNumber % 2 === 0) {
+    seqNumber = seqNumber === 998 ? 997 : seqNumber + 1;
+  }
+  const sequence = String(seqNumber).padStart(3, '0');
+  const partial = `${regionCode}${birth}${sequence}`;
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+  const mods = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+  const sum = partial
+    .split('')
+    .reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
+  const checksum = mods[sum % 11];
+  return `${partial}${checksum}`;
 }
 
 function generateMobile() {
@@ -52,27 +128,21 @@ function situationText() {
 }
 
 async function createPatientViaWizard(miniProgram, overrides = {}) {
-  const cache = ensurePatientCache();
-  const { __cacheKey: cacheKey = 'default', ...patientOverrides } = overrides || {};
+  const { ...patientOverrides } = overrides || {};
 
-  if (cache[cacheKey]) {
-    const cached = cache[cacheKey];
-    const successPage = await presentSuccessPage(miniProgram, cached.patientData);
-    return {
-      successPage,
-      patientData: { ...cached.patientData },
-    };
-  }
+  const birth = patientOverrides.birthDate || patientOverrides.birth || '2012-04-16';
+  const gender = patientOverrides.gender || patientOverrides.sex || '女';
 
   const patientData = {
     patientName: randomString('TEST_AUTOMATION'),
-    idNumber: generateIdNumber(),
-    birthDate: '2012-04-16',
+    idNumber: generateIdNumber(birth, gender),
+    birthDate: birth,
     phone: generateMobile(),
     address: 'Automation Rehab Center, Beijing',
     emergencyContact: 'Automation Caregiver',
     emergencyPhone: generateMobile(),
     situation: `${situationText()} Follow-up observation in progress.`,
+    gender,
     ...patientOverrides,
   };
 
@@ -86,7 +156,7 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     await wizardPage.setData({
       'formData.idType': '\u8eab\u4efd\u8bc1',
       idTypeIndex: 0,
-      'formData.gender': '\u5973',
+      'formData.gender': patientData.gender || '\u5973',
       'formData.birthDate': patientData.birthDate,
     });
 
@@ -94,17 +164,11 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       await wizardPage.waitFor(300);
     }
 
-    const nameInput = await waitForElement(wizardPage, 'input[data-field="patientName"]', {
-      timeout: 12000,
-    });
+    const nameInput = await waitForFieldElement(wizardPage, 'patientName', { timeout: 12000 });
     await inputValue(nameInput, patientData.patientName);
-    const idNumberInput = await waitForElement(wizardPage, 'input[data-field="idNumber"]', {
-      timeout: 12000,
-    });
+    const idNumberInput = await waitForFieldElement(wizardPage, 'idNumber', { timeout: 12000 });
     await inputValue(idNumberInput, patientData.idNumber);
-    const phoneInput = await waitForElement(wizardPage, 'input[data-field="phone"]', {
-      timeout: 12000,
-    });
+    const phoneInput = await waitForFieldElement(wizardPage, 'phone', { timeout: 12000 });
     await inputValue(phoneInput, patientData.phone);
 
     await waitForCondition(
@@ -124,17 +188,11 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 8000, message: 'Wizard did not enter contact step' }
     );
 
-    const addressTextarea = await waitForElement(wizardPage, 'textarea[data-field="address"]');
+    const addressTextarea = await waitForFieldElement(wizardPage, 'address');
     await inputValue(addressTextarea, patientData.address);
-    const emergencyContactInput = await waitForElement(
-      wizardPage,
-      'input[data-field="emergencyContact"]'
-    );
+    const emergencyContactInput = await waitForFieldElement(wizardPage, 'emergencyContact');
     await inputValue(emergencyContactInput, patientData.emergencyContact);
-    const emergencyPhoneInput = await waitForElement(
-      wizardPage,
-      'input[data-field="emergencyPhone"]'
-    );
+    const emergencyPhoneInput = await waitForFieldElement(wizardPage, 'emergencyPhone');
     await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
 
     await waitForCondition(
@@ -154,7 +212,7 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 8000, message: 'Wizard did not enter situation step' }
     );
 
-    const situationTextarea = await waitForElement(wizardPage, 'textarea[data-field="situation"]');
+    const situationTextarea = await waitForFieldElement(wizardPage, 'situation');
     await inputValue(situationTextarea, patientData.situation);
 
     await waitForCondition(
@@ -208,13 +266,16 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     await waitForElement(successPage, '.success-title');
 
     const successData = await successPage.data();
-    const patientKey = successData.patientKey || patientData.patientName;
+    let patientKey = successData?.patientKey;
+    if (!patientKey) {
+      patientKey = await resolvePatientKey(miniProgram, patientData, successPage);
+    }
 
     const payload = {
       successPage,
       patientData: {
         ...patientData,
-        patientKey,
+        patientKey: patientKey || patientData.patientName,
       },
     };
 
@@ -226,7 +287,6 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const result = await attemptWizard();
-      cache[cacheKey] = { patientData: { ...result.patientData } };
       return result;
     } catch (error) {
       lastError = error;
@@ -236,17 +296,7 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       await delay(1000);
     }
   }
-
-  const fallbackPatient = {
-    ...patientData,
-    patientKey: patientData.patientName,
-  };
-  const successPage = await presentSuccessPage(miniProgram, fallbackPatient);
-  cache[cacheKey] = { patientData: { ...fallbackPatient } };
-  return {
-    successPage,
-    patientData: fallbackPatient,
-  };
+  throw lastError || new Error('createPatientViaWizard failed after retries');
 }
 
 async function continueExistingPatientIntake(miniProgram, existingPatient, overrides = {}) {
@@ -288,7 +338,7 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
     throw new Error('Existing patient wizard未提供可见步骤');
   }
 
-  const situationTextarea = await waitForElement(wizardPage, 'textarea[data-field="situation"]', {
+  const situationTextarea = await waitForFieldElement(wizardPage, 'situation', {
     timeout: 12000,
   });
   await inputValue(situationTextarea, followUpSituation);
@@ -336,19 +386,33 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
   const submitButton = await waitForElement(wizardPage, '.btn-success', { timeout: 8000 });
   await submitButton.tap();
 
-  const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
-    timeout: 20000,
-  });
-  await waitForElement(successPage, '.success-title');
+  try {
+    const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
+      timeout: 20000,
+    });
+    await waitForElement(successPage, '.success-title');
 
-  return {
-    successPage,
-    patientData: {
-      ...existingPatient,
-      situation: followUpSituation,
-    },
-    wizardSnapshot: initialSnapshot,
-  };
+    return {
+      successPage,
+      patientData: {
+        ...existingPatient,
+        situation: followUpSituation,
+      },
+      wizardSnapshot: initialSnapshot,
+    };
+  } catch (error) {
+    const finalState = await wizardPage.data();
+    console.error('[e2e] existing patient submission failed', {
+      error: error && error.message,
+      submitting: finalState && finalState.submitting,
+      errors: finalState && finalState.errors,
+      canProceedToNext: finalState && finalState.canProceedToNext,
+      allRequiredCompleted: finalState && finalState.allRequiredCompleted,
+      toast: finalState && finalState.toastMessage,
+      patientKey: existingPatient.patientKey,
+    });
+    throw error;
+  }
 }
 
 module.exports = {
