@@ -1,5 +1,6 @@
 // 患者选择页面
 const logger = require('../../../utils/logger');
+const { formatDate, formatAge } = require('../../../utils/date');
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_CACHE_TTL = 5 * 60 * 1000;
@@ -31,71 +32,15 @@ function writePatientsCache(patients) {
   }
 }
 
-function parseDateValue(value) {
-  if (value === undefined || value === null || value === '') {
-    return null;
-  }
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      return null;
-    }
-    if (Math.abs(value) >= 1e10) {
-      const fromNumber = new Date(value);
-      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
-    }
-    return null;
-  }
-  const str = String(value).trim();
-  if (!str) {
-    return null;
-  }
-  if (/^\d+$/.test(str)) {
-    const num = Number(str);
-    if (Number.isFinite(num) && Math.abs(num) >= 1e10) {
-      const fromNumeric = new Date(num);
-      if (!Number.isNaN(fromNumeric.getTime())) {
-        return fromNumeric;
-      }
-    }
-  }
-  const normalized = str.replace(/[./]/g, '-');
-  const fromString = new Date(normalized);
-  return Number.isNaN(fromString.getTime()) ? null : fromString;
-}
-
-function formatDate(value) {
-  const date = parseDateValue(value);
-  if (!date) {
-    return '';
-  }
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function formatAge(birthDate) {
-  const birth = parseDateValue(birthDate);
-  if (!birth) {
-    return '';
-  }
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age >= 0 ? `${age}岁` : '';
-}
-
 Page({
   data: {
-    patients: [],
+    allPatients: [],
     filteredPatients: [],
+    displayPatients: [],
     searchKeyword: '',
     searchFocus: false,
     loading: true,
-    hasMore: true,
+    hasMore: false,
     currentPage: 0,
     pageSize: 20,
 
@@ -111,11 +56,15 @@ Page({
     // 先从缓存加载
     const cachedPatients = readPatientsCache();
     if (cachedPatients && cachedPatients.length) {
-      this.setData({
-        patients: cachedPatients,
-        filteredPatients: cachedPatients.slice(0, this.data.pageSize),
-        loading: false,
-      });
+      this.setData(
+        {
+          allPatients: cachedPatients,
+          loading: false,
+        },
+        () => {
+          this.applySearch();
+        }
+      );
     }
 
     // 然后获取最新数据
@@ -163,7 +112,7 @@ Page({
 
       this.setData(
         {
-          patients,
+          allPatients: patients,
           loading: false,
         },
         () => {
@@ -218,28 +167,27 @@ Page({
 
   // 应用搜索过滤
   applySearch() {
-    const { patients, searchKeyword, pageSize } = this.data;
+    const { allPatients, searchKeyword, pageSize } = this.data;
     const keyword = (searchKeyword || '').trim().toLowerCase();
+    const baseList = Array.isArray(allPatients) ? allPatients : [];
 
-    let filtered = patients;
+    const filtered = keyword
+      ? baseList.filter(item => {
+          const name = (item.patientName || '').toLowerCase();
+          const idNumber = (item.idNumber || '').toLowerCase();
+          const phone = (item.phone || '').toLowerCase();
 
-    if (keyword) {
-      filtered = patients.filter(item => {
-        const name = (item.patientName || '').toLowerCase();
-        const idNumber = (item.idNumber || '').toLowerCase();
-        const phone = (item.phone || '').toLowerCase();
+          return name.includes(keyword) || idNumber.includes(keyword) || phone.includes(keyword);
+        })
+      : baseList.slice();
 
-        return name.includes(keyword) || idNumber.includes(keyword) || phone.includes(keyword);
-      });
-    }
-
-    // 分页显示
-    const displayPatients = filtered.slice(0, pageSize);
-    const hasMore = filtered.length > pageSize;
+    const size = Number(pageSize) > 0 ? Number(pageSize) : 0;
+    const displayPatients = size > 0 ? filtered.slice(0, size) : filtered.slice();
+    const hasMore = size > 0 ? filtered.length > displayPatients.length : false;
 
     this.setData({
       filteredPatients: filtered,
-      patients: displayPatients,
+      displayPatients,
       hasMore,
       currentPage: 0,
     });
@@ -251,7 +199,7 @@ Page({
       return;
     }
 
-    const { filteredPatients, patients, currentPage, pageSize } = this.data;
+    const { filteredPatients, displayPatients, currentPage, pageSize } = this.data;
     const nextPage = currentPage + 1;
     const startIndex = nextPage * pageSize;
     const endIndex = startIndex + pageSize;
@@ -262,11 +210,11 @@ Page({
     }
 
     const newPatients = filteredPatients.slice(startIndex, endIndex);
-    const allPatients = [...patients, ...newPatients];
+    const allDisplayPatients = [...displayPatients, ...newPatients];
     const hasMore = endIndex < filteredPatients.length;
 
     this.setData({
-      patients: allPatients,
+      displayPatients: allDisplayPatients,
       currentPage: nextPage,
       hasMore,
     });

@@ -343,26 +343,32 @@
   <!-- 底部操作区 -->
   <view class="action-bar">
     <view class="action-buttons">
-      <button class="btn btn-secondary" wx:if="{{hasPrevStep}}" bindtap="onPrevStep">上一步</button>
+      <pm-button
+        wx:if="{{hasPrevStep}}"
+        type="default"
+        block="{{true}}"
+        bindtap="onPrevStep"
+        text="上一步"
+      ></pm-button>
 
-      <button
-        class="btn btn-primary"
+      <pm-button
         wx:if="{{hasNextStep}}"
+        type="primary"
+        block="{{true}}"
         disabled="{{!canProceedToNext}}"
         bindtap="onNextStep"
-      >
-        下一步
-      </button>
+        text="下一步"
+      ></pm-button>
 
-      <button
-        class="btn btn-success"
+      <pm-button
         wx:if="{{!hasNextStep}}"
+        type="primary"
+        block="{{true}}"
         disabled="{{!allRequiredCompleted || submitting}}"
-        bindtap="onSubmit"
         loading="{{submitting}}"
-      >
-        {{submitting ? '提交中...' : '完成入住'}}
-      </button>
+        bindtap="onSubmit"
+        text="{{submitting ? '提交中...' : '完成入住'}}"
+      ></pm-button>
     </view>
 
     <view class="draft-info" wx:if="{{draftSaved}}">
@@ -377,8 +383,20 @@
     <view class="modal-title">发现未完成的草稿</view>
     <view class="modal-text">您上次有未完成的入住流程，是否继续？</view>
     <view class="modal-actions">
-      <button class="modal-btn secondary" bindtap="discardDraft">重新开始</button>
-      <button class="modal-btn primary" bindtap="restoreDraft">继续草稿</button>
+      <pm-button
+        type="default"
+        size="small"
+        block="{{true}}"
+        bindtap="discardDraft"
+        text="重新开始"
+      ></pm-button>
+      <pm-button
+        type="primary"
+        size="small"
+        block="{{true}}"
+        bindtap="restoreDraft"
+        text="继续草稿"
+      ></pm-button>
     </view>
   </view>
 </view>

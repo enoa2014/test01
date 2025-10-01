@@ -143,6 +143,17 @@ Page({
   },
 
   onUnload() {
+    if (this.mediaService && typeof this.mediaService.dispose === 'function') {
+      this.mediaService.dispose();
+    }
+    this.mediaService = null;
+    this.profileKey = '';
+    this.patientKey = '';
+    this.familyInfoSource = [];
+    this.patientForEditSource = {};
+    this.patientDisplaySource = {};
+    this.originalEditForm = null;
+    this.allIntakeRecordsSource = [];
     this.mediaInitialized = false;
     if (wx.disableAlertBeforeUnload) {
       wx.disableAlertBeforeUnload();

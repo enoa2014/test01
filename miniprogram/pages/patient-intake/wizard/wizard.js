@@ -263,6 +263,9 @@ Page({
 
   // 自动保存草稿
   startDraftAutoSave() {
+    if (this.draftTimer) {
+      return;
+    }
     this.draftTimer = setInterval(() => {
       this.saveDraft();
     }, 30000); // 30秒保存一次
@@ -1004,6 +1007,9 @@ Page({
       return;
     }
 
+    // 提交前停止自动保存，避免离开页面后仍访问已销毁实例
+    this.stopDraftAutoSave();
+
     this.setData({ submitting: true });
 
     try {
@@ -1028,6 +1034,8 @@ Page({
       });
     } catch (error) {
       logger.error('提交失败', error);
+      // 失败时恢复自动保存，避免草稿丢失
+      this.startDraftAutoSave();
       wx.showToast({
         title: error.message || '提交失败，请重试',
         icon: 'error',

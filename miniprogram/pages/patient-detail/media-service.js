@@ -55,16 +55,30 @@ function makeQuotaPayload(quota) {
 }
 
 function createMediaService(page) {
+  let pageRef = page;
+
+  function getPage() {
+    return pageRef;
+  }
+
   function setMediaState(patch) {
+    const currentPage = getPage();
+    if (!currentPage) {
+      return;
+    }
     const updates = {};
     Object.keys(patch).forEach(key => {
       updates[`media.${key}`] = patch[key];
     });
-    page.setData(updates);
+    currentPage.setData(updates);
   }
 
   async function callPatientMedia(action, payload = {}) {
-    const data = { ...payload, action, patientKey: page.patientKey };
+    const currentPage = getPage();
+    if (!currentPage) {
+      throw new Error('页面已卸载，无法执行操作');
+    }
+    const data = { ...payload, action, patientKey: currentPage.patientKey };
     try {
       const res = await wx.cloud.callFunction({ name: 'patientMedia', data });
       const result = res && res.result;
@@ -110,7 +124,11 @@ function createMediaService(page) {
       const documents = (data.documents || []).map(mapMediaRecord).filter(Boolean);
       const quota = makeQuotaPayload(data.quota);
 
-      page.setData({
+      const currentPage = getPage();
+      if (!currentPage) {
+        return;
+      }
+      currentPage.setData({
         'media.images': images,
         'media.documents': documents,
         'media.quota': quota,
@@ -129,7 +147,8 @@ function createMediaService(page) {
   }
 
   async function initMediaSection() {
-    if (!page.patientKey) {
+    const currentPage = getPage();
+    if (!currentPage || !currentPage.patientKey) {
       return;
     }
     setMediaState({ loading: true, error: '', accessChecked: true, allowed: true });
@@ -145,31 +164,46 @@ function createMediaService(page) {
 
   function updateMediaRecord(category, index, updates) {
     const listKey = category === 'image' ? 'images' : 'documents';
-    const list = page.data.media[listKey];
+    const currentPage = getPage();
+    if (!currentPage) {
+      return;
+    }
+    const mediaState = (currentPage.data && currentPage.data.media) || {};
+    const list = mediaState[listKey];
     if (!Array.isArray(list) || index < 0 || index >= list.length) {
       return;
     }
     const updated = { ...list[index], ...updates };
     const newList = list.slice();
     newList[index] = updated;
-    page.setData({ [`media.${listKey}`]: newList });
+    currentPage.setData({ [`media.${listKey}`]: newList });
   }
 
   function removeMediaRecord(category, id) {
     const listKey = category === 'image' ? 'images' : 'documents';
-    const list = page.data.media[listKey];
+    const currentPage = getPage();
+    if (!currentPage) {
+      return;
+    }
+    const mediaState = (currentPage.data && currentPage.data.media) || {};
+    const list = mediaState[listKey];
     if (!Array.isArray(list)) {
       return;
     }
     const newList = list.filter(item => item.id !== id);
-    page.setData({ [`media.${listKey}`]: newList });
+    currentPage.setData({ [`media.${listKey}`]: newList });
   }
 
   async function processUploads(files, category) {
     if (!files || !files.length) {
       return;
     }
-    const quota = page.data.media.quota || getDefaultQuota();
+    const currentPage = getPage();
+    if (!currentPage) {
+      return;
+    }
+    const mediaState = (currentPage.data && currentPage.data.media) || {};
+    const quota = mediaState.quota || getDefaultQuota();
     let remainingCount = quota.remainingCount || 0;
     let remainingBytes = quota.remainingBytes || 0;
 
@@ -242,15 +276,24 @@ function createMediaService(page) {
           const record = mapMediaRecord(complete.media);
           const quotaPayload = makeQuotaPayload(complete.quota);
           if (record) {
-            if (category === 'image') {
-              const images = [record, ...page.data.media.images];
-              page.setData({ 'media.images': images });
-            } else {
-              const documents = [record, ...page.data.media.documents];
-              page.setData({ 'media.documents': documents });
+            const activePage = getPage();
+            if (!activePage) {
+              break;
             }
+            const mediaState = (activePage.data && activePage.data.media) || {};
+            if (category === 'image') {
+              const images = [record, ...(mediaState.images || [])];
+              activePage.setData({ 'media.images': images });
+            } else {
+              const documents = [record, ...(mediaState.documents || [])];
+              activePage.setData({ 'media.documents': documents });
+            }
+            activePage.setData({ 'media.quota': quotaPayload });
           }
-          page.setData({ 'media.quota': quotaPayload });
+          const quotaPage = getPage();
+          if (quotaPage) {
+            quotaPage.setData({ 'media.quota': quotaPayload });
+          }
           remainingCount = quotaPayload.remainingCount;
           remainingBytes = quotaPayload.remainingBytes;
           successCount += 1;
@@ -272,7 +315,12 @@ function createMediaService(page) {
   }
 
   async function ensureImagePreviewUrls() {
-    const images = page.data.media.images || [];
+    const currentPage = getPage();
+    if (!currentPage) {
+      return;
+    }
+    const mediaState = (currentPage.data && currentPage.data.media) || {};
+    const images = mediaState.images || [];
     const now = Date.now();
     const pending = images
       .map((item, index) => ({ item, index }))
@@ -348,6 +396,10 @@ function createMediaService(page) {
     wx.showToast({ icon: 'none', title: display || `${context}失败` });
   }
 
+  function dispose() {
+    pageRef = null;
+  }
+
   return {
     setMediaState,
     initMediaSection,
@@ -359,6 +411,7 @@ function createMediaService(page) {
     ensureImagePreviewUrls,
     downloadMediaFile,
     handleMediaError,
+    dispose,
   };
 }
 

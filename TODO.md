@@ -80,6 +80,7 @@
   - [x] 更新设计文档，补充 `overlay-modal`、`shadow-floating` 等新增令牌及最新使用示例
   - [x] 将 `pages/patient-intake/success` 等仍保留裸 `#fff/#333` 颜色的页面改用语义色或实用类
   - [x] 输出页面迁移清单与校验说明 → `docs/design-system/token-migration-summary.md`
+  - [x] 在设计系统文档中补充“新增 token 需同步生成文件（styles/generated/tokens.wxss）”流程提示或脚本
 
 ## 3. 基础组件升级（2~3 Sprint）
 
@@ -103,6 +104,7 @@
     - [x] patient-intake/select 底部行动按钮与确认弹窗采用 `pm-button`，待线上回归确认交互一致。
     - [x] patient-intake/success 快捷操作与底栏接入 `pm-button`，确认真机尺寸与布局无异常。
     - [x] families 页面悬浮新增按钮改用 `pm-button` icon-only 预设
+    - [x] patient-intake/wizard 底部/草稿操作按钮替换为 `pm-button`，清理 `.btn*` 样式
   - [x] Component Lab 新增 icon-only/ripple 支持以辅助验证（2025-10-02）
 - [ ] 补充单元测试（miniprogram-simulate）与视觉回归用例。
   - [ ] 为基础组件编写视觉基线（可结合 Component Lab 截图），在 CI 中执行。
@@ -192,8 +194,8 @@
 - ✅ **PM-Button**: 已在2个页面使用
   - `pages/patient-intake/select` - 患者选择页（底部行动按钮、确认弹窗）
   - `pages/patient-intake/success` - 入住成功页（快捷操作、底部按钮）
-- ❌ **PM-Input**: 仅在 Component Lab，未在实际页面应用
-- ❌ **PM-Card**: 仅在 Component Lab，未在实际页面应用
+- ⚠️ **PM-Input**: 统计需更新 —— 实际已在 patient-detail、patient-intake 等页面使用，待修正文档
+- ⚠️ **PM-Card**: 统计需更新 —— 实际已在 patient-detail 媒体卡片、analysis 面板使用
 
 **页面中使用原生元素的情况**：
 
@@ -325,3 +327,12 @@
   - [x] 更新 `docs/design-system/rgba-inventory.md` 对 legacy 文件的描述
   - [x] 更新 `docs/dev-environment/setup.md` 脚本与 lint-staged 配置示例
   - [x] 巡检 `docs/stories` 与剩余指南，确认无 legacy tokens 残留引用
+
+## 5. 缺陷排查记录（2025-10-05）
+
+- [ ] 患者详情页释放资源（cc.md P0 问题1）
+  - [x] `onUnload` 调用新增的 `disposeMediaService`，重置 `profileKey/patientKey` 等引用以避免页面多次进入后残留闭包
+  - [x] 补充单元测试或手工验证，确认多次进入/退出不会出现内存告警
+- [ ] 入住向导草稿定时器治理（cc.md P0 问题2）
+  - [x] `onSubmit` 提交前调用 `stopDraftAutoSave()`，失败时重启定时器，成功后不再触发草稿保存
+  - [ ] 验证提交成功、失败及草稿恢复流程，确保控制台无 “setInterval 已销毁页面” 报错

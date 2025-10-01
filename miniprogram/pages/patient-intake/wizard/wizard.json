@@ -3,6 +3,7 @@
   "backgroundColor": "#f5f5f5",
   "backgroundTextStyle": "dark",
   "usingComponents": {
-    "pm-input": "/components/base/pm-input/index"
+    "pm-input": "/components/base/pm-input/index",
+    "pm-button": "/components/base/pm-button/index"
   }
 }

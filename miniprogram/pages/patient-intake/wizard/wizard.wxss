@@ -459,34 +459,9 @@
   gap: var(--space-3);
 }
 
-.btn {
+.action-buttons .pm-button {
   flex: 1;
   min-height: 80rpx;
-  line-height: 80rpx;
-  text-align: center;
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  border: none;
-}
-
-.btn-secondary,
-.modal-btn.secondary {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-}
-
-.btn-primary,
-.btn-success,
-.modal-btn.primary {
-  background-color: var(--color-success);
-  color: var(--color-bg-primary);
-}
-
-.btn-primary[disabled],
-.btn-success[disabled] {
-  background-color: var(--color-text-disabled);
-  color: var(--color-text-tertiary);
 }
 
 .draft-info {
@@ -544,13 +519,7 @@
   gap: var(--space-3);
 }
 
-.modal-btn {
+.modal-actions .pm-button {
   flex: 1;
   min-height: 80rpx;
-  line-height: 80rpx;
-  text-align: center;
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  border: none;
 }
