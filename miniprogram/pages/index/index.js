@@ -1,4 +1,5 @@
 ﻿const logger = require('../../utils/logger');
+const { formatDate, formatAge } = require('../../utils/date');
 
 const SORT_OPTIONS = [
   { label: '默认排序', value: 'default' },
@@ -36,63 +37,6 @@ function writePatientsCache(patients) {
   }
 }
 
-function parseDateValue(value) {
-  if (value === undefined || value === null || value === '') {
-    return null;
-  }
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      return null;
-    }
-    if (Math.abs(value) >= 1e10) {
-      const fromNumber = new Date(value);
-      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
-    }
-    return null;
-  }
-  const str = String(value).trim();
-  if (!str) {
-    return null;
-  }
-  if (/^\d+$/.test(str)) {
-    const num = Number(str);
-    if (Number.isFinite(num) && Math.abs(num) >= 1e10) {
-      const fromNumeric = new Date(num);
-      if (!Number.isNaN(fromNumeric.getTime())) {
-        return fromNumeric;
-      }
-    }
-  }
-  const normalized = str.replace(/[./]/g, '-');
-  const fromString = new Date(normalized);
-  return Number.isNaN(fromString.getTime()) ? null : fromString;
-}
-
-function formatDate(value) {
-  const date = parseDateValue(value);
-  if (!date) {
-    return '';
-  }
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function formatAge(birthDate) {
-  const birth = parseDateValue(birthDate);
-  if (!birth) {
-    return '';
-  }
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age >= 0 ? `${age}岁` : '';
-}
-
 Page({
   data: {
     patients: [],
@@ -102,14 +46,14 @@ Page({
     searchKeyword: '',
     sortOptions: SORT_OPTIONS,
     sortIndex: 0,
+    skeletonPlaceholders: [0, 1, 2, 3],
   },
 
   onLoad() {
     const cachedPatients = readPatientsCache();
     if (cachedPatients && cachedPatients.length) {
-      this.setData({ patients: cachedPatients, loading: false }, () => {
-        this.applyFilters();
-      });
+      const filtered = this.buildFilteredPatients(cachedPatients);
+      this.setData({ patients: cachedPatients, displayPatients: filtered, loading: false });
     }
     this.fetchPatients({ silent: !!(cachedPatients && cachedPatients.length) });
   },
@@ -145,6 +89,22 @@ Page({
         const firstHospital = item.firstHospital || item.latestHospital || '';
         const latestHospital = item.latestHospital || item.firstHospital || '';
         const latestDoctor = item.latestDoctor || '';
+        let cardStatus = 'default';
+        const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0);
+        if (latestAdmissionTimestamp > 0) {
+          const now = Date.now();
+          if (latestAdmissionTimestamp <= now) {
+            const diffDays = Math.floor((now - latestAdmissionTimestamp) / (24 * 60 * 60 * 1000));
+            if (diffDays <= 30) {
+              cardStatus = 'success';
+            } else if (diffDays <= 90) {
+              cardStatus = 'info';
+            }
+          }
+        }
+        const badgeType = cardStatus === 'success' || cardStatus === 'info' ? cardStatus : 'default';
+        const admissionCount = Number(item.admissionCount || 0);
+        const admissionBadge = admissionCount > 0 ? `入住 ${admissionCount} 次` : null;
         return {
           ...item,
           ageText: formatAge(item.birthDate),
@@ -155,11 +115,13 @@ Page({
           firstHospital,
           latestHospital,
           latestDoctor,
+          cardStatus,
+          badgeType,
+          admissionBadge,
         };
       });
-      this.setData({ patients, loading: false }, () => {
-        this.applyFilters();
-      });
+      const filteredPatients = this.buildFilteredPatients(patients);
+      this.setData({ patients, displayPatients: filteredPatients, loading: false });
       writePatientsCache(patients);
       try {
         wx.removeStorageSync(PATIENT_LIST_DIRTY_KEY);
@@ -220,27 +182,22 @@ Page({
       });
 
     const mergedPatients = mergeUpdates(this.data.patients || []);
-    const mergedDisplay = mergeUpdates(this.data.displayPatients || []);
+    const filteredList = this.buildFilteredPatients(mergedPatients);
 
-    this.setData(
-      {
-        patients: mergedPatients,
-        displayPatients: mergedDisplay,
-      },
-      () => {
-        this.applyFilters();
-      }
-    );
+    this.setData({
+      patients: mergedPatients,
+      displayPatients: filteredList,
+    });
 
     this.fetchPatients({ silent: false });
   },
 
-  applyFilters() {
-    const { patients, searchKeyword, sortIndex } = this.data;
+  buildFilteredPatients(source = []) {
+    const { searchKeyword, sortIndex } = this.data;
     const keyword = (searchKeyword || '').trim().toLowerCase();
     const sortValue = SORT_OPTIONS[sortIndex] ? SORT_OPTIONS[sortIndex].value : 'default';
 
-    let list = patients.slice();
+    let list = Array.isArray(source) ? source.slice() : [];
 
     if (keyword) {
       list = list.filter(item => {
@@ -278,7 +235,12 @@ Page({
       });
     }
 
-    this.setData({ displayPatients: list });
+    return list;
+  },
+
+  applyFilters() {
+    const filtered = this.buildFilteredPatients(this.data.patients || []);
+    this.setData({ displayPatients: filtered });
   },
 
   onSearchInput(event) {

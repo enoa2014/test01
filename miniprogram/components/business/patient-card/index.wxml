@@ -1,0 +1,55 @@
+<pm-card
+  class="patient-card patient-card--{{mode}}"
+  status="{{status}}"
+  variant="{{cardVariant}}"
+  clickable="{{clickable}}"
+  padding="{{cardPadding}}"
+  useHeaderSlot="{{true}}"
+  useFooterSlot="{{hasActions}}"
+  bind:tap="handleCardTap"
+>
+  <view slot="header" class="patient-card__header">
+    <view class="patient-card__avatar" style="background-color: {{avatarBackground}};">
+      <text class="patient-card__avatar-text">{{avatarText}}</text>
+    </view>
+    <view class="patient-card__title">
+      <view class="patient-card__title-row">
+        <text class="patient-card__name">{{patient.name || patient.patientName || '-'}}</text>
+        <text wx:if="{{ageText}}" class="patient-card__age">{{ageText}}</text>
+        <view wx:if="{{selectable}}" class="patient-card__select" bindtap="handleSelectChange">
+          <text class="patient-card__select-icon">{{selected ? '☑' : '☐'}}</text>
+        </view>
+      </view>
+      <view wx:if="{{badges && badges.length}}" class="patient-card__badges">
+        <pm-badge
+          wx:for="{{badges}}"
+          wx:key="text"
+          text="{{item.text}}"
+          type="{{item.type || 'default'}}"
+          size="small"
+        />
+      </view>
+    </view>
+  </view>
+
+  <view class="patient-card__body">
+    <view wx:if="{{primaryLine}}" class="patient-card__primary">{{primaryLine}}</view>
+    <view wx:if="{{secondaryLine}}" class="patient-card__secondary">{{secondaryLine}}</view>
+    <view wx:if="{{tags && tags.length}}" class="patient-card__tags">
+      <view wx:for="{{tags}}" wx:key="*this" class="patient-card__tag">{{item}}</view>
+    </view>
+  </view>
+
+  <view slot="footer" wx:if="{{hasActions}}" class="patient-card__footer">
+    <pm-button
+      wx:for="{{actions}}"
+      wx:key="id"
+      text="{{item.label}}"
+      type="{{item.type || 'text'}}"
+      size="small"
+      icon="{{item.icon || ''}}"
+      data-action="{{item}}"
+      bindtap="handleActionTap"
+    />
+  </view>
+</pm-card>

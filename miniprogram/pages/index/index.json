@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "首页"
+  "navigationBarTitleText": "首页",
+  "usingComponents": {
+    "pm-card": "/components/base/pm-card/index",
+    "pm-button": "/components/base/pm-button/index",
+    "pm-badge": "/components/base/pm-badge/index"
+  }
 }
