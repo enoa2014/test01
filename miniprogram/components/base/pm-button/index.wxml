@@ -1,11 +1,20 @@
 <view
-  class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}} {{elevated ? 'pm-button--elevated' : ''}}"
+  class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}} {{elevated ? 'pm-button--elevated' : ''}} {{iconOnly ? 'pm-button--icon-only' : ''}}"
   bindtap="handleTap"
+  bindtouchstart="handleTouchStart"
+  role="button"
+  aria-label="{{ariaLabel || text}}"
 >
+  <view wx:if="{{rippleActive}}" class="pm-button__ripple"></view>
   <view wx:if="{{loading}}" class="pm-button__spinner"></view>
   <view wx:if="{{useSlot}}" class="pm-button__slot">
     <slot></slot>
   </view>
+  <block wx:elif="{{iconOnly && icon}}">
+    <view class="pm-button__content pm-button__content--icon-only">
+      <text class="pm-button__icon">{{icon}}</text>
+    </view>
+  </block>
   <block wx:elif="{{text}}">
     <view class="pm-button__content">
       <text

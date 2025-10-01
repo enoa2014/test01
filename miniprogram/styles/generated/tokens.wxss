@@ -159,6 +159,9 @@ page {
     rgba(16, 185, 129, 0.12)
   );
   --gradient-primary-button: linear-gradient(135deg, #2e86ab 0%, #2d8bba 100%);
+  --gradient-info-primary: linear-gradient(90deg, var(--color-info), var(--color-primary));
+  --gradient-success-dual: linear-gradient(90deg, var(--color-success), var(--color-success-light));
+  --gradient-primary-warning: linear-gradient(135deg, var(--color-primary), var(--color-warning));
   --interaction-hover-primary-light: rgba(45, 139, 186, 0.05);
   --interaction-hover-secondary-light: rgba(0, 0, 0, 0.05);
   --interaction-hover-danger-light: rgba(220, 53, 69, 0.05);

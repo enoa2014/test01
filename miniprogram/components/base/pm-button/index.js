@@ -47,8 +47,41 @@ Component({
       type: Boolean,
       value: false,
     },
+    iconOnly: {
+      type: Boolean,
+      value: false,
+    },
+    ariaLabel: {
+      type: String,
+      value: '',
+    },
+  },
+  data: {
+    rippleActive: false,
+  },
+  lifetimes: {
+    detached() {
+      if (this.rippleTimer) {
+        clearTimeout(this.rippleTimer);
+        this.rippleTimer = null;
+      }
+    },
   },
   methods: {
+    handleTouchStart() {
+      if (this.data.disabled || this.data.loading) {
+        return;
+      }
+      if (this.rippleTimer) {
+        clearTimeout(this.rippleTimer);
+        this.rippleTimer = null;
+      }
+      this.setData({ rippleActive: true });
+      this.rippleTimer = setTimeout(() => {
+        this.setData({ rippleActive: false });
+        this.rippleTimer = null;
+      }, 350);
+    },
     handleTap() {
       if (this.data.disabled || this.data.loading) {
         return;

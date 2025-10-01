@@ -77,12 +77,15 @@
 
   <!-- 悬浮添加按钮 -->
   <view class="fab fixed bottom-6 right-4 z-10">
-    <button
-      class="btn btn-lg bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-primary"
+    <pm-button
+      class="fab-button"
+      type="primary"
+      elevated="{{true}}"
+      icon="＋"
+      icon-only="{{true}}"
+      aria-label="新增家庭"
       bindtap="onAddFamily"
-    >
-      <text class="text-2xl">+</text>
-    </button>
+    ></pm-button>
   </view>
 
   <!-- 全局加载状态 -->

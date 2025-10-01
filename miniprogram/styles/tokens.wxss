@@ -130,6 +130,16 @@
   --shadow-error: 0 8rpx 32rpx rgba(255, 77, 79, 0.25);
 }
 
+/* 渐变变量 */
+:root {
+  --gradient-info-light: linear-gradient(145deg, rgba(24, 144, 255, 0.05), rgba(24, 144, 255, 0.1));
+  --gradient-info-primary: linear-gradient(90deg, var(--color-info), var(--color-primary));
+  --gradient-success-light: linear-gradient(145deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1));
+  --gradient-success-dual: linear-gradient(90deg, var(--color-success), var(--color-success-light));
+  --gradient-primary-button: linear-gradient(135deg, #2E86AB 0%, #2D8BBA 100%);
+  --gradient-primary-warning: linear-gradient(135deg, var(--color-primary), var(--color-warning));
+}
+
 /* ================================
    色彩工具类
    ================================ */
@@ -471,7 +481,7 @@
 .card {
   background-color: var(--color-bg-primary);
   border-radius: var(--radius-lg);
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
   border: 2rpx solid var(--color-border-primary);
   transition: all 0.3s ease;
 }
@@ -491,6 +501,5 @@
 .input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 6rpx rgba(255, 107, 53, 0.1);
+  box-shadow: var(--shadow-primary);
 }
-

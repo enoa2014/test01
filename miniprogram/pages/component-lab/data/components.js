@@ -17,14 +17,16 @@ module.exports = [
       icon: '',
       iconPosition: 'left',
       text: '按钮',
+      iconOnly: false,
+      ariaLabel: '',
     },
     options: {
       type: { values: ['default', 'primary', 'secondary', 'danger'] },
       size: { values: ['small', 'medium', 'large'] },
       iconPosition: { values: ['left', 'right'] },
     },
-    textFields: ['text', 'icon'],
-    toggles: ['loading', 'disabled', 'block', 'ghost', 'useSlot', 'elevated'],
+    textFields: ['text', 'icon', 'ariaLabel'],
+    toggles: ['loading', 'disabled', 'block', 'ghost', 'useSlot', 'elevated', 'iconOnly'],
     presets: [
       {
         id: 'primary-action',
@@ -60,6 +62,17 @@ module.exports = [
         id: 'block-button',
         label: '块级按钮',
         props: { type: 'primary', block: true, text: '开始入住登记' },
+      },
+      {
+        id: 'icon-only',
+        label: '纯图标按钮',
+        props: {
+          type: 'primary',
+          iconOnly: true,
+          icon: '🔔',
+          text: '通知',
+          ariaLabel: '通知提醒',
+        },
       },
     ],
   },

@@ -266,6 +266,14 @@
             />
             Elevated</label
           >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.iconOnly}}"
+              data-prop="iconOnly"
+              bindchange="handleToggle"
+            />
+            Icon Only</label
+          >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
@@ -277,13 +285,22 @@
             使用自定义内容</label
           >
         </view>
-        <view class="lab__panel-field" wx:if="{{!propsState.useSlot}}">
+        <view class="lab__panel-field" wx:if="{{!propsState.useSlot && !propsState.iconOnly}}">
           <text class="lab__panel-label">文案</text>
           <input
             value="{{propsState.text}}"
             data-key="text"
             bindinput="handleTextInput"
             placeholder="按钮文本"
+          />
+        </view>
+        <view class="lab__panel-field" wx:if="{{propsState.iconOnly}}">
+          <text class="lab__panel-label">无障碍标签</text>
+          <input
+            value="{{propsState.ariaLabel}}"
+            data-key="ariaLabel"
+            bindinput="handleTextInput"
+            placeholder="提供屏幕阅读器描述"
           />
         </view>
       </block>

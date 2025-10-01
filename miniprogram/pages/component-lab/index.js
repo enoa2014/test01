@@ -54,6 +54,17 @@ Page({
       activePresetId: PRESET_CUSTOM_ID,
     };
 
+    if (this.data.current.id === 'pm-button' && prop === 'iconOnly') {
+      if (next) {
+        updates['propsState.useSlot'] = false;
+        if (!this.data.propsState.icon) {
+          updates['propsState.icon'] = '🔔';
+        }
+        const labelSource = this.data.propsState.ariaLabel || this.data.propsState.text || '图标按钮';
+        updates['propsState.ariaLabel'] = labelSource;
+      }
+    }
+
     if (this.data.current.id === 'pm-picker' && prop === 'multiple') {
       const currentValue = this.data.propsState.value;
       updates['propsState.value'] = next
