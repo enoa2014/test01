@@ -121,11 +121,37 @@ miniprogram/components
 
 ## 示例实现
 
-### 基础组件能力
-
-- `pm-button`：支持 `type` (default/primary/secondary)、`size`、`block`、`ghost`、`loading`、`disabled` 以及自定义 slot。
 - `pm-input`：除 `helper`、`error`、`prefix/ suffix` slot、`block` 布局与清除按钮外，已支持 `type="textarea"` 多行模式，可通过 `maxlength`、`textareaAutoHeight`、`showConfirmBar` 等属性控制字数上限、自动高度与工具栏展示。
+- `pm-picker`：提供单选/多选下拉面板、关键字搜索、禁用项、Tag 压缩 (`maxTagCount`)，并支持 `clearable`、`required` 等表单态。
+- `pm-dialog`：封装确认/取消弹窗，支持遮罩关闭、滚动内容、自定义 footer；确认/取消事件可通过属性控制是否自动关闭。
 - `pm-card`：新增 `header/footer` slot，可通过 `status` 控制语义颜色。
+- `pm-badge`：支持数量、文本、`max` 上限、`dotted` 状态点、`block` 胶囊样式与插槽自定义内容。
+
+示例：
+
+```xml
+<pm-picker
+  label="证件类型"
+  value="{{form.idType}}"
+  options="{{idTypeOptions}}"
+  searchable
+  clearable
+  bind:change="handleIdTypeChange"
+  bind:search="handlePickerSearch"
+/>
+
+<pm-dialog
+  visible="{{dialog.visible}}"
+  title="删除患者"
+  content="删除后将无法恢复，确认继续吗？"
+  confirm-type="danger"
+  bind:confirm="onDeleteConfirm"
+  bind:cancel="onDialogCancel"
+/>
+
+<pm-badge count="8" type="danger" />
+<pm-badge block text="待复诊" type="warning" />
+```
 
 #### pm-input：textarea 重点属性
 

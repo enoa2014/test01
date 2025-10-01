@@ -2,7 +2,7 @@
 
 ## 目标
 - 明确前端业务组件与后端接口的交互流程、数据适配与错误处理策略。
-- 指导工程师将 PatientCard、PatientForm、SmartSearchBar、FilterPanel、StatCard、Timeline 组件集成到实际页面。
+- 指导工程师将 PatientCard、PatientForm、SmartSearchBar、FilterPanel、PM-Card、Timeline 组件集成到实际页面。
 
 ## 集成步骤总览
 1. **数据模型初始化**：通过 API 获取基础数据（患者列表、筛选 schema、统计指标）。
@@ -38,11 +38,29 @@
 
 ### 仪表盘页
 1. 并行请求 `/api/v1/dashboard/stats`、`/api/v1/dashboard/trends`
-2. 将数据映射到 `stat-card` 列表
-3. 监听 `stat-card` 的 `tap` 或 `charttap` 执行跳转/分析
+2. 将数据映射到 `pm-card` 列表（`variant="stat"` / `status` 组合）
+   ```wxml
+   <pm-card
+     wx:for="{{statCards}}"
+     wx:key="id"
+     variant="stat"
+     status="{{item.status}}"
+     title="{{item.title}}"
+     value="{{item.value}}"
+     trend="{{item.trend}}"
+     bind:tap="onStatTap"
+     data-id="{{item.id}}"
+   />
+   ```
+   ```js
+   this.setData({
+     statCards: mapStatsToPmCard(statsResponse.data)
+   });
+   ```
+3. 监听 `pm-card` 的 `tap` 或自定义事件执行跳转/分析
 
 ## 数据适配建议
-- 使用 util 函数 `mapPatientToCard(patient)`、`mapStatsToCard(stats)`，减少页面逻辑重复。
+- 使用 util 函数 `mapPatientToCard(patient)`、`mapStatsToPmCard(stats)`，减少页面逻辑重复（示例实现见 `utils/mappers/dashboard.js`）。
 - 对缺失字段提供默认值，避免组件渲染错误。
 - 使用 `dayjs` 或类似库处理时间展示。
 
@@ -56,7 +74,7 @@
 
 ## Loading 与 Skeleton
 - 搜索、筛选、列表刷新时启用页面级 loading（`wx.showLoading`）。
-- 组件内部使用骨架屏（如 `patient-card`、`stat-card`）。
+- 组件内部使用骨架屏（如 `patient-card`、`pm-card`）。
 - 避免重复 loading，使用全局请求计数器管理。
 
 ## 缓存策略

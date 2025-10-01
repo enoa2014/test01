@@ -127,7 +127,9 @@
 
 .lab__panel-field--row {
   display: flex;
-  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
 .lab__panel-label {
@@ -189,4 +191,35 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+.lab__badge-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+}
+
+.lab__dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.lab__dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.lab__textarea {
+  width: 100%;
+  min-height: 160rpx;
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  box-sizing: border-box;
 }

@@ -357,37 +357,49 @@
           <view class="media-upload-hint">单次最多 5 个，支持 JPG/PNG/WebP，单个文件 ≤ 10MB。</view>
           <view wx:if="{{media.images.length}}" class="media-grid">
             <view
-              class="media-card"
+              class="media-card-item"
               wx:for="{{media.images}}"
               wx:key="id"
-              data-index="{{index}}"
-              bindtap="onImagePreviewTap"
             >
-              <image src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
-              <view class="media-card-info">
-                <text class="media-card-name">{{item.displayName}}</text>
-                <text class="media-card-meta">{{item.sizeText}} · {{item.uploadedAtText}}</text>
-                <text class="media-card-meta">上传人：{{item.uploaderDisplay}}</text>
-              </view>
-              <view class="media-card-actions">
-                <view
-                  class="media-card-button {{item.downloading ? 'loading' : ''}}"
-                  data-id="{{item.id}}"
-                  data-index="{{index}}"
-                  catchtap="onImageDownloadTap"
-                >
-                  {{item.downloading ? '下载中…' : '下载'}}
+              <pm-card
+                variant="outlined"
+                clickable="{{true}}"
+                padding="0"
+                use-slot="{{true}}"
+                use-header-slot="{{true}}"
+                use-footer-slot="{{true}}"
+                class="media-card__card"
+                bind:tap="onImagePreviewTap"
+                data-index="{{index}}"
+              >
+                <view slot="header" class="media-card__image">
+                  <image src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
                 </view>
-                <view
-                  class="media-card-button danger {{item.deleting ? 'loading' : ''}}"
-                  data-id="{{item.id}}"
-                  data-index="{{index}}"
-                  data-category="image"
-                  catchtap="onDeleteMediaTap"
-                >
-                  {{item.deleting ? '处理中…' : '删除'}}
+                <view class="media-card__content">
+                  <text class="media-card__name">{{item.displayName}}</text>
+                  <text class="media-card__meta">{{item.sizeText}} · {{item.uploadedAtText}}</text>
+                  <text class="media-card__meta">上传人：{{item.uploaderDisplay}}</text>
                 </view>
-              </view>
+                <view slot="footer" class="media-card__footer">
+                  <view
+                    class="media-card__button {{item.downloading ? 'loading' : ''}}"
+                    data-id="{{item.id}}"
+                    data-index="{{index}}"
+                    catchtap="onImageDownloadTap"
+                  >
+                    {{item.downloading ? '下载中…' : '下载'}}
+                  </view>
+                  <view
+                    class="media-card__button danger {{item.deleting ? 'loading' : ''}}"
+                    data-id="{{item.id}}"
+                    data-index="{{index}}"
+                    data-category="image"
+                    catchtap="onDeleteMediaTap"
+                  >
+                    {{item.deleting ? '处理中…' : '删除'}}
+                  </view>
+                </view>
+              </pm-card>
             </view>
           </view>
           <view wx:if="{{!media.images.length}}" class="placeholder">暂无图片资料</view>

@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "患者详情",
   "usingComponents": {
-    "pm-input": "/components/base/pm-input/index"
+    "pm-input": "/components/base/pm-input/index",
+    "pm-card": "/components/base/pm-card/index"
   }
 }

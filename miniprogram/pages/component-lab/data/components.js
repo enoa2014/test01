@@ -303,4 +303,206 @@ module.exports = [
       },
     ],
   },
+  {
+    id: 'pm-picker',
+    name: 'PM Picker',
+    category: 'Base',
+    componentPath: '/components/base/pm-picker/index',
+    docs: '/docs/components/base-component-api-plan.md#4-pm-picker-规划',
+    defaultProps: {
+      label: '证件类型',
+      value: '',
+      placeholder: '请选择证件类型',
+      multiple: false,
+      searchable: false,
+      clearable: true,
+      disabled: false,
+      helper: '支持搜索证件类型',
+      hint: '',
+      error: '',
+      block: true,
+      options: [
+        { label: '身份证', value: 'idcard' },
+        { label: '护照', value: 'passport', description: '适用于境外人士' },
+        { label: '港澳通行证', value: 'hk' }
+      ],
+      maxTagCount: 3,
+      labelPosition: 'top',
+      required: false,
+      dropdownPlacement: 'auto'
+    },
+    options: {
+      labelPosition: { values: ['top', 'left'] }
+    },
+    toggles: ['multiple', 'searchable', 'clearable', 'disabled', 'block', 'required'],
+    presets: [
+      {
+        id: 'single',
+        label: '单选',
+        props: {
+          label: '证件类型',
+          value: 'idcard',
+          options: [
+            { label: '身份证', value: 'idcard' },
+            { label: '护照', value: 'passport' },
+            { label: '军官证', value: 'military' }
+          ]
+        }
+      },
+      {
+        id: 'multi',
+        label: '多选',
+        props: {
+          label: '护理项目',
+          placeholder: '请选择护理项目',
+          multiple: true,
+          searchable: true,
+          value: ['rehab', 'nutrition'],
+          options: [
+            { label: '物理康复', value: 'rehab' },
+            { label: '心理疏导', value: 'counsel' },
+            { label: '营养指导', value: 'nutrition' },
+            { label: '生活照料', value: 'care' }
+          ]
+        }
+      },
+      {
+        id: 'disabled',
+        label: '禁用',
+        props: {
+          label: '所属院区',
+          value: 'a',
+          disabled: true,
+          helper: '由系统自动分配',
+          options: [
+            { label: '总部院区', value: 'a' },
+            { label: '东城区院区', value: 'b' }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    id: 'pm-badge',
+    name: 'PM Badge',
+    category: 'Base',
+    componentPath: '/components/base/pm-badge/index',
+    docs: '/docs/components/base-component-api-plan.md',
+    defaultProps: {
+      text: '新',
+      count: '',
+      max: 99,
+      type: 'primary',
+      size: 'medium',
+      dotted: false,
+      block: false,
+      useSlot: false,
+    },
+    options: {
+      type: { values: ['primary', 'success', 'warning', 'danger', 'secondary'] },
+      size: { values: ['small', 'medium', 'large'] },
+    },
+    textFields: ['text', 'count'],
+    toggles: ['dotted', 'block', 'useSlot'],
+    presets: [
+      {
+        id: 'status-dot',
+        label: '状态点',
+        props: {
+          dotted: true,
+          type: 'danger',
+          text: '',
+          count: '',
+        },
+      },
+      {
+        id: 'counter',
+        label: '数量角标',
+        props: {
+          count: 5,
+          max: 9,
+          type: 'danger',
+        },
+      },
+      {
+        id: 'pill',
+        label: '胶囊提示',
+        props: {
+          text: '待审核',
+          type: 'warning',
+          block: true,
+        },
+      },
+    ],
+  },
+  {
+    id: 'pm-dialog',
+    name: 'PM Dialog',
+    category: 'Base',
+    componentPath: '/components/base/pm-dialog/index',
+    docs: '/docs/components/base-component-api-plan.md#6-pm-dialog-规划',
+    defaultProps: {
+      visible: true,
+      title: '删除提醒',
+      content: '删除后将无法恢复，是否继续？',
+      confirmText: '删除',
+      cancelText: '取消',
+      confirmType: 'danger',
+      cancelType: 'ghost',
+      showClose: true,
+      closeOnOverlay: true,
+      scrollable: false,
+      useSlot: false,
+      useHeaderSlot: false,
+      useFooterSlot: false,
+      closeOnConfirm: true,
+      closeOnCancel: true
+    },
+    toggles: ['visible', 'showClose', 'closeOnOverlay', 'scrollable', 'useSlot', 'useHeaderSlot', 'useFooterSlot'],
+    options: {
+      confirmType: { values: ['primary', 'secondary', 'danger'] },
+      cancelType: { values: ['ghost', 'secondary'] }
+    },
+    textFields: ['title', 'content', 'confirmText', 'cancelText'],
+    presets: [
+      {
+        id: 'danger',
+        label: '危险操作',
+        props: {
+          title: '删除患者资料',
+          content: '将删除患者所有护理记录和媒体资料，确认继续吗？',
+          confirmText: '确认删除',
+          cancelText: '返回',
+          confirmType: 'danger',
+          visible: true
+        }
+      },
+      {
+        id: 'info',
+        label: '信息提示',
+        props: {
+          title: '同步完成',
+          content: '患者档案与云端同步完毕，可以前往详情页查看最新信息。',
+          confirmText: '知道了',
+          cancelText: '',
+          confirmType: 'primary',
+          showClose: false,
+          visible: true
+        }
+      },
+      {
+        id: 'custom-footer',
+        label: '自定义底部',
+        props: {
+          title: '安排随访',
+          content: '',
+          useFooterSlot: true,
+          useSlot: true,
+          visible: true,
+          confirmText: '确定',
+          cancelText: '暂不'
+        }
+      }
+    ]
+  },
 ];

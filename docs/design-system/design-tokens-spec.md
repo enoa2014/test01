@@ -6,8 +6,8 @@
 
 设计令牌的唯一来源（Single Source of Truth）位于 `design-tokens.json`，通过 `scripts/generate-tokens.js` 转换为：
 
-- `miniprogram/styles/generated/tokens.wxss`（运行时注入 `.theme-root` / `page` 自定义属性）
-- `miniprogram/styles/generated/tokens.js`（逻辑层读取）
+ - `miniprogram/styles/generated/tokens.wxss`（运行时注入 `.theme-root` / `page` 自定义属性）
+  - `miniprogram/styles/generated/tokens.js`（逻辑层读取）
 
 请在更新令牌后执行：
 
@@ -16,6 +16,8 @@ npm run tokens:generate
 ```
 
 命令会自动写入上述产物，禁止直接在 WXSS/JS 文件中手工修改变量定义。
+
+> ℹ️ 圆角相关的命名、适用场景与示例均已整理在 [《圆角令牌使用指南》](./radius-usage-guide.md) 中。调整 `radius` 系列令牌前请先对照该文档，确保全局与组件级圆角保持一致。
 
 ## 命名原则
 

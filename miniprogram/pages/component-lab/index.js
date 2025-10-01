@@ -49,16 +49,47 @@ Page({
   handleToggle(event) {
     const { prop } = event.currentTarget.dataset;
     const next = !this.data.propsState[prop];
-    this.setData({
+    const updates = {
       [`propsState.${prop}`]: next,
       activePresetId: PRESET_CUSTOM_ID,
-    });
+    };
+
+    if (this.data.current.id === 'pm-picker' && prop === 'multiple') {
+      const currentValue = this.data.propsState.value;
+      updates['propsState.value'] = next
+        ? Array.isArray(currentValue)
+          ? currentValue
+          : currentValue
+          ? [currentValue]
+          : []
+        : Array.isArray(currentValue)
+        ? currentValue[0] || ''
+        : currentValue;
+    }
+
+    if (this.data.current.id === 'pm-dialog' && prop === 'visible' && next) {
+      // reset toast for repeated preview
+      if (typeof wx?.showToast === 'function') {
+        wx.hideToast?.();
+      }
+    }
+
+    this.setData(updates);
   },
 
   handleTextInput(event) {
     const { key = 'text' } = event.currentTarget.dataset;
+    let inputValue = event.detail.value || '';
+    if (this.data.current.id === 'pm-picker' && key === 'value' && this.data.propsState.multiple) {
+      inputValue = inputValue
+        ? inputValue
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean)
+        : [];
+    }
     this.setData({
-      [`propsState.${key}`]: event.detail.value || '',
+      [`propsState.${key}`]: inputValue,
       activePresetId: PRESET_CUSTOM_ID,
     });
   },
@@ -84,6 +115,67 @@ Page({
     const { value } = event.detail || {};
     this.setData({
       'propsState.value': value,
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+  },
+
+  handlePickerChange(event) {
+    const { value } = event.detail || {};
+    this.setData({
+      'propsState.value': Array.isArray(value) ? value : value || '',
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+    if (typeof wx?.showToast === 'function') {
+      wx.showToast({ title: '已更新选项', icon: 'none', duration: 800 });
+    }
+  },
+
+  handlePickerClear() {
+    const cleared = this.data.propsState.multiple ? [] : '';
+    this.setData({
+      'propsState.value': cleared,
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+  },
+
+  handlePickerSearch(event) {
+    const { keyword = '' } = event.detail || {};
+    if (typeof wx?.showToast === 'function') {
+      wx.showToast({ title: `搜索：${keyword}`, icon: 'none', duration: 500 });
+    }
+  },
+
+  handleDialogConfirm() {
+    if (typeof wx?.showToast === 'function') {
+      wx.showToast({ title: '确认操作', icon: 'none' });
+    }
+    this.setData({
+      'propsState.visible': false,
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+  },
+
+  handleDialogCancel() {
+    if (typeof wx?.showToast === 'function') {
+      wx.showToast({ title: '已取消', icon: 'none' });
+    }
+    this.setData({
+      'propsState.visible': false,
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+  },
+
+  handleDialogClose() {
+    this.setData({
+      'propsState.visible': false,
+      activePresetId: PRESET_CUSTOM_ID,
+    });
+  },
+
+  handleBadgeCountInput(event) {
+    const value = event.detail.value || '';
+    this.setData({
+      'propsState.count': value,
       activePresetId: PRESET_CUSTOM_ID,
     });
   },

@@ -50,7 +50,7 @@
 - [x] 更新 Stylelint 规则，不允许在页面内再次定义与 foundation 冲突的样式。
   - [x] 新增 `project/no-foundation-overrides` Stylelint 插件，限制 `.h1` 等基础类再定义
   - [x] 修复受影响页面样式（index、patient-intake/select）并通过 `lint:style`
-- [ ] 汇总迁移清单，逐页替换直写颜色/阴影为 `foundation` 与 `utilities` 变量，并在完成后补充 Stylelint 校验规则。
+- [x] 汇总迁移清单，逐页替换直写颜色/阴影为 `foundation` 与 `utilities` 变量，并在完成后补充 Stylelint 校验规则。
   - [x] 梳理仍使用 `rgba()` 的渐变、透明遮罩等样式，规划语义 token 并纳入生成脚本。→ 见 `docs/design-system/rgba-inventory.md`
   - [x] 在 `design-tokens.json` 中新增 overlay/background/gradient 令牌，并更新 `scripts/generate-tokens.js`
   - [x] 替换页面级 `rgba()` 用法为新语义令牌，清理 legacy `styles/tokens.wxss` 阴影/渐变类
@@ -128,17 +128,19 @@
     - [ ] 内置动画效果（淡入 + 上滑）
     - [ ] 支持遮罩层点击关闭
     - [ ] 支持插槽自定义内容
-  - [ ] PM-Dialog 确认对话框组件
-    - [ ] 基于 PM-Modal 封装
-    - [ ] 预设确认、取消按钮样式
-    - [ ] 支持 confirm/cancel 回调
-  - [ ] PM-Badge 徽章组件（可选）
+  - [x] PM-Dialog 确认对话框组件
+    - [x] 基于 PM-Modal 封装（API 规划）
+    - [x] 预设确认、取消按钮样式
+    - [x] 支持 confirm/cancel 回调
+    - [x] 实现组件并补充 Component Lab 示例（含危险确认场景）
+  - [x] PM-Badge 徽章组件（可选）
+    - [ ] 为 PM-Badge 增补 Component Lab 交互演示与自动化覆盖
   - [ ] PM-Avatar 头像组件（可选）
 
 - [ ] **组件文档更新**（建议下一阶段）
-  - [ ] 更新 docs/components/ 中的组件 API 文档
-  - [ ] 补充设计原则和使用示例
-  - [ ] 添加最佳实践和注意事项
+  - [x] 更新 docs/components/ 中的组件 API 文档
+  - [x] 补充设计原则和使用示例
+  - [x] 添加最佳实践和注意事项
   - [ ] 更新 Component Lab 演示页面
 
 ### 3.2 组件优化后续任务（2025-09-30 完成）
@@ -201,10 +203,10 @@
   - [x] 分析页统计卡片迁移
     - [x] 替换 `.stat-card` 为 PM-Card
     - [x] 使用 status 和 variant 属性
-    - [ ] 更新 docs/business-components/integration-guide.md 示例，统一说明改用 PM-Card
-  - [ ] 患者详情页媒体卡片迁移
-    - [ ] 替换 `.media-card` 为 PM-Card + 自定义 slot
-    - [ ] 保持现有交互功能
+    - [x] 更新 docs/business-components/integration-guide.md 示例，统一说明改用 PM-Card
+  - [x] 患者详情页媒体卡片迁移
+    - [x] 替换 `.media-card` 为 PM-Card + 自定义 slot
+    - [x] 保持现有交互功能
 
   - [ ] **页面回归测试**（高优先级 - 新增 2025-09-30）
   - [ ] patient-detail 页面（已迁移 PM-Input）
@@ -245,10 +247,13 @@
 **待优化项**：
 
 - [x] PM-Input 组件支持 type="textarea" 模式，统一 textarea 样式
-- [ ] 考虑为 picker 创建 PM-Picker 组件
-- [ ] 考虑为 radio-group 创建 PM-Radio 组件
+- [x] 考虑为 picker 创建 PM-Picker 组件
+- [x] 实现 PM-Picker 组件（依据 base-component-api-plan 中的 API 规格）
+- [ ] 为 PM-Picker 增补 Component Lab 预设与 E2E 覆盖
+- [x] 考虑为 radio-group 创建 PM-Radio 组件
+- [ ] 实现 PM-Radio 组件，实现单选与按钮样式模式（参考 base-component-api-plan）
 
-- [ ] 将现有 textarea 使用场景迁移为 `pm-input` 的 `type="textarea"`，验证自动高度与校验体验
+- [x] 将现有 textarea 使用场景迁移为 `pm-input` 的 `type="textarea"`，验证自动高度与校验体验
 - [x] 更新组件文档与 Component Lab 示例，补充 textarea 属性（`maxlength`、`textareaAutoHeight` 等）
   - [x] Component Lab：当输入类型非 `textarea` 时禁用或隐藏 `textareaAutoHeight`、`showConfirmBar` 控制，避免误用
 
@@ -276,9 +281,9 @@
   - [ ] 增强色盲友好的状态提示
 
 - [ ] **文档完善**
-  - [ ] 更新组件 API 文档，补充新增功能
-  - [ ] 在设计令牌文档中引用圆角使用指南
-  - [ ] 创建组件最佳实践示例库
+- [x] 更新组件 API 文档，补充新增功能
+  - [x] 在设计令牌文档中引用圆角使用指南
+  - [x] 创建组件最佳实践示例库
 
 ## 4. 文档体系梳理（进行中）
 
