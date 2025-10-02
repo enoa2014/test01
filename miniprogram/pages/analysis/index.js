@@ -68,7 +68,7 @@ function getPatientRef(item) {
   return {
     key: item.key,
     patientKey: item.patientKey || item.key,
-    name: item.patientName || '未命名患者'
+    name: item.patientName || '未命名住户'
   };
 }
 

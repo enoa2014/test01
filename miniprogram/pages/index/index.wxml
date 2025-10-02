@@ -1,13 +1,13 @@
 ﻿<view class="theme-root container stack gap-4">
   <view class="hero">
-    <text class="title">患者档案</text>
-    <text class="hero-subtitle">汇总每位患者的住院记录</text>
+    <text class="title">住户档案</text>
+    <text class="hero-subtitle">汇总每位住户的入住记录</text>
   </view>
 
   <view class="toolbar stack gap-3">
     <smart-search-bar
       value="{{searchKeyword}}"
-      placeholder="搜索患者姓名、病历号或标签"
+      placeholder="搜索住户姓名、档案号或标签"
       suggestions="{{searchSuggestions}}"
       filters="{{quickFilters}}"
       loading="{{searchLoading}}"
@@ -45,7 +45,7 @@
         />
         <pm-button
           class="toolbar-action"
-          text="患者入住"
+          text="住户入住"
           size="small"
           type="primary"
           bindtap="onIntakeTap"
@@ -73,12 +73,12 @@
   <pm-card
     wx:if="{{!loading && !error && !displayPatients.length}}"
     class="empty-state-card"
-    title="暂无患者档案"
+    title="暂无住户档案"
     useFooterSlot="{{true}}"
   >
     <view class="empty-state">
       <image class="empty-illustration" src="../../assets/images/empty-patients.svg" mode="aspectFit" />
-      <text class="empty-description">点击右下角按钮添加第一位患者</text>
+      <text class="empty-description">点击右下角按钮添加第一位住户</text>
     </view>
     <view slot="footer" class="empty-actions">
       <pm-button text="立即添加" type="primary" size="medium" bindtap="onIntakeTap" />
@@ -111,7 +111,7 @@
         size="large"
         icon-only="{{true}}"
         elevated="{{true}}"
-        aria-label="添加患者"
+        aria-label="添加住户"
         bindtap="onIntakeTap"
       />
     </view>

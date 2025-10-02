@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "患者列表",
+  "navigationBarTitleText": "住户列表",
   "usingComponents": {
     "pm-card": "/components/base/pm-card/index",
     "pm-button": "/components/base/pm-button/index",

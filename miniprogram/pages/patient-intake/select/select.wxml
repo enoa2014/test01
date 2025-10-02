@@ -1,8 +1,8 @@
-<!--患者选择页面-->
+<!--住户选择页面-->
 <view class="theme-root select-container">
   <view class="header">
-    <view class="title">患者入住登记</view>
-    <view class="select-subtitle">请选择患者或创建新患者</view>
+    <view class="title">住户入住登记</view>
+    <view class="select-subtitle">请选择住户或创建新住户</view>
   </view>
 
   <!-- 搜索区域 -->
@@ -11,7 +11,7 @@
       <input
         class="search-input"
         value="{{searchKeyword}}"
-        placeholder="搜索患者姓名、证件号码"
+        placeholder="搜索住户姓名、证件号码"
         bindinput="onSearchInput"
         focus="{{searchFocus}}"
       />
@@ -20,7 +20,7 @@
     </view>
   </view>
 
-  <!-- 患者列表 -->
+  <!-- 住户列表 -->
   <scroll-view
     class="patient-list"
     scroll-y
@@ -33,14 +33,14 @@
 
     <view wx:if="{{!loading && patients.length === 0 && searchKeyword}}" class="empty-state">
       <view class="empty-icon">🔍</view>
-      <view class="empty-text">未找到匹配的患者</view>
-      <view class="empty-hint">请检查搜索条件或创建新患者</view>
+      <view class="empty-text">未找到匹配的住户</view>
+      <view class="empty-hint">请检查搜索条件或创建新住户</view>
     </view>
 
     <view wx:if="{{!loading && patients.length === 0 && !searchKeyword}}" class="empty-state">
       <view class="empty-icon">👥</view>
-      <view class="empty-text">暂无患者数据</view>
-      <view class="empty-hint">请先创建患者信息</view>
+      <view class="empty-text">暂无住户数据</view>
+      <view class="empty-hint">请先创建住户信息</view>
     </view>
 
     <view
@@ -66,7 +66,7 @@
             最近：{{item.latestAdmissionDateFormatted}}
           </text>
         </view>
-        <view class="new-badge" wx:if="{{item.admissionCount === 0}}">新患者</view>
+        <view class="new-badge" wx:if="{{item.admissionCount === 0}}">新住户</view>
       </view>
 
       <view class="patient-action">
@@ -79,7 +79,7 @@
     </view>
 
     <view wx:if="{{!hasMore && patients.length > 0}}" class="no-more">
-      <view class="no-more-text">已显示全部患者</view>
+      <view class="no-more-text">已显示全部住户</view>
     </view>
   </scroll-view>
 
@@ -90,7 +90,7 @@
       type="primary"
       size="small"
       icon="👤"
-      text="创建新患者"
+      text="创建新住户"
       bindtap="onCreateNewPatient"
     ></pm-button>
   </view>
@@ -100,7 +100,7 @@
 <view class="confirm-modal" wx:if="{{showConfirmModal}}">
   <view class="modal-content">
     <view class="modal-header">
-      <view class="modal-title">确认选择患者</view>
+      <view class="modal-title">确认选择住户</view>
     </view>
 
     <view class="modal-body">
@@ -127,7 +127,7 @@
       </view>
 
       <view class="intake-hint">
-        <text class="hint-text">将为此患者进行入住登记，患者信息可在后续步骤中编辑</text>
+        <text class="hint-text">将为此住户办理入住，信息可在后续步骤中编辑</text>
       </view>
     </view>
 

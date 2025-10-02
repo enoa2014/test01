@@ -2,7 +2,7 @@
 <view wx:if="{{visible}}" class="filter-panel-drawer" catchtouchmove="noop" catchtap="noop">
   <view class="filter-panel__header">
     <view class="filter-panel__title">高级筛选</view>
-    <view class="filter-panel__subtitle">组合条件快速锁定目标患者</view>
+    <view class="filter-panel__subtitle">组合条件快速锁定目标住户</view>
     <view class="filter-panel__close" bindtap="handleCloseTap">×</view>
   </view>
 
@@ -69,7 +69,7 @@
     </view>
 
     <view class="filter-section">
-      <view class="filter-section__title">患者状态</view>
+      <view class="filter-section__title">住户状态</view>
       <view class="filter-chips">
         <view
           wx:for="{{statusOptions}}"

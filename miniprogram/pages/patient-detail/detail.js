@@ -131,7 +131,7 @@ Page({
     this.mediaService = createMediaService(this);
 
     if (!this.profileKey && !this.patientKey) {
-      this.setData({ loading: false, error: '缺少患者标识' });
+      this.setData({ loading: false, error: '缺少住户标识' });
       return;
     }
 
@@ -623,7 +623,7 @@ Page({
       logger.error('Failed to load patient detail', error);
       this.setData({
         loading: false,
-        error: (error && (error.errMsg || error.message)) || '加载患者详情失败，请稍后重试',
+        error: (error && (error.errMsg || error.message)) || '加载住户详情失败，请稍后重试',
       });
     }
   },
@@ -839,7 +839,7 @@ Page({
           lastIntakeNarrative: form.narrative,
         },
         audit: {
-          message: '患者详情页内联编辑',
+          message: '住户详情页内联编辑',
           changes: changedFields,
         },
       };

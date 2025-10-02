@@ -1,4 +1,4 @@
-<!--患者录入向导界面-->
+<!--住户录入向导界面-->
 <view class="theme-root wizard-container">
   <!-- 顶部进度指示器 -->
   <view class="progress-header">
@@ -33,14 +33,14 @@
 
   <!-- 步骤内容 -->
   <scroll-view class="step-content" scroll-y>
-    <!-- 第1步：患者基础信息 -->
+    <!-- 第1步：住户基础信息 -->
     <view wx:if="{{currentStep === 0}}" class="form-section">
       <view class="form-group">
         <pm-input
           label="姓名"
           required="{{true}}"
           value="{{formData.patientName}}"
-          placeholder="请输入患者姓名"
+          placeholder="请输入住户姓名"
           data-field="patientName"
           bindinput="onInputChange"
           error="{{errors.patientName || ''}}"
@@ -210,7 +210,7 @@
             label="入住理由说明（选填）"
             type="textarea"
             value="{{formData.situation}}"
-            placeholder="请详细描述入住理由和患者情况，包含护理需求或症状信息"
+            placeholder="请详细描述入住理由和住户情况，包含护理需求或症状信息"
             data-field="situation"
             bindinput="onInputChange"
             error="{{errors.situation || ''}}"

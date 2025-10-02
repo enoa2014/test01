@@ -14,7 +14,7 @@ Component({
     },
     placeholder: {
       type: String,
-      value: '搜索患者姓名/病历号/诊断标签',
+      value: '搜索住户姓名/档案号/诊断标签',
     },
     suggestions: {
       type: Array,

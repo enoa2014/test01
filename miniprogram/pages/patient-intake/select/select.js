@@ -1,4 +1,4 @@
-// 患者选择页面
+// 住户选择页面
 const logger = require('../../../utils/logger');
 const { formatDate, formatAge } = require('../../../utils/date');
 
@@ -34,6 +34,7 @@ function writePatientsCache(patients) {
 
 Page({
   data: {
+    patients: [],
     allPatients: [],
     filteredPatients: [],
     displayPatients: [],
@@ -58,6 +59,7 @@ Page({
     if (cachedPatients && cachedPatients.length) {
       this.setData(
         {
+          patients: cachedPatients,
           allPatients: cachedPatients,
           loading: false,
         },
@@ -78,7 +80,7 @@ Page({
     }, 100);
   },
 
-  // 获取患者列表
+  // 获取住户列表
   async fetchPatients(options = {}) {
     const silent = !!(options && options.silent);
     if (!silent) {
@@ -112,6 +114,7 @@ Page({
 
       this.setData(
         {
+          patients,
           allPatients: patients,
           loading: false,
         },
@@ -123,8 +126,8 @@ Page({
       // 更新缓存
       writePatientsCache(patients);
     } catch (error) {
-      logger.error('Failed to load patients', error);
-      const errorMessage = (error && error.errMsg) || '读取患者数据失败，请稍后重试';
+      logger.error('Failed to load residents', error);
+      const errorMessage = (error && error.errMsg) || '读取住户数据失败，请稍后重试';
 
       if (!silent) {
         wx.showToast({
@@ -188,6 +191,7 @@ Page({
     this.setData({
       filteredPatients: filtered,
       displayPatients,
+      patients: displayPatients,
       hasMore,
       currentPage: 0,
     });
@@ -215,12 +219,13 @@ Page({
 
     this.setData({
       displayPatients: allDisplayPatients,
+      patients: allDisplayPatients,
       currentPage: nextPage,
       hasMore,
     });
   },
 
-  // 选择患者
+  // 选择住户
   onPatientSelect(e) {
     const patient = e.currentTarget.dataset.patient;
     this.setData({
@@ -244,16 +249,16 @@ Page({
       return;
     }
 
-    // 跳转到向导页面，传递患者信息
+    // 跳转到向导页面，传递住户信息
     const targetKey = selectedPatient.patientKey || selectedPatient.key;
     wx.navigateTo({
       url: `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(targetKey)}&mode=existing`,
     });
   },
 
-  // 创建新患者
+  // 创建新住户
   onCreateNewPatient() {
-    // 跳转到向导页面，创建新患者
+    // 跳转到向导页面，创建新住户
     wx.navigateTo({
       url: '/pages/patient-intake/wizard/wizard?mode=new',
     });

@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "患者详情",
+  "navigationBarTitleText": "住户详情",
   "usingComponents": {
     "pm-input": "/components/base/pm-input/index",
     "pm-card": "/components/base/pm-card/index"

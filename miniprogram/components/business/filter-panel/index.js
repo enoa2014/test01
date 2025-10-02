@@ -2,7 +2,7 @@ const DEFAULT_STATUSES = [
   { id: 'in_care', label: '在住' },
   { id: 'followup', label: '随访' },
   { id: 'pending', label: '待入住' },
-  { id: 'discharged', label: '已出院' },
+  { id: 'discharged', label: '已离开' },
 ];
 
 const DEFAULT_RISK_LEVELS = [
@@ -116,7 +116,7 @@ Component({
     },
     previewLabel: {
       type: String,
-      value: '名患者符合筛选',
+      value: '名住户符合筛选',
     },
     previewLoading: {
       type: Boolean,

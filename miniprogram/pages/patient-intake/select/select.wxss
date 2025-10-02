@@ -1,4 +1,4 @@
-/* 患者选择页面样式 */
+/* 住户选择页面样式 */
 
 .select-container {
   height: 100vh;
@@ -81,7 +81,7 @@
   color: var(--color-bg-primary);
 }
 
-/* 患者列表 */
+/* 住户列表 */
 .patient-list {
   flex: 1;
   padding: 0 var(--space-5);

@@ -1,5 +1,5 @@
 ﻿<view class="theme-root detail-container">
-  <view wx:if="{{loading}}" class="placeholder">正在加载患者信息…</view>
+  <view wx:if="{{loading}}" class="placeholder">正在加载住户信息…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
     <view class="patient-header">
@@ -196,7 +196,7 @@
 
     <block wx:if="{{!editMode}}">
       <view wx:if="{{basicInfo.length}}" class="info-section">
-        <text class="section-title">患者基本信息</text>
+        <text class="section-title">住户基本信息</text>
         <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
           <text class="label">{{item.label}}</text>
           <text class="value">{{item.value}}</text>
@@ -291,7 +291,7 @@
           <text class="log-time">{{item.timeText || ''}}</text>
           <text class="log-operator">{{item.operatorName || '未知操作人'}}</text>
         </view>
-        <text class="log-message">{{item.message || '更新患者资料'}}</text>
+        <text class="log-message">{{item.message || '更新住户资料'}}</text>
       </view>
     </view>
 

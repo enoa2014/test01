@@ -1,4 +1,4 @@
-// 患者录入向导页面
+// 住户录入向导页面
 const STEP_DEFINITIONS = [
   { title: '基础信息', key: 'basic' },
   { title: '联系人', key: 'contact' },
@@ -66,7 +66,7 @@ Page({
       minLength: 30,
       maxLength: 500,
       example:
-        '患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。',
+        '住户因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。',
     },
 
     uploadConfig: {
@@ -84,7 +84,7 @@ Page({
     showDraftModal: false,
     today: '',
 
-    // 患者选择相关（如果是从患者选择页面进入）
+    // 住户选择相关（如果是从住户选择页面进入）
     patientKey: '',
     isEditingExisting: false,
   },
@@ -360,7 +360,7 @@ Page({
     this.refreshVisibleStepMeta(steps, currentStep);
   },
 
-  // 加载患者数据（编辑已有患者时）
+  // 加载住户数据（编辑已有住户时）
   async loadPatientData(patientKey) {
     let hasPrefilled = false;
     try {
@@ -393,7 +393,7 @@ Page({
         excelRecordKey = patientKey;
       }
 
-      // 使用 patientProfile 获取完整的患者信息,包括父母联系方式
+      // 使用 patientProfile 获取完整的住户信息,包括父母联系方式
       let profilePayload = null;
       try {
         const res = await wx.cloud.callFunction({
@@ -561,7 +561,7 @@ Page({
 
       this.updateRequiredFields();
     } catch (error) {
-      logger.error('[预填充] 加载患者数据失败', error);
+      logger.error('[预填充] 加载住户数据失败', error);
       if (!hasPrefilled) {
         wx.showToast({
           title: error.message || '加载失败',
@@ -748,7 +748,7 @@ Page({
     switch (field) {
       case 'patientName':
         if (!value || !value.trim()) {
-          error = '请输入患者姓名';
+          error = '请输入住户姓名';
         }
         break;
 
@@ -832,7 +832,7 @@ Page({
       case 0: {
         // 基础信息
         if (!formData.patientName || !formData.patientName.trim()) {
-          errors.patientName = '请输入患者姓名';
+          errors.patientName = '请输入住户姓名';
           isValid = false;
         }
         if (!formData.idNumber || !formData.idNumber.trim()) {
@@ -1067,9 +1067,9 @@ Page({
         });
       } else {
         // 如果自动填充失败,给出明确提示
-        logger.error('无法自动填充紧急联系人,患者档案中未找到父母联系方式');
+        logger.error('无法自动填充紧急联系人,住户档案中未找到父母联系方式');
         throw new Error(
-          '紧急联系人不能为空。系统无法从患者档案中自动获取父母联系方式,请手动填写紧急联系人信息。'
+          '紧急联系人不能为空。系统无法从住户档案中自动获取父母联系方式,请手动填写紧急联系人信息。'
         );
       }
     }
@@ -1201,7 +1201,7 @@ Page({
   // 从父母信息自动填充紧急联系人(提交前最后检查)
   async _autoFillEmergencyContactFromParents(patientKey) {
     try {
-      // 使用 patientProfile 获取患者详情
+      // 使用 patientProfile 获取住户详情
       const res = await wx.cloud.callFunction({
         name: 'patientProfile',
         data: {
