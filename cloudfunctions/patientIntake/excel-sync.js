@@ -6,7 +6,7 @@ const {
   ensureRecordTimestamp,
 } = require('./utils/patient');
 
-function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInput, normalizeString, collections }) {
+function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInput, normalizeString, collections = {} }) {
   const ensureCollection = async (name) => {
     if (ensureCollectionExistsInput) {
       return ensureCollectionExistsInput(name);
@@ -17,9 +17,37 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
   const normalizeExcelValue = normalizeValue;
   const normalizeExcelSpacing = normalizeSpacing;
   const toTimestampFromExcel = normalizeTimestamp;
-  const { PATIENTS_COLLECTION, PATIENT_INTAKE_COLLECTION, EXCEL_RECORDS_COLLECTION } = collections;
+  const {
+    PATIENTS_COLLECTION,
+    PATIENT_INTAKE_COLLECTION,
+    EXCEL_RECORDS_COLLECTION,
+    EXCEL_CACHE_COLLECTION,
+    PATIENT_CACHE_DOC_ID,
+  } = collections;
 
   const command = db.command;
+
+  const invalidatePatientCache = async () => {
+    if (!EXCEL_CACHE_COLLECTION || !PATIENT_CACHE_DOC_ID) {
+      return;
+    }
+    try {
+      await ensureCollection(EXCEL_CACHE_COLLECTION);
+      await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
+        data: {
+          patients: [],
+          totalCount: 0,
+          hasMore: false,
+          limit: 0,
+          updatedAt: 0,
+          invalidatedAt: Date.now(),
+        },
+      });
+    } catch (error) {
+      const code = error && (error.errCode !== undefined ? error.errCode : error.code);
+      console.warn('invalidatePatientCache failed', PATIENT_CACHE_DOC_ID, code || error);
+    }
+  };
 
     function sanitizeIdentifier(value, fallbackSeed) {
     const base = normalizeExcelValue(value);
@@ -139,6 +167,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       idNumber: normalizeExcelSpacing(last.idNumber),
       gender: normalizeExcelSpacing(last.gender),
       birthDate: normalizeExcelSpacing(last.birthDate),
+      nativePlace: normalizeExcelSpacing(last.nativePlace) || normalizeExcelSpacing(first.nativePlace),
+      ethnicity: normalizeExcelSpacing(last.ethnicity) || normalizeExcelSpacing(first.ethnicity),
       phone: '',
       address: normalizeExcelSpacing(last.address),
       emergencyContact: normalizeExcelSpacing(last.caregivers),
@@ -359,7 +389,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     return Array.from(map.values());
   };
 
-  async function summarizeIntakeHistory(patientKey) {
+  async function summarizeIntakeHistory(patientKey, options = {}) {
     const normalizedKey = normalizeStringValue(patientKey);
     const summary = {
       count: 0,
@@ -379,6 +409,58 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       return summary;
     }
 
+    const applyExcelFallback = async () => {
+      try {
+        const fallbackKeys = [];
+        const sanitizedKey = normalizeExcelSpacing(normalizedKey).replace(/^excel_/, '');
+        if (sanitizedKey && sanitizedKey !== normalizedKey) {
+          fallbackKeys.push(sanitizedKey);
+        }
+        if (options.ensureOptions && Array.isArray(options.ensureOptions.excelKeys)) {
+          fallbackKeys.push(...options.ensureOptions.excelKeys);
+        }
+        const excelRecords = await fetchExcelRecordsByKey(
+          normalizedKey,
+          fallbackKeys
+        );
+        if (!Array.isArray(excelRecords) || !excelRecords.length) {
+          return;
+        }
+        summary.count = excelRecords.length;
+        const sorted = [...excelRecords].sort((a, b) => {
+          const aTs = toTimestampFromExcel(a.admissionTimestamp || a.admissionDate);
+          const bTs = toTimestampFromExcel(b.admissionTimestamp || b.admissionDate);
+          return (aTs || 0) - (bTs || 0);
+        });
+        const earliest = sorted[0];
+        const latest = sorted[sorted.length - 1];
+
+        const earliestTs = toTimestampFromExcel(earliest.admissionTimestamp || earliest.admissionDate);
+        const latestTs = toTimestampFromExcel(latest.admissionTimestamp || latest.admissionDate);
+
+        if (earliestTs) {
+          summary.earliestTimestamp = earliestTs;
+          summary.firstNarrative = normalizeExcelSpacing(
+            earliest.symptoms || earliest.diagnosis || earliest.treatmentProcess || summary.firstNarrative
+          );
+          summary.firstHospital = normalizeExcelSpacing(earliest.hospital) || summary.firstHospital;
+          summary.firstDoctor = normalizeExcelSpacing(earliest.doctor) || summary.firstDoctor;
+          summary.firstDiagnosis = normalizeExcelSpacing(earliest.diagnosis) || summary.firstDiagnosis;
+        }
+        if (latestTs) {
+          summary.latestTimestamp = latestTs;
+          summary.latestNarrative = normalizeExcelSpacing(
+            latest.symptoms || latest.diagnosis || latest.treatmentProcess || summary.latestNarrative
+          );
+          summary.latestHospital = normalizeExcelSpacing(latest.hospital) || summary.latestHospital;
+          summary.latestDoctor = normalizeExcelSpacing(latest.doctor) || summary.latestDoctor;
+          summary.latestDiagnosis = normalizeExcelSpacing(latest.diagnosis) || summary.latestDiagnosis;
+        }
+      } catch (error) {
+        console.warn('summarizeIntakeHistory excel fallback failed', normalizedKey, error);
+      }
+    };
+
     await ensureCollection(PATIENT_INTAKE_COLLECTION);
     const collection = db.collection(PATIENT_INTAKE_COLLECTION);
 
@@ -388,10 +470,12 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       count = Number(countRes && countRes.total) || 0;
     } catch (error) {
       console.warn('summarizeIntakeHistory count failed', normalizedKey, error);
+      await applyExcelFallback();
       return summary;
     }
 
     if (!count) {
+      await applyExcelFallback();
       return summary;
     }
 
@@ -453,14 +537,14 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     }
 
     if (!allActiveRecords.length) {
-      summary.count = 0;
+      await applyExcelFallback();
       return summary;
     }
 
     const dedupedRecords = dedupeIntakeRecordsForSummary(allActiveRecords);
 
     if (!dedupedRecords.length) {
-      summary.count = 0;
+      await applyExcelFallback();
       return summary;
     }
 
@@ -539,6 +623,10 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     summary.firstDoctor = earliestInfo.doctor || summary.latestDoctor;
     summary.firstDiagnosis = earliestInfo.diagnosis || summary.latestDiagnosis;
 
+    if (summary.count <= 1) {
+      await applyExcelFallback();
+    }
+
     return summary;
   }
 
@@ -560,7 +648,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       };
     }
 
-    const summary = await summarizeIntakeHistory(normalizedKey);
+    const summary = await summarizeIntakeHistory(normalizedKey, options);
     const patientDoc = options.patientDoc || null;
     const serverDate = options.serverDate || Date.now();
 
@@ -639,6 +727,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     try {
       await ensureCollection(PATIENTS_COLLECTION);
       await db.collection(PATIENTS_COLLECTION).doc(targetDocId).update({ data: updates });
+      await invalidatePatientCache();
     } catch (error) {
       console.warn('syncPatientAggregates update failed', targetDocId, error);
     }

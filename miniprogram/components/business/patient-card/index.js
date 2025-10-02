@@ -141,12 +141,16 @@ Component({
     handleActionTap(event) {
       const action = event.currentTarget.dataset.action;
       this.triggerEvent('actiontap', { action, patient: this.data.patient });
-      event.stopPropagation();
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
     },
     handleSelectChange(event) {
       const nextSelected = !this.data.selected;
       this.triggerEvent('selectchange', { selected: nextSelected, patient: this.data.patient });
-      event.stopPropagation();
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
     },
     handleLongPress() {
       this.triggerEvent('longpress', { patient: this.data.patient });

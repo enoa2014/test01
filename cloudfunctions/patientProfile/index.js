@@ -166,20 +166,37 @@ async function buildPatientsFromDatabase(options = {}) {
     }
 
     const data = doc.data && typeof doc.data === 'object' ? doc.data : {};
-    const dataAdmissionCount = safeNumber(data.admissionCount);
+    const nestedData = data.data && typeof data.data === 'object' ? data.data : {};
+    const pickValue = (...candidates) => {
+      for (const value of candidates) {
+        if (value !== undefined && value !== null && value !== '') {
+          return value;
+        }
+      }
+      return undefined;
+    };
+
+    const dataAdmissionCount = Math.max(
+      safeNumber(data.admissionCount),
+      safeNumber(nestedData.admissionCount)
+    );
     const docAdmissionCount = safeNumber(doc.admissionCount);
     const admissionCount = Math.max(dataAdmissionCount, docAdmissionCount);
 
-    const firstSource = data.firstAdmissionDate !== undefined ? data.firstAdmissionDate : doc.firstAdmissionDate;
+    const firstSource = pickValue(nestedData.firstAdmissionDate, data.firstAdmissionDate, doc.firstAdmissionDate);
     const firstTs = normalizeTimestamp(firstSource);
 
-    const latestSource = data.latestAdmissionDate !== undefined ? data.latestAdmissionDate : doc.latestAdmissionDate;
-    const latestTimestampSource = data.latestAdmissionTimestamp !== undefined ? data.latestAdmissionTimestamp : doc.latestAdmissionTimestamp;
+    const latestSource = pickValue(nestedData.latestAdmissionDate, data.latestAdmissionDate, doc.latestAdmissionDate);
+    const latestTimestampSource = pickValue(
+      nestedData.latestAdmissionTimestamp,
+      data.latestAdmissionTimestamp,
+      doc.latestAdmissionTimestamp
+    );
     const latestTs = normalizeTimestamp(latestSource);
     const latestTimestamp = normalizeTimestamp(latestTimestampSource) || latestTs;
 
-    const summaryCaregivers = doc.summaryCaregivers || doc.caregivers || data.summaryCaregivers || '';
-    const lastNarrative = doc.lastIntakeNarrative || data.lastIntakeNarrative || '';
+    const summaryCaregivers = (pickValue(doc.summaryCaregivers, doc.caregivers, data.summaryCaregivers, nestedData.summaryCaregivers) || '');
+    const lastNarrative = pickValue(doc.lastIntakeNarrative, data.lastIntakeNarrative, nestedData.lastIntakeNarrative) || '';
     const phone = doc.phone || data.phone || '';
     const address = doc.address || data.address || '';
     const emergencyContact = doc.emergencyContact || data.emergencyContact || '';
@@ -187,17 +204,17 @@ async function buildPatientsFromDatabase(options = {}) {
     const backupContact = doc.backupContact || data.backupContact || '';
     const backupPhone = doc.backupPhone || data.backupPhone || '';
 
-    const nativePlace = normalizeValue(doc.nativePlace || data.nativePlace);
-    const ethnicity = normalizeValue(doc.ethnicity || data.ethnicity);
-    const excelImportOrder = doc.excelImportOrder || data.excelImportOrder || null;
-    const importOrder = doc.importOrder || data.importOrder || excelImportOrder || null;
+    const nativePlace = normalizeValue(pickValue(doc.nativePlace, data.nativePlace, nestedData.nativePlace));
+    const ethnicity = normalizeValue(pickValue(doc.ethnicity, data.ethnicity, nestedData.ethnicity));
+    const excelImportOrder = pickValue(doc.excelImportOrder, data.excelImportOrder, nestedData.excelImportOrder);
+    const importOrder = pickValue(doc.importOrder, data.importOrder, nestedData.importOrder, excelImportOrder);
 
     // 优先从data字段获取诊断和医院信息，如果没有则从doc根级字段获取
-    const firstDiagnosis = data.firstDiagnosis || doc.firstDiagnosis || '';
-    const latestDiagnosis = data.latestDiagnosis || doc.latestDiagnosis || '';
-    const firstHospital = data.firstHospital || doc.firstHospital || '';
-    const latestHospital = data.latestHospital || doc.latestHospital || '';
-    const latestDoctor = data.latestDoctor || doc.latestDoctor || '';
+    const firstDiagnosis = pickValue(data.firstDiagnosis, nestedData.firstDiagnosis, doc.firstDiagnosis) || '';
+    const latestDiagnosis = pickValue(data.latestDiagnosis, nestedData.latestDiagnosis, doc.latestDiagnosis) || '';
+    const firstHospital = pickValue(data.firstHospital, nestedData.firstHospital, doc.firstHospital) || '';
+    const latestHospital = pickValue(data.latestHospital, nestedData.latestHospital, doc.latestHospital) || '';
+    const latestDoctor = pickValue(data.latestDoctor, nestedData.latestDoctor, doc.latestDoctor) || '';
 
     summaries.push({
       key: nameKey,
@@ -309,6 +326,8 @@ async function fetchFallbackPatientDetail(patientKey) {
       gender: patientDoc.gender || '',
       birthDate: patientDoc.birthDate || '',
       idNumber: patientDoc.idNumber || '',
+      nativePlace: patientDoc.nativePlace || '',
+      ethnicity: patientDoc.ethnicity || '',
       latestHospital: patientDoc.latestHospital || '',
       latestDoctor: patientDoc.latestDoctor || ''
     };
@@ -317,6 +336,8 @@ async function fetchFallbackPatientDetail(patientKey) {
       ['性别', patientDoc.gender],
       ['出生日期', patientDoc.birthDate],
       ['身份证号', patientDoc.idNumber],
+      ['籍贯', patientDoc.nativePlace],
+      ['民族', patientDoc.ethnicity],
       ['联系电话', patientDoc.phone]
     ]);
 

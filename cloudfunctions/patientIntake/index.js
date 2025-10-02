@@ -20,6 +20,8 @@ const PATIENT_INTAKE_DRAFTS_COLLECTION = 'patient_intake_drafts';
 const INTAKE_CONFIG_COLLECTION = 'intake_config';
 const EXCEL_RECORDS_COLLECTION = 'excel_records';
 const PATIENT_OPERATION_LOGS_COLLECTION = 'patient_operation_logs';
+const EXCEL_CACHE_COLLECTION = 'excel_cache';
+const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 
 // 配置常量
 const DRAFT_EXPIRE_DAYS = 7;
@@ -93,6 +95,8 @@ const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = cr
     PATIENTS_COLLECTION,
     PATIENT_INTAKE_COLLECTION,
     EXCEL_RECORDS_COLLECTION,
+    EXCEL_CACHE_COLLECTION,
+    PATIENT_CACHE_DOC_ID,
   },
 });
 
@@ -598,6 +602,8 @@ async function handleGetPatientDetail(event) {
         idNumber: patient.idNumber,
         gender: patient.gender,
         birthDate: patient.birthDate,
+        nativePlace: patient.nativePlace || '',
+        ethnicity: patient.ethnicity || '',
         phone: patient.phone,
         address: patient.address,
         emergencyContact: patient.emergencyContact,

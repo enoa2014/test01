@@ -110,7 +110,7 @@
 }
 
 .filter-chip--ghost.filter-chip--active {
-  background: rgba(46, 134, 171, 0.12);
+  background: var(--color-sky-blue);
   color: var(--color-primary);
   border-color: var(--color-primary);
 }

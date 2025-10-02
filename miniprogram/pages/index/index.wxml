@@ -104,14 +104,15 @@
   </scroll-view>
 
   <view class="fab-container">
-    <view class="fab-button" bindtap="onIntakeTap">
+    <view class="fab-button">
       <pm-button
-        icon="plus"
+        icon="＋"
         type="primary"
         size="large"
         icon-only="{{true}}"
         elevated="{{true}}"
         aria-label="添加患者"
+        bindtap="onIntakeTap"
       />
     </view>
   </view>

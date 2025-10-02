@@ -188,6 +188,98 @@ function createOptionsFromSet(values) {
   return unique.map(item => ({ id: item, label: item }));
 }
 
+function mapPatientStatus(latestAdmissionTimestamp) {
+  const timestamp = Number(latestAdmissionTimestamp || 0);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return { cardStatus: 'default', careStatus: 'discharged', diffDays: null };
+  }
+
+  const now = Date.now();
+  if (timestamp > now) {
+    return { cardStatus: 'info', careStatus: 'pending', diffDays: 0 };
+  }
+
+  const diffDays = Math.floor((now - timestamp) / (24 * 60 * 60 * 1000));
+  if (diffDays <= 30) {
+    return { cardStatus: 'success', careStatus: 'in_care', diffDays };
+  }
+  if (diffDays <= 90) {
+    return { cardStatus: 'info', careStatus: 'pending', diffDays };
+  }
+  return { cardStatus: 'default', careStatus: 'discharged', diffDays };
+}
+
+function identifyRiskLevel(diffDays) {
+  if (diffDays === null || diffDays === undefined) {
+    return 'low';
+  }
+  if (diffDays <= 7) {
+    return 'high';
+  }
+  if (diffDays <= 30) {
+    return 'medium';
+  }
+  return 'low';
+}
+
+function generatePatientBadges({ careStatus, riskLevel, admissionCount }) {
+  const badges = [];
+  if (careStatus === 'in_care') {
+    badges.push({ text: '在住', type: 'success' });
+  } else if (careStatus === 'pending') {
+    badges.push({ text: '随访', type: 'info' });
+  }
+
+  if (riskLevel === 'high') {
+    badges.push({ text: '需复查', type: 'danger' });
+  } else if (riskLevel === 'medium') {
+    badges.push({ text: '定期随访', type: 'warning' });
+  }
+
+  const count = Number(admissionCount || 0);
+  if (count > 0) {
+    badges.push({ text: `入住 ${count} 次`, type: 'info' });
+  }
+
+  return badges;
+}
+
+function buildLatestEvent({ latestAdmissionDateFormatted, latestDiagnosis, importOrder, importedAtFormatted }) {
+  const diagnosis = safeString(latestDiagnosis) || '暂无诊断';
+  if (latestAdmissionDateFormatted) {
+    return `${latestAdmissionDateFormatted} · ${diagnosis}`;
+  }
+  if (Number.isFinite(importOrder) && importOrder > 0) {
+    return `Excel 第 ${importOrder} 行 · ${diagnosis}`;
+  }
+  if (importedAtFormatted) {
+    return `${importedAtFormatted} 导入 · ${diagnosis}`;
+  }
+  return diagnosis;
+}
+
+function extractPatientTags({ latestHospital, latestDoctor, firstDiagnosis, latestDiagnosis, importOrder }) {
+  const tags = [];
+
+  const append = value => {
+    const item = safeString(value);
+    if (item && !tags.includes(item)) {
+      tags.push(item);
+    }
+  };
+
+  append(latestHospital);
+  append(latestDoctor);
+  if (firstDiagnosis && safeString(firstDiagnosis) !== safeString(latestDiagnosis)) {
+    append(firstDiagnosis);
+  }
+  if (Number.isFinite(importOrder) && importOrder > 0) {
+    append(`Excel 行 ${importOrder}`);
+  }
+
+  return tags;
+}
+
 function deriveHospitalOptions(patients) {
   const set = new Set();
   (patients || []).forEach(patient => {
@@ -383,13 +475,13 @@ Page({
     sortIndex: 0,
     skeletonPlaceholders: [0, 1, 2, 3],
     cardActions: [
-      { id: 'view', label: '查看详情', type: 'text' },
-      { id: 'remind', label: '发起提醒', type: 'text' },
-      { id: 'export', label: '导出档案', type: 'text' },
-      { id: 'intake', label: '录入入住', type: 'text' },
+      { id: 'view', label: '查看详情', type: 'text', icon: '→' },
+      { id: 'remind', label: '发起提醒', type: 'text', icon: '🔔' },
+      { id: 'export', label: '导出档案', type: 'text', icon: '⬇️' },
+      { id: 'intake', label: '录入入住', type: 'text', icon: '＋' },
     ],
     cardActionsSimplified: [
-      { id: 'more', label: '更多操作', type: 'text' },
+      { id: 'more', label: '更多操作', type: 'text', icon: '⋯' },
     ],
     batchMode: false,
     selectedPatientMap: {},
@@ -523,78 +615,27 @@ Page({
         const firstHospital = item.firstHospital || item.latestHospital || '';
         const latestHospital = item.latestHospital || item.firstHospital || '';
         const latestDoctor = item.latestDoctor || '';
-        let cardStatus = 'default';
-        let diffDays = null;
-        let careStatus = 'discharged';
-        let riskLevel = 'low';
         const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0);
+        const { cardStatus, careStatus, diffDays } = mapPatientStatus(latestAdmissionTimestamp);
+        const riskLevel = identifyRiskLevel(diffDays);
+        const admissionCount = Number(item.admissionCount || 0);
+        const badges = generatePatientBadges({ careStatus, riskLevel, admissionCount });
         const importOrder = Number(item.importOrder || item.excelImportOrder || 0) || null;
         const importedAtTs = Number(item.importedAt || item._importedAt || 0);
         const importedAtFormatted = importedAtTs ? formatDate(importedAtTs) : '';
-        if (latestAdmissionTimestamp > 0) {
-          const now = Date.now();
-          if (latestAdmissionTimestamp <= now) {
-            diffDays = Math.floor((now - latestAdmissionTimestamp) / (24 * 60 * 60 * 1000));
-            if (diffDays <= 30) {
-              cardStatus = 'success';
-              careStatus = 'in_care';
-            } else if (diffDays <= 90) {
-              cardStatus = 'info';
-              careStatus = 'pending';
-            } else {
-              careStatus = 'discharged';
-            }
-
-            if (diffDays <= 7) {
-              riskLevel = 'high';
-            } else if (diffDays <= 30) {
-              riskLevel = 'medium';
-            } else {
-              riskLevel = 'low';
-            }
-          } else {
-            careStatus = 'pending';
-            riskLevel = 'medium';
-          }
-        }
-        const admissionCount = Number(item.admissionCount || 0);
-        const badges = [];
-        if (careStatus === 'in_care') {
-          badges.push({ text: '在院', type: 'success' });
-        } else if (careStatus === 'pending') {
-          badges.push({ text: '随访', type: 'info' });
-        }
-        if (riskLevel === 'high') {
-          badges.push({ text: '需复查', type: 'danger' });
-        } else if (riskLevel === 'medium') {
-          badges.push({ text: '定期随访', type: 'warning' });
-        }
-        if (admissionCount > 0) {
-          badges.push({ text: `入住 ${admissionCount} 次`, type: 'default' });
-        }
-        let latestEvent = '';
-        if (latestAdmissionDateFormatted) {
-          latestEvent = `${latestAdmissionDateFormatted} · ${latestDiagnosis || '暂无诊断'}`;
-        } else if (importOrder) {
-          latestEvent = `Excel第${importOrder}行 · ${latestDiagnosis || '暂无诊断'}`;
-        } else if (importedAtFormatted) {
-          latestEvent = `${importedAtFormatted} 导入 · ${latestDiagnosis || '暂无诊断'}`;
-        } else {
-          latestEvent = safeString(latestDiagnosis);
-        }
-        const tags = [];
-        if (latestHospital) {
-          tags.push(latestHospital);
-        }
-        if (latestDoctor) {
-          tags.push(latestDoctor);
-        }
-        if (firstDiagnosis && firstDiagnosis !== latestDiagnosis) {
-          tags.push(firstDiagnosis);
-        }
-        if (importOrder) {
-          tags.push(`Excel行 ${importOrder}`);
-        }
+        const latestEvent = buildLatestEvent({
+          latestAdmissionDateFormatted,
+          latestDiagnosis,
+          importOrder,
+          importedAtFormatted,
+        });
+        const tags = extractPatientTags({
+          latestHospital,
+          latestDoctor,
+          firstDiagnosis,
+          latestDiagnosis,
+          importOrder,
+        });
         const key = this.resolvePatientKey(item);
         const selected = Boolean(key && selectedMap[key]);
         return {
@@ -615,6 +656,7 @@ Page({
           latestEvent,
           tags,
           firstAdmissionTimestamp,
+          diffDaysSinceLatestAdmission: diffDays,
           selected,
         };
       });
