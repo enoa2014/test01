@@ -3,7 +3,13 @@ const cloud = require("wx-server-sdk");
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
-const _ = db.command;
+const {
+  normalizeValue,
+  normalizeSpacing,
+  normalizeTimestamp,
+  ensureCollectionExists,
+  buildPatientGroups,
+} = require('./utils/patient');
 
 // Collection names
 const EXCEL_RECORDS_COLLECTION = "excel_records";
@@ -30,76 +36,6 @@ function safeNumber(value) {
 }
 
 
-function normalizeTimestamp(value) {
-  if (value === undefined || value === null) {
-    return null;
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-  if (value instanceof Date) {
-    const ts = value.getTime();
-    return Number.isNaN(ts) ? null : ts;
-  }
-  const str = String(value).trim();
-  if (!str) {
-    return null;
-  }
-  if (/^\d+$/.test(str)) {
-    const num = Number(str);
-    return Number.isFinite(num) ? num : null;
-  }
-  const normalized = str.replace(/[./]/g, '-');
-  const date = new Date(normalized);
-  const ts = date.getTime();
-  return Number.isNaN(ts) ? null : ts;
-}
-
-function normalizeValue(value) {
-  if (value === undefined || value === null) {
-    return '';
-  }
-  const str = String(value).trim();
-  return str === 'null' || str === 'undefined' ? '' : str;
-}
-
-function normalizeSpacing(value) {
-  const normalized = normalizeValue(value);
-  if (!normalized) {
-    return '';
-  }
-  return normalized.replace(/\s+/g, ' ').trim();
-}
-
-// Ensure collection exists
-async function ensureCollectionExists(name) {
-  try {
-    await db.collection(name).limit(1).get();
-    return true;
-  } catch (error) {
-    const code = error && (error.errCode !== undefined ? error.errCode : error.code);
-    const message = error && error.errMsg ? error.errMsg : '';
-    const notExists = code === -502005 ||
-      (message && message.indexOf('DATABASE_COLLECTION_NOT_EXIST') >= 0) ||
-      (message && message.indexOf('collection not exists') >= 0);
-
-    if (notExists) {
-      try {
-        await db.createCollection(name);
-        return false;
-      } catch (createError) {
-        const createCode = createError && (createError.errCode !== undefined ? createError.errCode : createError.code);
-        const alreadyExists = createCode === -502002;
-        if (!alreadyExists) {
-          console.warn('createCollection failed', name, createError);
-        }
-        return false;
-      }
-    }
-    console.warn('ensureCollectionExists unexpected error', name, error);
-    return false;
-  }
-}
 
 // Load patient list from cache
 async function fetchPatientsFromCache(options = {}) {
@@ -112,7 +48,7 @@ async function fetchPatientsFromCache(options = {}) {
 
   if (eligibleForCache) {
     try {
-      await ensureCollectionExists(EXCEL_CACHE_COLLECTION);
+      await ensureCollectionExists(db, EXCEL_CACHE_COLLECTION);
       const res = await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).get();
       const cached = res && res.data ? res.data : null;
       const cacheAge = cached ? Date.now() - (cached.updatedAt || 0) : Number.MAX_SAFE_INTEGER;
@@ -145,7 +81,7 @@ async function fetchPatientsFromCache(options = {}) {
 
   if (page === 0) {
     try {
-      await ensureCollectionExists(EXCEL_CACHE_COLLECTION);
+      await ensureCollectionExists(db, EXCEL_CACHE_COLLECTION);
       await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
         data: {
           patients: fresh.patients,
@@ -165,7 +101,7 @@ async function fetchPatientsFromCache(options = {}) {
 
 // Build patient list from database
 async function buildPatientsFromDatabase(options = {}) {
-  await ensureCollectionExists(PATIENTS_COLLECTION);
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
 
   const page = Math.max(Number(options && options.page) || 0, 0);
   const rawLimit = Number(options && options.limit);
@@ -221,42 +157,6 @@ async function buildPatientsFromDatabase(options = {}) {
   const docs = Array.isArray(res.data) ? res.data : [];
   const summaries = [];
 
-  const excelMeta = new Map();
-  const excelKeySet = new Set();
-  docs.forEach((doc) => {
-    if (doc && doc.recordKey) {
-      excelKeySet.add(doc.recordKey);
-    }
-    if (doc && doc.patientName) {
-      excelKeySet.add(doc.patientName);
-    }
-    if (doc && doc.key) {
-      excelKeySet.add(doc.key);
-    }
-  });
-
-  const excelKeys = Array.from(excelKeySet).filter(Boolean);
-  const chunkSize = 50;
-  for (let i = 0; i < excelKeys.length; i += chunkSize) {
-    const slice = excelKeys.slice(i, i + chunkSize);
-    try {
-      const excelRes = await db.collection(EXCEL_RECORDS_COLLECTION)
-        .where({ key: _.in(slice) })
-        .get();
-      const excelDocs = Array.isArray(excelRes.data) ? excelRes.data : [];
-      excelDocs.forEach((record) => {
-        if (record && record.key) {
-          excelMeta.set(record.key, {
-            nativePlace: normalizeValue(record.nativePlace),
-            ethnicity: normalizeValue(record.ethnicity)
-          });
-        }
-      });
-    } catch (error) {
-      console.warn('Failed to load excel metadata chunk', slice, error);
-    }
-  }
-
   docs.forEach((doc) => {
     const docId = doc._id || doc.key || doc.patientKey;
     const recordKey = doc.recordKey || (doc.metadata && doc.metadata.excelRecordKey);
@@ -287,9 +187,10 @@ async function buildPatientsFromDatabase(options = {}) {
     const backupContact = doc.backupContact || data.backupContact || '';
     const backupPhone = doc.backupPhone || data.backupPhone || '';
 
-    const excelInfo = excelMeta.get(nameKey) || excelMeta.get(doc.recordKey) || null;
-    const nativePlace = doc.nativePlace || data.nativePlace || (excelInfo && excelInfo.nativePlace) || '';
-    const ethnicity = doc.ethnicity || data.ethnicity || (excelInfo && excelInfo.ethnicity) || '';
+    const nativePlace = normalizeValue(doc.nativePlace || data.nativePlace);
+    const ethnicity = normalizeValue(doc.ethnicity || data.ethnicity);
+    const excelImportOrder = doc.excelImportOrder || data.excelImportOrder || null;
+    const importOrder = doc.importOrder || data.importOrder || excelImportOrder || null;
 
     // 优先从data字段获取诊断和医院信息，如果没有则从doc根级字段获取
     const firstDiagnosis = data.firstDiagnosis || doc.firstDiagnosis || '';
@@ -315,6 +216,8 @@ async function buildPatientsFromDatabase(options = {}) {
       backupPhone,
       nativePlace,
       ethnicity,
+      excelImportOrder,
+      importOrder,
       firstAdmissionDate: firstTs || null,
       latestAdmissionDate: latestTs || null,
       firstDiagnosis,
@@ -359,141 +262,6 @@ async function buildPatientsFromDatabase(options = {}) {
   };
 }
 
-// Build patient groups
-function buildPatientGroups(records) {
-  const groups = new Map();
-
-  const ensureTimestamp = (record) => {
-    if (!record) {
-      return null;
-    }
-    const primary = normalizeTimestamp(record.admissionTimestamp);
-    if (primary !== null) {
-      return primary;
-    }
-    const parsed = normalizeTimestamp(record.admissionDate);
-    if (parsed !== null) {
-      return parsed;
-    }
-    const importedAt = normalizeTimestamp(record._importedAt);
-    if (importedAt !== null) {
-      return importedAt;
-    }
-    const fallback = normalizeTimestamp(record.updatedAt || record.createdAt);
-    if (fallback !== null) {
-      return fallback;
-    }
-    return Date.now();
-  };
-
-  records.forEach(record => {
-    if (!record.key || !record.patientName) {
-      return;
-    }
-
-    if (!groups.has(record.key)) {
-      groups.set(record.key, {
-        key: record.key,
-        patientName: record.patientName,
-        gender: record.gender || '',
-        birthDate: record.birthDate || '',
-        idNumber: record.idNumber || '',
-        records: [],
-        admissionCount: 0,
-        firstAdmissionDate: null,
-        latestAdmissionDate: null,
-        firstDiagnosis: '',
-        latestDiagnosis: '',
-        firstHospital: '',
-        latestHospital: '',
-        latestDoctor: '',
-        summaryCaregivers: ''
-      });
-    }
-
-    const group = groups.get(record.key);
-    group.records.push(record);
-
-    const admissionTimestamp = ensureTimestamp(record);
-
-    if (admissionTimestamp !== null) {
-      group.admissionCount += 1;
-      if (!group.firstAdmissionTimestamp || admissionTimestamp < group.firstAdmissionTimestamp) {
-        group.firstAdmissionDate = record.admissionDate;
-        group.firstAdmissionTimestamp = admissionTimestamp;
-        group.firstDiagnosis = record.diagnosis || '';
-        group.firstHospital = record.hospital || '';
-      }
-      if (!group.latestAdmissionTimestamp || admissionTimestamp > group.latestAdmissionTimestamp) {
-        group.latestAdmissionDate = record.admissionDate;
-        group.latestAdmissionTimestamp = admissionTimestamp;
-        group.latestDiagnosis = record.diagnosis || '';
-        group.latestHospital = record.hospital || '';
-        group.latestDoctor = record.doctor || '';
-      }
-    }
-
-    // Collect caregiver info
-    if (record.caregivers && !group.summaryCaregivers.includes(record.caregivers)) {
-      group.summaryCaregivers = group.summaryCaregivers
-        ? `${group.summaryCaregivers}、${normalizeSpacing(record.caregivers)}`
-        : normalizeSpacing(record.caregivers);
-    }
-  });
-
-  groups.forEach((group) => {
-    const totalRecords = Array.isArray(group.records) ? group.records.length : 0;
-    if (totalRecords > group.admissionCount) {
-      group.admissionCount = totalRecords;
-    }
-
-    const latestRecord = totalRecords ? group.records[0] : {};
-    const earliestRecord = totalRecords ? group.records[totalRecords - 1] : latestRecord;
-
-    const ensureTimestamp = (current, source) => {
-      if (current) {
-        return current;
-      }
-      const ts = normalizeTimestamp(source);
-      return ts || null;
-    };
-
-    if (!group.firstAdmissionDate && earliestRecord) {
-      group.firstAdmissionDate = earliestRecord.admissionDate || earliestRecord.admissionTimestamp || null;
-    }
-    if (!group.firstAdmissionTimestamp && earliestRecord) {
-      group.firstAdmissionTimestamp = ensureTimestamp(null, earliestRecord.admissionTimestamp || earliestRecord.admissionDate);
-    }
-    if (!group.firstDiagnosis && earliestRecord) {
-      group.firstDiagnosis = earliestRecord.diagnosis || group.firstDiagnosis || '';
-    }
-    if (!group.firstHospital && earliestRecord) {
-      group.firstHospital = earliestRecord.hospital || group.firstHospital || '';
-    }
-
-    if (!group.latestAdmissionDate && latestRecord) {
-      group.latestAdmissionDate = latestRecord.admissionDate || latestRecord.admissionTimestamp || null;
-    }
-    if (!group.latestAdmissionTimestamp && latestRecord) {
-      group.latestAdmissionTimestamp = ensureTimestamp(null, latestRecord.admissionTimestamp || latestRecord.admissionDate);
-    }
-    if (!group.latestDiagnosis && latestRecord) {
-      group.latestDiagnosis = latestRecord.diagnosis || group.latestDiagnosis || '';
-    }
-    if (!group.latestHospital && latestRecord) {
-      group.latestHospital = latestRecord.hospital || group.latestHospital || '';
-    }
-    if (!group.latestDoctor && latestRecord) {
-      group.latestDoctor = latestRecord.doctor || group.latestDoctor || '';
-    }
-
-    if (!group.summaryCaregivers && latestRecord && latestRecord.caregivers) {
-      group.summaryCaregivers = normalizeSpacing(latestRecord.caregivers);
-    }
-  });
-
-  return groups;
-}
 
 // Fetch patient detail by key
 async function fetchPatientDetailByKey(recordKey) {
@@ -501,7 +269,7 @@ async function fetchPatientDetailByKey(recordKey) {
     throw makeError('INVALID_PATIENT_KEY', 'Missing patient identifier');
   }
 
-  await ensureCollectionExists(EXCEL_RECORDS_COLLECTION);
+  await ensureCollectionExists(db, EXCEL_RECORDS_COLLECTION);
   const res = await db.collection(EXCEL_RECORDS_COLLECTION)
     .where({ key: recordKey })
     .get();
@@ -523,7 +291,7 @@ async function fetchPatientDetailByKey(recordKey) {
 
 async function fetchFallbackPatientDetail(patientKey) {
   try {
-    await ensureCollectionExists(PATIENTS_COLLECTION);
+    await ensureCollectionExists(db, PATIENTS_COLLECTION);
     const patientSnapshot = await db.collection(PATIENTS_COLLECTION).doc(patientKey).get();
     const patientDoc = patientSnapshot && patientSnapshot.data ? patientSnapshot.data : null;
     if (!patientDoc) {
@@ -566,7 +334,7 @@ async function fetchFallbackPatientDetail(patientKey) {
 
     let records = [];
     try {
-      await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+      await ensureCollectionExists(db, PATIENT_INTAKE_COLLECTION);
       const intakeSnapshot = await db
         .collection(PATIENT_INTAKE_COLLECTION)
         .where({ patientKey })
@@ -820,4 +588,3 @@ exports.main = async (event) => {
     };
   }
 };
-

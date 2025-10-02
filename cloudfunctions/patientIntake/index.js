@@ -1,5 +1,10 @@
-﻿const cloud = require('wx-server-sdk');
+const cloud = require('wx-server-sdk');
 const { v4: uuidv4 } = require('uuid');
+
+const {
+  normalizeSpacing,
+  ensureCollectionExists,
+} = require('./utils/patient');
 
 const createExcelSync = require('./excel-sync');
 
@@ -45,10 +50,7 @@ function makeError(code, message, details) {
 }
 
 function normalizeString(value) {
-  if (value === undefined || value === null) {
-    return '';
-  }
-  return String(value).trim();
+  return normalizeSpacing(value);
 }
 
 function validateChineseId(idNumber) {
@@ -83,43 +85,10 @@ function generateIntakeId() {
   return `I${Date.now()}_${uuidv4().slice(0, 8)}`;
 }
 
-// 确保集合存在
-async function ensureCollectionExists(name) {
-  try {
-    await db.collection(name).limit(1).get();
-    return true;
-  } catch (error) {
-    const code = error && (error.errCode !== undefined ? error.errCode : error.code);
-    const message = error && error.errMsg ? error.errMsg : '';
-    const notExists =
-      code === -502005 ||
-      (message && message.indexOf('DATABASE_COLLECTION_NOT_EXIST') >= 0) ||
-      (message && message.indexOf('collection not exists') >= 0);
-
-    if (notExists) {
-      try {
-        await db.createCollection(name);
-        return false;
-      } catch (createError) {
-        const createCode =
-          createError &&
-          (createError.errCode !== undefined ? createError.errCode : createError.code);
-        const alreadyExists = createCode === -502002;
-        if (!alreadyExists) {
-          console.warn('createCollection failed', name, createError);
-        }
-        return false;
-      }
-    }
-    console.warn('ensureCollectionExists unexpected error', name, error);
-    return false;
-  }
-}
+const ensureCollection = (name) => ensureCollectionExists(db, name);
 
 const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = createExcelSync({
   db,
-  ensureCollectionExists,
-  normalizeString,
   collections: {
     PATIENTS_COLLECTION,
     PATIENT_INTAKE_COLLECTION,
@@ -128,7 +97,7 @@ const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = cr
 });
 
 async function writePatientOperationLog(logEntry) {
-  await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
+  await ensureCollection(PATIENT_OPERATION_LOGS_COLLECTION);
   const now = Date.now();
   const entry = {
     patientKey: logEntry.patientKey,
@@ -234,7 +203,7 @@ function validateFormData(formData) {
 async function handleGetPatients(event) {
   const { searchKeyword = '', page = 0, pageSize = 20 } = event;
 
-  await ensureCollectionExists(PATIENTS_COLLECTION);
+  await ensureCollection(PATIENTS_COLLECTION);
 
   let query = db.collection(PATIENTS_COLLECTION);
 
@@ -307,7 +276,7 @@ async function handleGetAllIntakeRecords(event) {
     forceSummary: true,
   });
 
-  await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_COLLECTION);
 
   try {
     const baseQuery = db
@@ -576,7 +545,7 @@ async function handleGetPatientDetail(event) {
 
   let latestIntake = null;
   try {
-    await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+    await ensureCollection(PATIENT_INTAKE_COLLECTION);
     const intakeRes = await db
       .collection(PATIENT_INTAKE_COLLECTION)
       .where({ patientKey: resolvedPatientKey })
@@ -603,7 +572,7 @@ async function handleGetPatientDetail(event) {
 
   let operationLogs = [];
   try {
-    await ensureCollectionExists(PATIENT_OPERATION_LOGS_COLLECTION);
+    await ensureCollection(PATIENT_OPERATION_LOGS_COLLECTION);
     const logsRes = await db
       .collection(PATIENT_OPERATION_LOGS_COLLECTION)
       .where({ patientKey: resolvedPatientKey })
@@ -652,7 +621,7 @@ async function handleSaveDraft(event) {
     throw makeError('INVALID_DRAFT_DATA', '草稿数据不完整');
   }
 
-  await ensureCollectionExists(PATIENT_INTAKE_DRAFTS_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_DRAFTS_COLLECTION);
 
   const now = Date.now();
   const expiresAt = now + DRAFT_EXPIRE_DAYS * 24 * 60 * 60 * 1000;
@@ -697,7 +666,7 @@ async function handleGetDraft(event) {
     throw makeError('INVALID_SESSION_ID', '缺少会话标识');
   }
 
-  await ensureCollectionExists(PATIENT_INTAKE_DRAFTS_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_DRAFTS_COLLECTION);
 
   const now = Date.now();
   const res = await db
@@ -739,8 +708,8 @@ async function handleSubmitIntake(event) {
 
   // 开始事务
   const result = await db.runTransaction(async transaction => {
-    await ensureCollectionExists(PATIENTS_COLLECTION);
-    await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+    await ensureCollection(PATIENTS_COLLECTION);
+    await ensureCollection(PATIENT_INTAKE_COLLECTION);
 
     let patientRecord;
 
@@ -939,8 +908,8 @@ async function handleUpdatePatient(event = {}) {
 
   const now = Date.now();
 
-  await ensureCollectionExists(PATIENTS_COLLECTION);
-  await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+  await ensureCollection(PATIENTS_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_COLLECTION);
 
   const transactionResult = await db.runTransaction(async transaction => {
     const patientRef = transaction.collection(PATIENTS_COLLECTION).doc(patientKey);
@@ -1142,7 +1111,7 @@ async function handleUpdatePatient(event = {}) {
 
 // 获取入住配置
 async function handleGetConfig(event) {
-  await ensureCollectionExists(INTAKE_CONFIG_COLLECTION);
+  await ensureCollection(INTAKE_CONFIG_COLLECTION);
 
   try {
     const res = await db.collection(INTAKE_CONFIG_COLLECTION).doc('default').get();
@@ -1191,7 +1160,7 @@ async function handleGetConfig(event) {
 
 // 清理过期草稿
 async function handleCleanupDrafts(event) {
-  await ensureCollectionExists(PATIENT_INTAKE_DRAFTS_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_DRAFTS_COLLECTION);
 
   const now = Date.now();
   const res = await db

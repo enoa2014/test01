@@ -1,48 +1,27 @@
-﻿function createExcelSync({ db, ensureCollectionExists, normalizeString, collections }) {
+const {
+  normalizeValue,
+  normalizeSpacing,
+  normalizeTimestamp,
+  ensureCollectionExists,
+  ensureRecordTimestamp,
+} = require('./utils/patient');
+
+function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInput, normalizeString, collections }) {
+  const ensureCollection = async (name) => {
+    if (ensureCollectionExistsInput) {
+      return ensureCollectionExistsInput(name);
+    }
+    return ensureCollectionExists(db, name);
+  };
+  const normalizeStringValue = normalizeString || normalizeSpacing;
+  const normalizeExcelValue = normalizeValue;
+  const normalizeExcelSpacing = normalizeSpacing;
+  const toTimestampFromExcel = normalizeTimestamp;
   const { PATIENTS_COLLECTION, PATIENT_INTAKE_COLLECTION, EXCEL_RECORDS_COLLECTION } = collections;
 
   const command = db.command;
 
-  const normalizeExcelValue = value => {
-    if (value === undefined || value === null) {
-      return '';
-    }
-    const str = String(value).trim();
-    if (str === 'null' || str === 'undefined') {
-      return '';
-    }
-    return str;
-  };
-
-  const normalizeExcelSpacing = value => {
-    const normalized = normalizeExcelValue(value);
-    if (!normalized) {
-      return '';
-    }
-    return normalized.replace(/\s+/g, ' ').trim();
-  };
-
-  function toTimestampFromExcel(value) {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-    if (typeof value === 'number') {
-      return Number.isFinite(value) ? value : undefined;
-    }
-    if (value instanceof Date) {
-      const ts = value.getTime();
-      return Number.isNaN(ts) ? undefined : ts;
-    }
-    const normalized = normalizeExcelValue(value).replace(/[./]/g, '-');
-    if (!normalized) {
-      return undefined;
-    }
-    const date = new Date(normalized);
-    const ts = date.getTime();
-    return Number.isNaN(ts) ? undefined : ts;
-  }
-
-  function sanitizeIdentifier(value, fallbackSeed) {
+    function sanitizeIdentifier(value, fallbackSeed) {
     const base = normalizeExcelValue(value);
     if (base) {
       const sanitized = base.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -61,7 +40,7 @@
   }
 
   async function fetchExcelRecordsByKey(primaryKey, fallbackKeys = []) {
-    await ensureCollectionExists(EXCEL_RECORDS_COLLECTION);
+    await ensureCollection(EXCEL_RECORDS_COLLECTION);
     const collection = db.collection(EXCEL_RECORDS_COLLECTION);
     const records = [];
     const seenIds = new Set();
@@ -251,28 +230,7 @@
   }
 
   function pickRecordTimestamp(record) {
-    if (!record || typeof record !== 'object') {
-      return null;
-    }
-    const metadata = record.metadata || {};
-    const intakeInfo = record.intakeInfo || {};
-    const candidates = [
-      record.intakeTime,
-      intakeInfo.intakeTime,
-      record.admissionTimestamp,
-      record._importedAt,
-      metadata.lastModifiedAt,
-      record.updatedAt,
-      metadata.submittedAt,
-      record.createdAt,
-    ];
-    for (const candidate of candidates) {
-      const ts = toTimestampFromExcel(candidate);
-      if (ts !== undefined && ts !== null) {
-        return ts;
-      }
-    }
-    return null;
+    return ensureRecordTimestamp(record);
   }
 
   const isDraftStatus = value => {
@@ -402,7 +360,7 @@
   };
 
   async function summarizeIntakeHistory(patientKey) {
-    const normalizedKey = normalizeString(patientKey);
+    const normalizedKey = normalizeStringValue(patientKey);
     const summary = {
       count: 0,
       earliestTimestamp: null,
@@ -421,7 +379,7 @@
       return summary;
     }
 
-    await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+    await ensureCollection(PATIENT_INTAKE_COLLECTION);
     const collection = db.collection(PATIENT_INTAKE_COLLECTION);
 
     let count = 0;
@@ -585,7 +543,7 @@
   }
 
   async function syncPatientAggregates(patientKey, options = {}) {
-    const normalizedKey = normalizeString(patientKey);
+    const normalizedKey = normalizeStringValue(patientKey);
     if (!normalizedKey) {
       return {
         count: 0,
@@ -679,7 +637,7 @@
     }
 
     try {
-      await ensureCollectionExists(PATIENTS_COLLECTION);
+      await ensureCollection(PATIENTS_COLLECTION);
       await db.collection(PATIENTS_COLLECTION).doc(targetDocId).update({ data: updates });
     } catch (error) {
       console.warn('syncPatientAggregates update failed', targetDocId, error);
@@ -688,12 +646,12 @@
     return summary;
   }
   async function ensurePatientDoc(patientKey, options = {}) {
-    const normalizedKey = normalizeString(patientKey);
+    const normalizedKey = normalizeStringValue(patientKey);
     if (!normalizedKey) {
       return { patientDoc: null, patientKey: normalizedKey };
     }
 
-    await ensureCollectionExists(PATIENTS_COLLECTION);
+    await ensureCollection(PATIENTS_COLLECTION);
 
     try {
       const docRes = await db.collection(PATIENTS_COLLECTION).doc(normalizedKey).get();
@@ -751,7 +709,7 @@
   }
 
   async function syncExcelRecordsToIntake(patientKey, options = {}) {
-    const normalizedKey = normalizeString(patientKey);
+    const normalizedKey = normalizeStringValue(patientKey);
     if (!normalizedKey) {
       return { created: 0, updated: 0, skipped: 0 };
     }
@@ -780,7 +738,7 @@
       return { created: 0, updated: 0, skipped: 0 };
     }
 
-    await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+    await ensureCollection(PATIENT_INTAKE_COLLECTION);
     const collection = db.collection(PATIENT_INTAKE_COLLECTION);
     const serverDate = Date.now();
     const result = { created: 0, updated: 0, skipped: 0 };

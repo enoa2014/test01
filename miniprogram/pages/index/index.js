@@ -528,6 +528,9 @@ Page({
         let careStatus = 'discharged';
         let riskLevel = 'low';
         const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0);
+        const importOrder = Number(item.importOrder || item.excelImportOrder || 0) || null;
+        const importedAtTs = Number(item.importedAt || item._importedAt || 0);
+        const importedAtFormatted = importedAtTs ? formatDate(importedAtTs) : '';
         if (latestAdmissionTimestamp > 0) {
           const now = Date.now();
           if (latestAdmissionTimestamp <= now) {
@@ -569,9 +572,16 @@ Page({
         if (admissionCount > 0) {
           badges.push({ text: `入住 ${admissionCount} 次`, type: 'default' });
         }
-        const latestEvent = latestAdmissionDateFormatted
-          ? `${latestAdmissionDateFormatted} · ${latestDiagnosis || '暂无诊断'}`
-          : safeString(latestDiagnosis);
+        let latestEvent = '';
+        if (latestAdmissionDateFormatted) {
+          latestEvent = `${latestAdmissionDateFormatted} · ${latestDiagnosis || '暂无诊断'}`;
+        } else if (importOrder) {
+          latestEvent = `Excel第${importOrder}行 · ${latestDiagnosis || '暂无诊断'}`;
+        } else if (importedAtFormatted) {
+          latestEvent = `${importedAtFormatted} 导入 · ${latestDiagnosis || '暂无诊断'}`;
+        } else {
+          latestEvent = safeString(latestDiagnosis);
+        }
         const tags = [];
         if (latestHospital) {
           tags.push(latestHospital);
@@ -581,6 +591,9 @@ Page({
         }
         if (firstDiagnosis && firstDiagnosis !== latestDiagnosis) {
           tags.push(firstDiagnosis);
+        }
+        if (importOrder) {
+          tags.push(`Excel行 ${importOrder}`);
         }
         const key = this.resolvePatientKey(item);
         const selected = Boolean(key && selectedMap[key]);
