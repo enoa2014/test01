@@ -19,6 +19,7 @@ const CACHE_COLLECTION = "excel_cache";
 const PATIENT_CACHE_DOC_ID = "patients_summary_cache";
 const PATIENTS_COLLECTION = "patients";
 const PATIENT_INTAKE_COLLECTION = "patient_intake_records";
+const RAW_COLLECTION = "excel_raw_records";
 
 // Excel文件ID（从环境变量获取）
 const EXCEL_FILE_ID = process.env.EXCEL_FILE_ID;
@@ -385,19 +386,20 @@ async function importToDatabase(records) {
     return { inserted: 0 };
   }
 
-  const timestamp = Date.now();
+  const routingTimestamp = Date.now();
   const docs = records.map((record, index) => {
     const actualTimestamp = Number.isFinite(record.admissionTimestamp)
       ? Number(record.admissionTimestamp)
       : null;
     const importOrder = record.importOrder || record.excelRowIndex || index + 1;
+    const fallbackTimestamp = actualTimestamp !== null ? actualTimestamp : 0;
     return {
       ...record,
       admissionTimestamp: actualTimestamp,
       importOrder,
       excelRowIndex: record.excelRowIndex || importOrder,
-      importedAt: timestamp,
-      _importedAt: timestamp,
+      importedAt: fallbackTimestamp,
+      _importedAt: fallbackTimestamp,
       _rowIndex: index + 1
     };
   });
@@ -706,6 +708,81 @@ async function syncPatientsFromGroups(groups, options = {}) {
   };
 }
 
+// 规范化原始集合数据
+function normalizeRawRecord(rawRecord, index) {
+  if (!rawRecord || typeof rawRecord !== 'object') {
+    return null;
+  }
+
+  const doc = { ...rawRecord };
+  delete doc._id;
+  delete doc._openid;
+
+  let recordKey = normalizeSpacing(doc.recordKey || doc.key || doc.patientName || '');
+  if (!recordKey) {
+    recordKey = generateRecordKey(doc);
+  }
+  doc.recordKey = recordKey;
+  doc.key = recordKey;
+
+  const admissionInfo = parseDateValue(doc.admissionDate || doc.admissionDateRaw);
+  if (admissionInfo.text && !doc.admissionDate) {
+    doc.admissionDate = admissionInfo.text;
+  }
+  if (admissionInfo.timestamp !== null && doc.admissionTimestamp == null) {
+    doc.admissionTimestamp = admissionInfo.timestamp;
+  }
+
+  const importOrder = Number.isFinite(doc.importOrder)
+    ? Number(doc.importOrder)
+    : (Number(doc.excelRowIndex) || index + 1);
+  doc.importOrder = importOrder;
+  if (!doc.excelRowIndex) {
+    doc.excelRowIndex = importOrder;
+  }
+
+  const fallbackTimestamp = Number.isFinite(doc.admissionTimestamp)
+    ? Number(doc.admissionTimestamp)
+    : 0;
+  if (!Number.isFinite(doc.importedAt)) {
+    doc.importedAt = fallbackTimestamp;
+  }
+  doc._importedAt = doc.importedAt;
+  doc._rowIndex = index + 1;
+
+  if (doc.source && typeof doc.source === 'object') {
+    doc.source = {
+      ...doc.source,
+      normalizedAt: Date.now(),
+    };
+  }
+
+  return doc;
+}
+
+// 读取 excel_raw_records 集合
+async function fetchRawRecordsFromDatabase() {
+  await ensureCollectionExists(db, RAW_COLLECTION);
+  const allRecords = [];
+  let skip = 0;
+  const limit = 100;
+
+  while (true) {
+    const res = await db.collection(RAW_COLLECTION)
+      .skip(skip)
+      .limit(limit)
+      .get();
+    const data = res && Array.isArray(res.data) ? res.data : [];
+    if (!data.length) {
+      break;
+    }
+    allRecords.push(...data);
+    skip += data.length;
+  }
+
+  return allRecords;
+}
+
 // 从数据库获取记录
 async function fetchRecordsFromDatabase() {
   await ensureCollectionExists(db, COLLECTION);
@@ -776,6 +853,39 @@ exports.main = async (event = {}) => {
 
       return {
         action: "syncPatients",
+        totalPatients: summaries.length,
+        sync
+      };
+    }
+
+    // normalizeFromRaw 操作：基于 excel_raw_records 初始化派生集合
+    if (event.action === "normalizeFromRaw") {
+      const rawRecords = await fetchRawRecordsFromDatabase();
+      if (!rawRecords.length) {
+        throw makeError('RAW_DATA_EMPTY', 'excel_raw_records 集合为空');
+      }
+
+      const normalized = rawRecords
+        .map((item, index) => normalizeRawRecord(item, index))
+        .filter(Boolean);
+
+      if (!normalized.length) {
+        throw makeError('NORMALIZED_EMPTY', '未生成任何可导入的记录');
+      }
+
+      const stats = await importToDatabase(normalized);
+      const groups = buildPatientGroups(normalized);
+      const summaries = buildGroupSummaries(groups);
+
+      await ensureCollectionExists(db, CACHE_COLLECTION);
+      await saveSummariesToCache(summaries);
+
+      const syncBatchId = event.syncBatchId || ('raw-' + Date.now());
+      const sync = await syncPatientsFromGroups(groups, { syncBatchId });
+
+      return {
+        action: "normalizeFromRaw",
+        imported: stats,
         totalPatients: summaries.length,
         sync
       };

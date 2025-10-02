@@ -383,13 +383,13 @@ Page({
     sortIndex: 0,
     skeletonPlaceholders: [0, 1, 2, 3],
     cardActions: [
-      { id: 'view', label: '查看详情', type: 'primary', ghost: true },
-      { id: 'remind', label: '发起提醒', type: 'default', ghost: true },
-      { id: 'export', label: '导出档案', type: 'default', ghost: true },
-      { id: 'intake', label: '录入入住', type: 'default', ghost: true },
+      { id: 'view', label: '查看详情', type: 'text' },
+      { id: 'remind', label: '发起提醒', type: 'text' },
+      { id: 'export', label: '导出档案', type: 'text' },
+      { id: 'intake', label: '录入入住', type: 'text' },
     ],
     cardActionsSimplified: [
-      { id: 'more', label: '更多', type: 'default', ghost: true, icon: '···' },
+      { id: 'more', label: '更多操作', type: 'text' },
     ],
     batchMode: false,
     selectedPatientMap: {},
@@ -599,6 +599,7 @@ Page({
         const selected = Boolean(key && selectedMap[key]);
         return {
           ...item,
+          name: item.patientName || item.name || '',
           ageText: formatAge(item.birthDate),
           latestAdmissionDateFormatted,
           firstAdmissionDateFormatted,
@@ -1555,3 +1556,5 @@ Page({
     }
   },
 });
+
+

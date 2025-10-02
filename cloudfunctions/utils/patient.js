@@ -72,7 +72,7 @@ const ensureRecordTimestamp = (record = {}) => {
   if (updated !== null) {
     return updated;
   }
-  return null;
+  return 0;
 };
 
 const buildPatientGroups = (records = []) => {
@@ -182,18 +182,18 @@ const buildPatientGroups = (records = []) => {
       );
 
     if (!group.firstAdmissionDate && earliestRecord) {
-      group.firstAdmissionDate = earliestRecord.admissionDate || null;
+      group.firstAdmissionDate = earliestRecord.admissionDate || fallbackTimestamp(earliestRecord) || 0;
     }
     if (!group.firstAdmissionTimestamp && earliestRecord) {
       group.firstAdmissionTimestamp =
-        normalizeTimestamp(earliestRecord.admissionTimestamp) || fallbackTimestamp(earliestRecord);
+        normalizeTimestamp(earliestRecord.admissionTimestamp) || fallbackTimestamp(earliestRecord) || 0;
     }
     if (!group.latestAdmissionDate && latestRecord) {
-      group.latestAdmissionDate = latestRecord.admissionDate || null;
+      group.latestAdmissionDate = latestRecord.admissionDate || fallbackTimestamp(latestRecord) || 0;
     }
     if (!group.latestAdmissionTimestamp && latestRecord) {
       group.latestAdmissionTimestamp =
-        normalizeTimestamp(latestRecord.admissionTimestamp) || fallbackTimestamp(latestRecord);
+        normalizeTimestamp(latestRecord.admissionTimestamp) || fallbackTimestamp(latestRecord) || 0;
     }
     if (!group.latestDiagnosis && latestRecord) {
       group.latestDiagnosis = normalizeSpacing(latestRecord.diagnosis) || group.latestDiagnosis || '';

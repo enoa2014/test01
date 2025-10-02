@@ -4,48 +4,53 @@
     <text class="hero-subtitle">汇总每位患者的住院记录</text>
   </view>
 
-  <view class="toolbar">
-    <view class="search-box">
-      <text class="search-icon">🔍</text>
-      <input
-        class="search-input"
-        placeholder="搜索姓名、诊断或医院"
-        placeholder-class="search-placeholder"
-        confirm-type="search"
-        value="{{searchKeyword}}"
-        bindinput="onSearchInput"
-      />
-      <view wx:if="{{searchKeyword}}" class="search-clear" bindtap="onSearchClear">清除</view>
-    </view>
-    <picker
-      class="sort-picker-wrapper"
-      mode="selector"
-      range="{{sortOptions}}"
-      range-key="label"
-      value="{{sortIndex}}"
-      bindchange="onSortChange"
-    >
-      <view class="sort-picker">
-        <text class="sort-text">{{sortOptions[sortIndex].label}}</text>
-        <text class="sort-icon">▾</text>
+  <view class="toolbar stack gap-3">
+    <smart-search-bar
+      value="{{searchKeyword}}"
+      placeholder="搜索患者姓名、病历号或标签"
+      suggestions="{{searchSuggestions}}"
+      filters="{{quickFilters}}"
+      loading="{{searchLoading}}"
+      history-enabled="{{true}}"
+      bind:input="onSearchInput"
+      bind:suggest="onSearchSuggest"
+      bind:search="onSearchSubmit"
+      bind:clear="onSearchClear"
+      bind:filtertap="onFilterTap"
+      bind:toggleadv="onToggleAdvancedFilter"
+    />
+
+    <view class="toolbar-row">
+      <picker
+        class="sort-picker-wrapper"
+        mode="selector"
+        range="{{sortOptions}}"
+        range-key="label"
+        value="{{sortIndex}}"
+        bindchange="onSortChange"
+      >
+        <view class="sort-picker">
+          <text class="sort-text">{{sortOptions[sortIndex].label}}</text>
+          <text class="sort-icon">▾</text>
+        </view>
+      </picker>
+      <view class="toolbar-actions">
+        <pm-button
+          class="toolbar-action"
+          text="查看分析"
+          size="small"
+          type="primary"
+          ghost="{{true}}"
+          bindtap="onAnalysisTap"
+        />
+        <pm-button
+          class="toolbar-action"
+          text="患者入住"
+          size="small"
+          type="primary"
+          bindtap="onIntakeTap"
+        />
       </view>
-    </picker>
-    <view class="action-row">
-      <pm-button
-        class="action-button"
-        text="查看分析"
-        size="small"
-        type="primary"
-        ghost="{{true}}"
-        bindtap="onAnalysisTap"
-      />
-      <pm-button
-        class="action-button"
-        text="患者入住"
-        size="small"
-        type="primary"
-        bindtap="onIntakeTap"
-      />
     </view>
   </view>
 
@@ -80,66 +85,34 @@
     </view>
   </pm-card>
   <scroll-view wx:else scroll-y class="patient-list">
-    <pm-card
+    <patient-card
       wx:for="{{displayPatients}}"
       wx:key="patientKey"
-      class="patient-card"
-      clickable="{{true}}"
-      padding="var(--space-4)"
+      patient="{{item}}"
+      mode="compact"
       status="{{item.cardStatus}}"
-      useSlot="{{true}}"
-      useHeaderSlot="{{true}}"
-      data-key="{{item.key}}"
-      data-patient-key="{{item.patientKey || item.key}}"
-      data-record-key="{{item.key}}"
-      bind:tap="onPatientTap"
-    >
-      <view slot="header" class="patient-header">
-        <text class="patient-name">{{item.patientName || '-'}}</text>
-        <pm-badge
-          wx:if="{{item.admissionBadge}}"
-          class="patient-count-badge"
-          text="{{item.admissionBadge}}"
-          type="{{item.badgeType}}"
-          size="small"
-        />
-      </view>
-
-      <view class="patient-card-body">
-        <view class="quick-info">
-          <view class="quick-item">
-            <text class="quick-label">性别</text>
-            <text class="quick-value">{{item.gender || '未知'}}</text>
-          </view>
-          <view class="quick-item">
-            <text class="quick-label">年龄</text>
-            <text class="quick-value">{{item.ageText || '-'}}</text>
-          </view>
-          <view class="quick-item" wx:if="{{item.latestAdmissionDateFormatted}}">
-            <text class="quick-label">最近入住</text>
-            <text class="quick-value">{{item.latestAdmissionDateFormatted}}</text>
-          </view>
-        </view>
-
-        <view class="patient-meta">
-          <view class="meta-row">
-            <text class="meta-label">首次诊断</text>
-            <text class="meta-value">{{item.firstDiagnosis || '-'}}</text>
-          </view>
-        </view>
-      </view>
-    </pm-card>
-  </scroll-view>
-  <view class="fab-container">
-    <pm-button
-      class="fab-button"
-      type="primary"
-      size="large"
-      icon="＋"
-      icon-only="{{true}}"
-      elevated="{{true}}"
-      aria-label="添加患者"
-      bindtap="onIntakeTap"
+      badges="{{item.badges}}"
+      actions="{{batchMode ? cardActionsSimplified : cardActions}}"
+      selectable="{{batchMode}}"
+      selected="{{item.selected}}"
+      clickable="{{true}}"
+      bind:cardtap="onPatientTap"
+      bind:actiontap="onCardAction"
+      bind:selectchange="onCardSelectChange"
+      bind:longpress="onCardLongPress"
     />
+  </scroll-view>
+
+  <view class="fab-container">
+    <view class="fab-button" bindtap="onIntakeTap">
+      <pm-button
+        icon="plus"
+        type="primary"
+        size="large"
+        icon-only="{{true}}"
+        elevated="{{true}}"
+        aria-label="添加患者"
+      />
+    </view>
   </view>
 </view>

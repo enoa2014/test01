@@ -1,0 +1,63 @@
+<view class="smart-search">
+  <view class="smart-search__input-row">
+    <pm-input
+      class="smart-search__input"
+      value="{{internalValue}}"
+      placeholder="{{placeholder}}"
+      clearable="{{true}}"
+      type="search"
+      bind:input="handleInput"
+      bind:clear="handleClear"
+      bind:confirm="handleConfirm"
+    />
+    <view class="smart-search__actions">
+      <view class="smart-search__action" bindtap="handleSearch">搜索</view>
+      <view class="smart-search__action" bindtap="handleToggleAdvanced">高级筛选</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="smart-search__loading">正在加载…</view>
+
+  <view wx:if="{{debouncedSuggestions.length}}" class="smart-search__suggestions">
+    <view
+      wx:for="{{debouncedSuggestions}}"
+      wx:key="*this"
+      class="smart-search__suggestion"
+      bindtap="handleSuggestionTap"
+      data-suggestion="{{item}}"
+    >
+      <text class="smart-search__suggestion-icon">🔍</text>
+      <text class="smart-search__suggestion-text">{{item}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{filters.length}}" class="smart-search__filters">
+    <view
+      wx:for="{{filters}}"
+      wx:key="id"
+      class="smart-search__filter"
+      bindtap="handleFilterTap"
+      data-filter="{{item}}"
+    >
+      <pm-badge text="{{item.label}}" type="{{item.active ? 'primary' : 'default'}}" size="small" />
+    </view>
+  </view>
+
+  <view wx:if="{{historyEnabled && searchHistory.length}}" class="smart-search__history">
+    <view class="smart-search__history-header">
+      <text class="smart-search__history-title">搜索历史</text>
+      <text class="smart-search__history-clear" bindtap="handleClearHistory">清空</text>
+    </view>
+    <view class="smart-search__history-list">
+      <view
+        wx:for="{{searchHistory}}"
+        wx:key="*this"
+        class="smart-search__history-item"
+        bindtap="handleHistoryTap"
+        data-keyword="{{item}}"
+      >
+        {{item}}
+      </view>
+    </view>
+  </view>
+</view>
