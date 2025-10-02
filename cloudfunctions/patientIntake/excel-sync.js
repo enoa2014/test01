@@ -914,10 +914,29 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     let summary = null;
     if (shouldSyncAggregates) {
       try {
+        const ensureExcelKeys = new Set();
+        const inheritKeys = options.ensureOptions && Array.isArray(options.ensureOptions.excelKeys)
+          ? options.ensureOptions.excelKeys
+          : [];
+        [...inheritKeys, ...(Array.isArray(providedExcelKeys) ? providedExcelKeys : [])].forEach(key => {
+          if (key) {
+            ensureExcelKeys.add(key);
+          }
+        });
+        if (patientDoc && patientDoc.recordKey) {
+          ensureExcelKeys.add(patientDoc.recordKey);
+        }
+        if (patientDoc && patientDoc.patientName) {
+          ensureExcelKeys.add(patientDoc.patientName);
+        }
+        const ensureOptions = {
+          ...(options.ensureOptions || {}),
+          excelKeys: Array.from(ensureExcelKeys),
+        };
         summary = await syncPatientAggregates(normalizedKey, {
           patientDoc,
           serverDate,
-          ensureOptions: options.ensureOptions || {},
+          ensureOptions,
         });
       } catch (error) {
         console.warn('syncExcelRecordsToIntake summary failed', normalizedKey, error);
