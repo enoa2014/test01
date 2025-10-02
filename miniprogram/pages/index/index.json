@@ -1,10 +1,10 @@
 {
-  \"navigationBarTitleText\": \"患者列表\",
-  \"usingComponents\": {
-    \"pm-card\": \"/components/base/pm-card/index\",
-    \"pm-button\": \"/components/base/pm-button/index\",
-    \"pm-badge\": \"/components/base/pm-badge/index\",
-    \"smart-search-bar\": \"/components/business/smart-search-bar/index\",
-    \"patient-card\": \"/components/business/patient-card/index\"
+  "navigationBarTitleText": "患者列表",
+  "usingComponents": {
+    "pm-card": "/components/base/pm-card/index",
+    "pm-button": "/components/base/pm-button/index",
+    "pm-badge": "/components/base/pm-badge/index",
+    "smart-search-bar": "/components/business/smart-search-bar/index",
+    "patient-card": "/components/business/patient-card/index"
   }
 }
