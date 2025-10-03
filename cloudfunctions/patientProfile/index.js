@@ -473,6 +473,59 @@ async function fetchFallbackPatientDetail(patientKey) {
         .map(([label, value]) => ({ label, value: normalizeValue(value) }))
         .filter(item => item.value);
 
+    const fallbackContacts = [];
+    const contactKeys = new Set();
+    const addContact = (contact) => {
+      if (!contact || typeof contact !== 'object') {
+        return;
+      }
+      const role = contact.role || 'other';
+      const name = normalizeSpacing(contact.name || contact.raw || '');
+      const phone = normalizeSpacing(contact.phone || '');
+      const idNumber = normalizeSpacing(contact.idNumber || '');
+      const raw = normalizeSpacing(contact.raw || [name, phone, idNumber].filter(Boolean).join(' '));
+      const key = [role, name.replace(/\s+/g, '').toLowerCase(), phone].join('|');
+      if (!key.trim()) {
+        return;
+      }
+      if (!contactKeys.has(key)) {
+        contactKeys.add(key);
+        fallbackContacts.push({ role, name, phone, idNumber, raw });
+      }
+    };
+
+    const addRawContact = (role, rawValue) => {
+      const normalized = normalizeSpacing(rawValue);
+      if (!normalized) {
+        return;
+      }
+      const segments = role === 'other'
+        ? normalized.replace(/[、，,]/g, '、').split('、').map(item => normalizeSpacing(item)).filter(Boolean)
+        : [normalized];
+      segments.forEach(segment => {
+        const parsed = parseFamilyContact(segment, role);
+        if (parsed) {
+          addContact(parsed);
+        }
+      });
+    };
+
+    addRawContact('father', patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone));
+    addRawContact('mother', patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone));
+    addRawContact('other', patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone));
+    (Array.isArray(patientDoc.familyContacts) ? patientDoc.familyContacts : []).forEach(addContact);
+
+    const contactToString = (contact) => {
+      if (!contact) {
+        return '';
+      }
+      const parts = [contact.name, contact.phone, contact.idNumber].map(part => normalizeSpacing(part)).filter(Boolean);
+      if (parts.length) {
+        return parts.join(' ');
+      }
+      return normalizeSpacing(contact.raw || '');
+    };
+
     const patient = {
       key: patientDoc._id || patientKey,
       patientName: patientDoc.patientName || '',
@@ -482,7 +535,12 @@ async function fetchFallbackPatientDetail(patientKey) {
       nativePlace: patientDoc.nativePlace || '',
       ethnicity: patientDoc.ethnicity || '',
       latestHospital: patientDoc.latestHospital || '',
-      latestDoctor: patientDoc.latestDoctor || ''
+      latestDoctor: patientDoc.latestDoctor || '',
+      fatherInfo: contactToString(fallbackContacts.find(contact => contact.role === 'father')),
+      motherInfo: contactToString(fallbackContacts.find(contact => contact.role === 'mother')),
+      otherGuardian: contactToString(fallbackContacts.find(contact => contact.role === 'other')),
+      familyEconomy: patientDoc.familyEconomy || '',
+      familyContacts: fallbackContacts
     };
 
     const basicInfo = buildList([
@@ -500,14 +558,14 @@ async function fetchFallbackPatientDetail(patientKey) {
       ['紧急联系电话', patientDoc.emergencyPhone],
       ['备用联系人', patientDoc.backupContact],
       ['备用联系电话', patientDoc.backupPhone],
-      ['父亲联系方式', patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)],
-      ['母亲联系方式', patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)],
-      ['其他监护人', patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)]
+      ['父亲联系方式', contactToString(fallbackContacts.find(contact => contact.role === 'father'))],
+      ['母亲联系方式', contactToString(fallbackContacts.find(contact => contact.role === 'mother'))],
+      ['其他监护人', contactToString(fallbackContacts.find(contact => contact.role === 'other'))]
     ]);
 
-    const economicInfo = buildList([
-      ['家庭经济情况', patientDoc.familyEconomy]
-    ]);
+  const economicInfo = buildList([
+    ['家庭经济情况', patientDoc.familyEconomy]
+  ]);
 
     let records = [];
     try {
@@ -533,6 +591,7 @@ async function fetchFallbackPatientDetail(patientKey) {
       basicInfo,
       familyInfo,
       economicInfo,
+      familyContacts: fallbackContacts,
       records
     };
   } catch (error) {
@@ -564,6 +623,64 @@ function formatPatientDetail(group, patientDoc) {
       .filter((item) => item.value);
   };
 
+  const contactsFromGroup = Array.isArray(group.familyContacts) ? group.familyContacts : [];
+  const contactsFromPatientDoc = patientDoc && Array.isArray(patientDoc.familyContacts) ? patientDoc.familyContacts : [];
+  const contactKeys = new Set();
+  const mergedContacts = [];
+
+  const addContacts = (list = []) => {
+    list.forEach(contact => {
+      if (!contact || typeof contact !== 'object') {
+        return;
+      }
+      const role = contact.role || 'other';
+      const name = normalizeSpacing(contact.name || contact.raw || '');
+      const phone = normalizeSpacing(contact.phone || '');
+      const idNumber = normalizeSpacing(contact.idNumber || '');
+      const raw = normalizeSpacing(contact.raw || [name, phone, idNumber].filter(Boolean).join(' '));
+      const key = [role, name.replace(/\s+/g, '').toLowerCase(), phone].join('|');
+      if (!key.trim()) {
+        return;
+      }
+      if (!contactKeys.has(key)) {
+        contactKeys.add(key);
+        mergedContacts.push({ role, name, phone, idNumber, raw });
+      }
+    });
+  };
+
+  addContacts(contactsFromGroup);
+  addContacts(contactsFromPatientDoc);
+
+  const contactToString = (contact) => {
+    if (!contact) {
+      return '';
+    }
+    const parts = [contact.name, contact.phone, contact.idNumber].map(part => normalizeSpacing(part)).filter(Boolean);
+    if (parts.length) {
+      return parts.join(' ');
+    }
+    return normalizeSpacing(contact.raw || '');
+  };
+
+  const fatherContact = mergedContacts.find(contact => contact.role === 'father');
+  const motherContact = mergedContacts.find(contact => contact.role === 'mother');
+  const guardianContact = mergedContacts.find(contact => contact.role === 'other');
+
+  const fatherInfoValue = contactToString(fatherContact)
+    || pickRecordValue(record => record.fatherInfo)
+    || (patientDoc && (patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)));
+
+  const motherInfoValue = contactToString(motherContact)
+    || pickRecordValue(record => record.motherInfo)
+    || (patientDoc && (patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)));
+
+  const otherGuardianValue = contactToString(guardianContact)
+    || pickRecordValue(record => record.otherGuardian)
+    || (patientDoc && (patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)));
+
+  const economicValue = pickRecordValue(record => record.familyEconomy) || (patientDoc && patientDoc.familyEconomy);
+
   const basicInfo = buildInfoList([
     { label: '性别', value: group.gender || latest.gender },
     { label: '出生日期', value: group.birthDate || latest.birthDate },
@@ -574,53 +691,17 @@ function formatPatientDetail(group, patientDoc) {
   ]);
 
   const familyInfo = buildInfoList([
-    { label: '家庭地址', value: pickRecordValue(record => record.address) },
-    { label: '父亲联系方式', value: pickRecordValue(record => record.fatherInfo) },
-    { label: '母亲联系方式', value: pickRecordValue(record => record.motherInfo) },
-    { label: '其他监护人', value: pickRecordValue(record => record.otherGuardian) }
+    { label: '家庭地址', value: pickRecordValue(record => record.address) || (patientDoc && patientDoc.address) },
+    { label: '父亲联系方式', value: fatherInfoValue },
+    { label: '母亲联系方式', value: motherInfoValue },
+    { label: '其他监护人', value: otherGuardianValue },
+    { label: '紧急联系人', value: patientDoc && patientDoc.emergencyContact },
+    { label: '紧急联系电话', value: patientDoc && patientDoc.emergencyPhone }
   ]);
-
-  const ensureFamilyField = (label, value) => {
-    const normalized = normalizeValue(value);
-    if (!normalized) {
-      return;
-    }
-    const existing = familyInfo.find(item => item.label === label && normalizeValue(item.value));
-    if (!existing) {
-      familyInfo.push({ label, value: normalized });
-    }
-  };
-
-  if (patientDoc) {
-    ensureFamilyField(
-      '家庭地址',
-      patientDoc.address
-    );
-    ensureFamilyField(
-      '父亲联系方式',
-      patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)
-    );
-    ensureFamilyField(
-      '母亲联系方式',
-      patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)
-    );
-    ensureFamilyField(
-      '其他监护人',
-      patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)
-    );
-    ensureFamilyField(
-      '紧急联系人',
-      patientDoc.emergencyContact
-    );
-    ensureFamilyField(
-      '紧急联系电话',
-      patientDoc.emergencyPhone
-    );
-  }
 
   // Build economic info
   const economicInfo = buildInfoList([
-    { label: '家庭经济情况', value: pickRecordValue(record => record.familyEconomy) }
+    { label: '家庭经济情况', value: economicValue }
   ]);
 
   // Build medical records
@@ -708,11 +789,17 @@ function formatPatientDetail(group, patientDoc) {
       birthDate: group.birthDate || latest.birthDate || '',
       idNumber: group.idNumber || latest.idNumber || '',
       latestHospital: group.latestHospital,
-      latestDoctor: group.latestDoctor
+      latestDoctor: group.latestDoctor,
+      fatherInfo: fatherInfoValue || '',
+      motherInfo: motherInfoValue || '',
+      otherGuardian: otherGuardianValue || '',
+      familyEconomy: economicValue || '',
+      familyContacts: mergedContacts
     },
     basicInfo,
     familyInfo,
     economicInfo,
+    familyContacts: mergedContacts,
     records
   };
 }

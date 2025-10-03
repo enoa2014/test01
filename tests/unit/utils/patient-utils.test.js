@@ -5,6 +5,7 @@ const {
   buildPatientGroups,
   buildGroupSummaries,
   mergeCaregivers,
+  parseFamilyContact,
 } = require('../../../cloudfunctions/utils/patient');
 
 describe('patient utils', () => {
@@ -28,6 +29,21 @@ describe('patient utils', () => {
   test('mergeCaregivers deduplicates existing entries', () => {
     expect(mergeCaregivers('张三', '李四')).toBe('张三、李四');
     expect(mergeCaregivers('张三、李四', ' 李四 ')).toBe('张三、李四');
+    expect(mergeCaregivers('张三、李四', '李四、王五')).toBe('张三、李四、王五');
+  });
+
+  test('parseFamilyContact extracts key fields', () => {
+    expect(parseFamilyContact('胡斌 15278506397 452525197910271216', 'father')).toEqual({
+      role: 'father',
+      raw: '胡斌 15278506397 452525197910271216',
+      name: '胡斌',
+      phone: '15278506397',
+      idNumber: '452525197910271216'
+    });
+    expect(parseFamilyContact('黄丽华', 'mother')).toMatchObject({
+      role: 'mother',
+      name: '黄丽华'
+    });
   });
 
   test('buildPatientGroups aggregates admission data consistently', () => {
@@ -63,6 +79,7 @@ describe('patient utils', () => {
     expect(group.summaryCaregivers).toBe('父亲、母亲');
     expect(group.latestDiagnosis).toBe('复查');
     expect(group.admissionCount).toBe(2);
+    expect(Array.isArray(group.familyContacts)).toBe(true);
 
     const summaries = buildGroupSummaries(groups);
     expect(summaries).toHaveLength(1);
@@ -72,5 +89,6 @@ describe('patient utils', () => {
       excelImportOrder: 1,
       admissionCount: 2,
     });
+    expect(Array.isArray(summaries[0].familyContacts)).toBe(true);
   });
 });

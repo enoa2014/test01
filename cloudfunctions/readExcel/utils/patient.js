@@ -39,20 +39,83 @@ const normalizeTimestamp = (value) => {
   return Number.isNaN(ts) ? null : ts;
 };
 
+const CAREGIVER_DELIMITER_REGEX = /[、，,]/g;
+
+const splitCaregiverList = (value) => {
+  const normalized = normalizeSpacing(value);
+  if (!normalized) {
+    return [];
+  }
+  return normalized
+    .replace(CAREGIVER_DELIMITER_REGEX, '、')
+    .split('、')
+    .map(item => normalizeSpacing(item))
+    .filter(Boolean);
+};
+
+const normalizeCaregiverToken = (token) => normalizeSpacing(token).replace(/\s+/g, '').toLowerCase();
+
 const mergeCaregivers = (base, candidate) => {
-  const existing = normalizeSpacing(base);
-  const incoming = normalizeSpacing(candidate);
-  if (!incoming) {
-    return existing;
+  const existingList = splitCaregiverList(base);
+  const result = [];
+  const seen = new Set();
+
+  existingList.forEach(token => {
+    const key = normalizeCaregiverToken(token);
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      result.push(normalizeSpacing(token));
+    }
+  });
+
+  splitCaregiverList(candidate).forEach(token => {
+    const key = normalizeCaregiverToken(token);
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      result.push(normalizeSpacing(token));
+    }
+  });
+
+  return result.join('、');
+};
+
+const CONTACT_PHONE_REGEX = /(1[3-9]\d{9})/;
+const CONTACT_ID_REGEX = /(\d{17}[0-9Xx]|\d{15})/;
+
+const parseFamilyContact = (rawValue, role) => {
+  const normalized = normalizeSpacing(rawValue);
+  if (!normalized) {
+    return null;
   }
-  if (!existing) {
-    return incoming;
+
+  const contact = {
+    role,
+    raw: normalized,
+    name: '',
+    phone: '',
+    idNumber: ''
+  };
+
+  const phoneMatch = normalized.match(CONTACT_PHONE_REGEX);
+  let working = normalized;
+
+  if (phoneMatch) {
+    contact.phone = phoneMatch[0];
+    working = working.replace(phoneMatch[0], ' ');
   }
-  const parts = new Set(existing.split('、').map((item) => normalizeSpacing(item)).filter(Boolean));
-  if (!parts.has(incoming)) {
-    parts.add(incoming);
+
+  const idMatch = working.match(CONTACT_ID_REGEX);
+  if (idMatch) {
+    contact.idNumber = idMatch[0].toUpperCase();
+    working = working.replace(idMatch[0], ' ');
   }
-  return Array.from(parts).join('、');
+
+  contact.name = normalizeSpacing(working).replace(/[()（）]/g, '');
+  if (!contact.name) {
+    contact.name = normalizeSpacing(rawValue);
+  }
+
+  return contact;
 };
 
 const ensureRecordTimestamp = (record = {}) => {
@@ -72,7 +135,7 @@ const ensureRecordTimestamp = (record = {}) => {
   if (updated !== null) {
     return updated;
   }
-  return null;
+  return 0;
 };
 
 const buildPatientGroups = (records = []) => {
@@ -111,6 +174,16 @@ const buildPatientGroups = (records = []) => {
         latestHospital: '',
         latestDoctor: '',
         summaryCaregivers: '',
+        fatherInfo: '',
+        motherInfo: '',
+        otherGuardian: '',
+        familyEconomy: '',
+        familyEconomyRaw: '',
+        fatherInfoRaw: '',
+        motherInfoRaw: '',
+        otherGuardianRaw: '',
+        familyContacts: [],
+        _contactKeys: new Set(),
         records: [],
       };
       groups.set(recordKey, group);
@@ -144,6 +217,58 @@ const buildPatientGroups = (records = []) => {
 
     if (rawRecord && rawRecord.caregivers) {
       group.summaryCaregivers = mergeCaregivers(group.summaryCaregivers, rawRecord.caregivers);
+    }
+
+    const addFamilyContact = (role, rawValue) => {
+      const normalized = normalizeSpacing(rawValue);
+      if (!normalized) {
+        return;
+      }
+
+      const segments = role === 'other'
+        ? normalized.replace(CAREGIVER_DELIMITER_REGEX, '、').split('、').map(item => normalizeSpacing(item)).filter(Boolean)
+        : [normalized];
+
+      segments.forEach(segment => {
+        const contact = parseFamilyContact(segment, role);
+        if (!contact) {
+          return;
+        }
+        const key = [contact.role, normalizeCaregiverToken(contact.name || contact.raw), contact.phone || ''].join('|');
+        if (group._contactKeys && !group._contactKeys.has(key)) {
+          group._contactKeys.add(key);
+          group.familyContacts.push(contact);
+        }
+      });
+
+      if (role === 'father') {
+        group.fatherInfoRaw = group.fatherInfoRaw || normalized;
+        if (!normalizeSpacing(group.fatherInfo) || normalized.length > group.fatherInfo.length) {
+          group.fatherInfo = normalized;
+        }
+      } else if (role === 'mother') {
+        group.motherInfoRaw = group.motherInfoRaw || normalized;
+        if (!normalizeSpacing(group.motherInfo) || normalized.length > group.motherInfo.length) {
+          group.motherInfo = normalized;
+        }
+      } else if (role === 'other') {
+        group.otherGuardianRaw = group.otherGuardianRaw || normalized;
+        if (!normalizeSpacing(group.otherGuardian) || normalized.length > group.otherGuardian.length) {
+          group.otherGuardian = normalized;
+        }
+      }
+    };
+
+    addFamilyContact('father', rawRecord && rawRecord.fatherInfo);
+    addFamilyContact('mother', rawRecord && rawRecord.motherInfo);
+    addFamilyContact('other', rawRecord && rawRecord.otherGuardian);
+
+    const economyValue = normalizeSpacing(rawRecord && rawRecord.familyEconomy);
+    if (economyValue) {
+      group.familyEconomyRaw = group.familyEconomyRaw || economyValue;
+      if (!normalizeSpacing(group.familyEconomy) || economyValue.length > group.familyEconomy.length) {
+        group.familyEconomy = economyValue;
+      }
     }
 
     group.records.push(rawRecord);
@@ -182,21 +307,33 @@ const buildPatientGroups = (records = []) => {
       );
 
     if (!group.firstAdmissionDate && earliestRecord) {
-      group.firstAdmissionDate = earliestRecord.admissionDate || null;
+      group.firstAdmissionDate = earliestRecord.admissionDate || fallbackTimestamp(earliestRecord) || 0;
     }
     if (!group.firstAdmissionTimestamp && earliestRecord) {
       group.firstAdmissionTimestamp =
-        normalizeTimestamp(earliestRecord.admissionTimestamp) || fallbackTimestamp(earliestRecord);
+        normalizeTimestamp(earliestRecord.admissionTimestamp) || fallbackTimestamp(earliestRecord) || 0;
     }
     if (!group.latestAdmissionDate && latestRecord) {
-      group.latestAdmissionDate = latestRecord.admissionDate || null;
+      group.latestAdmissionDate = latestRecord.admissionDate || fallbackTimestamp(latestRecord) || 0;
     }
     if (!group.latestAdmissionTimestamp && latestRecord) {
       group.latestAdmissionTimestamp =
-        normalizeTimestamp(latestRecord.admissionTimestamp) || fallbackTimestamp(latestRecord);
+        normalizeTimestamp(latestRecord.admissionTimestamp) || fallbackTimestamp(latestRecord) || 0;
     }
     if (!group.latestDiagnosis && latestRecord) {
       group.latestDiagnosis = normalizeSpacing(latestRecord.diagnosis) || group.latestDiagnosis || '';
+    }
+    if (!normalizeSpacing(group.fatherInfo) && latestRecord) {
+      group.fatherInfo = normalizeSpacing(latestRecord.fatherInfo) || group.fatherInfo || '';
+    }
+    if (!normalizeSpacing(group.motherInfo) && latestRecord) {
+      group.motherInfo = normalizeSpacing(latestRecord.motherInfo) || group.motherInfo || '';
+    }
+    if (!normalizeSpacing(group.otherGuardian) && latestRecord) {
+      group.otherGuardian = normalizeSpacing(latestRecord.otherGuardian) || group.otherGuardian || '';
+    }
+    if (!normalizeSpacing(group.familyEconomy) && latestRecord) {
+      group.familyEconomy = normalizeSpacing(latestRecord.familyEconomy) || group.familyEconomy || '';
     }
     if (!group.latestHospital && latestRecord) {
       group.latestHospital = normalizeSpacing(latestRecord.hospital) || group.latestHospital || '';
@@ -206,6 +343,22 @@ const buildPatientGroups = (records = []) => {
     }
     if (!group.summaryCaregivers && latestRecord && latestRecord.caregivers) {
       group.summaryCaregivers = mergeCaregivers('', latestRecord.caregivers);
+    }
+
+    if (group.familyContacts && group.familyContacts.length) {
+      const ordered = [];
+      const preferredOrder = ['father', 'mother', 'other'];
+      preferredOrder.forEach(role => {
+        group.familyContacts
+          .filter(contact => contact.role === role)
+          .forEach(contact => ordered.push(contact));
+      });
+      const unordered = group.familyContacts.filter(contact => !preferredOrder.includes(contact.role));
+      group.familyContacts = ordered.concat(unordered);
+    }
+
+    if (group._contactKeys) {
+      delete group._contactKeys;
     }
   });
 
@@ -241,6 +394,8 @@ const buildGroupSummaries = (groups) => {
     latestDoctor: group.latestDoctor || '',
     admissionCount: group.admissionCount || (group.records ? group.records.length : 0),
     summaryCaregivers: group.summaryCaregivers || '',
+    familyContacts: Array.isArray(group.familyContacts) ? group.familyContacts : [],
+    familyEconomy: group.familyEconomy || '',
   }));
 };
 
@@ -284,6 +439,7 @@ module.exports = {
   ensureCollectionExists,
   buildPatientGroups,
   mergeCaregivers,
+  parseFamilyContact,
   ensureRecordTimestamp,
   buildGroupSummaries,
 };

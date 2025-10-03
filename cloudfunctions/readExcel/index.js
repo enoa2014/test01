@@ -501,6 +501,33 @@ async function removeDuplicatePatientDocs(collection, patientName, keepId, prima
 function buildPatientPayload(group, latestRecord) {
   const normalizedRecordKey = normalizeSpacing(group.recordKey || group.key || group.patientName || '');
 
+  const emergencyContactCandidates = [];
+  if (group.summaryCaregivers) {
+    emergencyContactCandidates.push(group.summaryCaregivers);
+  }
+  const guardianParts = [group.fatherInfo, group.motherInfo, group.otherGuardian]
+    .filter(part => normalizeSpacing(part));
+  if (guardianParts.length) {
+    emergencyContactCandidates.push(guardianParts.join('、'));
+  }
+  const normalizedEmergencyContact = emergencyContactCandidates.find(value => normalizeSpacing(value));
+
+  const contacts = Array.isArray(group.familyContacts) ? group.familyContacts : [];
+  const contactToString = (contact) => {
+    if (!contact) {
+      return '';
+    }
+    const parts = [contact.name, contact.phone, contact.idNumber].map(part => normalizeSpacing(part)).filter(Boolean);
+    if (parts.length) {
+      return parts.join(' ');
+    }
+    return normalizeSpacing(contact.raw || '');
+  };
+
+  const fatherContact = contacts.find(contact => contact.role === 'father');
+  const motherContact = contacts.find(contact => contact.role === 'mother');
+  const guardianContact = contacts.find(contact => contact.role === 'other');
+
   return {
     patientName: group.patientName,
     idType: '身份证',
@@ -512,7 +539,7 @@ function buildPatientPayload(group, latestRecord) {
     nativePlace: normalizeSpacing(group.nativePlace || latestRecord.nativePlace || ''),
     ethnicity: normalizeSpacing(group.ethnicity || latestRecord.ethnicity || ''),
     excelImportOrder: group.importOrder || null,
-    emergencyContact: group.summaryCaregivers || '',
+    emergencyContact: normalizeSpacing(normalizedEmergencyContact || ''),
     emergencyPhone: '',
     backupContact: '',
     backupPhone: '',
@@ -525,6 +552,13 @@ function buildPatientPayload(group, latestRecord) {
     firstHospital: group.firstHospital || '',
     latestHospital: group.latestHospital || '',
     latestDoctor: group.latestDoctor || '',
+    fatherInfo: contactToString(fatherContact) || group.fatherInfo || group.fatherInfoRaw || '',
+    motherInfo: contactToString(motherContact) || group.motherInfo || group.motherInfoRaw || '',
+    otherGuardian: contactToString(guardianContact) || group.otherGuardian || group.otherGuardianRaw || '',
+    familyEconomy: group.familyEconomy || group.familyEconomyRaw || '',
+    familyContacts: Array.isArray(group.familyContacts)
+      ? group.familyContacts.map(contact => ({ ...contact }))
+      : [],
     recordKey: normalizedRecordKey,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -591,6 +625,17 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
     || normalize(latestRecord.diagnosis)
     || normalize(latestRecord.treatmentProcess);
 
+  const emergencyContactParts = [];
+  if (group.summaryCaregivers) {
+    emergencyContactParts.push(group.summaryCaregivers);
+  }
+  const guardianContact = [group.fatherInfo, group.motherInfo, group.otherGuardian]
+    .filter(part => normalizeSpacing(part));
+  if (guardianContact.length) {
+    emergencyContactParts.push(guardianContact.join('、'));
+  }
+  const emergencyContact = normalize(emergencyContactParts.find(value => normalizeSpacing(value)) || '');
+
   return {
     patientKey,
     patientName: group.patientName,
@@ -605,10 +650,13 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
     },
     contactInfo: {
       address: latestRecord.address || '',
-      emergencyContact: group.summaryCaregivers || '',
+      emergencyContact,
       emergencyPhone: '',
       backupContact: '',
-      backupPhone: ''
+      backupPhone: '',
+      familyContacts: Array.isArray(group.familyContacts)
+        ? group.familyContacts.map(contact => ({ ...contact }))
+        : []
     },
     intakeInfo: {
       intakeTime: group.latestAdmissionTimestamp || Date.now(),
