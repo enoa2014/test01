@@ -82,9 +82,12 @@ Component({
         this.rippleTimer = null;
       }, 350);
     },
-    handleTap() {
+    handleTap(event) {
       if (this.data.disabled || this.data.loading) {
         return;
+      }
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
       }
       this.triggerEvent('tap');
     },

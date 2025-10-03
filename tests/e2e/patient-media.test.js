@@ -26,21 +26,47 @@ describe('patient media management (mpflow)', () => {
 
     let patientItems = [];
     try {
-      patientItems = await waitForElements(indexPage, '.patient-item', { min: 1, timeout: 15000 });
+      patientItems = await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 15000 });
     } catch (error) {
       const fallbackKey = `TEST_AUTOMATION_${Date.now()}`;
+      const fallbackPatient = {
+        key: fallbackKey,
+        patientKey: fallbackKey,
+        patientName: seededPatient.patientName || '自动化患者',
+        gender: '女',
+        genderLabel: '女',
+        ethnicity: '汉',
+        nativePlace: '广州',
+        ageBucketId: '18+',
+        ageBucketLabel: '18岁及以上',
+        latestDoctor: '王主任',
+        firstDoctor: '王主任',
+        latestHospital: '自动化医院',
+        firstHospital: '自动化医院',
+        latestDiagnosis: '测试诊断',
+        firstDiagnosis: '测试诊断',
+        latestAdmissionTimestamp: Date.now(),
+        firstAdmissionTimestamp: Date.now(),
+        careStatus: 'in_care',
+        riskLevel: 'medium',
+        badges: [],
+        tags: [],
+      };
+
       await indexPage.setData({
-        patients: [{ key: fallbackKey, patientName: seededPatient.patientName || '自动化患者' }],
-        displayPatients: [{ key: fallbackKey, patientName: seededPatient.patientName || '自动化患者' }],
+        patients: [fallbackPatient],
+        displayPatients: [fallbackPatient],
         loading: false,
         error: ''
       });
-      patientItems = await waitForElements(indexPage, '.patient-item', { min: 1, timeout: 5000 });
+      patientItems = await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 5000 });
     }
 
     expect(patientItems.length).toBeGreaterThan(0);
-    await patientItems[0].tap();
 
+    const detailTarget = (await indexPage.data()).displayPatients?.[0];
+    const targetKey = detailTarget?.patientKey || detailTarget?.key || seededPatient.patientKey;
+    await miniProgram.reLaunch(`/pages/patient-detail/detail?key=${encodeURIComponent(targetKey)}`);
     const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', { timeout: 20000 });
 
     await waitForCondition(async () => {

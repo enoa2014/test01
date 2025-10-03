@@ -40,6 +40,20 @@ describe('patient detail inline edit (mpflow)', () => {
       return data.editMode === true;
     }, { timeout: 8000, message: 'Edit mode did not activate' });
 
+    await detailPage.setData({
+      'editForm.patientName': createdPatient.patientName || '自动化患者',
+      'editForm.idType': '身份证',
+      'editForm.idNumber': createdPatient.idNumber || '110101201204166321',
+      'editForm.gender': createdPatient.gender || '女',
+      'editForm.birthDate': createdPatient.birthDate || '2012-04-16',
+      'editForm.emergencyContact': createdPatient.emergencyContact || 'Automation Caregiver',
+      'editForm.emergencyPhone': createdPatient.emergencyPhone || generateMobile(),
+      'editPickerIndex.idType': 0,
+      'editPickerIndex.gender': createdPatient.gender === '男' ? 0 : 1,
+      editErrors: {},
+    });
+    await detailPage.waitFor?.(100);
+
     const newPhone = generateMobile();
     const newAddress = `${createdPatient.address || 'Automation Rehab Center'} updated`;
     const newNarrative = `${situationText()} Inline edit via mpflow.`;

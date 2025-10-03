@@ -36,13 +36,15 @@ describe('patient-card component', () => {
     const ctx = {
       data: {
         patient: {
-          name: '张三',
-          age: 36,
+          patientName: '张三',
+          ageYears: 36,
+          latestAdmissionDateFormatted: '2025-10-01',
           latestEvent: '2025-10-01 · 随访复查',
           latestDiagnosis: '术后复诊',
           firstDiagnosis: '初诊',
           firstHospital: '协和医院',
           latestHospital: '北医三院',
+          latestDoctor: '王主任',
           tags: ['肿瘤科', '王主任', '康复'],
         },
         mode: 'compact',
@@ -62,11 +64,16 @@ describe('patient-card component', () => {
     config.methods.updateComputedState.call(ctx);
 
     expect(ctx.data.avatarText).toBe('张');
-    expect(ctx.data.displayBadges).toHaveLength(3);
+    expect(ctx.data.badges).toHaveLength(4);
     expect(ctx.data.tags).toEqual(['肿瘤科', '王主任', '康复']);
     expect(ctx.data.hasActions).toBe(true);
     expect(ctx.data.cardVariant).toBe('elevated');
     expect(ctx.data.cardPadding).toBe('var(--space-4)');
+    expect(ctx.data.primaryLine).toContain('2025-10-01');
+    expect(ctx.data.infoItems).toEqual([
+      { label: '最近入住', value: '2025-10-01' },
+      { label: '责任医生', value: '王主任' },
+    ]);
   });
 
   it('emits cardtap when clickable', () => {

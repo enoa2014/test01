@@ -49,6 +49,237 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     }
   };
 
+  const CONTACT_PHONE_REGEX = /1[3-9]\d{9}/;
+
+  const parseGuardianContact = (rawValue) => {
+    if (rawValue === null || rawValue === undefined) {
+      return null;
+    }
+
+    if (Array.isArray(rawValue)) {
+      for (const item of rawValue) {
+        const parsed = parseGuardianContact(item);
+        if (parsed) {
+          return parsed;
+        }
+      }
+      return null;
+    }
+
+    if (typeof rawValue === 'object') {
+      const candidateKeys = Object.keys(rawValue || {});
+      if (!candidateKeys.length) {
+        return null;
+      }
+
+      const pickValue = (patterns) => {
+        for (const key of candidateKeys) {
+          if (patterns.some((pattern) => pattern.test(key))) {
+            const value = normalizeExcelSpacing(rawValue[key]);
+            if (value) {
+              return value;
+            }
+          }
+        }
+        return '';
+      };
+
+      const phoneText = pickValue([/phone/i, /mobile/i, /tel/i, /联系方式/, /联系电话/]);
+      const nameText = pickValue([/name/i, /联系人/, /guardian/i, /监护/]);
+
+      if (phoneText && nameText) {
+        const phoneMatch = (phoneText.replace(/[^0-9]/g, '').match(CONTACT_PHONE_REGEX) || [])[0];
+        if (phoneMatch) {
+          return {
+            name: normalizeExcelSpacing(nameText),
+            phone: phoneMatch,
+            raw: `${normalizeExcelSpacing(nameText)} ${phoneMatch}`.trim(),
+          };
+        }
+      }
+
+      const flattened = candidateKeys
+        .map((key) => rawValue[key])
+        .filter((value) => typeof value === 'string' || typeof value === 'number')
+        .join(' ');
+      if (flattened) {
+        return parseGuardianContact(flattened);
+      }
+      return null;
+    }
+
+    const text = normalizeExcelSpacing(rawValue);
+    if (!text) {
+      return null;
+    }
+
+    const digitsOnly = text.replace(/[^0-9]/g, '');
+    const phoneMatch = digitsOnly.match(CONTACT_PHONE_REGEX);
+    if (!phoneMatch) {
+      return null;
+    }
+    const phone = phoneMatch[0];
+
+    let name = text
+      .replace(CONTACT_PHONE_REGEX, ' ')
+      .replace(/\d{15,18}[Xx]?/g, ' ')
+      .replace(/身份证|证件|电话号码|联系电话|联系方式|手机|手机号/g, ' ')
+      .replace(/[\(\)（）:\-]/g, ' ')
+      .replace(/[,，、;；]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!name) {
+      return null;
+    }
+
+    return {
+      name,
+      phone,
+      raw: text,
+    };
+  };
+
+  const deriveGuardianInfo = (records = []) => {
+    const info = {
+      fatherRaw: '',
+      fatherName: '',
+      fatherPhone: '',
+      motherRaw: '',
+      motherName: '',
+      motherPhone: '',
+      guardianRaw: '',
+      guardianName: '',
+      guardianPhone: '',
+      excelKeys: new Set(),
+    };
+
+    const assignIfEmpty = (field, value) => {
+      if (value && !info[field]) {
+        info[field] = value;
+      }
+    };
+
+    records.forEach((record) => {
+      if (!record) {
+        return;
+      }
+      const candidateKey = normalizeExcelSpacing(record.recordKey || record.key || record.patientName);
+      if (candidateKey) {
+        info.excelKeys.add(candidateKey);
+      }
+
+      const fatherRaw = normalizeExcelSpacing(record.fatherInfo);
+      if (fatherRaw) {
+        assignIfEmpty('fatherRaw', fatherRaw);
+        const parsedFather = parseGuardianContact(fatherRaw);
+        if (parsedFather) {
+          assignIfEmpty('fatherName', parsedFather.name);
+          assignIfEmpty('fatherPhone', parsedFather.phone);
+        }
+      }
+
+      const motherRaw = normalizeExcelSpacing(record.motherInfo);
+      if (motherRaw) {
+        assignIfEmpty('motherRaw', motherRaw);
+        const parsedMother = parseGuardianContact(motherRaw);
+        if (parsedMother) {
+          assignIfEmpty('motherName', parsedMother.name);
+          assignIfEmpty('motherPhone', parsedMother.phone);
+        }
+      }
+
+      const guardianRaw = normalizeExcelSpacing(record.otherGuardian || record.guardianInfo);
+      if (guardianRaw) {
+        if (!info.guardianRaw) {
+          info.guardianRaw = guardianRaw;
+        }
+        const parsedGuardian = parseGuardianContact(guardianRaw);
+        if (parsedGuardian) {
+          assignIfEmpty('guardianName', parsedGuardian.name);
+          assignIfEmpty('guardianPhone', parsedGuardian.phone);
+        }
+      }
+
+      if (record.contactInfo) {
+        const parsedContact = parseGuardianContact(record.contactInfo);
+        if (parsedContact) {
+          assignIfEmpty('guardianName', parsedContact.name);
+          assignIfEmpty('guardianPhone', parsedContact.phone);
+          if (!info.guardianRaw) {
+            info.guardianRaw = parsedContact.raw;
+          }
+        }
+      }
+    });
+
+    info.excelKeys = Array.from(info.excelKeys);
+    return info;
+  };
+
+  const mergeExcelKeys = (existingKeys = [], incomingKeys = []) => {
+    const merged = new Set();
+    (Array.isArray(existingKeys) ? existingKeys : []).forEach((key) => {
+      const normalized = normalizeExcelSpacing(key);
+      if (normalized) {
+        merged.add(normalized);
+      }
+    });
+    (Array.isArray(incomingKeys) ? incomingKeys : []).forEach((key) => {
+      const normalized = normalizeExcelSpacing(key);
+      if (normalized) {
+        merged.add(normalized);
+      }
+    });
+    return Array.from(merged);
+  };
+
+  const buildGuardianUpdates = (patientDoc = {}, guardianInfo = {}) => {
+    const updates = {};
+    const ensureField = (field, value) => {
+      if (!value) {
+        return;
+      }
+      const existing = patientDoc && patientDoc[field];
+      if (!normalizeStringValue(existing) || normalizeStringValue(existing) !== normalizeStringValue(value)) {
+        updates[field] = value;
+      }
+    };
+
+    ensureField('fatherInfo', guardianInfo.fatherRaw);
+    ensureField('fatherContactName', guardianInfo.fatherName);
+    ensureField('fatherContactPhone', guardianInfo.fatherPhone);
+    ensureField('motherInfo', guardianInfo.motherRaw);
+    ensureField('motherContactName', guardianInfo.motherName);
+    ensureField('motherContactPhone', guardianInfo.motherPhone);
+    ensureField('guardianInfo', guardianInfo.guardianRaw);
+    ensureField('guardianContactName', guardianInfo.guardianName);
+    ensureField('guardianContactPhone', guardianInfo.guardianPhone);
+
+    if (Array.isArray(guardianInfo.excelKeys) && guardianInfo.excelKeys.length) {
+      const existingKeys = patientDoc && Array.isArray(patientDoc.excelRecordKeys)
+        ? patientDoc.excelRecordKeys
+        : [];
+      const mergedKeys = mergeExcelKeys(existingKeys, guardianInfo.excelKeys);
+      const existingSet = new Set(existingKeys);
+      const mergedSet = new Set(mergedKeys);
+      let differs = existingSet.size !== mergedSet.size;
+      if (!differs) {
+        for (const key of mergedSet) {
+          if (!existingSet.has(key)) {
+            differs = true;
+            break;
+          }
+        }
+      }
+      if (differs) {
+        updates.excelRecordKeys = mergedKeys;
+      }
+    }
+
+    return updates;
+  };
+
     function sanitizeIdentifier(value, fallbackSeed) {
     const base = normalizeExcelValue(value);
     if (base) {
@@ -160,6 +391,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     const firstTs = toTimestampFromExcel(first.admissionTimestamp || first.admissionDate) || null;
     const lastTs = toTimestampFromExcel(last.admissionTimestamp || last.admissionDate) || null;
     const recordKey = normalizeExcelSpacing(patientKey);
+    const guardianInfo = deriveGuardianInfo(records);
 
     return {
       patientName: normalizeExcelSpacing(last.patientName) || recordKey,
@@ -190,6 +422,17 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         createdFromExcel: true,
         excelRecordKey: recordKey,
       },
+      excelRecordKeys: guardianInfo.excelKeys,
+      fatherInfo: guardianInfo.fatherRaw || '',
+      fatherContactName: guardianInfo.fatherName || '',
+      fatherContactPhone: guardianInfo.fatherPhone || '',
+      motherInfo: guardianInfo.motherRaw || '',
+      motherContactName: guardianInfo.motherName || '',
+      motherContactPhone: guardianInfo.motherPhone || '',
+      guardianInfo: guardianInfo.guardianRaw || '',
+      guardianContactName: guardianInfo.guardianName || '',
+      guardianContactPhone: guardianInfo.guardianPhone || '',
+      careStatus: 'discharged',
     };
   }
 
@@ -745,7 +988,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     try {
       const docRes = await db.collection(PATIENTS_COLLECTION).doc(normalizedKey).get();
       if (docRes && docRes.data) {
-        return { patientDoc: docRes.data, patientKey: normalizedKey };
+        const doc = { _id: normalizedKey, ...docRes.data };
+        return { patientDoc: doc, patientKey: normalizedKey };
       }
     } catch (error) {
       const code = error && (error.errCode !== undefined ? error.errCode : error.code);
@@ -765,7 +1009,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         .get();
       if (byRecordKey.data && byRecordKey.data.length) {
         const doc = byRecordKey.data[0];
-        return { patientDoc: doc, patientKey: doc._id || normalizedKey };
+        const docId = doc._id || normalizedKey;
+        return { patientDoc: { _id: docId, ...doc }, patientKey: docId };
       }
     }
 
@@ -825,6 +1070,22 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     const excelRecords = await fetchExcelRecordsByKey(normalizedKey, searchKeys);
     if (!excelRecords.length) {
       return { created: 0, updated: 0, skipped: 0 };
+    }
+
+    const guardianInfo = deriveGuardianInfo(excelRecords);
+    const patientDocId =
+      (patientDoc && (patientDoc._id || patientDoc.id || patientDoc.docId)) || normalizedKey;
+    if (patientDocId) {
+      const guardianUpdates = buildGuardianUpdates(patientDoc, guardianInfo);
+      if (Object.keys(guardianUpdates).length) {
+        try {
+          await db.collection(PATIENTS_COLLECTION).doc(patientDocId).update({ data: guardianUpdates });
+          patientDoc = { ...(patientDoc || {}), ...guardianUpdates, _id: patientDocId };
+          await invalidatePatientCache();
+        } catch (guardianError) {
+          console.warn('syncExcelRecordsToIntake guardian update failed', patientDocId, guardianError);
+        }
+      }
     }
 
     await ensureCollection(PATIENT_INTAKE_COLLECTION);

@@ -6,9 +6,8 @@
 
 | 页面/模块                       | 令牌接入情况 | 说明                                                                        |
 | ------------------------------- | ------------ | --------------------------------------------------------------------------- |
-| `pages/index/index`             | ✅           | 使用 `foundation`/`utilities`；`hero-subtitle` 等自定义类避免覆盖基础样式。 |
+| `pages/index/index`             | ✅           | 使用 `foundation`/`utilities`；住户列表悬浮按钮渐变与文本色已改为令牌。    |
 | `pages/analysis/index`          | ✅           | 所有色彩来自令牌；遮罩使用 `--overlay-dim`。                                |
-| `pages/families/index`          | ✅           | 悬浮按钮渐变与文本色已改为令牌；Stylelint 验证通过。                        |
 | `pages/patient-detail/detail`   | ✅           | 历史记录提示、渐变按钮等改用 `--bg-*`、`--gradient-*`。                     |
 | `pages/patient-intake/wizard/*` | ✅           | 提示与遮罩使用 overlay/background 令牌，草稿弹窗采用 `--overlay-modal`。    |
 | `pages/patient-intake/select`   | ✅           | 搜索与提示区域使用令牌；副标题类调整为 `select-subtitle`。                  |

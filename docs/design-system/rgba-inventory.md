@@ -40,13 +40,13 @@
 
 | 页面                   | 行号                                     | 描述                       | 建议令牌 |
 | ---------------------- | ---------------------------------------- | -------------------------- | -------- |
-| families/index.wxss:92 | 家庭档案卡片背景 `rgba(255,255,255,0.8)` | `--bg-surface-translucent` |
+| pages/index/index.wxss:88 | 住户档案卡片背景 `rgba(255,255,255,0.8)` | `--bg-surface-translucent` |
 
 ## 6. 阴影（box-shadow）
 
 - 已在 `design-tokens.json → shadow` 中定义；未来计划：
   1. 从 `miniprogram/styles/legacy/tokens.wxss` 中移除重复阴影类。
-  2. 将页面内自定义阴影 (`families/index.wxss`, `patient-intake/success/success.wxss` 等) 替换为 `var(--shadow-*)`。
+  2. 将页面内自定义阴影 (`pages/index/index.wxss`, `patient-intake/success/success.wxss` 等) 替换为 `var(--shadow-*)`。
 
 ## 后续步骤
 

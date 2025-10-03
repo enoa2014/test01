@@ -117,6 +117,81 @@
       </view>
     </view>
 
+    <view class="filter-section" wx:if="{{genderOptionsList.length}}">
+      <view class="filter-section__title">性别</view>
+      <view class="filter-chips">
+        <view
+          wx:for="{{genderOptionsList}}"
+          wx:key="id"
+          class="filter-chip {{item.active ? 'filter-chip--active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onGenderToggle"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="filter-section" wx:if="{{ethnicityOptionsList.length}}">
+      <view class="filter-section__title">民族</view>
+      <view class="filter-chips">
+        <view
+          wx:for="{{ethnicityOptionsList}}"
+          wx:key="id"
+          class="filter-chip {{item.active ? 'filter-chip--active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onEthnicityToggle"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="filter-section" wx:if="{{nativePlaceOptionsList.length}}">
+      <view class="filter-section__title">籍贯</view>
+      <view class="filter-grid">
+        <view
+          wx:for="{{nativePlaceOptionsList}}"
+          wx:key="id"
+          class="filter-grid__item {{item.active ? 'filter-grid__item--active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onNativePlaceToggle"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="filter-section" wx:if="{{ageRangeOptionsList.length}}">
+      <view class="filter-section__title">年龄段</view>
+      <view class="filter-chips">
+        <view
+          wx:for="{{ageRangeOptionsList}}"
+          wx:key="id"
+          class="filter-chip {{item.active ? 'filter-chip--active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onAgeRangeToggle"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="filter-section" wx:if="{{doctorOptionsList.length}}">
+      <view class="filter-section__title">责任医生</view>
+      <view class="filter-grid">
+        <view
+          wx:for="{{doctorOptionsList}}"
+          wx:key="id"
+          class="filter-grid__item {{item.active ? 'filter-grid__item--active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onDoctorToggle"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
     <view class="filter-section">
       <view class="filter-section__title">诊断类型</view>
       <view class="filter-diagnosis">

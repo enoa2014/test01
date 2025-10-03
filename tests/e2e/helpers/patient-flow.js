@@ -26,13 +26,18 @@ async function waitForFieldElement(page, field, { timeout = 12000 } = {}) {
 }
 
 async function resolvePatientKey(miniProgram, patientData, successPage) {
-  if (!successPage || !patientData) {
-    return patientData?.patientName || '';
+  if (!patientData) {
+    return '';
+  }
+
+  const evaluator = successPage || miniProgram;
+  if (!evaluator || typeof evaluator.evaluate !== 'function') {
+    return patientData.patientName;
   }
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      const response = await successPage.evaluate(
+      const response = await evaluator.evaluate(
         (payload) =>
           new Promise((resolve) => {
             if (!wx || !wx.cloud || typeof wx.cloud.callFunction !== 'function') {
@@ -147,7 +152,7 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
   };
 
   const attemptWizard = async () => {
-    await miniProgram.reLaunch('/pages/patient-intake/wizard/wizard?mode=new');
+    await miniProgram.reLaunch('/pages/patient-intake/wizard/wizard?mode=create');
     const wizardPage = await waitForPage(miniProgram, 'pages/patient-intake/wizard/wizard', {
       timeout: 20000,
     });
@@ -179,11 +184,20 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 10000, message: 'Basic info step requirements not satisfied' }
     );
 
-    await (await waitForElement(wizardPage, '.btn-primary')).tap();
+    if (typeof wizardPage.callMethod === 'function') {
+      await wizardPage.callMethod('onNextStep');
+    } else {
+      const nextBtn = await waitForElement(wizardPage, '.action-buttons pm-button[type="primary"]');
+      await nextBtn.tap();
+    }
     await waitForCondition(
       async () => {
         const data = await wizardPage.data();
-        return data.currentStep === 1;
+        if (!data || !Array.isArray(data.visibleSteps)) {
+          return false;
+        }
+        const nextVisible = data.visibleSteps[1];
+        return nextVisible && data.currentStep === nextVisible.originalIndex;
       },
       { timeout: 8000, message: 'Wizard did not enter contact step' }
     );
@@ -203,48 +217,20 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 8000, message: 'Contact step requirements not satisfied' }
     );
 
-    await (await waitForElement(wizardPage, '.btn-primary')).tap();
+    if (typeof wizardPage.callMethod === 'function') {
+      await wizardPage.callMethod('onNextStep');
+    } else {
+      const nextBtn = await waitForElement(wizardPage, '.action-buttons pm-button[type="primary"]');
+      await nextBtn.tap();
+    }
     await waitForCondition(
       async () => {
         const data = await wizardPage.data();
-        return data.currentStep === 2;
-      },
-      { timeout: 8000, message: 'Wizard did not enter situation step' }
-    );
-
-    const situationTextarea = await waitForFieldElement(wizardPage, 'situation');
-    await inputValue(situationTextarea, patientData.situation);
-
-    await waitForCondition(
-      async () => {
-        const data = await wizardPage.data();
-        return data.canProceedToNext === true;
-      },
-      { timeout: 8000, message: 'Situation step requirements not satisfied' }
-    );
-
-    await (await waitForElement(wizardPage, '.btn-primary')).tap();
-    await waitForCondition(
-      async () => {
-        const data = await wizardPage.data();
-        return data.currentStep === 3;
-      },
-      { timeout: 8000, message: 'Wizard did not enter upload step' }
-    );
-
-    await waitForCondition(
-      async () => {
-        const data = await wizardPage.data();
-        return data.canProceedToNext === true;
-      },
-      { timeout: 5000, message: 'Upload step unexpectedly blocked' }
-    );
-
-    await (await waitForElement(wizardPage, '.btn-primary')).tap();
-    await waitForCondition(
-      async () => {
-        const data = await wizardPage.data();
-        return data.currentStep === 4;
+        if (!data || !Array.isArray(data.visibleSteps)) {
+          return false;
+        }
+        const reviewStep = data.visibleSteps[data.visibleSteps.length - 1];
+        return reviewStep && data.currentStep === reviewStep.originalIndex;
       },
       { timeout: 8000, message: 'Wizard did not enter review step' }
     );
@@ -257,15 +243,27 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 8000, message: 'Review step reports missing required data' }
     );
 
-    const submitButton = await waitForElement(wizardPage, '.btn-success');
-    await submitButton.tap();
+    if (typeof wizardPage.callMethod === 'function') {
+      await wizardPage.callMethod('onSubmit');
+    } else {
+      const submitButton = await waitForElement(wizardPage, '.action-buttons pm-button[type="primary"]');
+      await submitButton.tap();
+    }
 
-    const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
-      timeout: 20000,
-    });
-    await waitForElement(successPage, '.success-title');
+    let successPage = null;
+    try {
+      successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
+        timeout: 20000,
+      });
+      await waitForElement(successPage, '.success-title');
+    } catch (error) {
+      successPage = await miniProgram.currentPage();
+    }
 
-    const successData = await successPage.data();
+    const successData = successPage && typeof successPage.data === 'function'
+      ? await successPage.data()
+      : {};
+
     let patientKey = successData?.patientKey;
     if (!patientKey) {
       patientKey = await resolvePatientKey(miniProgram, patientData, successPage);

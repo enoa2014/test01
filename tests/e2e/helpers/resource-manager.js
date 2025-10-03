@@ -14,15 +14,25 @@ async function createPatientResource(miniProgram, key, overrides) {
 
   if (payload && payload.successPage) {
     try {
-      const backBtn = await waitForElement(payload.successPage, '.primary-btn', {
-        timeout: 8000,
-      });
-      if (backBtn && typeof backBtn.tap === 'function') {
-        await backBtn.tap();
+      if (typeof payload.successPage.callMethod === 'function') {
+        await payload.successPage.callMethod('onBackToHome');
         await delay(500);
+      } else {
+        const homeBtn = await waitForElement(payload.successPage, '.bottom-actions pm-button', {
+          timeout: 8000,
+        });
+        if (homeBtn && typeof homeBtn.tap === 'function') {
+          await homeBtn.tap();
+          await delay(500);
+        }
       }
     } catch (error) {
-      // ignore failure to exit success page
+      try {
+        await miniProgram.reLaunch('/pages/index/index');
+        await delay(500);
+      } catch (launchError) {
+        // ignore fallback failure
+      }
     }
   }
 

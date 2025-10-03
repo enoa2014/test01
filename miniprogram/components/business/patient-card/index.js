@@ -97,6 +97,7 @@ Component({
     hasActions: false,
     cardVariant: 'default',
     cardPadding: 'var(--space-4)',
+    infoItems: [],
   },
   lifetimes: {
     attached() {
@@ -115,10 +116,25 @@ Component({
       const avatarText = getInitials(patient.name || patient.patientName || patient.fullName);
       const avatarBackground = AVATAR_COLORS[hashToIndex(patient.name || patient.patientName || '', AVATAR_COLORS.length)];
       const ageText = safeString(patient.ageText || patient.age ? `${patient.age || patient.ageText}` : '');
-      const primaryLine = safeString(patient.latestEvent || patient.latestDiagnosis || patient.firstDiagnosis);
-      const secondaryLine = safeString(patient.firstHospital || patient.latestHospital);
+      const primaryLine = safeString(patient.latestAdmissionDisplay || patient.latestEvent || patient.latestDiagnosis || patient.firstDiagnosis);
+      const secondaryLine = safeString(patient.latestHospital || patient.firstHospital);
       const tags = Array.isArray(patient.tags) ? patient.tags : [];
       const hasActions = Array.isArray(this.data.actions) && this.data.actions.length > 0;
+      const infoItems = [];
+      if (patient.latestAdmissionDateFormatted) {
+        infoItems.push({ label: '最近入住', value: patient.latestAdmissionDateFormatted });
+      } else {
+        infoItems.push({ label: '最近入住', value: '未入住' });
+      }
+      if (safeString(patient.latestDoctor)) {
+        infoItems.push({ label: '责任医生', value: patient.latestDoctor });
+      }
+      if (safeString(patient.ageBucketLabel)) {
+        infoItems.push({ label: '年龄段', value: patient.ageBucketLabel });
+      }
+      if (safeString(patient.nativePlace)) {
+        infoItems.push({ label: '籍贯', value: patient.nativePlace });
+      }
 
       this.setData({
         avatarText,
@@ -130,6 +146,7 @@ Component({
         hasActions,
         cardVariant: modePreset.cardVariant,
         cardPadding: modePreset.padding,
+        infoItems,
       });
     },
     handleCardTap() {

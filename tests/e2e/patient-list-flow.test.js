@@ -12,6 +12,12 @@ const SAMPLE_PATIENTS = [
     key: 'p-001',
     patientKey: 'p-001',
     patientName: '张三',
+    gender: '男',
+    genderLabel: '男',
+    ethnicity: '汉',
+    nativePlace: '广西',
+    ageBucketId: '13-17',
+    ageBucketLabel: '13-17岁',
     latestDiagnosis: '心衰复查',
     firstDiagnosis: '高血压',
     latestHospital: '协和医院',
@@ -28,6 +34,12 @@ const SAMPLE_PATIENTS = [
     key: 'p-002',
     patientKey: 'p-002',
     patientName: '李四',
+    gender: '女',
+    genderLabel: '女',
+    ethnicity: '汉',
+    nativePlace: '北京',
+    ageBucketId: '18+',
+    ageBucketLabel: '18岁及以上',
     latestDiagnosis: '康复复诊',
     firstDiagnosis: '骨折',
     latestHospital: '北医三院',
@@ -60,6 +72,11 @@ describe('patient list search → filter → detail flow', () => {
         hospitals: [],
         diagnosis: [],
         dateRange: { start: '', end: '' },
+        genders: [],
+        ethnicities: [],
+        nativePlaces: [],
+        ageRanges: [],
+        doctors: [],
         logicMode: 'AND',
       },
       pendingAdvancedFilters: {
@@ -68,6 +85,11 @@ describe('patient list search → filter → detail flow', () => {
         hospitals: [],
         diagnosis: [],
         dateRange: { start: '', end: '' },
+        genders: [],
+        ethnicities: [],
+        nativePlaces: [],
+        ageRanges: [],
+        doctors: [],
         logicMode: 'AND',
       },
     });
@@ -97,6 +119,11 @@ describe('patient list search → filter → detail flow', () => {
           riskLevels: ['high'],
           hospitals: [],
           diagnosis: [],
+          genders: [],
+          ethnicities: [],
+          nativePlaces: [],
+          ageRanges: [],
+          doctors: [],
           dateRange: { start: '', end: '' },
           logicMode: 'AND',
         },
@@ -111,6 +138,33 @@ describe('patient list search → filter → detail flow', () => {
         data.displayPatients[0].patientName === '张三'
       );
     }, { timeout: 5000, message: 'Advanced filter did not narrow to 张三' });
+
+    await indexPage.callMethod('onFilterApply', {
+      detail: {
+        value: {
+          statuses: [],
+          riskLevels: [],
+          hospitals: [],
+          diagnosis: [],
+          genders: ['女'],
+          ethnicities: ['汉'],
+          nativePlaces: ['北京'],
+          ageRanges: ['18+'],
+          doctors: ['李主任'],
+          dateRange: { start: '', end: '' },
+          logicMode: 'AND',
+        },
+      },
+    });
+
+    await waitForCondition(async () => {
+      const data = await indexPage.data();
+      return (
+        Array.isArray(data.displayPatients) &&
+        data.displayPatients.length === 1 &&
+        data.displayPatients[0].patientName === '李四'
+      );
+    }, { timeout: 5000, message: 'Extended advanced filter did not narrow to 李四' });
 
     await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 5000 });
 

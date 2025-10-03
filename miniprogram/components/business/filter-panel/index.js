@@ -27,6 +27,11 @@ const OPTION_DATA_KEYS = {
   status: 'statusOptions',
   risk: 'riskOptions',
   hospital: 'hospitalList',
+  gender: 'genderOptionsList',
+  ethnicity: 'ethnicityOptionsList',
+  native: 'nativePlaceOptionsList',
+  doctor: 'doctorOptionsList',
+  age: 'ageRangeOptionsList',
 };
 
 function normalizeOptions(list = [], selected = []) {
@@ -63,6 +68,11 @@ function buildInitialValue(props) {
     dateRange: ensureDateRange(value.dateRange),
     diagnosis: ensureArray(value.diagnosis),
     hospitals: ensureArray(value.hospitals),
+    genders: ensureArray(value.genders),
+    ethnicities: ensureArray(value.ethnicities),
+    nativePlaces: ensureArray(value.nativePlaces),
+    ageRanges: ensureArray(value.ageRanges),
+    doctors: ensureArray(value.doctors),
     logicMode: value.logicMode === 'OR' ? 'OR' : 'AND',
   };
 }
@@ -102,6 +112,26 @@ Component({
       type: Array,
       value: DEFAULT_HOSPITAL_OPTIONS,
     },
+    genderOptions: {
+      type: Array,
+      value: [],
+    },
+    ethnicityOptions: {
+      type: Array,
+      value: [],
+    },
+    nativePlaceOptions: {
+      type: Array,
+      value: [],
+    },
+    doctorOptions: {
+      type: Array,
+      value: [],
+    },
+    ageRangeOptions: {
+      type: Array,
+      value: [],
+    },
     value: {
       type: Object,
       value: null,
@@ -131,6 +161,11 @@ Component({
     statusOptions: [],
     riskOptions: [],
     hospitalList: [],
+    genderOptionsList: [],
+    ethnicityOptionsList: [],
+    nativePlaceOptionsList: [],
+    doctorOptionsList: [],
+    ageRangeOptionsList: [],
     searchTerm: '',
     selectedDiagnosis: [],
     dateRange: { start: '', end: '' },
@@ -149,6 +184,26 @@ Component({
     hospitalOptions(list) {
       const selected = (this.data.hospitalList || []).filter(item => item.active).map(item => item.id);
       this.updateHospitalOptions(list, selected);
+    },
+    genderOptions(list) {
+      const selected = (this.data.genderOptionsList || []).filter(item => item.active).map(item => item.id);
+      this.updateGenderOptions(list, selected);
+    },
+    ethnicityOptions(list) {
+      const selected = (this.data.ethnicityOptionsList || []).filter(item => item.active).map(item => item.id);
+      this.updateEthnicityOptions(list, selected);
+    },
+    nativePlaceOptions(list) {
+      const selected = (this.data.nativePlaceOptionsList || []).filter(item => item.active).map(item => item.id);
+      this.updateNativePlaceOptions(list, selected);
+    },
+    doctorOptions(list) {
+      const selected = (this.data.doctorOptionsList || []).filter(item => item.active).map(item => item.id);
+      this.updateDoctorOptions(list, selected);
+    },
+    ageRangeOptions(list) {
+      const selected = (this.data.ageRangeOptionsList || []).filter(item => item.active).map(item => item.id);
+      this.updateAgeRangeOptions(list, selected);
     },
     diagnosisOptions(list) {
       const options = Array.isArray(list) && list.length ? list : DEFAULT_DIAGNOSIS_OPTIONS;
@@ -192,6 +247,11 @@ Component({
       this.updateStatusOptions(this.properties.statuses, initial.statuses);
       this.updateRiskOptions(this.properties.riskLevels, initial.riskLevels);
       this.updateHospitalOptions(this.properties.hospitalOptions, initial.hospitals);
+      this.updateGenderOptions(this.properties.genderOptions, initial.genders);
+      this.updateEthnicityOptions(this.properties.ethnicityOptions, initial.ethnicities);
+      this.updateNativePlaceOptions(this.properties.nativePlaceOptions, initial.nativePlaces);
+      this.updateDoctorOptions(this.properties.doctorOptions, initial.doctors);
+      this.updateAgeRangeOptions(this.properties.ageRangeOptions, initial.ageRanges);
       this.setData({
         selectedDiagnosis: mapDiagnosisSelection(initial.diagnosis, this.data.availableDiagnosis),
         dateRange: initial.dateRange,
@@ -223,6 +283,31 @@ Component({
       this.setData({ hospitalList: normalized });
     },
 
+    updateGenderOptions(list, selected) {
+      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      this.setData({ genderOptionsList: normalized });
+    },
+
+    updateEthnicityOptions(list, selected) {
+      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      this.setData({ ethnicityOptionsList: normalized });
+    },
+
+    updateNativePlaceOptions(list, selected) {
+      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      this.setData({ nativePlaceOptionsList: normalized });
+    },
+
+    updateDoctorOptions(list, selected) {
+      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      this.setData({ doctorOptionsList: normalized });
+    },
+
+    updateAgeRangeOptions(list, selected) {
+      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      this.setData({ ageRangeOptionsList: normalized });
+    },
+
     buildCurrentValue() {
       return {
         statuses: this.data.statusOptions.filter(item => item.active).map(item => item.id),
@@ -230,6 +315,11 @@ Component({
         hospitals: this.data.hospitalList.filter(item => item.active).map(item => item.id),
         diagnosis: ensureArray(this.data.selectedDiagnosis).map(item => (item && item.id ? item.id : item)),
         dateRange: ensureDateRange(this.data.dateRange),
+        genders: this.data.genderOptionsList.filter(item => item.active).map(item => item.id),
+        ethnicities: this.data.ethnicityOptionsList.filter(item => item.active).map(item => item.id),
+        nativePlaces: this.data.nativePlaceOptionsList.filter(item => item.active).map(item => item.id),
+        ageRanges: this.data.ageRangeOptionsList.filter(item => item.active).map(item => item.id),
+        doctors: this.data.doctorOptionsList.filter(item => item.active).map(item => item.id),
         logicMode: this.data.logicMode === 'OR' ? 'OR' : 'AND',
       };
     },
@@ -265,6 +355,21 @@ Component({
       }
       if (value.diagnosis && value.diagnosis.length) {
         activeSet.push('diagnosis');
+      }
+      if (value.genders && value.genders.length) {
+        activeSet.push('genders');
+      }
+      if (value.ethnicities && value.ethnicities.length) {
+        activeSet.push('ethnicities');
+      }
+      if (value.nativePlaces && value.nativePlaces.length) {
+        activeSet.push('nativePlaces');
+      }
+      if (value.ageRanges && value.ageRanges.length) {
+        activeSet.push('ageRanges');
+      }
+      if (value.doctors && value.doctors.length) {
+        activeSet.push('doctors');
       }
       const { start, end } = value.dateRange || {};
       if (start || end) {
@@ -315,6 +420,46 @@ Component({
         return;
       }
       this.toggleOption('hospital', id);
+    },
+
+    onGenderToggle(event) {
+      const { id } = event.currentTarget.dataset || {};
+      if (!id) {
+        return;
+      }
+      this.toggleOption('gender', id);
+    },
+
+    onEthnicityToggle(event) {
+      const { id } = event.currentTarget.dataset || {};
+      if (!id) {
+        return;
+      }
+      this.toggleOption('ethnicity', id);
+    },
+
+    onNativePlaceToggle(event) {
+      const { id } = event.currentTarget.dataset || {};
+      if (!id) {
+        return;
+      }
+      this.toggleOption('native', id);
+    },
+
+    onDoctorToggle(event) {
+      const { id } = event.currentTarget.dataset || {};
+      if (!id) {
+        return;
+      }
+      this.toggleOption('doctor', id);
+    },
+
+    onAgeRangeToggle(event) {
+      const { id } = event.currentTarget.dataset || {};
+      if (!id) {
+        return;
+      }
+      this.toggleOption('age', id);
     },
 
     onStartDateChange(event) {

@@ -205,11 +205,11 @@
     <!-- 第3步：情况说明 -->
     <view wx:if="{{currentStep === 2}}" class="form-section">
       <view class="form-group">
-        <view class="textarea-container">
-          <pm-input
-            label="入住理由说明（选填）"
-            type="textarea"
-            value="{{formData.situation}}"
+         <view class="textarea-container">
+           <pm-input
+             label="入住理由说明（选填）"
+             type="textarea"
+             value="{{formData.situation}}"
             placeholder="请详细描述入住理由和住户情况，包含护理需求或症状信息"
             data-field="situation"
             bindinput="onInputChange"
@@ -221,10 +221,10 @@
             label-position="top"
             block="{{true}}"
           ></pm-input>
-          <view class="char-count">
-            {{formData.situation.length}}/{{situationConfig.maxLength}}字
-            <text class="min-hint">(建议不少于{{situationConfig.minLength}}字)</text>
-          </view>
+           <view class="char-count">
+             {{formData.situation.length}}/{{situationConfig.maxLength}}字
+            <text class="min-hint" wx:if="{{situationConfig.minLength > 0}}">(建议不少于{{situationConfig.minLength}}字)</text>
+           </view>
         </view>
         <text class="error-text" wx:if="{{errors.situation}}">{{errors.situation}}</text>
 
@@ -348,6 +348,7 @@
         type="default"
         block="{{true}}"
         bindtap="onPrevStep"
+        class="btn btn-secondary"
         text="上一步"
       ></pm-button>
 
@@ -357,6 +358,7 @@
         block="{{true}}"
         disabled="{{!canProceedToNext}}"
         bindtap="onNextStep"
+        class="btn btn-primary"
         text="下一步"
       ></pm-button>
 
@@ -367,6 +369,7 @@
         disabled="{{!allRequiredCompleted || submitting}}"
         loading="{{submitting}}"
         bindtap="onSubmit"
+        class="btn btn-success"
         text="{{submitting ? '提交中...' : '完成入住'}}"
       ></pm-button>
     </view>

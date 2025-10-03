@@ -33,7 +33,7 @@ describe('smart-search-bar component', () => {
   it('registers default properties and data', () => {
     const config = loadComponent();
     expect(config.properties.value.value).toBe('');
-    expect(config.properties.placeholder.value).toContain('搜索患者');
+    expect(config.properties.placeholder.value).toContain('搜索住户');
     expect(config.properties.suggestions.value).toEqual([]);
     expect(config.properties.filters.value).toEqual([]);
     expect(config.properties.loading.value).toBe(false);

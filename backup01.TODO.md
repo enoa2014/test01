@@ -68,7 +68,7 @@
   - [x] 患者详情页（miniprogram/pages/patient-detail/detail）完成迁移
   - [x] 入住向导页（miniprogram/pages/patient-intake/wizard/wizard）完成迁移
   - [x] 患者选择页（miniprogram/pages/patient-intake/select/select）完成迁移
-  - [x] 其他页面依次迁移（analysis、families、patient-detail、patient-intake/\*、component-lab 均已接入令牌，`npm run lint:style` 全部通过）
+  - [x] 其他页面依次迁移（analysis、index、patient-detail、patient-intake/\*、component-lab 均已接入令牌，`npm run lint:style` 全部通过）
     - [x] 组件实验室（miniprogram/pages/component-lab/index）完成迁移
 - [x] 更新 Stylelint 规则，不允许在页面内再次定义与 foundation 冲突的样式。
   - [x] 新增 `project/no-foundation-overrides` Stylelint 插件，限制 `.h1` 等基础类再定义
@@ -100,10 +100,10 @@
       - [ ] 页面回归：检查患者详情、向导等表单是否保持正确布局与焦点状态。
 - [x] 在 Component Lab 中为每个组件增加多状态示例与交互说明。（组件实验室 presets 覆盖按钮/输入/卡片常见状态）
 - [ ] 页面替换旧 `<view>` 仿制按钮/卡片，统一使用组件。
-  - [ ] 列出影响页面：index、families、patient-detail、patient-intake 系列；逐页替换并记录兼容性检查。
+  - [ ] 列出影响页面：index、patient-detail、patient-intake 系列；逐页替换并记录兼容性检查。
     - [x] patient-intake/select 底部行动按钮与确认弹窗采用 `pm-button`，待线上回归确认交互一致。
     - [x] patient-intake/success 快捷操作与底栏接入 `pm-button`，确认真机尺寸与布局无异常。
-    - [x] families 页面悬浮新增按钮改用 `pm-button` icon-only 预设
+    - [x] index 页面悬浮新增按钮改用 `pm-button` icon-only 预设
     - [x] patient-intake/wizard 底部/草稿操作按钮替换为 `pm-button`，清理 `.btn*` 样式
   - [x] Component Lab 新增 icon-only/ripple 支持以辅助验证（2025-10-02）
 - [ ] 补充单元测试（miniprogram-simulate）与视觉回归用例。

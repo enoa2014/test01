@@ -12,7 +12,12 @@
 | `riskLevels` | Array<{ id, label }> | 见源码 | 风险等级选项 |
 | `diagnosisOptions` | Array<{ id, label }> | 见源码 | 常用诊断建议列表 |
 | `hospitalOptions` | Array<{ id, label }> | 见源码 | 医院筛选选项 |
-| `value` | Object | `{ statuses: [], riskLevels: [], diagnosis: [], hospitals: [], dateRange: { start: '', end: '' }, logicMode: 'AND' }` | 初始选中值 |
+| `genderOptions` | Array<{ id, label }> | `[]` | 性别筛选选项 |
+| `ethnicityOptions` | Array<{ id, label }> | `[]` | 民族筛选选项 |
+| `nativePlaceOptions` | Array<{ id, label }> | `[]` | 籍贯筛选选项 |
+| `doctorOptions` | Array<{ id, label }> | `[]` | 责任医生筛选选项 |
+| `ageRangeOptions` | Array<{ id, label }> | `[]` | 年龄段筛选选项 |
+| `value` | Object | `{ statuses: [], riskLevels: [], hospitals: [], diagnosis: [], genders: [], ethnicities: [], nativePlaces: [], ageRanges: [], doctors: [], dateRange: { start: '', end: '' }, logicMode: 'AND' }` | 初始选中值 |
 | `previewCount` | Number | `-1` | 预览数量（由父级实时传入） |
 | `previewLabel` | String | `名患者符合筛选` | 预览数量描述文本 |
 | `previewLoading` | Boolean | `false` | 是否显示“计算中”状态 |

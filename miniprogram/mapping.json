@@ -427,14 +427,9 @@
       "components": ["StatCard", "Card", "Button", "NavigationBar", "TabBar"]
     },
 
-    "FamilyList": {
-      "path": "/pages/families/index",
-      "components": ["SearchBar", "FilterPanel", "ChildCard", "NavigationBar", "LoadingSpinner"]
-    },
-
-    "FamilyDetail": {
-      "path": "/pages/families/detail",
-      "components": ["ChildCard", "Card", "Timeline", "Button", "StatusTag", "Avatar", "TabBar"]
+    "ResidentList": {
+      "path": "/pages/index/index",
+      "components": ["SmartSearchBar", "FilterPanel", "PatientCard", "StatusTag", "LoadingSpinner"]
     },
 
     "CheckinApply": {

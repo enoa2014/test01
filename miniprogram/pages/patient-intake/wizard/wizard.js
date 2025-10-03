@@ -1,4 +1,6 @@
 // 住户录入向导页面
+const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
+
 const STEP_DEFINITIONS = [
   { title: '基础信息', key: 'basic' },
   { title: '联系人', key: 'contact' },
@@ -7,19 +9,28 @@ const STEP_DEFINITIONS = [
   { title: '核对提交', key: 'review' },
 ];
 
-function buildSteps(isEditingExisting = false) {
-  return STEP_DEFINITIONS.map((step, index) => ({
-    ...step,
-    originalIndex: index,
-    hidden: isEditingExisting && (step.key === 'basic' || step.key === 'contact'),
-  }));
+function buildSteps(isEditingExisting = false, mode = 'intake') {
+  return STEP_DEFINITIONS.map((step, index) => {
+    let hidden = false;
+    if (isEditingExisting && (step.key === 'basic' || step.key === 'contact')) {
+      hidden = true;
+    }
+    if (mode === 'create' && (step.key === 'situation' || step.key === 'upload')) {
+      hidden = true;
+    }
+    return {
+      ...step,
+      originalIndex: index,
+      hidden,
+    };
+  });
 }
 
 function getVisibleSteps(steps) {
   return steps.filter(step => !step.hidden);
 }
 
-const INITIAL_STEPS = buildSteps(false);
+const INITIAL_STEPS = buildSteps(false, 'intake');
 const INITIAL_VISIBLE_STEPS = getVisibleSteps(INITIAL_STEPS);
 
 const logger = require('../../../utils/logger');
@@ -63,7 +74,7 @@ Page({
 
     // 配置
     situationConfig: {
-      minLength: 30,
+      minLength: 0,
       maxLength: 500,
       example:
         '住户因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。',
@@ -87,16 +98,24 @@ Page({
     // 住户选择相关（如果是从住户选择页面进入）
     patientKey: '',
     isEditingExisting: false,
+    mode: 'intake',
+    excelRecordKey: '',
   },
 
   onLoad(options) {
+    const mode = options && options.mode === 'create' ? 'create' : 'intake';
     const isEditingExisting = Boolean(options.patientKey);
 
-    this.configureSteps(isEditingExisting);
+    this.configureSteps(isEditingExisting, mode);
 
     this.setData({
       today: this.formatDate(new Date()),
       patientKey: options.patientKey || '',
+      mode,
+    });
+
+    wx.setNavigationBarTitle({
+      title: mode === 'create' ? '新建住户档案' : '入住办理',
     });
 
     // 首先加载配置
@@ -159,6 +178,213 @@ Page({
       .join('\n');
   },
 
+  _parseContactInfo(rawValue) {
+    if (!rawValue && rawValue !== 0) {
+      return null;
+    }
+
+    if (Array.isArray(rawValue)) {
+      for (const item of rawValue) {
+        const parsed = this._parseContactInfo(item);
+        if (parsed) {
+          return parsed;
+        }
+      }
+      return null;
+    }
+
+    if (typeof rawValue === 'object') {
+      const keys = Object.keys(rawValue || {});
+      if (!keys.length) {
+        return null;
+      }
+
+      const pickByRegex = (patterns) => {
+        for (const key of keys) {
+          if (patterns.some(pattern => pattern.test(key))) {
+            const value = this.normalizeExcelSpacing(rawValue[key]);
+            if (value) {
+              return value;
+            }
+          }
+        }
+        return '';
+      };
+
+      const phone = pickByRegex([/phone/i, /mobile/i, /tel/i, /contactPhone/i]);
+      const name = pickByRegex([/name/i, /contact/i, /guardian/i, /relation/i]);
+
+      if (phone && name) {
+        return { name, phone };
+      }
+
+      const flattened = keys
+        .map(key => {
+          const value = rawValue[key];
+          if (typeof value === 'string' || typeof value === 'number') {
+            return value;
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .join(' ');
+
+      if (flattened) {
+        return this._parseContactInfo(flattened);
+      }
+      return null;
+    }
+
+    const value = this.normalizeExcelSpacing(rawValue);
+    if (!value) {
+      return null;
+    }
+
+    const digitsOnly = value.replace(/[^0-9]/g, '');
+    const phoneMatch = digitsOnly.match(/1[3-9]\d{9}/);
+    if (!phoneMatch) {
+      return null;
+    }
+    const phone = phoneMatch[0];
+
+    let name = value
+      .replace(/[^\u4e00-\u9fa5A-Za-z]+/g, ' ')
+      .replace(/1[3-9]\d{9}/g, ' ');
+    name = name
+      .replace(/\d{15,18}[Xx]?/g, ' ')
+      .replace(/身份证|证件|电话号码|联系电话|联系方式|手机|手机号/g, ' ')
+      .replace(/[\(\)（）:\-]/g, ' ')
+      .replace(/[,，、;；]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!name) {
+      return null;
+    }
+    return { name, phone };
+  },
+
+  _preferContact(...candidates) {
+    for (const item of candidates) {
+      if (item && item.emergencyContact && item.emergencyPhone) {
+        return item;
+      }
+    }
+    return null;
+  },
+
+  _extractContactFromPatientDoc(patientDoc = {}) {
+    const emergencyContact = this.normalizeExcelSpacing(patientDoc.emergencyContact);
+    const emergencyPhone = this.normalizeExcelSpacing(patientDoc.emergencyPhone);
+    if (emergencyContact && emergencyPhone) {
+      return { emergencyContact, emergencyPhone };
+    }
+
+    const backupContact = this.normalizeExcelSpacing(patientDoc.backupContact);
+    const backupPhone = this.normalizeExcelSpacing(patientDoc.backupPhone);
+    if (backupContact && backupPhone) {
+      return { emergencyContact: backupContact, emergencyPhone: backupPhone };
+    }
+
+    const parsedPrimary = this._parseContactInfo(patientDoc.primaryGuardianInfo);
+    if (parsedPrimary) {
+      return {
+        emergencyContact: parsedPrimary.name,
+        emergencyPhone: parsedPrimary.phone,
+      };
+    }
+
+    const parsedFather = this._parseContactInfo({
+      name: patientDoc.fatherContactName,
+      phone: patientDoc.fatherContactPhone,
+      raw: patientDoc.fatherInfo,
+    });
+    if (parsedFather) {
+      return {
+        emergencyContact: parsedFather.name,
+        emergencyPhone: parsedFather.phone,
+      };
+    }
+
+    const parsedMother = this._parseContactInfo({
+      name: patientDoc.motherContactName,
+      phone: patientDoc.motherContactPhone,
+      raw: patientDoc.motherInfo,
+    });
+    if (parsedMother) {
+      return {
+        emergencyContact: parsedMother.name,
+        emergencyPhone: parsedMother.phone,
+      };
+    }
+
+    const parsedGuardian = this._parseContactInfo({
+      name: patientDoc.guardianContactName,
+      phone: patientDoc.guardianContactPhone,
+      raw: patientDoc.guardianInfo,
+    });
+    if (parsedGuardian) {
+      return {
+        emergencyContact: parsedGuardian.name,
+        emergencyPhone: parsedGuardian.phone,
+      };
+    }
+
+    if (patientDoc.contactInfo) {
+      const parsed = this._parseContactInfo(patientDoc.contactInfo);
+      if (parsed) {
+        return {
+          emergencyContact: parsed.name,
+          emergencyPhone: parsed.phone,
+        };
+      }
+    }
+
+    return null;
+  },
+
+  _extractContactFromRecords(records = []) {
+    if (!Array.isArray(records) || !records.length) {
+      return null;
+    }
+    for (const record of records) {
+      if (!record) {
+        continue;
+      }
+      if (record.contactInfo) {
+        const contactInfoParsed = this._parseContactInfo(record.contactInfo);
+        if (contactInfoParsed) {
+          return {
+            emergencyContact: contactInfoParsed.name,
+            emergencyPhone: contactInfoParsed.phone,
+          };
+        }
+      }
+      const motherParsed = this._parseContactInfo(record.motherInfo);
+      if (motherParsed) {
+        return {
+          emergencyContact: motherParsed.name,
+          emergencyPhone: motherParsed.phone,
+        };
+      }
+      const fatherParsed = this._parseContactInfo(record.fatherInfo);
+      if (fatherParsed) {
+        return {
+          emergencyContact: fatherParsed.name,
+          emergencyPhone: fatherParsed.phone,
+        };
+      }
+      const caregiverParsed = this._parseContactInfo(record.caregivers);
+      if (caregiverParsed) {
+        return {
+          emergencyContact: caregiverParsed.name,
+          emergencyPhone: caregiverParsed.phone,
+        };
+      }
+    }
+    return null;
+  },
+
   // 加载配置
   async loadConfig() {
     try {
@@ -173,7 +399,12 @@ Page({
         // 更新情况说明配置
         if (config.situationConfig) {
           this.setData({
-            situationConfig: config.situationConfig,
+        situationConfig: {
+          ...this.data.situationConfig,
+          ...config.situationConfig,
+          minLength: Math.max(0, Number((config.situationConfig && config.situationConfig.minLength) || 0)),
+          maxLength: Math.max(0, Number((config.situationConfig && config.situationConfig.maxLength) || this.data.situationConfig.maxLength || 0)),
+        },
           });
         }
 
@@ -278,14 +509,15 @@ Page({
     }
   },
 
-  configureSteps(isEditingExisting) {
-    const steps = buildSteps(isEditingExisting);
+  configureSteps(isEditingExisting, mode = this.data.mode || 'intake') {
+    const steps = buildSteps(isEditingExisting, mode);
     const firstVisibleStep = this.getFirstVisibleStepIndex(steps);
 
     this.setData({
       steps,
       currentStep: firstVisibleStep,
       isEditingExisting,
+      mode,
     });
 
     this.refreshVisibleStepMeta(steps, firstVisibleStep);
@@ -360,6 +592,28 @@ Page({
     this.refreshVisibleStepMeta(steps, currentStep);
   },
 
+  revealContactStepForManualInput() {
+    const currentSteps = Array.isArray(this.data.steps) ? this.data.steps : [];
+    if (!currentSteps.length) {
+      return;
+    }
+
+    const steps = currentSteps.map(step => ({ ...step }));
+    const contactIndex = steps.findIndex(step => step.key === 'contact');
+    if (contactIndex < 0) {
+      return;
+    }
+
+    if (steps[contactIndex].hidden) {
+      steps[contactIndex] = { ...steps[contactIndex], hidden: false };
+    }
+
+    this.setData({ steps, currentStep: contactIndex }, () => {
+      this.refreshVisibleStepMeta(steps, contactIndex);
+      this.updateRequiredFields();
+    });
+  },
+
   // 加载住户数据（编辑已有住户时）
   async loadPatientData(patientKey) {
     let hasPrefilled = false;
@@ -410,6 +664,10 @@ Page({
       } catch (profileError) {
         // ignore profile preload errors, fallback to existing form data
       }
+
+      this.setData({
+        excelRecordKey: this.normalizeExcelSpacing(excelRecordKey || ''),
+      });
 
       // patientProfile.detail 返回的数据直接在 result 中,而不是 result.data
       const payload = profilePayload || {};
@@ -1016,6 +1274,27 @@ Page({
       // 这里应该调用云函数提交数据
       const submitResult = await this.submitIntakeData();
 
+      const latestForm = this.data.formData || {};
+      const dirtyPatientKey =
+        (submitResult && submitResult.data && submitResult.data.patientKey) || this.data.patientKey || '';
+      if (dirtyPatientKey) {
+        try {
+          wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, {
+            timestamp: Date.now(),
+            patientKey: dirtyPatientKey,
+            updates: {
+              patientName: latestForm.patientName,
+              gender: latestForm.gender,
+              birthDate: latestForm.birthDate,
+              emergencyContact: latestForm.emergencyContact,
+              emergencyPhone: latestForm.emergencyPhone,
+            },
+          });
+        } catch (storageError) {
+          logger.warn('store patient_list_dirty flag failed', storageError);
+        }
+      }
+
       // 清除草稿
       try {
         wx.removeStorageSync(DRAFT_STORAGE_KEY);
@@ -1047,7 +1326,7 @@ Page({
 
   // 提交入住数据
   async submitIntakeData() {
-    const { formData, uploadedFiles, isEditingExisting, patientKey } = this.data;
+    const { formData, uploadedFiles, isEditingExisting, patientKey, mode } = this.data;
 
     // 提交前最后检查:如果紧急联系人为空,尝试从父母信息自动填充
     let finalFormData = { ...formData };
@@ -1068,6 +1347,12 @@ Page({
       } else {
         // 如果自动填充失败,给出明确提示
         logger.error('无法自动填充紧急联系人,住户档案中未找到父母联系方式');
+        this.revealContactStepForManualInput();
+        wx.showToast({
+          icon: 'none',
+          title: '请填写紧急联系人信息',
+          duration: 3000,
+        });
         throw new Error(
           '紧急联系人不能为空。系统无法从住户档案中自动获取父母联系方式,请手动填写紧急联系人信息。'
         );
@@ -1076,13 +1361,19 @@ Page({
 
     // 构建提交数据
     const submitData = {
-      action: 'submit',
+      action: mode === 'create' ? 'createPatient' : 'submit',
       patientKey: isEditingExisting ? patientKey : null,
       isEditingExisting, // 传递标志给服务端
       formData: finalFormData,
-      uploadedFiles,
+      uploadedFiles: mode === 'create' ? [] : uploadedFiles,
       timestamp: Date.now(),
     };
+
+    if (mode === 'create') {
+      submitData.audit = {
+        message: '住户档案创建',
+      };
+    }
 
     if (!wx.cloud || typeof wx.cloud.callFunction !== 'function') {
       throw new Error('云函数未初始化，请检查 wx.cloud.init 配置');
@@ -1114,12 +1405,24 @@ Page({
       validationError.details = errorPayload.details || null;
       throw validationError;
     }
+    if (result.success) {
+      const data = result.data || {};
+      data.patientName = data.patientName || finalFormData.patientName;
+      data.emergencyContact = data.emergencyContact || finalFormData.emergencyContact;
+      data.emergencyPhone = data.emergencyPhone || finalFormData.emergencyPhone;
+      data.mode = mode;
+      if (mode === 'create') {
+        data.patientKey = data.patientKey || patientKey || '';
+      }
+      result.data = data;
+    }
+
     return result;
   },
 
   _buildSuccessQuery(submitData) {
     const payload = submitData || {};
-    const { formData, uploadedFiles } = this.data;
+    const { formData, uploadedFiles, mode } = this.data;
     const params = {
       patientName: formData.patientName || '',
       intakeTime: String(payload.intakeTime || Date.now()),
@@ -1129,6 +1432,7 @@ Page({
       situationSummary: formData.situation || '',
       recordId: payload.intakeId || '',
       patientKey: payload.patientKey || this.data.patientKey || '',
+      mode: payload.mode || mode || 'intake',
     };
 
     return Object.keys(params)
@@ -1142,47 +1446,29 @@ Page({
       return { emergencyContact: '', emergencyPhone: '' };
     }
 
-    // 解析联系方式字符串(格式如: "张三 13812345678" 或 "张三 13812345678 110101199001011234")
-    const parseContactInfo = infoStr => {
-      if (!infoStr) return null;
-
-      // 提取手机号
-      const phoneMatch = infoStr.match(/1[3-9]\d{9}/);
-      if (!phoneMatch) return null;
-
-      const phone = phoneMatch[0];
-      let name = infoStr.replace(phone, '').trim();
-
-      // 移除身份证号等额外信息
-      name = name.replace(/\d{15,18}[Xx]?/g, '').trim();
-      // 移除多余空格和标点
-      name = name
-        .replace(/\s+/g, ' ')
-        .replace(/[,，、]/g, ' ')
-        .trim();
-
-      if (!name) return null;
-
-      return { name, phone };
-    };
-
-    // 查找父母联系方式
-    const motherInfo = familyInfoList.find(item => item && item.label === '母亲联系方式');
-    const fatherInfo = familyInfoList.find(item => item && item.label === '父亲联系方式');
-
-    // 优先使用母亲信息,其次使用父亲信息
     const candidates = [];
 
+    const motherInfo = familyInfoList.find(item => item && item.label === '母亲联系方式');
+    const fatherInfo = familyInfoList.find(item => item && item.label === '父亲联系方式');
+    const emergencyInfo = familyInfoList.find(item => item && item.label === '紧急联系人');
+
     if (motherInfo && motherInfo.value) {
-      const parsed = parseContactInfo(motherInfo.value);
-      if (parsed && parsed.name && parsed.phone) {
+      const parsed = this._parseContactInfo(motherInfo.value);
+      if (parsed) {
         candidates.push(parsed);
       }
     }
 
     if (fatherInfo && fatherInfo.value) {
-      const parsed = parseContactInfo(fatherInfo.value);
-      if (parsed && parsed.name && parsed.phone) {
+      const parsed = this._parseContactInfo(fatherInfo.value);
+      if (parsed) {
+        candidates.push(parsed);
+      }
+    }
+
+    if (emergencyInfo && emergencyInfo.value) {
+      const parsed = this._parseContactInfo(emergencyInfo.value);
+      if (parsed) {
         candidates.push(parsed);
       }
     }
@@ -1201,26 +1487,93 @@ Page({
   // 从父母信息自动填充紧急联系人(提交前最后检查)
   async _autoFillEmergencyContactFromParents(patientKey) {
     try {
-      // 使用 patientProfile 获取住户详情
-      const res = await wx.cloud.callFunction({
-        name: 'patientProfile',
-        data: {
-          action: 'detail',
-          key: patientKey, // patientProfile 使用 key 参数
-        },
-      });
-
-      if (!res.result || res.result.success === false) {
+      if (!wx.cloud || typeof wx.cloud.callFunction !== 'function') {
         return { emergencyContact: '', emergencyPhone: '' };
       }
 
-      const payload = res.result.data || {};
-      const familyInfoList = Array.isArray(payload.familyInfo) ? payload.familyInfo : [];
+      const candidates = [];
+      const excelKey = this.normalizeExcelSpacing(this.data && this.data.excelRecordKey);
+      if (excelKey) {
+        candidates.push(excelKey);
+      }
+      if (patientKey) {
+        candidates.push(this.normalizeExcelSpacing(patientKey));
+      }
+      if (this.data && this.data.formData && this.data.formData.patientName) {
+        candidates.push(this.normalizeExcelSpacing(this.data.formData.patientName));
+      }
 
-      // 使用相同的提取逻辑
-      const result = this._extractEmergencyContactFromProfile(familyInfoList);
+      const uniqueKeys = Array.from(new Set(candidates.filter(Boolean)));
 
-      return result;
+      for (const key of uniqueKeys) {
+        try {
+          const res = await wx.cloud.callFunction({
+            name: 'patientProfile',
+            data: {
+              action: 'detail',
+              key,
+            },
+          });
+
+          if (!res.result || res.result.success === false) {
+            continue;
+          }
+
+          const payload = res.result.data || res.result || {};
+          const familyInfoList = Array.isArray(payload.familyInfo) ? payload.familyInfo : [];
+          const contactFromProfile = this._extractEmergencyContactFromProfile(familyInfoList);
+          const contactFromPatientDoc = this._extractContactFromPatientDoc(payload.patient || {});
+          const contactFromRecords = this._extractContactFromRecords(payload.records || []);
+          const resolved = this._preferContact(
+            contactFromPatientDoc,
+            contactFromProfile && contactFromProfile.emergencyContact && contactFromProfile.emergencyPhone
+              ? contactFromProfile
+              : null,
+            contactFromRecords
+          );
+
+          if (resolved) {
+            return resolved;
+          }
+        } catch (innerError) {
+          // 忽略单次查询失败，尝试下一个候选 key
+        }
+      }
+
+      if (patientKey) {
+        try {
+          const detailRes = await wx.cloud.callFunction({
+            name: 'patientIntake',
+            data: { action: 'getPatientDetail', patientKey },
+          });
+          if (detailRes.result && detailRes.result.success) {
+            const patientDoc = detailRes.result.data && detailRes.result.data.patient;
+            const fallbackContact = this._extractContactFromPatientDoc(patientDoc || {});
+            if (fallbackContact) {
+              return fallbackContact;
+            }
+
+            const latestIntake = detailRes.result.data && detailRes.result.data.latestIntake;
+            if (latestIntake) {
+              const intakeContact = this._extractContactFromPatientDoc(latestIntake.contactInfo || {});
+              if (intakeContact) {
+                return intakeContact;
+              }
+              const intakeCaregiver = this._parseContactInfo(latestIntake.intakeInfo && latestIntake.intakeInfo.guardianInfo);
+              if (intakeCaregiver) {
+                return {
+                  emergencyContact: intakeCaregiver.name,
+                  emergencyPhone: intakeCaregiver.phone,
+                };
+              }
+            }
+          }
+        } catch (detailError) {
+          // 忽略 detail 查询失败，继续
+        }
+      }
+
+      return { emergencyContact: '', emergencyPhone: '' };
     } catch (error) {
       return { emergencyContact: '', emergencyPhone: '' };
     }

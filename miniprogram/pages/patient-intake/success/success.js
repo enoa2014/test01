@@ -1,17 +1,30 @@
 ﻿// 入住成功页面
 Page({
   data: {
+    mode: 'intake',
+    titleText: '入住登记成功',
+    subtitleText: '住户信息已录入系统',
+    summaryTitle: '入住信息',
+    timeLabel: '入住时间',
     patientName: '',
-    intakeTime: '',
+    actionTime: '',
     emergencyContact: '',
     emergencyPhone: '',
     uploadCount: 0,
     situationSummary: '',
     recordId: '',
     patientKey: '',
+    reminderItems: [
+      '住户档案已建立，可在系统中查看和管理',
+      '如需补充信息或附件，可随时联系管理员',
+      '紧急情况请及时联系相关负责人',
+    ],
   },
 
   onLoad(options) {
+    const mode = options?.mode === 'create' ? 'create' : 'intake';
+    const displayTexts = this.resolveDisplayTexts(mode);
+
     // 从上一页传递的参数获取信息
     const {
       patientName = '',
@@ -32,8 +45,14 @@ Page({
       situationSummary.length > 50 ? situationSummary.substring(0, 50) + '...' : situationSummary;
 
     this.setData({
+      mode,
+      titleText: displayTexts.titleText,
+      subtitleText: displayTexts.subtitleText,
+      summaryTitle: displayTexts.summaryTitle,
+      timeLabel: displayTexts.timeLabel,
+      reminderItems: displayTexts.reminderItems,
       patientName: decodeURIComponent(patientName),
-      intakeTime: formattedTime,
+      actionTime: formattedTime,
       emergencyContact: decodeURIComponent(emergencyContact),
       emergencyPhone: decodeURIComponent(emergencyPhone),
       uploadCount: parseInt(uploadCount) || 0,
@@ -46,8 +65,34 @@ Page({
   onShow() {
     // 设置导航栏标题
     wx.setNavigationBarTitle({
-      title: '入住成功',
+      title: this.data.mode === 'create' ? '住户创建成功' : '入住成功',
     });
+  },
+
+  resolveDisplayTexts(mode) {
+    if (mode === 'create') {
+      return {
+        titleText: '住户创建成功',
+        subtitleText: '档案已加入住户列表',
+        summaryTitle: '住户信息',
+        timeLabel: '创建时间',
+        reminderItems: [
+          '住户档案已建立，可在列表中继续完善资料',
+          '如需办理入住，可在住户详情页发起入住',
+        ],
+      };
+    }
+    return {
+      titleText: '入住登记成功',
+      subtitleText: '住户信息已录入系统',
+      summaryTitle: '入住信息',
+      timeLabel: '入住时间',
+      reminderItems: [
+        '住户档案已建立，可在系统中查看和管理',
+        '如需补充信息或附件，可随时联系管理员',
+        '紧急情况请及时联系相关负责人',
+      ],
+    };
   },
 
   // 格式化入住时间
@@ -99,6 +144,12 @@ Page({
 
   // 继续添加患者
   onAddAnother() {
+    if (this.data.mode === 'create') {
+      wx.redirectTo({
+        url: '/pages/patient-intake/wizard/wizard?mode=create',
+      });
+      return;
+    }
     wx.redirectTo({
       url: '/pages/patient-intake/select/select',
     });
@@ -106,7 +157,7 @@ Page({
 
   // 返回首页
   onBackToHome() {
-    wx.switchTab({
+    wx.reLaunch({
       url: '/pages/index/index',
     });
   },

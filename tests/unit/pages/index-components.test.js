@@ -31,7 +31,7 @@ describe('患者列表页 - 基础组件集成', () => {
           error: null,
         },
         onAnalysisTap: jest.fn(),
-        onIntakeTap: jest.fn(),
+        onCreatePatientTap: jest.fn(),
         handleBatchClear: jest.fn(),
         handleBatchSelectAll: jest.fn(),
         exitBatchMode: jest.fn(),
@@ -54,18 +54,18 @@ describe('患者列表页 - 基础组件集成', () => {
       expect(analysisButton.ghost).toBe(true);
       expect(analysisButton['aria-label']).toBe('查看分析');
 
-      // 验证 "患者入住" 按钮配置
-      const intakeButton = {
-        text: '患者入住',
+      // 验证 "新建住户" 按钮配置
+      const createButton = {
+        text: '新建住户',
         size: 'small',
         type: 'primary',
-        'aria-label': '患者入住',
+        'aria-label': '新建住户',
       };
 
-      expect(intakeButton.text).toBe('患者入住');
-      expect(intakeButton.size).toBe('small');
-      expect(intakeButton.type).toBe('primary');
-      expect(intakeButton['aria-label']).toBe('患者入住');
+      expect(createButton.text).toBe('新建住户');
+      expect(createButton.size).toBe('small');
+      expect(createButton.type).toBe('primary');
+      expect(createButton['aria-label']).toBe('新建住户');
     });
 
     test('顶部操作按钮点击应触发正确的处理函数', () => {
@@ -73,9 +73,9 @@ describe('患者列表页 - 基础组件集成', () => {
       page.onAnalysisTap();
       expect(page.onAnalysisTap).toHaveBeenCalledTimes(1);
 
-      // 模拟点击 "患者入住"
-      page.onIntakeTap();
-      expect(page.onIntakeTap).toHaveBeenCalledTimes(1);
+      // 模拟点击 "新建住户"
+      page.onCreatePatientTap();
+      expect(page.onCreatePatientTap).toHaveBeenCalledTimes(1);
     });
 
     test('FAB 浮动按钮应正确配置', () => {
@@ -85,7 +85,7 @@ describe('患者列表页 - 基础组件集成', () => {
         icon: '＋',
         iconOnly: true,
         elevated: true,
-        'aria-label': '添加患者',
+        'aria-label': '添加住户',
       };
 
       expect(fabButton.type).toBe('primary');
@@ -93,12 +93,12 @@ describe('患者列表页 - 基础组件集成', () => {
       expect(fabButton.icon).toBe('＋');
       expect(fabButton.iconOnly).toBe(true);
       expect(fabButton.elevated).toBe(true);
-      expect(fabButton['aria-label']).toBe('添加患者');
+      expect(fabButton['aria-label']).toBe('添加住户');
     });
 
     test('FAB 按钮点击应触发入住流程', () => {
-      page.onIntakeTap();
-      expect(page.onIntakeTap).toHaveBeenCalledTimes(1);
+      page.onCreatePatientTap();
+      expect(page.onCreatePatientTap).toHaveBeenCalledTimes(1);
     });
 
     test('批量模式工具栏按钮应正确显示', () => {
@@ -163,7 +163,7 @@ describe('患者列表页 - 基础组件集成', () => {
           loading: false,
           error: null,
         },
-        onIntakeTap: jest.fn(),
+        onCreatePatientTap: jest.fn(),
       };
     });
 
@@ -182,23 +182,23 @@ describe('患者列表页 - 基础组件集成', () => {
     test('pm-card 空状态配置应正确', () => {
       const emptyCardConfig = {
         class: 'empty-state-card',
-        title: '暂无患者档案',
+        title: '暂无住户档案',
         useFooterSlot: true,
       };
 
       expect(emptyCardConfig.class).toBe('empty-state-card');
-      expect(emptyCardConfig.title).toBe('暂无患者档案');
+      expect(emptyCardConfig.title).toBe('暂无住户档案');
       expect(emptyCardConfig.useFooterSlot).toBe(true);
     });
 
     test('空状态内容应包含插图和描述', () => {
       const emptyContent = {
         illustration: '../../assets/images/empty-patients.svg',
-        description: '点击右下角按钮添加第一位患者',
+        description: '点击右下角按钮添加第一位住户',
       };
 
       expect(emptyContent.illustration).toBe('../../assets/images/empty-patients.svg');
-      expect(emptyContent.description).toBe('点击右下角按钮添加第一位患者');
+      expect(emptyContent.description).toBe('点击右下角按钮添加第一位住户');
     });
 
     test('空状态 footer slot 应包含操作按钮', () => {

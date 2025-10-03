@@ -1,6 +1,6 @@
 <view
   class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}} {{elevated ? 'pm-button--elevated' : ''}} {{iconOnly ? 'pm-button--icon-only' : ''}}"
-  bindtap="handleTap"
+  catchtap="handleTap"
   bindtouchstart="handleTouchStart"
   role="button"
   aria-label="{{ariaLabel || text}}"

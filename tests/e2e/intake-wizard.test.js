@@ -19,7 +19,7 @@ describe('patient intake wizard (mpflow)', () => {
 
     const titleNode = await waitForElement(successPage, '.success-title', { timeout: 10000 });
     const title = (await titleNode.text()).trim();
-    expect(title).toContain('成功');
+    expect(title).toContain('创建');
 
     const infoNodes = await successPage.$$('.info-value');
     const values = await Promise.all(infoNodes.map(async (node) => (await node.text()).trim()));
@@ -28,6 +28,9 @@ describe('patient intake wizard (mpflow)', () => {
     const reminderNode = await waitForElement(successPage, '.reminder-title', { timeout: 10000 });
     const reminder = (await reminderNode.text()).trim();
     expect(reminder.length).toBeGreaterThan(0);
+
+    const successData = await successPage.data();
+    expect(successData.mode).toBe('create');
 
     expect(patientData.patientName.length).toBeGreaterThan(0);
     await delay(200);

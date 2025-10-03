@@ -25,21 +25,28 @@ const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 
 // 配置常量
 const DRAFT_EXPIRE_DAYS = 7;
-const SITUATION_MIN_LENGTH = 30;
+const SITUATION_MIN_LENGTH = 0;
 const SITUATION_MAX_LENGTH = 500;
-const SITUATION_KEYWORDS = [
-  '护理',
-  '症状',
-  '康复',
-  '治疗',
-  '病情',
-  '照顾',
-  '功能',
-  '障碍',
-  '需要',
-  '协助',
-];
+const SITUATION_KEYWORDS = [];
 const MAX_INTAKE_QUERY_LIMIT = 100; // fetch limit for intake history queries
+
+async function invalidatePatientSummaryCache() {
+  try {
+    await ensureCollection(EXCEL_CACHE_COLLECTION);
+    await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
+      data: {
+        patients: [],
+        totalCount: 0,
+        hasMore: true,
+        limit: 0,
+        updatedAt: 0,
+        invalidatedAt: Date.now(),
+      },
+    });
+  } catch (error) {
+    console.warn('invalidatePatientSummaryCache failed', error);
+  }
+}
 
 // 工具函数
 function makeError(code, message, details) {
@@ -174,17 +181,8 @@ function validateFormData(formData) {
 
   // 情况说明校验
   const situation = normalizeString(formData.situation);
-  if (situation) {
-    if (situation.length < SITUATION_MIN_LENGTH) {
-      errors.situation = `情况说明至少需要${SITUATION_MIN_LENGTH}字`;
-    } else if (situation.length > SITUATION_MAX_LENGTH) {
-      errors.situation = `情况说明不能超过${SITUATION_MAX_LENGTH}字`;
-    } else {
-      const hasKeyword = SITUATION_KEYWORDS.some(keyword => situation.includes(keyword));
-      if (!hasKeyword) {
-        errors.situation = '情况说明应包含护理需求或症状相关信息';
-      }
-    }
+  if (situation && situation.length > SITUATION_MAX_LENGTH) {
+    errors.situation = `情况说明不能超过${SITUATION_MAX_LENGTH}字`;
   }
 
   // 日期校验
@@ -244,6 +242,126 @@ async function handleGetPatients(event) {
     data: {
       patients,
       hasMore: patients.length === pageSize,
+    },
+  };
+}
+
+async function handleCreatePatient(event) {
+  const payload = (event && event.formData) || {};
+  const normalizedForm = {
+    patientName: normalizeString(payload.patientName),
+    idType: normalizeString(payload.idType) || '身份证',
+    idNumber: normalizeString(payload.idNumber),
+    gender: normalizeString(payload.gender),
+    birthDate: normalizeString(payload.birthDate),
+    phone: normalizeString(payload.phone),
+    address: normalizeString(payload.address),
+    emergencyContact: normalizeString(payload.emergencyContact),
+    emergencyPhone: normalizeString(payload.emergencyPhone),
+    backupContact: normalizeString(payload.backupContact),
+    backupPhone: normalizeString(payload.backupPhone),
+    situation: normalizeString(payload.situation),
+    fatherInfo: normalizeString(payload.fatherInfo),
+    fatherContactName: normalizeString(payload.fatherContactName),
+    fatherContactPhone: normalizeString(payload.fatherContactPhone),
+    motherInfo: normalizeString(payload.motherInfo),
+    motherContactName: normalizeString(payload.motherContactName),
+    motherContactPhone: normalizeString(payload.motherContactPhone),
+    guardianInfo: normalizeString(payload.guardianInfo),
+    guardianContactName: normalizeString(payload.guardianContactName),
+    guardianContactPhone: normalizeString(payload.guardianContactPhone),
+  };
+
+  const validation = validateFormData({
+    ...normalizedForm,
+    situation: normalizedForm.situation || '',
+  });
+
+  if (!validation.valid) {
+    throw makeError('VALIDATION_ERROR', '表单数据校验失败', {
+      errors: validation.errors,
+    });
+  }
+
+  await ensureCollection(PATIENTS_COLLECTION);
+
+  const patientKey = generatePatientKey();
+  const now = Date.now();
+  const patientRecord = {
+    patientName: normalizedForm.patientName,
+    idType: normalizedForm.idType,
+    idNumber: normalizedForm.idNumber,
+    gender: normalizedForm.gender,
+    birthDate: normalizedForm.birthDate,
+    phone: normalizedForm.phone,
+    address: normalizedForm.address,
+    emergencyContact: normalizedForm.emergencyContact,
+    emergencyPhone: normalizedForm.emergencyPhone,
+    backupContact: normalizedForm.backupContact,
+    backupPhone: normalizedForm.backupPhone,
+    lastIntakeNarrative: normalizedForm.situation,
+    admissionCount: 0,
+    createdAt: now,
+    updatedAt: now,
+    data: {
+      patientName: normalizedForm.patientName,
+      idType: normalizedForm.idType,
+      idNumber: normalizedForm.idNumber,
+      gender: normalizedForm.gender,
+      birthDate: normalizedForm.birthDate,
+      phone: normalizedForm.phone,
+      address: normalizedForm.address,
+      emergencyContact: normalizedForm.emergencyContact,
+      emergencyPhone: normalizedForm.emergencyPhone,
+      backupContact: normalizedForm.backupContact,
+      backupPhone: normalizedForm.backupPhone,
+      admissionCount: 0,
+      latestAdmissionDate: null,
+      latestAdmissionTimestamp: null,
+      firstAdmissionDate: null,
+      updatedAt: now,
+    },
+    metadata: {
+      source: 'manual-create',
+      createdBy: event && event.operatorId ? event.operatorId : '',
+      createdFrom: 'patient-create',
+    },
+    fatherInfo: normalizedForm.fatherInfo || '',
+    fatherContactName: normalizedForm.fatherContactName || '',
+    fatherContactPhone: normalizedForm.fatherContactPhone || '',
+    motherInfo: normalizedForm.motherInfo || '',
+    motherContactName: normalizedForm.motherContactName || '',
+    motherContactPhone: normalizedForm.motherContactPhone || '',
+    guardianInfo: normalizedForm.guardianInfo || '',
+    guardianContactName: normalizedForm.guardianContactName || '',
+    guardianContactPhone: normalizedForm.guardianContactPhone || '',
+    excelRecordKeys: [],
+  };
+
+  await db.collection(PATIENTS_COLLECTION).doc(patientKey).set({ data: patientRecord });
+
+  await invalidatePatientSummaryCache();
+
+  if (payload && payload.audit) {
+    try {
+      await writePatientOperationLog({
+        patientKey,
+        action: 'patient-create',
+        operatorId: payload.audit.operatorId || '',
+        operatorName: payload.audit.operatorName || '',
+        changes: payload.audit.changes || [],
+        message: payload.audit.message || '新建住户档案',
+      });
+    } catch (error) {
+      console.warn('writePatientOperationLog failed for createPatient', patientKey, error);
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      patientKey,
+      createdAt: now,
     },
   };
 }
@@ -613,6 +731,20 @@ async function handleGetPatientDetail(event) {
         lastIntakeNarrative: patient.lastIntakeNarrative || '',
         updatedAt: patient.updatedAt || null,
         createdAt: patient.createdAt || null,
+        careStatus: patient.careStatus || '',
+        checkoutReason: patient.checkoutReason || '',
+        checkoutNote: patient.checkoutNote || '',
+        checkoutAt: patient.checkoutAt || null,
+        fatherInfo: patient.fatherInfo || '',
+        fatherContactName: patient.fatherContactName || '',
+        fatherContactPhone: patient.fatherContactPhone || '',
+        motherInfo: patient.motherInfo || '',
+        motherContactName: patient.motherContactName || '',
+        motherContactPhone: patient.motherContactPhone || '',
+        guardianInfo: patient.guardianInfo || '',
+        guardianContactName: patient.guardianContactName || '',
+        guardianContactPhone: patient.guardianContactPhone || '',
+        excelRecordKeys: Array.isArray(patient.excelRecordKeys) ? patient.excelRecordKeys : [],
       },
       latestIntake,
       operationLogs,
@@ -762,6 +894,10 @@ async function handleSubmitIntake(event) {
           admissionCount: newAdmissionCount,
           latestAdmissionDate: now,
           updatedAt: now,
+          careStatus: 'in_care',
+          checkoutAt: _.remove(),
+          checkoutReason: _.remove(),
+          checkoutNote: _.remove(),
           'data.admissionCount': newAdmissionCount,
           'data.latestAdmissionDate': now,
           'data.latestAdmissionTimestamp': now,
@@ -798,6 +934,7 @@ async function handleSubmitIntake(event) {
           latestAdmissionTimestamp: now,
           updatedAt: now,
         },
+        careStatus: 'in_care',
       };
 
       await transaction.collection(PATIENTS_COLLECTION).doc(finalPatientKey).set({
@@ -893,6 +1030,8 @@ async function handleSubmitIntake(event) {
     result.firstAdmissionDate = summary.earliestTimestamp;
     result.latestAdmissionDate = summary.latestTimestamp;
   }
+
+  await invalidatePatientSummaryCache();
   return {
     success: true,
     data: result,
@@ -954,6 +1093,15 @@ async function handleUpdatePatient(event = {}) {
       'backupContact',
       'backupPhone',
       'lastIntakeNarrative',
+      'fatherInfo',
+      'fatherContactName',
+      'fatherContactPhone',
+      'motherInfo',
+      'motherContactName',
+      'motherContactPhone',
+      'guardianInfo',
+      'guardianContactName',
+      'guardianContactPhone',
     ];
     const patientUpdateData = {};
     patientFields.forEach(field => {
@@ -1103,6 +1251,8 @@ async function handleUpdatePatient(event = {}) {
     extra: audit.extra || {},
   });
 
+  await invalidatePatientSummaryCache();
+
   return {
     success: true,
     data: {
@@ -1111,6 +1261,125 @@ async function handleUpdatePatient(event = {}) {
       patientUpdated: transactionResult.patientChanged,
       intakeUpdated: transactionResult.intakeChanged,
       updatedAt: transactionResult.updatedAt,
+    },
+  };
+}
+
+async function handleCheckoutPatient(event = {}) {
+  const {
+    patientKey,
+    checkout = {},
+  } = event;
+
+  if (!patientKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
+  }
+
+  const reason = normalizeString(checkout.reason);
+  const note = normalizeString(checkout.note);
+  const operatorId = normalizeString(checkout.operatorId || checkout.operatorOpenId);
+  const operatorName = normalizeString(checkout.operatorName);
+  const requestedTimestamp = Number(checkout.timestamp);
+  const now = Date.now();
+  const checkoutAt = Number.isFinite(requestedTimestamp) ? requestedTimestamp : now;
+
+  await ensureCollection(PATIENTS_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_COLLECTION);
+
+  const result = await db.runTransaction(async (transaction) => {
+    const patientRef = transaction.collection(PATIENTS_COLLECTION).doc(patientKey);
+    const snapshot = await patientRef.get();
+    if (!snapshot.data) {
+      throw makeError('PATIENT_NOT_FOUND', '患者不存在');
+    }
+
+    const patientDoc = snapshot.data;
+
+    const intakeId = `checkout_${checkoutAt}_${Math.random().toString(36).slice(2, 8)}`;
+    const checkoutRecord = {
+      intakeId,
+      patientKey,
+      patientName: patientDoc.patientName || '',
+      status: 'checkout',
+      createdAt: now,
+      updatedAt: now,
+      basicInfo: {
+        patientName: patientDoc.patientName || '',
+        idType: patientDoc.idType || '身份证',
+        idNumber: patientDoc.idNumber || '',
+        gender: patientDoc.gender || '',
+        birthDate: patientDoc.birthDate || '',
+        phone: patientDoc.phone || '',
+      },
+      contactInfo: {
+        address: patientDoc.address || '',
+        emergencyContact: patientDoc.emergencyContact || '',
+        emergencyPhone: patientDoc.emergencyPhone || '',
+        backupContact: patientDoc.backupContact || '',
+        backupPhone: patientDoc.backupPhone || '',
+        guardianName: patientDoc.guardianContactName || '',
+        guardianPhone: patientDoc.guardianContactPhone || '',
+      },
+      intakeInfo: {
+        checkoutReason: reason || '',
+        checkoutNote: note || '',
+        checkoutAt,
+      },
+      metadata: {
+        source: 'manual-checkout',
+        submittedAt: now,
+        lastModifiedAt: now,
+        operatorId: operatorId || '',
+        operatorName: operatorName || '',
+        checkoutReason: reason || '',
+        checkoutNote: note || '',
+        checkoutAt,
+      },
+    };
+
+    await transaction.collection(PATIENT_INTAKE_COLLECTION).doc(intakeId).set({ data: checkoutRecord });
+
+    const patientUpdate = {
+      careStatus: 'discharged',
+      checkoutReason: reason || '',
+      checkoutNote: note || '',
+      checkoutAt,
+      updatedAt: now,
+      'data.updatedAt': now,
+    };
+
+    await patientRef.update({ data: patientUpdate });
+
+    return {
+      patientDoc: { ...patientDoc, _id: patientKey },
+      checkoutRecord,
+      patientUpdate,
+    };
+  });
+
+  await writePatientOperationLog({
+    patientKey,
+    action: 'patient-checkout',
+    operatorId: operatorId || '',
+    operatorName: operatorName || '',
+    message: '办理离开',
+    changes: ['checkout'],
+    extra: {
+      reason,
+      note,
+      checkoutAt,
+    },
+  });
+
+  await invalidatePatientSummaryCache();
+
+  return {
+    success: true,
+    data: {
+      patientKey,
+      checkoutAt,
+      reason,
+      note,
     },
   };
 }
@@ -1277,6 +1546,8 @@ exports.main = async event => {
         return await handleGetPatients(event);
       case 'getPatientDetail':
         return await handleGetPatientDetail(event);
+      case 'createPatient':
+        return await handleCreatePatient(event);
       case 'getAllIntakeRecords':
         return await handleGetAllIntakeRecords(event);
       case 'saveDraft':
@@ -1287,6 +1558,8 @@ exports.main = async event => {
         return await handleSubmitIntake(event);
       case 'updatePatient':
         return await handleUpdatePatient(event);
+      case 'checkoutPatient':
+        return await handleCheckoutPatient(event);
       case 'getConfig':
         return await handleGetConfig(event);
       case 'cleanupDrafts':

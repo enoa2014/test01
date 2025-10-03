@@ -4,6 +4,14 @@ This file provides guidance and memory for Codex CLI.
 
 一直使用中文输出
 
+## WSL Bridge 客户端使用
+
+- 在 Windows 侧先启动 `windows_agent.py`，随后可用以下示例命令在 WSL 侧验证连通性：
+  - `python3 wsl_bridge_client.py --host 127.0.0.1 --port 8765 -- cmd.exe /c echo hello_wsl_bridge`
+  - `python3 wsl_bridge_client.py --host 127.0.0.1 --port 8765 --show-meta -- cmd.exe /c "echo meta_test && exit 5"`
+  - `python3 wsl_bridge_client.py --host 127.0.0.1 --port 8765 --shell -- powershell.exe -Command "Write-Output 'shell_connect'"`
+- 如需自定义，请按需调整 `--host`、`--port`、`--token`、`--cwd` 等参数；命令执行的标准输出、标准错误及退出码会透传回 WSL 侧。
+
 <!-- BEGIN: BMAD-AGENTS -->
 # BMAD-METHOD Agents and Tasks
 
@@ -5353,4 +5361,3 @@ Choose a number (0-8) or 9 to proceed:
 ```
 
 <!-- END: BMAD-AGENTS -->
-

@@ -83,9 +83,9 @@ describe('patient intake wizard validations', () => {
     page.onNextStep();
 
     expect(page.data.currentStep).toBe(0);
-    expect(page.data.errors.patientName).toBe('请输入患者姓名');
+    expect(page.data.errors.patientName).toBe('请输入住户姓名');
     expect(global.wx.showToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '请输入患者姓名' })
+      expect.objectContaining({ title: '请输入住户姓名' })
     );
   });
 

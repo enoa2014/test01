@@ -7,6 +7,7 @@
   useHeaderSlot="{{true}}"
   useFooterSlot="{{hasActions}}"
   bind:tap="handleCardTap"
+  bind:longpress="handleLongPress"
 >
   <view slot="header" class="patient-card__header">
     <view class="patient-card__avatar" style="background-color: {{avatarBackground}};">
@@ -14,7 +15,7 @@
     </view>
     <view class="patient-card__title">
       <view class="patient-card__title-row">
-        <text class="patient-card__name">{{patient.name || patient.patientName || '-'}}</text>
+        <text class="patient-card__name patient-name">{{patient.name || patient.patientName || '-'}}</text>
         <text wx:if="{{ageText}}" class="patient-card__age">{{ageText}}</text>
         <view wx:if="{{selectable}}" class="patient-card__select" bindtap="handleSelectChange">
           <text class="patient-card__select-icon">{{selected ? '☑' : '☐'}}</text>
@@ -37,6 +38,16 @@
     <view wx:if="{{secondaryLine}}" class="patient-card__secondary">{{secondaryLine}}</view>
     <view wx:if="{{tags && tags.length}}" class="patient-card__tags">
       <view wx:for="{{tags}}" wx:key="*this" class="patient-card__tag">{{item}}</view>
+    </view>
+    <view wx:if="{{infoItems && infoItems.length}}" class="patient-card__info">
+      <view
+        wx:for="{{infoItems}}"
+        wx:key="label"
+        class="patient-card__info-item"
+      >
+        <text class="patient-card__info-label">{{item.label}}</text>
+        <text class="patient-card__info-value">{{item.value || '—'}} </text>
+      </view>
     </view>
   </view>
 
