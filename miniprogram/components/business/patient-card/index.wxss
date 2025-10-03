@@ -1,7 +1,13 @@
 @import "/styles/foundation.wxss";
 
+/* P1-5: 长按操作视觉反馈 - 微动画 */
 .patient-card {
   display: block;
+  transition: transform 0.15s ease-out;
+}
+
+.patient-card:active {
+  transform: scale(0.98);
 }
 
 .patient-card__header {
@@ -39,15 +45,19 @@
   align-items: center;
 }
 
+/* P1-3: 优化视觉层级 - 增强标题字号和字重 */
 .patient-card__name {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  font-size: var(--text-xl); /* 从36rpx提升到44rpx */
+  font-weight: var(--font-bold); /* 从600提升到700 */
   color: var(--color-text-primary);
+  line-height: 1.2; /* 增加行高提升可读性 */
 }
 
+/* P1-3: 优化视觉层级 - 收敛次要信息字号 */
 .patient-card__age {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs); /* 从24rpx减小到20rpx */
   color: var(--color-text-secondary);
+  line-height: 1.4;
 }
 
 /* P0-5: 扩大选择框触控区域至88rpx */
@@ -116,15 +126,20 @@
   gap: var(--space-3);
 }
 
+/* P1-3: 优化视觉层级 - 精简元数据标签 */
 .patient-card__info-label {
-  font-size: var(--text-xs);
+  font-size: var(--text-xs); /* 保持20rpx小字号 */
   color: var(--color-text-tertiary);
+  line-height: 1.5;
 }
 
+/* P1-3: 优化视觉层级 - 使用中间层级字号 */
 .patient-card__info-value {
-  font-size: var(--text-sm);
+  font-size: var(--text-base); /* 从24rpx提升到28rpx使用中间层级 */
   color: var(--color-text-primary);
+  font-weight: var(--font-medium); /* 增加字重突出数值 */
   text-align: right;
+  line-height: 1.5;
 }
 
 .patient-card__tag {
@@ -135,10 +150,48 @@
   font-size: var(--text-xs);
 }
 
-.patient-card__footer {
+/* 媒体预览区域 */
+.patient-card__media-preview {
   display: flex;
-  justify-content: flex-end;
   gap: var(--space-2);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.media-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-secondary);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+
+.media-chip:active {
+  transform: scale(0.95);
+  background: var(--color-bg-tertiary);
+}
+
+.media-chip--photo {
+  border-left: 3rpx solid var(--color-info);
+}
+
+.media-chip--doc {
+  border-left: 3rpx solid var(--color-warning);
+}
+
+.media-icon {
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+.media-count {
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
 }
 
 .patient-card--detail .patient-card__tag {

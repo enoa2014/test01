@@ -1,3 +1,4 @@
+// P1-4: 卡片密度模式预设
 const MODE_PRESETS = {
   list: {
     cardVariant: 'default',
@@ -5,7 +6,15 @@ const MODE_PRESETS = {
   },
   compact: {
     cardVariant: 'elevated',
+    padding: 'var(--space-3)',
+  },
+  comfortable: {
+    cardVariant: 'elevated',
     padding: 'var(--space-4)',
+  },
+  spacious: {
+    cardVariant: 'elevated',
+    padding: 'var(--space-6)',
   },
   detail: {
     cardVariant: 'default',
@@ -86,6 +95,10 @@ Component({
       type: String,
       value: 'default',
     },
+    mediaPreview: {
+      type: Object,
+      value: null,
+    },
   },
   data: {
     avatarText: '—',
@@ -94,7 +107,6 @@ Component({
     primaryLine: '',
     secondaryLine: '',
     tags: [],
-    hasActions: false,
     cardVariant: 'default',
     cardPadding: 'var(--space-4)',
     infoItems: [],
@@ -105,7 +117,7 @@ Component({
     },
   },
   observers: {
-    'patient,mode,badges,actions': function observer() {
+    'patient,mode,badges': function observer() {
       this.updateComputedState();
     },
   },
@@ -119,21 +131,33 @@ Component({
       const primaryLine = safeString(patient.latestAdmissionDisplay || patient.latestEvent || patient.latestDiagnosis || patient.firstDiagnosis);
       const secondaryLine = safeString(patient.latestHospital || patient.firstHospital);
       const tags = Array.isArray(patient.tags) ? patient.tags : [];
-      const hasActions = Array.isArray(this.data.actions) && this.data.actions.length > 0;
       const infoItems = [];
+
+      // P0: 最近入住时间 - 小家入住周期管理核心
       if (patient.latestAdmissionDateFormatted) {
-        infoItems.push({ label: '最近入住', value: patient.latestAdmissionDateFormatted });
+        infoItems.push({ label: '最近入住', value: patient.latestAdmissionDateFormatted, priority: 0 });
       } else {
-        infoItems.push({ label: '最近入住', value: '未入住' });
+        infoItems.push({ label: '最近入住', value: '未入住', priority: 0 });
       }
-      if (safeString(patient.latestDoctor)) {
-        infoItems.push({ label: '责任医生', value: patient.latestDoctor });
+
+      // P1: 入住次数 - 服务频次统计
+      if (patient.admissionCount !== undefined && patient.admissionCount !== null) {
+        infoItems.push({ label: '入住次数', value: `${patient.admissionCount}次`, priority: 1 });
       }
-      if (safeString(patient.ageBucketLabel)) {
-        infoItems.push({ label: '年龄段', value: patient.ageBucketLabel });
+
+      // P2: 就医医院 - 背景信息 (comfortable模式及以上显示)
+      if (safeString(patient.latestHospital) && this.data.mode !== 'compact') {
+        infoItems.push({ label: '就医医院', value: patient.latestHospital, priority: 2 });
       }
-      if (safeString(patient.nativePlace)) {
-        infoItems.push({ label: '籍贯', value: patient.nativePlace });
+
+      // P3: 年龄段 - 次要信息 (spacious模式显示)
+      if (safeString(patient.ageBucketLabel) && this.data.mode === 'spacious') {
+        infoItems.push({ label: '年龄段', value: patient.ageBucketLabel, priority: 3 });
+      }
+
+      // P4: 籍贯 - 次要信息 (spacious模式显示)
+      if (safeString(patient.nativePlace) && this.data.mode === 'spacious') {
+        infoItems.push({ label: '籍贯', value: patient.nativePlace, priority: 4 });
       }
 
       this.setData({
@@ -143,7 +167,6 @@ Component({
         primaryLine,
         secondaryLine,
         tags,
-        hasActions,
         cardVariant: modePreset.cardVariant,
         cardPadding: modePreset.padding,
         infoItems,
@@ -155,13 +178,6 @@ Component({
       }
       this.triggerEvent('cardtap', { patient: this.data.patient });
     },
-    handleActionTap(event) {
-      const action = event.currentTarget.dataset.action;
-      this.triggerEvent('actiontap', { action, patient: this.data.patient });
-      if (event && typeof event.stopPropagation === 'function') {
-        event.stopPropagation();
-      }
-    },
     handleSelectChange(event) {
       const nextSelected = !this.data.selected;
       this.triggerEvent('selectchange', { selected: nextSelected, patient: this.data.patient });
@@ -171,6 +187,16 @@ Component({
     },
     handleLongPress() {
       this.triggerEvent('longpress', { patient: this.data.patient });
+    },
+    handleMediaTap(event) {
+      const { type } = event.currentTarget.dataset;
+      this.triggerEvent('mediatap', {
+        patient: this.data.patient,
+        mediaType: type
+      });
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
     },
   },
 });

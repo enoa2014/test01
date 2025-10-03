@@ -12,6 +12,8 @@
       filters="{{quickFilters}}"
       loading="{{searchLoading}}"
       history-enabled="{{true}}"
+      has-active-filters="{{hasActiveFilters}}"
+      active-filter-count="{{activeFilterCount}}"
       bind:input="onSearchInput"
       bind:suggest="onSearchSuggest"
       bind:search="onSearchSubmit"
@@ -35,6 +37,16 @@
         </view>
       </picker>
       <view class="toolbar-actions">
+        <!-- P1-4: 卡片密度模式切换 -->
+        <pm-button
+          class="toolbar-action density-toggle"
+          icon="{{densityModeIcons[cardDensityMode]}}"
+          icon-only="{{true}}"
+          size="small"
+          type="ghost"
+          aria-label="切换卡片密度"
+          bindtap="onToggleDensityMode"
+        />
         <pm-button
           class="toolbar-action"
           text="查看分析"
@@ -42,13 +54,6 @@
           type="primary"
           ghost="{{true}}"
           bindtap="onAnalysisTap"
-        />
-        <pm-button
-          class="toolbar-action"
-          text="新建住户"
-          size="small"
-          type="primary"
-          bindtap="onCreatePatientTap"
         />
       </view>
     </view>
@@ -69,19 +74,52 @@
       </view>
     </view>
   </view>
-  <view wx:elif="{{error}}" class="error">{{error}}</view>
+  <!-- P2-7: 增强错误状态UI和重试机制 -->
+  <view wx:elif="{{error}}" class="error-state">
+    <view class="error-illustration">
+      <text class="error-icon">⚠️</text>
+    </view>
+    <text class="error-title">加载失败</text>
+    <text class="error-message">{{error}}</text>
+    <view class="error-actions">
+      <pm-button
+        text="重试"
+        type="primary"
+        icon="🔄"
+        bindtap="onRetry"
+      />
+    </view>
+  </view>
+
+  <!-- P1-9: 智能空状态场景区分 -->
   <pm-card
-    wx:if="{{!loading && !error && !displayPatients.length}}"
+    wx:if="{{!loading && !error && !displayPatients.length && emptyStateConfig}}"
     class="empty-state-card"
-    title="暂无住户档案"
+    title="{{emptyStateConfig.title}}"
     useFooterSlot="{{true}}"
   >
     <view class="empty-state">
-      <image class="empty-illustration" src="../../assets/images/empty-patients.svg" mode="aspectFit" />
-      <text class="empty-description">点击右下角按钮添加第一位住户</text>
+      <view class="empty-illustration-wrapper">
+        <text class="empty-icon">
+          {{emptyStateConfig.type === 'search' ? '🔍' : emptyStateConfig.type === 'filter' ? '🔎' : '📋'}}
+        </text>
+      </view>
+      <text class="empty-description">{{emptyStateConfig.description}}</text>
     </view>
     <view slot="footer" class="empty-actions">
-      <pm-button text="立即添加" type="primary" size="medium" bindtap="onCreatePatientTap" />
+      <pm-button
+        text="{{emptyStateConfig.actionText}}"
+        type="{{emptyStateConfig.showCreateButton ? 'primary' : 'ghost'}}"
+        size="medium"
+        bindtap="{{emptyStateConfig.actionHandler}}"
+      />
+      <pm-button
+        wx:if="{{emptyStateConfig.showCreateButton}}"
+        text="添加住户"
+        type="primary"
+        size="medium"
+        bindtap="onCreatePatientTap"
+      />
     </view>
   </pm-card>
   <scroll-view wx:else scroll-y class="patient-list">
@@ -90,10 +128,9 @@
       wx:key="patientKey"
       class="patient-item"
       patient="{{item}}"
-      mode="compact"
+      mode="{{cardDensityMode}}"
       status="{{item.cardStatus || 'default'}}"
       badges="{{item.badges || []}}"
-      actions="{{batchMode ? cardActionsSimplified : cardActions}}"
       selectable="{{batchMode}}"
       selected="{{item.selected}}"
       clickable="{{true}}"
@@ -102,13 +139,16 @@
       data-record-key="{{item.recordKey || item.key || item.patientKey || ''}}"
       bindtap="onPatientTap"
       bind:cardtap="onPatientTap"
-      bind:actiontap="onCardAction"
       bind:selectchange="onCardSelectChange"
       bind:longpress="onCardLongPress"
     />
   </scroll-view>
 
-  <view class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}}">
+  <!-- P1-7: FAB标签提示 -->
+  <view class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}} {{fabExpanded ? 'fab-container--expanded' : ''}}">
+    <view wx:if="{{fabExpanded}}" class="fab-label">
+      <text>添加住户</text>
+    </view>
     <view class="fab-button">
       <pm-button
         icon="＋"

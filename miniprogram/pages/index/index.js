@@ -34,11 +34,12 @@ const FILTER_RISK_OPTIONS = [
   { id: 'low', label: '低风险' },
 ];
 const FILTER_SCHEME_STORAGE_KEY = 'filter_panel_schemes';
+// 小家业务场景快速筛选器
 const QUICK_FILTERS = [
-  { id: 'all', label: '全部' },
-  { id: 'in_care', label: '在住' },
-  { id: 'high_risk', label: '高风险' },
-  { id: 'followup', label: '待随访' },
+  { id: 'all', label: '全部', type: 'default' },
+  { id: 'in_care', label: '在住', type: 'success' },
+  { id: 'pending', label: '待入住', type: 'warning' },
+  { id: 'discharged', label: '已离开', type: 'default' },
 ];
 function createQuickFilters(activeId = 'all') {
   return QUICK_FILTERS.map(filter => ({
@@ -619,6 +620,11 @@ Page({
     filterPreviewLabel: '名住户符合筛选',
     advancedFilters: getDefaultAdvancedFilters(),
     pendingAdvancedFilters: getDefaultAdvancedFilters(),
+    // P1-1: 高级筛选激活状态
+    hasActiveFilters: false,
+    activeFilterCount: 0,
+    // P1-7: FAB标签提示状态
+    fabExpanded: false,
     batchOperationLoading: false,
     filterSchemes: [],
     checkoutDialogVisible: false,
@@ -629,10 +635,40 @@ Page({
     },
     checkoutErrors: {},
     checkoutPatient: null,
+    // P1-4: 卡片密度模式
+    cardDensityMode: 'comfortable', // 'compact' | 'comfortable' | 'spacious'
+    densityModeIcons: {
+      compact: '☰',
+      comfortable: '▭',
+      spacious: '▢'
+    },
   },
   onLoad() {
     this.fabRestoreTimer = null;
     this.pageEnterTimer = null;
+
+    // P1-4: 加载用户偏好的卡片密度模式
+    try {
+      const savedDensityMode = wx.getStorageSync('card_density_mode');
+      if (savedDensityMode && ['compact', 'comfortable', 'spacious'].includes(savedDensityMode)) {
+        this.setData({ cardDensityMode: savedDensityMode });
+      }
+    } catch (error) {
+      logger.warn('Failed to load density mode preference', error);
+    }
+
+    // P1-8: 动态计算骨架屏数量
+    const systemInfo = wx.getSystemInfoSync();
+    const screenHeight = systemInfo.windowHeight || 667; // 默认iPhone 6/7/8高度
+    const estimatedCardHeight = 180; // 估计的卡片高度(rpx转px后约90px)
+    const skeletonCount = Math.min(Math.ceil(screenHeight / estimatedCardHeight) + 1, 8); // 最多8个
+    this.setData({
+      skeletonPlaceholders: Array.from({ length: skeletonCount }, (_, i) => i),
+    });
+
+    // P1-1: 初始化高级筛选激活状态
+    this.updateFilterActiveState(this.data.advancedFilters);
+
     const cached = readPatientsCache();
     if (cached && Array.isArray(cached.patients) && cached.patients.length) {
       const filtered = this.buildFilteredPatients(cached.patients);
@@ -671,6 +707,19 @@ Page({
   onShow() {
     this.applyPendingUpdates();
     this.playPageEnterAnimation();
+
+    // P1-7: FAB标签提示 - 首次访问时自动展开
+    const hasSeenFabTooltip = wx.getStorageSync('fab_tooltip_seen');
+    if (!hasSeenFabTooltip) {
+      setTimeout(() => {
+        this.setData({ fabExpanded: true });
+        // 3秒后自动收起并标记已查看
+        setTimeout(() => {
+          this.setData({ fabExpanded: false });
+          wx.setStorageSync('fab_tooltip_seen', true);
+        }, 3000);
+      }, 1000);
+    }
   },
   onReady() {
     this.playPageEnterAnimation();
@@ -958,10 +1007,10 @@ Page({
     const activeFilterId = activeFilter ? activeFilter.id : 'all';
     if (activeFilterId === 'in_care') {
       list = list.filter(item => item && item.careStatus === 'in_care');
-    } else if (activeFilterId === 'high_risk') {
-      list = list.filter(item => item && item.riskLevel === 'high');
-    } else if (activeFilterId === 'followup') {
-      list = list.filter(item => item && item.riskLevel === 'medium');
+    } else if (activeFilterId === 'pending') {
+      list = list.filter(item => item && item.careStatus === 'pending');
+    } else if (activeFilterId === 'discharged') {
+      list = list.filter(item => item && item.careStatus === 'discharged');
     }
     if (keyword) {
       list = list.filter(item => {
@@ -1122,6 +1171,32 @@ Page({
     });
     return list.length;
   },
+  // P1-1: 计算激活的高级筛选器数量
+  calculateActiveFilterCount(filters) {
+    const advFilters = filters || this.data.advancedFilters || {};
+    let count = 0;
+
+    if (advFilters.statuses && advFilters.statuses.length > 0) count++;
+    if (advFilters.riskLevels && advFilters.riskLevels.length > 0) count++;
+    if (advFilters.hospitals && advFilters.hospitals.length > 0) count++;
+    if (advFilters.diagnosis && advFilters.diagnosis.length > 0) count++;
+    if (advFilters.genders && advFilters.genders.length > 0) count++;
+    if (advFilters.ethnicities && advFilters.ethnicities.length > 0) count++;
+    if (advFilters.nativePlaces && advFilters.nativePlaces.length > 0) count++;
+    if (advFilters.ageRanges && advFilters.ageRanges.length > 0) count++;
+    if (advFilters.doctors && advFilters.doctors.length > 0) count++;
+    if (advFilters.dateRange && (advFilters.dateRange.start || advFilters.dateRange.end)) count++;
+
+    return count;
+  },
+  // P1-1: 更新高级筛选激活状态
+  updateFilterActiveState(filters) {
+    const count = this.calculateActiveFilterCount(filters);
+    this.setData({
+      hasActiveFilters: count > 0,
+      activeFilterCount: count,
+    });
+  },
   // P0-4: 筛选预览即时反馈 - 防抖自动预览
   onFilterPreview(event) {
     const value = event && event.detail ? event.detail.value : null;
@@ -1154,6 +1229,8 @@ Page({
     const value = event && event.detail ? event.detail.value : null;
     const normalized = normalizeAdvancedFilters(value);
     const count = this.calculatePreviewCount(normalized);
+    // P1-1: 更新高级筛选激活状态
+    this.updateFilterActiveState(normalized);
     this.setData(
       {
         advancedFilters: normalized,
@@ -1170,6 +1247,8 @@ Page({
   onFilterReset() {
     const defaults = getDefaultAdvancedFilters();
     const count = this.calculatePreviewCount(defaults);
+    // P1-1: 重置时清除激活状态
+    this.updateFilterActiveState(defaults);
     this.setData({
       pendingAdvancedFilters: defaults,
       filterPreviewCount: count,
@@ -1330,10 +1409,23 @@ Page({
     const schemes = Array.isArray(this.data.filterSchemes)
       ? this.data.filterSchemes.slice()
       : [];
+
     if (schemes.some(scheme => scheme.fingerprint === fingerprint)) {
       wx.showToast({ icon: 'none', title: '已保存相同方案' });
       return;
     }
+
+    // P1-2: 方案数量上限提示优化
+    if (schemes.length >= 5) {
+      wx.showModal({
+        title: '方案已达上限',
+        content: '最多可保存5个筛选方案,请先删除旧方案后再保存新方案',
+        showCancel: false,
+        confirmText: '知道了',
+      });
+      return;
+    }
+
     const now = Date.now();
     const summary = summarizeFiltersForScheme(normalized);
     const name = `方案 ${now.toString().slice(-4)}`;
@@ -1610,7 +1702,7 @@ Page({
     });
   },
 
-  // P0-3: 动态计算每个快速筛选器的数量
+  // P0-3: 动态计算每个快速筛选器的数量 - 小家业务场景
   updateFilterCounts(filters) {
     const allPatients = this.data.patients || [];
     const filtersWithCount = filters.map(filter => {
@@ -1620,14 +1712,10 @@ Page({
         count = allPatients.length;
       } else if (filter.id === 'in_care') {
         count = allPatients.filter(p => p && p.careStatus === 'in_care').length;
-      } else if (filter.id === 'high_risk') {
-        count = allPatients.filter(p => {
-          if (!p) return false;
-          const daysSince = p.daysSinceLatestAdmission;
-          return typeof daysSince === 'number' && daysSince >= 14;
-        }).length;
-      } else if (filter.id === 'followup') {
+      } else if (filter.id === 'pending') {
         count = allPatients.filter(p => p && p.careStatus === 'pending').length;
+      } else if (filter.id === 'discharged') {
+        count = allPatients.filter(p => p && p.careStatus === 'discharged').length;
       }
 
       return { ...filter, count };
@@ -1650,6 +1738,27 @@ Page({
     this.setData({ sortIndex }, () => {
       this.applyFilters();
     });
+  },
+  // P1-4: 切换卡片密度模式
+  onToggleDensityMode() {
+    const modes = ['compact', 'comfortable', 'spacious'];
+    const currentIndex = modes.indexOf(this.data.cardDensityMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const nextMode = modes[nextIndex];
+
+    this.setData({ cardDensityMode: nextMode });
+
+    // 保存用户偏好
+    try {
+      wx.setStorageSync('card_density_mode', nextMode);
+    } catch (error) {
+      logger.warn('Failed to save density mode preference', error);
+    }
+
+    // 触觉反馈
+    if (typeof wx.vibrateShort === 'function') {
+      wx.vibrateShort({ type: 'light' });
+    }
   },
   async onPullDownRefresh() {
     if (typeof wx.showNavigationBarLoading === 'function') {
@@ -2191,6 +2300,17 @@ Page({
     wx.showToast({ icon: 'none', title: '功能开发中' });
   },
   onCardLongPress(event) {
+    // P1-5: 长按视觉反馈 - 振动反馈
+    wx.vibrateShort({
+      type: 'medium', // 中等强度振动
+      success: () => {
+        console.log('长按振动反馈成功');
+      },
+      fail: () => {
+        console.log('振动反馈失败,设备可能不支持');
+      },
+    });
+
     const detailPatient = (event.detail && event.detail.patient) || null;
     const dataset = (event.currentTarget && event.currentTarget.dataset) || {};
     const patient = detailPatient || {

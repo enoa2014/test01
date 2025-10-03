@@ -45,9 +45,11 @@
   color: var(--color-bg-primary);
 }
 
+/* P2-1: 提升 warning 徽章对比度 */
 .pm-badge--type-warning {
-  background: var(--color-warning);
-  color: var(--color-bg-primary);
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+  border: 1rpx solid var(--color-warning);
 }
 
 .pm-badge--type-danger {

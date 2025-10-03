@@ -7,32 +7,36 @@
   </view>
 
   <scroll-view scroll-y class="filter-panel__body">
+    <!-- P1-2: 优化方案管理 -->
     <view wx:if="{{schemes.length}}" class="filter-section filter-section--schemes">
-      <view class="filter-section__title">已保存方案</view>
+      <view class="filter-section__header">
+        <view class="filter-section__title">
+          已保存方案
+          <text class="filter-section__count">({{schemes.length}}/5)</text>
+        </view>
+        <text class="filter-section__manage-link" bindtap="onToggleSchemeManager">
+          {{showSchemeManager ? '完成' : '管理'}}
+        </text>
+      </view>
       <view class="filter-schemes">
         <view
           wx:for="{{schemes}}"
           wx:key="id"
-          class="filter-schemes__item"
+          class="filter-schemes__item {{showSchemeManager ? 'manage-mode' : ''}}"
         >
-          <view class="filter-schemes__info">
+          <view class="filter-schemes__info" bindtap="onApplySchemeTap" data-id="{{item.id}}">
             <text class="filter-schemes__name">{{item.name}}</text>
             <text class="filter-schemes__summary">{{item.summary}}</text>
           </view>
-          <view class="filter-schemes__actions">
+          <view wx:if="{{showSchemeManager}}" class="filter-schemes__actions">
             <pm-button
               size="small"
               type="ghost"
-              text="重命名"
+              icon="✏️"
+              icon-only="{{true}}"
+              aria-label="重命名"
               data-id="{{item.id}}"
               bindtap="onRenameSchemeTap"
-            />
-            <pm-button
-              size="small"
-              type="ghost"
-              text="应用"
-              data-id="{{item.id}}"
-              bindtap="onApplySchemeTap"
             />
             <pm-button
               size="small"

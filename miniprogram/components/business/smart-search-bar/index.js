@@ -36,6 +36,15 @@ Component({
       type: Number,
       value: DEFAULT_DEBOUNCE,
     },
+    // P1-1: 高级筛选激活状态
+    hasActiveFilters: {
+      type: Boolean,
+      value: false,
+    },
+    activeFilterCount: {
+      type: Number,
+      value: 0,
+    },
   },
   observers: {
     value(newVal) {

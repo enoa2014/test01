@@ -9,8 +9,9 @@
     "success": "#52C41A",
     "successLight": "#73D13D",
     "successDark": "#389E0D",
-    "warning": "#FAAD14",
+    "warning": "#FA8C16",
     "warningLight": "#FFF3E0",
+    "warningDark": "#D46B08",
     "danger": "#FF4D4F",
     "info": "#1890FF",
     "textPrimary": "#262626",
@@ -104,7 +105,9 @@
   "background": {
     "infoSoft": "rgba(24, 144, 255, 0.08)",
     "warningSoft": "rgba(250, 173, 20, 0.15)",
-    "surfaceTranslucent": "rgba(255, 255, 255, 0.8)"
+    "surfaceTranslucent": "rgba(255, 255, 255, 0.8)",
+    "successSoft": "rgba(82, 196, 26, 0.10)",
+    "dangerSoft": "rgba(255, 77, 79, 0.10)"
   },
   "gradient": {
     "infoLight": "linear-gradient(145deg, rgba(24, 144, 255, 0.05), rgba(24, 144, 255, 0.10))",

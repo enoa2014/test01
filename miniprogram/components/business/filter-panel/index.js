@@ -171,6 +171,8 @@ Component({
     dateRange: { start: '', end: '' },
     availableDiagnosis: DEFAULT_DIAGNOSIS_OPTIONS,
     logicMode: 'AND',
+    // P1-2: 方案管理模式状态
+    showSchemeManager: false,
   },
   observers: {
     statuses(list) {
@@ -581,6 +583,13 @@ Component({
       if (id) {
         this.triggerEvent('renamescheme', { id });
       }
+    },
+
+    // P1-2: 切换方案管理模式
+    onToggleSchemeManager() {
+      this.setData({
+        showSchemeManager: !this.data.showSchemeManager,
+      });
     },
   },
 });

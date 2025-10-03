@@ -77,10 +77,38 @@
   border-bottom: 1rpx solid var(--color-border-secondary);
 }
 
+/* P1-2: 方案管理标题优化 */
+.filter-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
 .filter-section__title {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.filter-section__count {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-normal);
+}
+
+.filter-section__manage-link {
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.filter-section__manage-link:active {
+  opacity: 0.7;
 }
 
 .filter-chips {
@@ -254,6 +282,7 @@
   gap: var(--space-2);
 }
 
+/* P1-2: 方案卡片优化 */
 .filter-schemes__item {
   display: flex;
   justify-content: space-between;
@@ -263,6 +292,16 @@
   border: 1rpx solid var(--color-border-secondary);
   background: var(--color-bg-tertiary);
   gap: var(--space-3);
+  transition: all 0.2s ease;
+}
+
+.filter-schemes__item:not(.manage-mode):active {
+  background: var(--color-bg-secondary);
+  transform: scale(0.98);
+}
+
+.filter-schemes__item.manage-mode {
+  background: var(--color-bg-primary);
 }
 
 .filter-schemes__info {
@@ -271,6 +310,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  cursor: pointer;
 }
 
 .filter-schemes__name {

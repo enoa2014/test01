@@ -12,7 +12,15 @@
     />
     <view class="smart-search__actions">
       <view class="smart-search__action" bindtap="handleSearch">搜索</view>
-      <view class="smart-search__action" bindtap="handleToggleAdvanced">高级筛选</view>
+      <view
+        class="smart-search__action advanced-filter-btn {{hasActiveFilters ? 'active' : ''}}"
+        bindtap="handleToggleAdvanced"
+      >
+        <text>高级筛选</text>
+        <view wx:if="{{hasActiveFilters}}" class="active-indicator">
+          <pm-badge text="{{activeFilterCount}}" type="primary" size="small" />
+        </view>
+      </view>
     </view>
   </view>
 
@@ -35,12 +43,12 @@
     <view
       wx:for="{{filters}}"
       wx:key="id"
-      class="smart-search__filter"
+      class="smart-search__filter {{item.active ? 'smart-search__filter--active' : ''}} {{item.type ? 'smart-search__filter--' + item.type : ''}}"
       bindtap="handleFilterTap"
       data-filter="{{item}}"
     >
-      <pm-badge text="{{item.label}}" type="{{item.active ? 'primary' : 'default'}}" size="small" />
       <text class="smart-search__filter-count" wx:if="{{item.count !== undefined}}">{{item.count}}</text>
+      <text class="smart-search__filter-label">{{item.label}}</text>
     </view>
   </view>
 
