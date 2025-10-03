@@ -1,12 +1,11 @@
 ﻿const logger = require('../../utils/logger');
-const { formatDate, formatAge } = require('../../utils/date');
-
+const { formatDate, formatAge, calculateAge } = require('../../utils/date');
+const { callPatientIntake } = require('../../utils/intake');
 const SORT_OPTIONS = [
-  { label: '默认排序', value: 'default' },
-  { label: '按入院次数排序', value: 'admissionCountDesc' },
-  { label: '按最近入院时间排序', value: 'latestAdmissionDesc' },
+  { label: '最近入住优先', value: 'latestAdmissionDesc' },
+  { label: '入住次数优先', value: 'admissionCountDesc' },
+  { label: '姓名排序', value: 'nameAsc' },
 ];
-
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
 const PATIENT_CACHE_TTL = 5 * 60 * 1000;
@@ -14,50 +13,108 @@ const PATIENT_PAGE_SIZE = 80;
 const MAX_SUGGESTIONS = 8;
 const MIN_SUGGESTION_LENGTH = 2;
 const FAB_SCROLL_RESTORE_DELAY = 260;
-
+const AGE_BUCKETS = [
+  { id: '0-3', label: '0-3岁', min: 0, max: 3 },
+  { id: '4-6', label: '4-6岁', min: 4, max: 6 },
+  { id: '7-12', label: '7-12岁', min: 7, max: 12 },
+  { id: '13-17', label: '13-17岁', min: 13, max: 17 },
+  { id: '18+', label: '18岁及以上', min: 18, max: 200 },
+];
 const FILTER_STATUS_OPTIONS = [
   { id: 'in_care', label: '在住' },
   { id: 'followup', label: '随访' },
   { id: 'pending', label: '待入住' },
   { id: 'discharged', label: '已出院' },
 ];
-
 const FILTER_RISK_OPTIONS = [
   { id: 'high', label: '高风险' },
   { id: 'medium', label: '中风险' },
   { id: 'low', label: '低风险' },
 ];
-
 const FILTER_SCHEME_STORAGE_KEY = 'filter_panel_schemes';
-
 const QUICK_FILTERS = [
   { id: 'all', label: '全部' },
   { id: 'in_care', label: '在住' },
   { id: 'high_risk', label: '高风险' },
   { id: 'followup', label: '待随访' },
 ];
-
 function createQuickFilters(activeId = 'all') {
   return QUICK_FILTERS.map(filter => ({
     ...filter,
     active: filter.id === activeId,
   }));
 }
-
 function safeString(value) {
   if (value === null || value === undefined) {
     return '';
   }
   return String(value).trim();
 }
-
+function mapGenderLabel(value) {
+  const text = safeString(value);
+  if (!text) {
+    return '';
+  }
+  const lower = text.toLowerCase();
+  if (['m', 'male', '男'].includes(lower)) {
+    return '男';
+  }
+  if (['f', 'female', '女'].includes(lower)) {
+    return '女';
+  }
+  return text;
+}
+function normalizeCareStatus(value, fallback = 'pending') {
+  const text = safeString(value).toLowerCase();
+  if (!text) {
+    return fallback;
+  }
+  if (['in_care', 'incare', 'in-care', 'active', '入住', '在住'].includes(text)) {
+    return 'in_care';
+  }
+  if (['pending', 'followup', 'follow_up', '待入住', '待随访', '随访'].includes(text)) {
+    return 'pending';
+  }
+  if (['discharged', 'left', 'checkout', '已离开', '已出院', '离开'].includes(text)) {
+    return 'discharged';
+  }
+  return fallback;
+}
+function deriveCardStatus(careStatus, fallback = 'info') {
+  switch (careStatus) {
+    case 'in_care':
+      return 'success';
+    case 'pending':
+      return 'info';
+    case 'discharged':
+      return 'default';
+    default:
+      return fallback;
+  }
+}
+function resolveAgeBucket(age) {
+  const numericAge = Number(age);
+  if (!Number.isFinite(numericAge) || numericAge < 0) {
+    return null;
+  }
+  return (
+    AGE_BUCKETS.find(bucket => {
+      const minOk = numericAge >= bucket.min;
+      const maxOk = bucket.max === undefined ? true : numericAge <= bucket.max;
+      return minOk && maxOk;
+    }) || null
+  );
+}
+function getAgeBucketLabelById(id) {
+  const bucket = AGE_BUCKETS.find(item => item.id === id);
+  return bucket ? bucket.label : id;
+}
 function ensureArrayValue(value) {
   if (!value) {
     return [];
   }
   return Array.isArray(value) ? value.slice() : [value];
 }
-
 function ensureDateRangeValue(value) {
   const next = value && typeof value === 'object' ? value : {};
   return {
@@ -65,7 +122,6 @@ function ensureDateRangeValue(value) {
     end: safeString(next.end),
   };
 }
-
 function getDefaultAdvancedFilters() {
   return {
     statuses: [],
@@ -73,10 +129,14 @@ function getDefaultAdvancedFilters() {
     hospitals: [],
     diagnosis: [],
     dateRange: { start: '', end: '' },
+    genders: [],
+    ethnicities: [],
+    nativePlaces: [],
+    ageRanges: [],
+    doctors: [],
     logicMode: 'AND',
   };
 }
-
 function normalizeAdvancedFilters(input) {
   const base = getDefaultAdvancedFilters();
   if (!input || typeof input !== 'object') {
@@ -88,10 +148,14 @@ function normalizeAdvancedFilters(input) {
     hospitals: ensureArrayValue(input.hospitals),
     diagnosis: ensureArrayValue(input.diagnosis),
     dateRange: ensureDateRangeValue(input.dateRange),
+    genders: ensureArrayValue(input.genders),
+    ethnicities: ensureArrayValue(input.ethnicities),
+    nativePlaces: ensureArrayValue(input.nativePlaces),
+    ageRanges: ensureArrayValue(input.ageRanges),
+    doctors: ensureArrayValue(input.doctors),
     logicMode: input.logicMode === 'OR' ? 'OR' : 'AND',
   };
 }
-
 function parseDateToTimestamp(dateStr, endOfDay = false) {
   const value = safeString(dateStr);
   if (!value) {
@@ -101,37 +165,49 @@ function parseDateToTimestamp(dateStr, endOfDay = false) {
   const ts = Date.parse(`${value}${timePart}`);
   return Number.isFinite(ts) ? ts : null;
 }
-
 function applyAdvancedFilters(list, filters) {
   const source = Array.isArray(list) ? list : [];
   if (!filters || typeof filters !== 'object') {
     return source;
   }
-
   const statuses = ensureArrayValue(filters.statuses);
   const riskLevels = ensureArrayValue(filters.riskLevels);
   const hospitals = ensureArrayValue(filters.hospitals);
   const diagnosis = ensureArrayValue(filters.diagnosis);
+  const genders = ensureArrayValue(filters.genders);
+  const ethnicities = ensureArrayValue(filters.ethnicities);
+  const nativePlaces = ensureArrayValue(filters.nativePlaces);
+  const ageRanges = ensureArrayValue(filters.ageRanges);
+  const doctors = ensureArrayValue(filters.doctors);
   const dateRange = ensureDateRangeValue(filters.dateRange);
   const logicMode = filters.logicMode === 'OR' ? 'OR' : 'AND';
-
   const hasDate = Boolean(dateRange.start || dateRange.end);
   const hasAnyFilter =
-    statuses.length || riskLevels.length || hospitals.length || diagnosis.length || hasDate;
-
+    statuses.length ||
+    riskLevels.length ||
+    hospitals.length ||
+    diagnosis.length ||
+    genders.length ||
+    ethnicities.length ||
+    nativePlaces.length ||
+    ageRanges.length ||
+    doctors.length ||
+    hasDate;
   if (!hasAnyFilter) {
     return source;
   }
-
   const statusSet = new Set(statuses);
   const riskSet = new Set(riskLevels);
-  const hospitalSet = new Set(hospitals);
+  const hospitalSet = new Set(hospitals.map(item => safeString(item).toLowerCase()));
   const diagnosisSet = new Set(diagnosis.map(item => safeString(item).toLowerCase()));
+  const genderSet = new Set(genders.map(item => safeString(item).toLowerCase()));
+  const ethnicitySet = new Set(ethnicities.map(item => safeString(item).toLowerCase()));
+  const nativePlaceSet = new Set(nativePlaces.map(item => safeString(item).toLowerCase()));
+  const ageRangeSet = new Set(ageRanges.map(item => safeString(item)));
+  const doctorSet = new Set(doctors.map(item => safeString(item).toLowerCase()));
   const startTs = parseDateToTimestamp(dateRange.start, false);
   const endTs = parseDateToTimestamp(dateRange.end, true);
-
   const checkers = [];
-
   if (statusSet.size) {
     checkers.push(patient => statusSet.has(patient.careStatus));
   }
@@ -142,7 +218,14 @@ function applyAdvancedFilters(list, filters) {
     checkers.push(patient => {
       const latest = safeString(patient.latestHospital).toLowerCase();
       const first = safeString(patient.firstHospital).toLowerCase();
-      return hospitalSet.has(latest) || hospitalSet.has(first);
+      return (latest && hospitalSet.has(latest)) || (first && hospitalSet.has(first));
+    });
+  }
+  if (doctorSet.size) {
+    checkers.push(patient => {
+      const latest = safeString(patient.latestDoctor).toLowerCase();
+      const first = safeString(patient.firstDoctor).toLowerCase();
+      return (latest && doctorSet.has(latest)) || (first && doctorSet.has(first));
     });
   }
   if (diagnosisSet.size) {
@@ -150,10 +233,35 @@ function applyAdvancedFilters(list, filters) {
       const latest = safeString(patient.latestDiagnosis).toLowerCase();
       const first = safeString(patient.firstDiagnosis).toLowerCase();
       const tags = Array.isArray(patient.tags) ? patient.tags : [];
-      if (diagnosisSet.has(latest) || diagnosisSet.has(first)) {
+      if ((latest && diagnosisSet.has(latest)) || (first && diagnosisSet.has(first))) {
         return true;
       }
       return tags.some(tag => diagnosisSet.has(safeString(tag).toLowerCase()));
+    });
+  }
+  if (genderSet.size) {
+    checkers.push(patient => {
+      const gender = safeString(patient.gender).toLowerCase();
+      const label = safeString(patient.genderLabel).toLowerCase();
+      return (gender && genderSet.has(gender)) || (label && genderSet.has(label));
+    });
+  }
+  if (ethnicitySet.size) {
+    checkers.push(patient => {
+      const value = safeString(patient.ethnicity).toLowerCase();
+      return value && ethnicitySet.has(value);
+    });
+  }
+  if (nativePlaceSet.size) {
+    checkers.push(patient => {
+      const value = safeString(patient.nativePlace).toLowerCase();
+      return value && nativePlaceSet.has(value);
+    });
+  }
+  if (ageRangeSet.size) {
+    checkers.push(patient => {
+      const bucketId = safeString(patient.ageBucketId);
+      return bucketId && ageRangeSet.has(bucketId);
     });
   }
   if (startTs !== null || endTs !== null) {
@@ -171,34 +279,28 @@ function applyAdvancedFilters(list, filters) {
       return true;
     });
   }
-
   if (!checkers.length) {
     return source;
   }
-
   if (logicMode === 'OR') {
     return source.filter(patient => checkers.some(check => check(patient)));
   }
   return source.filter(patient => checkers.every(check => check(patient)));
 }
-
 function createOptionsFromSet(values) {
   const unique = Array.from(values).filter(Boolean);
   unique.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN', { sensitivity: 'base' }));
   return unique.map(item => ({ id: item, label: item }));
 }
-
 function mapPatientStatus(latestAdmissionTimestamp) {
   const timestamp = Number(latestAdmissionTimestamp || 0);
   if (!Number.isFinite(timestamp) || timestamp <= 0) {
     return { cardStatus: 'default', careStatus: 'discharged', diffDays: null };
   }
-
   const now = Date.now();
   if (timestamp > now) {
     return { cardStatus: 'info', careStatus: 'pending', diffDays: 0 };
   }
-
   const diffDays = Math.floor((now - timestamp) / (24 * 60 * 60 * 1000));
   if (diffDays <= 30) {
     return { cardStatus: 'success', careStatus: 'in_care', diffDays };
@@ -208,7 +310,6 @@ function mapPatientStatus(latestAdmissionTimestamp) {
   }
   return { cardStatus: 'default', careStatus: 'discharged', diffDays };
 }
-
 function identifyRiskLevel(diffDays) {
   if (diffDays === null || diffDays === undefined) {
     return 'low';
@@ -221,29 +322,26 @@ function identifyRiskLevel(diffDays) {
   }
   return 'low';
 }
-
 function generatePatientBadges({ careStatus, riskLevel, admissionCount }) {
   const badges = [];
   if (careStatus === 'in_care') {
     badges.push({ text: '在住', type: 'success' });
   } else if (careStatus === 'pending') {
     badges.push({ text: '随访', type: 'info' });
+  } else if (careStatus === 'discharged') {
+    badges.push({ text: '已离开', type: 'default' });
   }
-
   if (riskLevel === 'high') {
     badges.push({ text: '需复查', type: 'danger' });
   } else if (riskLevel === 'medium') {
     badges.push({ text: '定期随访', type: 'warning' });
   }
-
   const count = Number(admissionCount || 0);
   if (count > 0) {
     badges.push({ text: `入住 ${count} 次`, type: 'info' });
   }
-
   return badges;
 }
-
 function buildLatestEvent({ latestAdmissionDateFormatted, latestDiagnosis, importOrder, importedAtFormatted }) {
   const diagnosis = safeString(latestDiagnosis) || '暂无诊断';
   if (latestAdmissionDateFormatted) {
@@ -257,17 +355,14 @@ function buildLatestEvent({ latestAdmissionDateFormatted, latestDiagnosis, impor
   }
   return diagnosis;
 }
-
 function extractPatientTags({ latestHospital, latestDoctor, firstDiagnosis, latestDiagnosis, importOrder }) {
   const tags = [];
-
   const append = value => {
     const item = safeString(value);
     if (item && !tags.includes(item)) {
       tags.push(item);
     }
   };
-
   append(latestHospital);
   append(latestDoctor);
   if (firstDiagnosis && safeString(firstDiagnosis) !== safeString(latestDiagnosis)) {
@@ -276,10 +371,8 @@ function extractPatientTags({ latestHospital, latestDoctor, firstDiagnosis, late
   if (Number.isFinite(importOrder) && importOrder > 0) {
     append(`Excel 行 ${importOrder}`);
   }
-
   return tags;
 }
-
 function deriveHospitalOptions(patients) {
   const set = new Set();
   (patients || []).forEach(patient => {
@@ -294,7 +387,6 @@ function deriveHospitalOptions(patients) {
   });
   return createOptionsFromSet(set);
 }
-
 function deriveDiagnosisOptions(patients) {
   const set = new Set();
   (patients || []).forEach(patient => {
@@ -316,7 +408,6 @@ function deriveDiagnosisOptions(patients) {
   });
   return createOptionsFromSet(set);
 }
-
 function mergeSelectedIntoOptions(options, selectedIds) {
   const map = new Map();
   (options || []).forEach(option => {
@@ -332,7 +423,6 @@ function mergeSelectedIntoOptions(options, selectedIds) {
   });
   return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
 }
-
 function canonicalizeSchemeFilters(filters) {
   const normalized = normalizeAdvancedFilters(filters);
   const clone = { ...normalized };
@@ -340,15 +430,18 @@ function canonicalizeSchemeFilters(filters) {
   clone.riskLevels = ensureArrayValue(clone.riskLevels).slice().sort();
   clone.hospitals = ensureArrayValue(clone.hospitals).slice().sort();
   clone.diagnosis = ensureArrayValue(clone.diagnosis).slice().sort();
+  clone.genders = ensureArrayValue(clone.genders).slice().sort();
+  clone.ethnicities = ensureArrayValue(clone.ethnicities).slice().sort();
+  clone.nativePlaces = ensureArrayValue(clone.nativePlaces).slice().sort();
+  clone.ageRanges = ensureArrayValue(clone.ageRanges).slice().sort();
+  clone.doctors = ensureArrayValue(clone.doctors).slice().sort();
   clone.dateRange = ensureDateRangeValue(clone.dateRange);
   clone.logicMode = clone.logicMode === 'OR' ? 'OR' : 'AND';
   return clone;
 }
-
 function schemeFingerprint(filters) {
   return JSON.stringify(canonicalizeSchemeFilters(filters));
 }
-
 function summarizeFiltersForScheme(filters) {
   const normalized = canonicalizeSchemeFilters(filters);
   const parts = [];
@@ -364,6 +457,22 @@ function summarizeFiltersForScheme(filters) {
   if (normalized.diagnosis.length) {
     parts.push(`诊断:${normalized.diagnosis.slice(0, 2).join('/')}${normalized.diagnosis.length > 2 ? '…' : ''}`);
   }
+  if (normalized.genders.length) {
+    parts.push(`性别:${normalized.genders.join('/')}`);
+  }
+  if (normalized.ethnicities.length) {
+    parts.push(`民族:${normalized.ethnicities.slice(0, 2).join('/')}${normalized.ethnicities.length > 2 ? '…' : ''}`);
+  }
+  if (normalized.nativePlaces.length) {
+    parts.push(`籍贯:${normalized.nativePlaces.slice(0, 2).join('/')}${normalized.nativePlaces.length > 2 ? '…' : ''}`);
+  }
+  if (normalized.ageRanges.length) {
+    const labels = normalized.ageRanges.map(getAgeBucketLabelById);
+    parts.push(`年龄:${labels.slice(0, 2).join('/')}${labels.length > 2 ? '…' : ''}`);
+  }
+  if (normalized.doctors.length) {
+    parts.push(`医生:${normalized.doctors.slice(0, 2).join('/')}${normalized.doctors.length > 2 ? '…' : ''}`);
+  }
   const { start, end } = normalized.dateRange || {};
   if (start || end) {
     parts.push(`日期:${start || '∞'}~${end || '∞'}`);
@@ -371,7 +480,6 @@ function summarizeFiltersForScheme(filters) {
   parts.push(normalized.logicMode === 'OR' ? '任一条件' : '全部条件');
   return parts.join(' | ');
 }
-
 function loadSchemesFromStorage() {
   try {
     const raw = wx.getStorageSync(FILTER_SCHEME_STORAGE_KEY) || [];
@@ -395,7 +503,6 @@ function loadSchemesFromStorage() {
   }
   return [];
 }
-
 function persistSchemesToStorage(list) {
   try {
     wx.setStorageSync(FILTER_SCHEME_STORAGE_KEY, Array.isArray(list) ? list : []);
@@ -403,7 +510,6 @@ function persistSchemesToStorage(list) {
     logger.warn('persistSchemesToStorage failed', error);
   }
 }
-
 function readPatientsCache() {
   try {
     const cache = wx.getStorageSync(PATIENT_CACHE_KEY);
@@ -423,7 +529,6 @@ function readPatientsCache() {
     return null;
   }
 }
-
 function writePatientsCache(cacheData = {}) {
   try {
     const patients = Array.isArray(cacheData.patients) ? cacheData.patients : [];
@@ -438,7 +543,6 @@ function writePatientsCache(cacheData = {}) {
     // ignore cache write errors
   }
 }
-
 function clearFabTimer(pageInstance) {
   if (!pageInstance) {
     return;
@@ -449,7 +553,6 @@ function clearFabTimer(pageInstance) {
     pageInstance.fabRestoreTimer = null;
   }
 }
-
 function clearPageEnterTimer(pageInstance) {
   if (!pageInstance) {
     return;
@@ -460,7 +563,6 @@ function clearPageEnterTimer(pageInstance) {
     pageInstance.pageEnterTimer = null;
   }
 }
-
 Page({
   data: {
     patients: [],
@@ -476,9 +578,7 @@ Page({
     skeletonPlaceholders: [0, 1, 2, 3],
     cardActions: [
       { id: 'view', label: '查看详情', type: 'text', icon: '→' },
-      { id: 'remind', label: '发起提醒', type: 'text', icon: '🔔' },
-      { id: 'export', label: '导出档案', type: 'text', icon: '⬇️' },
-      { id: 'intake', label: '录入入住', type: 'text', icon: '＋' },
+      { id: 'more', label: '更多操作', type: 'text', icon: '⋯' },
     ],
     cardActionsSimplified: [
       { id: 'more', label: '更多操作', type: 'text', icon: '⋯' },
@@ -500,15 +600,27 @@ Page({
     filterHospitalOptions: [],
     filterDiagnosisOptions: [],
     filterAllDiagnosisOptions: [],
+    filterGenderOptions: [],
+    filterEthnicityOptions: [],
+    filterNativePlaceOptions: [],
+    filterDoctorOptions: [],
+    filterAgeRangeOptions: AGE_BUCKETS.map(bucket => ({ id: bucket.id, label: bucket.label })),
     filterPreviewCount: -1,
     filterPreviewLoading: false,
-    filterPreviewLabel: '名患者符合筛选',
+    filterPreviewLabel: '名住户符合筛选',
     advancedFilters: getDefaultAdvancedFilters(),
     pendingAdvancedFilters: getDefaultAdvancedFilters(),
     batchOperationLoading: false,
     filterSchemes: [],
+    checkoutDialogVisible: false,
+    checkoutSubmitting: false,
+    checkoutForm: {
+      reason: '',
+      note: '',
+    },
+    checkoutErrors: {},
+    checkoutPatient: null,
   },
-
   onLoad() {
     this.fabRestoreTimer = null;
     this.pageEnterTimer = null;
@@ -533,7 +645,6 @@ Page({
       page: 0,
     });
   },
-
   onHide() {
     clearFabTimer(this);
     clearPageEnterTimer(this);
@@ -544,21 +655,17 @@ Page({
       this.setData({ pageTransitionClass: 'page-transition-enter' });
     }
   },
-
   onUnload() {
     clearFabTimer(this);
     clearPageEnterTimer(this);
   },
-
   onShow() {
     this.applyPendingUpdates();
     this.playPageEnterAnimation();
   },
-
   onReady() {
     this.playPageEnterAnimation();
   },
-
   playPageEnterAnimation() {
     clearPageEnterTimer(this);
     this.setData({ pageTransitionClass: 'page-transition-enter' });
@@ -569,7 +676,6 @@ Page({
       });
     }, 20);
   },
-
   async fetchPatients(options = {}) {
     const silent = !!(options && options.silent);
     const page = Math.max(Number.isFinite(options.page) ? Number(options.page) : 0, 0);
@@ -577,7 +683,6 @@ Page({
     const forceRefresh = !!(options && options.forceRefresh);
     const pageSize = Number(this.data.pageSize) || PATIENT_PAGE_SIZE;
     const shouldAppend = append && page > 0;
-
     if (!shouldAppend) {
       if (!silent) {
         this.setData({ loading: true, error: '' });
@@ -587,7 +692,6 @@ Page({
     } else {
       this.setData({ error: '' });
     }
-
     try {
       const res = await wx.cloud.callFunction({
         name: 'patientProfile',
@@ -615,8 +719,27 @@ Page({
         const firstHospital = item.firstHospital || item.latestHospital || '';
         const latestHospital = item.latestHospital || item.firstHospital || '';
         const latestDoctor = item.latestDoctor || '';
+        const firstDoctor = item.firstDoctor || '';
         const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0);
-        const { cardStatus, careStatus, diffDays } = mapPatientStatus(latestAdmissionTimestamp);
+        const { cardStatus: derivedCardStatus, careStatus: derivedCareStatus, diffDays } =
+          mapPatientStatus(latestAdmissionTimestamp);
+        const checkoutAtRaw = item.checkoutAt || (item.metadata && item.metadata.checkoutAt);
+        const checkoutAt = Number(checkoutAtRaw);
+        const hasCheckout = Number.isFinite(checkoutAt) && checkoutAt > 0;
+        let careStatus = normalizeCareStatus(item.careStatus, derivedCareStatus);
+        const latestTimestampNumeric = Number.isFinite(latestAdmissionTimestamp)
+          ? latestAdmissionTimestamp
+          : null;
+        const hasExplicitCareStatus = Boolean(safeString(item.careStatus));
+        if (
+          hasCheckout &&
+          (!hasExplicitCareStatus ||
+            careStatus === derivedCareStatus ||
+            (latestTimestampNumeric !== null && checkoutAt >= latestTimestampNumeric))
+        ) {
+          careStatus = 'discharged';
+        }
+        const cardStatus = deriveCardStatus(careStatus, derivedCardStatus);
         const riskLevel = identifyRiskLevel(diffDays);
         const admissionCount = Number(item.admissionCount || 0);
         const badges = generatePatientBadges({ careStatus, riskLevel, admissionCount });
@@ -638,10 +761,21 @@ Page({
         });
         const key = this.resolvePatientKey(item);
         const selected = Boolean(key && selectedMap[key]);
-        return {
-          ...item,
-          name: item.patientName || item.name || '',
+        const genderLabel = mapGenderLabel(item.gender);
+        const nativePlace = item.nativePlace || '';
+        const ethnicity = item.ethnicity || '';
+        const ageYears = calculateAge(item.birthDate);
+        const ageBucket = resolveAgeBucket(ageYears);
+        const latestAdmissionDisplay = latestAdmissionDateFormatted
+          ? `最近入住 ${latestAdmissionDateFormatted}`
+          : '未入住';
+      return {
+        ...item,
+        name: item.patientName || item.name || '',
           ageText: formatAge(item.birthDate),
+          ageYears,
+          ageBucketId: ageBucket ? ageBucket.id : '',
+          ageBucketLabel: ageBucket ? ageBucket.label : '',
           latestAdmissionDateFormatted,
           firstAdmissionDateFormatted,
           firstDiagnosis,
@@ -649,6 +783,8 @@ Page({
           firstHospital,
           latestHospital,
           latestDoctor,
+          firstDoctor,
+          latestAdmissionDisplay,
           cardStatus,
           careStatus,
           riskLevel,
@@ -657,9 +793,14 @@ Page({
           tags,
           firstAdmissionTimestamp,
           diffDaysSinceLatestAdmission: diffDays,
-          selected,
-        };
-      });
+          gender: item.gender || '',
+          genderLabel,
+          nativePlace,
+          ethnicity,
+        checkoutAt: hasCheckout ? checkoutAt : null,
+        selected,
+      };
+    });
       let mergedPatients = mappedPatients;
       if (shouldAppend) {
         const existing = Array.isArray(this.data.patients) ? this.data.patients.slice() : [];
@@ -681,12 +822,10 @@ Page({
         });
         mergedPatients = existing;
       }
-
       const hasMore = typeof result.hasMore === 'boolean'
         ? result.hasMore
         : mappedPatients.length >= resolvedLimit;
       const nextPage = result.nextPage !== undefined ? result.nextPage : (hasMore ? page + 1 : null);
-
       this.setData(
         {
           patients: mergedPatients,
@@ -703,7 +842,6 @@ Page({
           this.updateFilterOptions(mergedPatients);
         }
       );
-
       if (!shouldAppend && page === 0) {
         writePatientsCache({
           patients: mappedPatients,
@@ -717,7 +855,6 @@ Page({
           // ignore removal errors
         }
       }
-
       return mappedPatients.length;
     } catch (error) {
       logger.error('Failed to load patients', error);
@@ -739,7 +876,6 @@ Page({
       return 0;
     }
   },
-
   applyPendingUpdates() {
     let flag = null;
     try {
@@ -747,23 +883,19 @@ Page({
     } catch (error) {
       flag = null;
     }
-
     if (!flag) {
       return;
     }
-
     try {
       wx.removeStorageSync(PATIENT_LIST_DIRTY_KEY);
     } catch (error) {
       // ignore removal errors
     }
-
     const { patientKey, updates } = flag || {};
     if (!patientKey || !updates) {
       this.fetchPatients({ silent: false });
       return;
     }
-
     const mergeUpdates = (list = []) =>
       list.map(item => {
         const key = item.patientKey || item.key || item.id || item.recordKey;
@@ -771,27 +903,46 @@ Page({
           return item;
         }
         if (key === patientKey) {
-          return { ...item, ...updates };
+          const nextItem = { ...item, ...updates };
+          const latestTimestamp = Number(nextItem.latestAdmissionTimestamp || 0) || null;
+          const { cardStatus: derivedCardStatus, careStatus: derivedCareStatus, diffDays } =
+            mapPatientStatus(latestTimestamp);
+          const normalizedCareStatus = normalizeCareStatus(
+            nextItem.careStatus,
+            derivedCareStatus
+          );
+          const cardStatus = deriveCardStatus(normalizedCareStatus, derivedCardStatus);
+          const riskLevel = identifyRiskLevel(diffDays);
+          const admissionCount = Number(nextItem.admissionCount || 0);
+          const badges = generatePatientBadges({
+            careStatus: normalizedCareStatus,
+            riskLevel,
+            admissionCount,
+          });
+          return {
+            ...nextItem,
+            careStatus: normalizedCareStatus,
+            cardStatus,
+            riskLevel,
+            badges,
+          };
         }
         return item;
       });
-
     const mergedPatients = mergeUpdates(this.data.patients || []);
     this.setData({ patients: mergedPatients }, () => {
       this.applyFilters();
       this.updateFilterOptions(mergedPatients);
     });
-
     this.fetchPatients({ silent: false });
   },
-
   buildFilteredPatients(source = [], options = {}) {
     const { searchKeyword, sortIndex } = this.data;
     const keyword = (searchKeyword || '').trim().toLowerCase();
-    const sortValue = SORT_OPTIONS[sortIndex] ? SORT_OPTIONS[sortIndex].value : 'default';
-
+    const sortValue = SORT_OPTIONS[sortIndex]
+      ? SORT_OPTIONS[sortIndex].value
+      : 'latestAdmissionDesc';
     let list = Array.isArray(source) ? source.slice() : [];
-
     const activeFilter = (this.data.quickFilters || []).find(item => item && item.active);
     const activeFilterId = activeFilter ? activeFilter.id : 'all';
     if (activeFilterId === 'in_care') {
@@ -801,7 +952,6 @@ Page({
     } else if (activeFilterId === 'followup') {
       list = list.filter(item => item && item.riskLevel === 'medium');
     }
-
     if (keyword) {
       list = list.filter(item => {
         const name = (item.patientName || '').toLowerCase();
@@ -810,20 +960,30 @@ Page({
         const firstHospital = (item.firstHospital || '').toLowerCase();
         const latestHospital = (item.latestHospital || '').toLowerCase();
         const latestDoctor = (item.latestDoctor || '').toLowerCase();
+        const nativePlace = (item.nativePlace || '').toLowerCase();
+        const ethnicity = (item.ethnicity || '').toLowerCase();
+        const gender = (item.gender || '').toLowerCase();
+        const genderLabel = (item.genderLabel || '').toLowerCase();
+        const ageLabel = (item.ageText || '').toLowerCase();
+        const ageBucketLabel = (item.ageBucketLabel || '').toLowerCase();
         return (
           name.includes(keyword) ||
           firstDiagnosis.includes(keyword) ||
           latestDiagnosis.includes(keyword) ||
           firstHospital.includes(keyword) ||
           latestHospital.includes(keyword) ||
-          latestDoctor.includes(keyword)
+          latestDoctor.includes(keyword) ||
+          nativePlace.includes(keyword) ||
+          ethnicity.includes(keyword) ||
+          gender.includes(keyword) ||
+          genderLabel.includes(keyword) ||
+          ageLabel.includes(keyword) ||
+          ageBucketLabel.includes(keyword)
         );
       });
     }
-
     const advancedFilters = options.advancedFilters || this.data.advancedFilters || getDefaultAdvancedFilters();
     list = applyAdvancedFilters(list, advancedFilters);
-
     if (sortValue === 'admissionCountDesc') {
       list.sort((a, b) => (b.admissionCount || 0) - (a.admissionCount || 0));
     } else if (sortValue === 'latestAdmissionDesc') {
@@ -839,8 +999,19 @@ Page({
           new Date(a.latestAdmissionDateFormatted || a.latestAdmissionDate || '').getTime() || 0;
         return bDate - aDate;
       });
+    } else if (sortValue === 'nameAsc') {
+      list.sort((a, b) => {
+        const nameA = safeString(a.patientName).localeCompare(safeString(b.patientName), 'zh-Hans-CN', {
+          sensitivity: 'base',
+        });
+        if (nameA !== 0) {
+          return nameA;
+        }
+        return safeString(a.recordKey).localeCompare(safeString(b.recordKey), 'zh-Hans-CN', {
+          sensitivity: 'base',
+        });
+      });
     }
-
     const selectedMap = options.selectedMap || this.data.selectedPatientMap || {};
     return list.map(item => {
       const key = this.resolvePatientKey(item);
@@ -863,7 +1034,6 @@ Page({
       };
     });
   },
-
   applyFilters() {
     const filtered = this.buildFilteredPatients(this.data.patients || []);
     this.setData({
@@ -872,7 +1042,6 @@ Page({
       filterPreviewLoading: false,
     });
   },
-
   calculatePreviewCount(filters) {
     const normalized = normalizeAdvancedFilters(filters);
     const list = this.buildFilteredPatients(this.data.patients || [], {
@@ -881,7 +1050,6 @@ Page({
     });
     return list.length;
   },
-
   onFilterPreview(event) {
     const value = event && event.detail ? event.detail.value : null;
     const normalized = normalizeAdvancedFilters(value);
@@ -892,7 +1060,6 @@ Page({
       filterPreviewLoading: false,
     });
   },
-
   onFilterApply(event) {
     const value = event && event.detail ? event.detail.value : null;
     const normalized = normalizeAdvancedFilters(value);
@@ -910,7 +1077,6 @@ Page({
       }
     );
   },
-
   onFilterReset() {
     const defaults = getDefaultAdvancedFilters();
     const count = this.calculatePreviewCount(defaults);
@@ -920,7 +1086,6 @@ Page({
       filterPreviewLoading: false,
     });
   },
-
   onFilterClose() {
     const normalized = normalizeAdvancedFilters(this.data.advancedFilters);
     this.setData({
@@ -930,7 +1095,6 @@ Page({
       filterPreviewLoading: false,
     });
   },
-
   onFilterDiagnosisSearch(event) {
     const keywordRaw = event && event.detail ? event.detail.keyword : '';
     const keyword = safeString(keywordRaw).toLowerCase();
@@ -944,11 +1108,9 @@ Page({
     );
     this.setData({ filterDiagnosisOptions: filtered.slice(0, 12) });
   },
-
   onFilterDiagnosisSelect() {
     // 暂无额外处理，保留当前建议列表
   },
-
   updateFilterOptions(patients = []) {
     const source = Array.isArray(patients) ? patients : [];
     const applied = normalizeAdvancedFilters(this.data.advancedFilters);
@@ -956,7 +1118,6 @@ Page({
     const schemeFilters = Array.isArray(this.data.filterSchemes)
       ? this.data.filterSchemes.map(item => item && item.filters)
       : [];
-
     const baseHospitalOptions = deriveHospitalOptions(source);
     const hospitalSelectedSet = new Set([
       ...ensureArrayValue(applied.hospitals),
@@ -969,7 +1130,6 @@ Page({
     });
     const hospitalSelected = Array.from(hospitalSelectedSet);
     const hospitalOptions = mergeSelectedIntoOptions(baseHospitalOptions, hospitalSelected);
-
     const baseDiagnosisOptions = deriveDiagnosisOptions(source);
     const diagnosisSelectedSet = new Set([
       ...ensureArrayValue(applied.diagnosis),
@@ -982,14 +1142,98 @@ Page({
     });
     const diagnosisSelected = Array.from(diagnosisSelectedSet);
     const diagnosisOptionsAll = mergeSelectedIntoOptions(baseDiagnosisOptions, diagnosisSelected);
-
+    const genderValues = new Set();
+    const ethnicityValues = new Set();
+    const nativePlaceValues = new Set();
+    const doctorValues = new Set();
+    const ageBucketValues = new Set();
+    source.forEach(patient => {
+      const genderLabel = mapGenderLabel(patient.gender || patient.genderLabel);
+      if (genderLabel) {
+        genderValues.add(genderLabel);
+      }
+      const ethnicityValue = safeString(patient.ethnicity);
+      if (ethnicityValue) {
+        ethnicityValues.add(ethnicityValue);
+      }
+      const nativePlaceValue = safeString(patient.nativePlace);
+      if (nativePlaceValue) {
+        nativePlaceValues.add(nativePlaceValue);
+      }
+      const latestDoctorValue = safeString(patient.latestDoctor);
+      if (latestDoctorValue) {
+        doctorValues.add(latestDoctorValue);
+      }
+      const firstDoctorValue = safeString(patient.firstDoctor);
+      if (firstDoctorValue) {
+        doctorValues.add(firstDoctorValue);
+      }
+      const bucketId = safeString(patient.ageBucketId);
+      if (bucketId) {
+        ageBucketValues.add(bucketId);
+      }
+    });
+    const genderSelectedSet = new Set([
+      ...ensureArrayValue(applied.genders),
+      ...ensureArrayValue(pending.genders),
+    ]);
+    const ethnicitySelectedSet = new Set([
+      ...ensureArrayValue(applied.ethnicities),
+      ...ensureArrayValue(pending.ethnicities),
+    ]);
+    const nativePlaceSelectedSet = new Set([
+      ...ensureArrayValue(applied.nativePlaces),
+      ...ensureArrayValue(pending.nativePlaces),
+    ]);
+    const ageSelectedSet = new Set([
+      ...ensureArrayValue(applied.ageRanges),
+      ...ensureArrayValue(pending.ageRanges),
+    ]);
+    const doctorSelectedSet = new Set([
+      ...ensureArrayValue(applied.doctors),
+      ...ensureArrayValue(pending.doctors),
+    ]);
+    schemeFilters.forEach(filters => {
+      ensureArrayValue(filters && filters.genders).forEach(value => genderSelectedSet.add(value));
+      ensureArrayValue(filters && filters.ethnicities).forEach(value => ethnicitySelectedSet.add(value));
+      ensureArrayValue(filters && filters.nativePlaces).forEach(value => nativePlaceSelectedSet.add(value));
+      ensureArrayValue(filters && filters.ageRanges).forEach(value => ageSelectedSet.add(value));
+      ensureArrayValue(filters && filters.doctors).forEach(value => doctorSelectedSet.add(value));
+    });
+    genderSelectedSet.forEach(value => genderValues.add(safeString(value)));
+    ethnicitySelectedSet.forEach(value => ethnicityValues.add(safeString(value)));
+    nativePlaceSelectedSet.forEach(value => nativePlaceValues.add(safeString(value)));
+    ageSelectedSet.forEach(value => ageBucketValues.add(safeString(value)));
+    doctorSelectedSet.forEach(value => doctorValues.add(safeString(value)));
+    const genderOptions = mergeSelectedIntoOptions(
+      createOptionsFromSet(Array.from(genderValues)),
+      Array.from(genderSelectedSet)
+    );
+    const ethnicityOptions = mergeSelectedIntoOptions(
+      createOptionsFromSet(Array.from(ethnicityValues)),
+      Array.from(ethnicitySelectedSet)
+    );
+    const nativePlaceOptions = mergeSelectedIntoOptions(
+      createOptionsFromSet(Array.from(nativePlaceValues)),
+      Array.from(nativePlaceSelectedSet)
+    );
+    const doctorOptions = mergeSelectedIntoOptions(
+      createOptionsFromSet(Array.from(doctorValues)),
+      Array.from(doctorSelectedSet)
+    );
+    const ageOptionsBase = AGE_BUCKETS.map(bucket => ({ id: bucket.id, label: bucket.label }));
+    const ageOptions = mergeSelectedIntoOptions(ageOptionsBase, Array.from(ageSelectedSet));
     this.setData({
       filterHospitalOptions: hospitalOptions,
       filterDiagnosisOptions: diagnosisOptionsAll.slice(0, 12),
       filterAllDiagnosisOptions: diagnosisOptionsAll,
+      filterGenderOptions: genderOptions,
+      filterEthnicityOptions: ethnicityOptions,
+      filterNativePlaceOptions: nativePlaceOptions,
+      filterDoctorOptions: doctorOptions,
+      filterAgeRangeOptions: ageOptions,
     });
   },
-
   onFilterSaveScheme() {
     const normalized = canonicalizeSchemeFilters(this.data.pendingAdvancedFilters);
     const fingerprint = schemeFingerprint(normalized);
@@ -1015,7 +1259,6 @@ Page({
     wx.showToast({ icon: 'success', title: '已保存方案' });
     this.updateFilterOptions(this.data.patients || []);
   },
-
   onFilterApplyScheme(event) {
     const schemeId = event && event.detail ? event.detail.id : '';
     const target = (this.data.filterSchemes || []).find(item => item && item.id === schemeId);
@@ -1025,7 +1268,6 @@ Page({
     }
     this.onFilterApply({ detail: { value: target.filters } });
   },
-
   onFilterDeleteScheme(event) {
     const schemeId = event && event.detail ? event.detail.id : '';
     const schemes = Array.isArray(this.data.filterSchemes)
@@ -1036,7 +1278,6 @@ Page({
     wx.showToast({ icon: 'none', title: '已删除方案' });
     this.updateFilterOptions(this.data.patients || []);
   },
-
   onFilterRenameScheme(event) {
     const schemeId = event && event.detail ? event.detail.id : '';
     if (!schemeId) {
@@ -1078,7 +1319,6 @@ Page({
         },
       });
     };
-
     if (typeof wx.showModal === 'function') {
       try {
         showRenameModal();
@@ -1090,12 +1330,10 @@ Page({
       wx.showToast({ icon: 'none', title: '当前环境不支持重命名' });
     }
   },
-
   loadFilterSchemes() {
     const schemes = loadSchemesFromStorage();
     this.setData({ filterSchemes: schemes });
   },
-
   saveFilterSchemes(schemes) {
     const normalized = (schemes || []).map(item => {
       const filters = canonicalizeSchemeFilters(item.filters);
@@ -1110,7 +1348,6 @@ Page({
     persistSchemesToStorage(normalized);
     this.setData({ filterSchemes: normalized });
   },
-
   resolvePatientKey(patientLike) {
     if (!patientLike) {
       return '';
@@ -1126,7 +1363,6 @@ Page({
       ''
     );
   },
-
   onSearchInput(event) {
     const value = (event.detail && event.detail.value) || '';
     this.setData({ searchKeyword: value }, () => {
@@ -1136,7 +1372,6 @@ Page({
       this.setData({ searchSuggestions: [], searchLoading: false });
     }
   },
-
   async onSearchSuggest(event) {
     const keyword = (event.detail && event.detail.value) || '';
     if (!keyword) {
@@ -1152,17 +1387,14 @@ Page({
       this.setData({ searchSuggestions: [], searchLoading: false });
     }
   },
-
   async fetchSearchSuggestions(keyword) {
     const trimmed = safeString(keyword);
     if (!trimmed || trimmed.length < MIN_SUGGESTION_LENGTH) {
       return [];
     }
-
     const lowerKeyword = trimmed.toLowerCase();
     const patients = Array.isArray(this.data.patients) ? this.data.patients : [];
     const suggestions = new Set();
-
     patients.forEach(patient => {
       if (!patient) {
         return;
@@ -1176,7 +1408,6 @@ Page({
         patient.latestHospital,
         patient.latestDoctor,
       ];
-
       candidates.forEach(item => {
         const text = safeString(item);
         if (text && text.toLowerCase().includes(lowerKeyword)) {
@@ -1184,10 +1415,8 @@ Page({
         }
       });
     });
-
     return Array.from(suggestions).slice(0, MAX_SUGGESTIONS);
   },
-
   onSearchSubmit(event) {
     const value = (event.detail && event.detail.value) || '';
     this.setData(
@@ -1201,7 +1430,6 @@ Page({
       }
     );
   },
-
   onSearchClear() {
     if (!this.data.searchKeyword && !this.data.searchSuggestions.length) {
       return;
@@ -1217,13 +1445,11 @@ Page({
       }
     );
   },
-
   onFilterTap(event) {
     const filter = (event.detail && event.detail.filter) || {};
     const filterId = filter.id || 'all';
     this.applyQuickFilter(filterId);
   },
-
   applyQuickFilter(filterId = 'all') {
     const validIds = QUICK_FILTERS.map(filter => filter.id);
     const resolvedId = validIds.includes(filterId) ? filterId : 'all';
@@ -1235,7 +1461,6 @@ Page({
       this.applyFilters();
     });
   },
-
   onToggleAdvancedFilter() {
     const normalized = normalizeAdvancedFilters(this.data.advancedFilters);
     const count = this.calculatePreviewCount(normalized);
@@ -1246,19 +1471,16 @@ Page({
       filterPreviewLoading: false,
     });
   },
-
   onSortChange(event) {
     const sortIndex = Number(event.detail.value) || 0;
     this.setData({ sortIndex }, () => {
       this.applyFilters();
     });
   },
-
   async onPullDownRefresh() {
     if (typeof wx.showNavigationBarLoading === 'function') {
       wx.showNavigationBarLoading();
     }
-
     try {
       await this.fetchPatients({ silent: false, page: 0 });
     } catch (error) {
@@ -1273,7 +1495,6 @@ Page({
       }
     }
   },
-
   shrinkFabTemporarily() {
     if (!this.data.fabCompact) {
       this.setData({ fabCompact: true });
@@ -1286,20 +1507,17 @@ Page({
       }
     }, FAB_SCROLL_RESTORE_DELAY);
   },
-
   async loadMorePatients() {
     const { hasMore, loading, loadingMore } = this.data;
     if (loading || loadingMore || !hasMore) {
       return;
     }
-
     const nextPage = Number.isFinite(this.data.nextPage)
       ? Number(this.data.nextPage)
       : this.data.page + 1;
     if (!Number.isFinite(nextPage) || nextPage <= this.data.page) {
       return;
     }
-
     this.setData({ loadingMore: true });
     try {
       await this.fetchPatients({ silent: true, append: true, page: nextPage });
@@ -1310,53 +1528,45 @@ Page({
       this.setData({ loadingMore: false });
     }
   },
-
   onReachBottom() {
     this.loadMorePatients();
   },
-
   onScrollToLower() {
     this.loadMorePatients();
   },
-
   onListScroll() {
     this.shrinkFabTemporarily();
   },
-
   navigateToPatient(patientLike) {
     const patient = patientLike || {};
     const profileKey = this.resolvePatientKey(patient);
     const resolvedPatientKey =
       patient.patientKey || patient.key || patient.recordKey || '';
-
     if (!profileKey) {
       return;
     }
-
     let url = `/pages/patient-detail/detail?key=${encodeURIComponent(profileKey)}`;
     if (resolvedPatientKey) {
       url += `&patientId=${encodeURIComponent(resolvedPatientKey)}`;
     }
-
     wx.navigateTo({ url });
   },
-
   onAnalysisTap() {
     wx.navigateTo({
       url: '/pages/analysis/index',
     });
   },
-
-  onIntakeTap() {
-    wx.navigateTo({
-      url: '/pages/patient-intake/select/select',
-    });
+  onCreatePatientTap() {
+    const url = '/pages/patient-intake/wizard/wizard?mode=create';
+    if (this.data && this.data.testCaptureNavigation) {
+      this.setData({ testLastNavigation: url });
+      return;
+    }
+    wx.navigateTo({ url });
   },
-
   onRetry() {
     this.fetchPatients({ silent: false });
   },
-
   onPatientTap(event) {
     const detailPatient = (event.detail && event.detail.patient) || null;
     if (detailPatient) {
@@ -1372,19 +1582,16 @@ Page({
     const { key, patientKey, recordKey } = (event.currentTarget && event.currentTarget.dataset) || {};
     this.navigateToPatient({ key, patientKey, recordKey });
   },
-
   setBatchState(map, batchMode) {
     const nextMap = map || {};
     const selectedCount = Object.keys(nextMap).length;
     const nextMode = batchMode || selectedCount > 0;
-
     // 计算是否全选
     const all = this.buildFilteredPatients(this.data.patients || []);
     const allSelected = all.length > 0 && all.every(item => {
       const key = this.resolvePatientKey(item);
       return key && nextMap[key];
     });
-
     this.setData(
       {
         batchMode: nextMode,
@@ -1397,7 +1604,6 @@ Page({
       }
     );
   },
-
   enterBatchMode(patient) {
     const key = this.resolvePatientKey(patient);
     if (!key) {
@@ -1407,11 +1613,9 @@ Page({
     map[key] = patient;
     this.setBatchState(map, true);
   },
-
   exitBatchMode() {
     this.setBatchState({}, false);
   },
-
   handleBatchSelectAll() {
     const currentMap = this.data.selectedPatientMap || {};
     const all = this.buildFilteredPatients(this.data.patients || []);
@@ -1419,7 +1623,6 @@ Page({
       const key = this.resolvePatientKey(item);
       return key && currentMap[key];
     });
-
     if (allSelected) {
       // 当前已全选,执行反选
       this.setBatchState({}, false);
@@ -1435,11 +1638,9 @@ Page({
       this.setBatchState(map, true);
     }
   },
-
   handleBatchClear() {
     this.setBatchState({}, false);
   },
-
   handleBatchRemind() {
     const patients = Object.values(this.data.selectedPatientMap || {});
     if (!patients.length) {
@@ -1448,7 +1649,6 @@ Page({
     }
     wx.showToast({ icon: 'none', title: `已发送提醒（${patients.length}）` });
   },
-
   handleBatchExport() {
     const patients = Object.values(this.data.selectedPatientMap || {});
     if (!patients.length) {
@@ -1457,14 +1657,12 @@ Page({
     }
     wx.showToast({ icon: 'none', title: `已导出档案（${patients.length}）` });
   },
-
   showBatchActionSheet() {
     const patients = Object.values(this.data.selectedPatientMap || {});
     if (!patients.length) {
       wx.showToast({ icon: 'none', title: '请先选择患者' });
       return;
     }
-
     wx.showActionSheet({
       itemList: ['批量提醒', '导出档案', '清空选择'],
       success: (res) => {
@@ -1482,64 +1680,77 @@ Page({
       },
     });
   },
-
   onCardAction(event) {
     const { action, patient } = event.detail || {};
     if (!action || !action.id) {
       return;
     }
-
-    // 处理"更多"菜单
     if (action.id === 'more') {
       this.showPatientActionSheet(patient);
       return;
     }
-
     if (action.id === 'view') {
       this.navigateToPatient(patient);
       return;
     }
-    if (action.id === 'remind') {
-      wx.showToast({ icon: 'success', title: '已发送提醒' });
-      return;
-    }
-    if (action.id === 'export') {
-      wx.showToast({ icon: 'success', title: '导出任务已创建' });
-      return;
-    }
-    if (action.id === 'intake') {
-      wx.navigateTo({ url: '/pages/patient-intake/select/select' });
-      return;
-    }
-    wx.showToast({ icon: 'none', title: '功能开发中' });
+    this.showPatientActionSheet(patient);
   },
-
   showPatientActionSheet(patient) {
     if (this._patientActionSheetVisible) {
       return;
     }
-
     this._patientActionSheetVisible = true;
     const releaseActionSheetLock = () => {
       this._patientActionSheetVisible = false;
     };
-
+    const canCheckIn = patient && patient.careStatus !== 'in_care';
+    const canCheckout = patient && patient.careStatus === 'in_care';
+    const operations = [];
+    if (canCheckIn) {
+      operations.push({ id: 'intake', label: '入住' });
+    }
+    operations.push({ id: 'detail', label: '详情' });
+    if (canCheckout) {
+      operations.push({ id: 'checkout', label: '离开' });
+    }
+    operations.push({ id: 'message', label: '发送消息' });
+    operations.push({ id: 'export', label: '导出报告' });
+    operations.push({ id: 'delete', label: '删除住户' });
+    if (!operations.length) {
+      releaseActionSheetLock();
+      return;
+    }
+    if (this.data && this.data.testCaptureActionSheet) {
+      this.setData({ testLastActionSheet: operations.map(item => item.label) });
+      releaseActionSheetLock();
+      return;
+    }
     try {
       wx.showActionSheet({
-        itemList: ['查看详情', '发起提醒', '导出档案', '录入入住'],
+        itemList: operations.map(item => item.label),
         success: (res) => {
-          switch (res.tapIndex) {
-            case 0:
+          const operation = operations[res.tapIndex];
+          if (!operation) {
+            return;
+          }
+          switch (operation.id) {
+            case 'intake':
+              this.startIntakeForPatient(patient);
+              break;
+            case 'detail':
               this.navigateToPatient(patient);
               break;
-            case 1:
-              wx.showToast({ icon: 'success', title: '已发送提醒' });
+            case 'checkout':
+              this.handlePatientCheckout(patient);
               break;
-            case 2:
-              wx.showToast({ icon: 'success', title: '导出任务已创建' });
+            case 'message':
+              this.handleSendMessage(patient);
               break;
-            case 3:
-              wx.navigateTo({ url: '/pages/patient-intake/select/select' });
+            case 'export':
+              this.handleExportReport(patient);
+              break;
+            case 'delete':
+              this.handleDeletePatient(patient);
               break;
           }
         },
@@ -1552,7 +1763,241 @@ Page({
       throw error;
     }
   },
-
+  startIntakeForPatient(patient) {
+    const key = this.resolvePatientKey(patient);
+    if (!key) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    const patientId = patient.patientKey || patient.key || key;
+    const recordKey = patient.recordKey || key;
+    let url = `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(patientId)}`;
+    if (recordKey && recordKey !== patientId) {
+      url += `&recordKey=${encodeURIComponent(recordKey)}`;
+    }
+    if (this.data && this.data.testCaptureNavigation) {
+      this.setData({ testLastNavigation: url });
+      return;
+    }
+    wx.navigateTo({ url });
+  },
+  handlePatientCheckout(patient) {
+    if (this.data.checkoutDialogVisible || this.data.checkoutSubmitting) {
+      return;
+    }
+    const key = this.resolvePatientKey(patient);
+    if (!key) {
+      if (this.data && this.data.testCaptureToast) {
+        this.setData({ testLastToast: '缺少住户标识' });
+      }
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    const targetPatient = {
+      patientKey: key,
+      patientName: safeString((patient && (patient.patientName || patient.name)) || ''),
+      admissionCount: Number((patient && patient.admissionCount) || 0) || 0,
+      latestAdmissionTimestamp: Number((patient && patient.latestAdmissionTimestamp) || 0) || 0,
+      careStatus: patient && patient.careStatus,
+    };
+    this.setData({
+      checkoutDialogVisible: true,
+      checkoutPatient: targetPatient,
+      checkoutForm: {
+        reason: '',
+        note: '',
+      },
+      checkoutErrors: {},
+    });
+  },
+  onCheckoutDialogClose() {
+    if (this.data.checkoutSubmitting) {
+      return;
+    }
+    this.resetCheckoutDialog();
+  },
+  onCheckoutDialogCancel() {
+    if (this.data.checkoutSubmitting) {
+      return;
+    }
+    this.resetCheckoutDialog();
+  },
+  onCheckoutConfirmTap() {
+    this.submitCheckout();
+  },
+  onCheckoutReasonInput(event) {
+    const value = (event.detail && event.detail.value) || '';
+    this.setData({ 'checkoutForm.reason': value });
+  },
+  onCheckoutNoteInput(event) {
+    const value = (event.detail && event.detail.value) || '';
+    this.setData({ 'checkoutForm.note': value });
+  },
+  async submitCheckout() {
+    if (this.data.checkoutSubmitting) {
+      return;
+    }
+    const context = this.data.checkoutPatient || {};
+    const patientKey = this.resolvePatientKey(context);
+    if (!patientKey) {
+      if (this.data && this.data.testCaptureToast) {
+        this.setData({ testLastToast: '缺少住户标识' });
+      }
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      this.resetCheckoutDialog();
+      return;
+    }
+    const reason = safeString((this.data.checkoutForm && this.data.checkoutForm.reason) || '');
+    const note = safeString((this.data.checkoutForm && this.data.checkoutForm.note) || '');
+    this.setData({ checkoutSubmitting: true });
+    wx.showLoading({ title: '办理中', mask: true });
+    let checkoutData = null;
+    try {
+      checkoutData = await callPatientIntake('checkoutPatient', {
+        patientKey,
+        checkout: {
+          reason,
+          note,
+        },
+      });
+    } catch (error) {
+      wx.hideLoading();
+      this.setData({ checkoutSubmitting: false });
+      logger.error('checkoutPatient failed', error);
+      const message = safeString((error && (error.message || error.errMsg)) || '办理失败，请稍后再试');
+      const toastMessage = message.length > 14 ? `${message.slice(0, 13)}...` : message;
+      if (this.data && this.data.testCaptureToast) {
+        this.setData({ testLastToast: toastMessage || '办理失败' });
+      }
+      wx.showToast({ icon: 'none', title: toastMessage || '办理失败' });
+      return;
+    }
+    wx.hideLoading();
+    this.setData({ checkoutSubmitting: false });
+    if (this.data && this.data.testCaptureToast) {
+      this.setData({ testLastToast: '已办理' });
+    }
+    wx.showToast({ icon: 'success', title: '已办理' });
+    this.resetCheckoutDialog();
+    const checkoutAt = checkoutData && Number(checkoutData.checkoutAt) ? Number(checkoutData.checkoutAt) : Date.now();
+    this.applyCheckoutResult(patientKey, {
+      reason,
+      note,
+      checkoutAt,
+    });
+  },
+  resetCheckoutDialog() {
+    this.setData({
+      checkoutDialogVisible: false,
+      checkoutPatient: null,
+      checkoutForm: {
+        reason: '',
+        note: '',
+      },
+      checkoutErrors: {},
+    });
+  },
+  applyCheckoutResult(patientKey, checkoutResult = {}) {
+    if (!patientKey) {
+      return;
+    }
+    const reason = safeString(checkoutResult.reason);
+    const note = safeString(checkoutResult.note);
+    const checkoutAt = Number(checkoutResult.checkoutAt) || Date.now();
+    const patients = Array.isArray(this.data.patients) ? this.data.patients.slice() : [];
+    if (!patients.length) {
+      try {
+        wx.removeStorageSync(PATIENT_CACHE_KEY);
+      } catch (error) {
+        // ignore cache removal failure
+      }
+      this.fetchPatients({ silent: false, forceRefresh: true, page: 0 });
+      return;
+    }
+    const now = Date.now();
+    const updatedPatients = patients.map(item => {
+      const key = this.resolvePatientKey(item);
+      if (!key || key !== patientKey) {
+        return item;
+      }
+      const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0) || 0;
+      const diffDays =
+        latestAdmissionTimestamp > 0
+          ? Math.floor((now - latestAdmissionTimestamp) / (24 * 60 * 60 * 1000))
+          : null;
+      const riskLevel = identifyRiskLevel(diffDays);
+      const careStatus = 'discharged';
+      const badges = generatePatientBadges({
+        careStatus,
+        riskLevel,
+        admissionCount: item.admissionCount,
+      });
+      return {
+        ...item,
+        careStatus,
+        cardStatus: deriveCardStatus(careStatus, 'default'),
+        badges,
+        checkoutAt,
+        checkoutReason: reason,
+        checkoutNote: note,
+      };
+    });
+    const selectedMap = { ...(this.data.selectedPatientMap || {}) };
+    if (selectedMap[patientKey]) {
+      delete selectedMap[patientKey];
+    }
+    const selectedCount = Object.keys(selectedMap).length;
+    this.setData(
+      {
+        patients: updatedPatients,
+        selectedPatientMap: selectedMap,
+        selectedCount,
+        allSelected: false,
+      },
+      () => {
+        this.applyFilters();
+        this.updateFilterOptions(updatedPatients);
+      }
+    );
+    try {
+      wx.removeStorageSync(PATIENT_CACHE_KEY);
+    } catch (error) {
+      // ignore cache removal failure
+    }
+    try {
+      wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, {
+        timestamp: Date.now(),
+        patientKey,
+        updates: {
+          careStatus: 'discharged',
+          checkoutAt,
+          checkoutReason: reason,
+          checkoutNote: note,
+        },
+      });
+    } catch (error) {
+      // ignore storage failure
+    }
+    this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+  },
+  handleSendMessage() {
+    if (this.data && this.data.testCaptureToast) {
+      this.setData({ testLastToast: '功能开发中' });
+    }
+    wx.showToast({ icon: 'none', title: '功能开发中' });
+  },
+  handleExportReport() {
+    if (this.data && this.data.testCaptureToast) {
+      this.setData({ testLastToast: '功能开发中' });
+    }
+    wx.showToast({ icon: 'none', title: '功能开发中' });
+  },
+  handleDeletePatient() {
+    if (this.data && this.data.testCaptureToast) {
+      this.setData({ testLastToast: '功能开发中' });
+    }
+    wx.showToast({ icon: 'none', title: '功能开发中' });
+  },
   onCardLongPress(event) {
     const detailPatient = (event.detail && event.detail.patient) || null;
     const dataset = (event.currentTarget && event.currentTarget.dataset) || {};
@@ -1561,17 +2006,14 @@ Page({
       patientKey: dataset.patientKey,
       recordKey: dataset.recordKey,
     };
-
     // 如果不在批量模式,显示操作菜单
     if (!this.data.batchMode) {
       this.showPatientActionSheet(patient);
       return;
     }
-
     // 如果在批量模式,进入批量选择
     this.enterBatchMode(patient);
   },
-
   onCardSelectChange(event) {
     const detail = event.detail || {};
     const patient = detail.patient || {};
@@ -1587,7 +2029,6 @@ Page({
     }
     this.setBatchState(map, this.data.batchMode || detail.selected);
   },
-
   toggleBatchMode() {
     if (this.data.batchMode) {
       this.exitBatchMode();
@@ -1598,5 +2039,12 @@ Page({
     }
   },
 });
-
-
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    mapGenderLabel,
+    resolveAgeBucket,
+    getAgeBucketLabelById,
+    applyAdvancedFilters,
+    AGE_BUCKETS,
+  };
+}

@@ -35,6 +35,15 @@ function safeNumber(value) {
   return Number.isFinite(num) ? num : 0;
 }
 
+function formatGuardian(name, phone) {
+  const normalizedName = normalizeValue(name);
+  const normalizedPhone = normalizeValue(phone);
+  if (normalizedName && normalizedPhone) {
+    return `${normalizedName} ${normalizedPhone}`;
+  }
+  return normalizedName || normalizedPhone || '';
+}
+
 
 
 // Load patient list from cache
@@ -129,6 +138,11 @@ async function buildPatientsFromDatabase(options = {}) {
       backupContact: 1,
       backupPhone: 1,
       recordKey: 1,
+      careStatus: 1,
+      checkoutAt: 1,
+      checkoutReason: 1,
+      checkoutNote: 1,
+      'metadata.checkoutAt': 1,
       firstAdmissionDate: 1,
       latestAdmissionDate: 1,
       latestAdmissionTimestamp: 1,
@@ -150,7 +164,11 @@ async function buildPatientsFromDatabase(options = {}) {
       'data.latestDiagnosis': 1,
       'data.admissionCount': 1,
       'data.summaryCaregivers': 1,
-      'data.lastIntakeNarrative': 1
+      'data.lastIntakeNarrative': 1,
+      'data.careStatus': 1,
+      'data.checkoutAt': 1,
+      'data.checkoutReason': 1,
+      'data.checkoutNote': 1
     })
     .get();
 
@@ -195,8 +213,29 @@ async function buildPatientsFromDatabase(options = {}) {
     const latestTs = normalizeTimestamp(latestSource);
     const latestTimestamp = normalizeTimestamp(latestTimestampSource) || latestTs;
 
-    const summaryCaregivers = (pickValue(doc.summaryCaregivers, doc.caregivers, data.summaryCaregivers, nestedData.summaryCaregivers) || '');
-    const lastNarrative = pickValue(doc.lastIntakeNarrative, data.lastIntakeNarrative, nestedData.lastIntakeNarrative) || '';
+    const summaryCaregivers = (
+      pickValue(doc.summaryCaregivers, doc.caregivers, data.summaryCaregivers, nestedData.summaryCaregivers) || ''
+    );
+    const lastNarrative = pickValue(
+      doc.lastIntakeNarrative,
+      data.lastIntakeNarrative,
+      nestedData.lastIntakeNarrative
+    ) || '';
+    let careStatus = pickValue(doc.careStatus, data.careStatus, nestedData.careStatus) || '';
+    const checkoutAtSource = pickValue(doc.checkoutAt, data.checkoutAt, nestedData.checkoutAt);
+    const checkoutAt = normalizeTimestamp(checkoutAtSource);
+    const checkoutReason = pickValue(
+      doc.checkoutReason,
+      data.checkoutReason,
+      nestedData.checkoutReason
+    ) || '';
+    const checkoutNote = pickValue(doc.checkoutNote, data.checkoutNote, nestedData.checkoutNote) || '';
+
+    if (!careStatus && checkoutAt) {
+      careStatus = 'discharged';
+    } else if (careStatus === 'in_care' && checkoutAt && latestTimestamp && checkoutAt >= latestTimestamp) {
+      careStatus = 'discharged';
+    }
     const phone = doc.phone || data.phone || '';
     const address = doc.address || data.address || '';
     const emergencyContact = doc.emergencyContact || data.emergencyContact || '';
@@ -245,7 +284,11 @@ async function buildPatientsFromDatabase(options = {}) {
       admissionCount,
       summaryCaregivers,
       latestAdmissionTimestamp: latestTimestamp || null,
-      lastIntakeNarrative: lastNarrative
+      lastIntakeNarrative: lastNarrative,
+      careStatus,
+      checkoutAt: checkoutAt || null,
+      checkoutReason,
+      checkoutNote
     });
   });
 
@@ -286,24 +329,134 @@ async function fetchPatientDetailByKey(recordKey) {
     throw makeError('INVALID_PATIENT_KEY', 'Missing patient identifier');
   }
 
-  await ensureCollectionExists(db, EXCEL_RECORDS_COLLECTION);
-  const res = await db.collection(EXCEL_RECORDS_COLLECTION)
-    .where({ key: recordKey })
-    .get();
+  const normalizedKey = normalizeSpacing(recordKey);
+  const keysToTry = new Set();
+  if (normalizedKey) {
+    keysToTry.add(normalizedKey);
+  }
 
-  if (!res.data || res.data.length === 0) {
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
+
+  let patientDoc = null;
+  const tryAssignPatientDoc = async (queryPromise) => {
+    try {
+      const snapshot = await queryPromise;
+      if (snapshot && snapshot.data && snapshot.data.length) {
+        const doc = snapshot.data[0];
+        const docId = doc._id || doc.id || doc.patientKey || normalizedKey;
+        patientDoc = { _id: docId, ...doc };
+        if (Array.isArray(patientDoc.excelRecordKeys)) {
+          patientDoc.excelRecordKeys.forEach((key) => {
+            const normalized = normalizeSpacing(key);
+            if (normalized) {
+              keysToTry.add(normalized);
+            }
+          });
+        }
+        if (patientDoc.recordKey) {
+          const normalized = normalizeSpacing(patientDoc.recordKey);
+          if (normalized) {
+            keysToTry.add(normalized);
+          }
+        }
+        if (patientDoc.patientName) {
+          const normalized = normalizeSpacing(patientDoc.patientName);
+          if (normalized) {
+            keysToTry.add(normalized);
+          }
+        }
+      }
+    } catch (error) {
+      // 忽略这些查询错误，继续尝试其他方式
+    }
+  };
+
+  // 先尝试按照文档 ID 查找患者档案
+  await tryAssignPatientDoc(db.collection(PATIENTS_COLLECTION).doc(normalizedKey).get());
+
+  if (!patientDoc) {
+    // 再尝试 excelRecordKeys 包含当前 key 的文档
+    await tryAssignPatientDoc(
+      db
+        .collection(PATIENTS_COLLECTION)
+        .where({ excelRecordKeys: normalizedKey })
+        .limit(1)
+        .get()
+    );
+  }
+
+  if (!patientDoc) {
+    // 最后尝试患者姓名匹配
+    await tryAssignPatientDoc(
+      db
+        .collection(PATIENTS_COLLECTION)
+        .where({ patientName: normalizedKey })
+        .limit(1)
+        .get()
+    );
+  }
+
+  await ensureCollectionExists(db, EXCEL_RECORDS_COLLECTION);
+
+  const records = [];
+  for (const key of keysToTry) {
+    if (!key) {
+      continue;
+    }
+    try {
+      const res = await db.collection(EXCEL_RECORDS_COLLECTION).where({ key }).get();
+      if (res.data && res.data.length) {
+        records.push(...res.data);
+      }
+    } catch (error) {
+      console.warn('patientProfile fetch detail excel lookup failed', key, error);
+    }
+  }
+
+  if (!records.length) {
+    if (patientDoc && patientDoc._id) {
+      const fallbackDetail = await fetchFallbackPatientDetail(patientDoc._id);
+      if (fallbackDetail) {
+        return fallbackDetail;
+      }
+    }
     throw makeError('PATIENT_NOT_FOUND', 'Patient record missing');
   }
 
-  const records = res.data;
   const groups = buildPatientGroups(records);
-  const group = groups.get(recordKey);
+  let group = groups.get(normalizedKey);
+  if (!group && patientDoc) {
+    const candidateKeys = [].concat(
+      patientDoc.recordKey || [],
+      Array.isArray(patientDoc.excelRecordKeys) ? patientDoc.excelRecordKeys : [],
+      patientDoc.patientName || []
+    );
+    for (const key of candidateKeys) {
+      const normalized = normalizeSpacing(key);
+      if (normalized && groups.get(normalized)) {
+        group = groups.get(normalized);
+        break;
+      }
+    }
+  }
+  if (!group) {
+    const iterator = groups.values().next();
+    if (!iterator.done) {
+      group = iterator.value;
+    }
+  }
 
   if (!group) {
+    if (patientDoc && patientDoc._id) {
+      const fallbackDetail = await fetchFallbackPatientDetail(patientDoc._id);
+      if (fallbackDetail) {
+        return fallbackDetail;
+      }
+    }
     throw makeError('PATIENT_NOT_FOUND', 'Patient information incomplete');
   }
 
-  return formatPatientDetail(group);
+  return formatPatientDetail(group, patientDoc);
 }
 
 async function fetchFallbackPatientDetail(patientKey) {
@@ -346,7 +499,10 @@ async function fetchFallbackPatientDetail(patientKey) {
       ['紧急联系人', patientDoc.emergencyContact],
       ['紧急联系电话', patientDoc.emergencyPhone],
       ['备用联系人', patientDoc.backupContact],
-      ['备用联系电话', patientDoc.backupPhone]
+      ['备用联系电话', patientDoc.backupPhone],
+      ['父亲联系方式', patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)],
+      ['母亲联系方式', patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)],
+      ['其他监护人', patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)]
     ]);
 
     const economicInfo = buildList([
@@ -386,7 +542,7 @@ async function fetchFallbackPatientDetail(patientKey) {
 }
 
 // Format patient detail
-function formatPatientDetail(group) {
+function formatPatientDetail(group, patientDoc) {
   const latest = group.records[0] || {};
 
   const pickRecordValue = (getter) => {
@@ -423,6 +579,44 @@ function formatPatientDetail(group) {
     { label: '母亲联系方式', value: pickRecordValue(record => record.motherInfo) },
     { label: '其他监护人', value: pickRecordValue(record => record.otherGuardian) }
   ]);
+
+  const ensureFamilyField = (label, value) => {
+    const normalized = normalizeValue(value);
+    if (!normalized) {
+      return;
+    }
+    const existing = familyInfo.find(item => item.label === label && normalizeValue(item.value));
+    if (!existing) {
+      familyInfo.push({ label, value: normalized });
+    }
+  };
+
+  if (patientDoc) {
+    ensureFamilyField(
+      '家庭地址',
+      patientDoc.address
+    );
+    ensureFamilyField(
+      '父亲联系方式',
+      patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)
+    );
+    ensureFamilyField(
+      '母亲联系方式',
+      patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)
+    );
+    ensureFamilyField(
+      '其他监护人',
+      patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)
+    );
+    ensureFamilyField(
+      '紧急联系人',
+      patientDoc.emergencyContact
+    );
+    ensureFamilyField(
+      '紧急联系电话',
+      patientDoc.emergencyPhone
+    );
+  }
 
   // Build economic info
   const economicInfo = buildInfoList([

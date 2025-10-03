@@ -45,10 +45,10 @@
         />
         <pm-button
           class="toolbar-action"
-          text="住户入住"
+          text="新建住户"
           size="small"
           type="primary"
-          bindtap="onIntakeTap"
+          bindtap="onCreatePatientTap"
         />
       </view>
     </view>
@@ -81,21 +81,26 @@
       <text class="empty-description">点击右下角按钮添加第一位住户</text>
     </view>
     <view slot="footer" class="empty-actions">
-      <pm-button text="立即添加" type="primary" size="medium" bindtap="onIntakeTap" />
+      <pm-button text="立即添加" type="primary" size="medium" bindtap="onCreatePatientTap" />
     </view>
   </pm-card>
   <scroll-view wx:else scroll-y class="patient-list">
     <patient-card
       wx:for="{{displayPatients}}"
       wx:key="patientKey"
+      class="patient-item"
       patient="{{item}}"
       mode="compact"
-      status="{{item.cardStatus}}"
-      badges="{{item.badges}}"
+      status="{{item.cardStatus || 'default'}}"
+      badges="{{item.badges || []}}"
       actions="{{batchMode ? cardActionsSimplified : cardActions}}"
       selectable="{{batchMode}}"
       selected="{{item.selected}}"
       clickable="{{true}}"
+      data-key="{{item.key || item.patientKey || item.recordKey || ''}}"
+      data-patient-key="{{item.patientKey || item.key || item.recordKey || ''}}"
+      data-record-key="{{item.recordKey || item.key || item.patientKey || ''}}"
+      bindtap="onPatientTap"
       bind:cardtap="onPatientTap"
       bind:actiontap="onCardAction"
       bind:selectchange="onCardSelectChange"
@@ -112,8 +117,95 @@
         icon-only="{{true}}"
         elevated="{{true}}"
         aria-label="添加住户"
-        bindtap="onIntakeTap"
+        bindtap="onCreatePatientTap"
       />
     </view>
   </view>
+
+  <filter-panel
+    visible="{{filterPanelVisible}}"
+    statuses="{{filterStatusOptions}}"
+    risk-levels="{{filterRiskOptions}}"
+    hospital-options="{{filterHospitalOptions}}"
+    diagnosis-options="{{filterDiagnosisOptions}}"
+    gender-options="{{filterGenderOptions}}"
+    ethnicity-options="{{filterEthnicityOptions}}"
+    native-place-options="{{filterNativePlaceOptions}}"
+    doctor-options="{{filterDoctorOptions}}"
+    age-range-options="{{filterAgeRangeOptions}}"
+    value="{{pendingAdvancedFilters}}"
+    preview-count="{{filterPreviewCount}}"
+    preview-label="{{filterPreviewLabel}}"
+    preview-loading="{{filterPreviewLoading}}"
+    schemes="{{filterSchemes}}"
+    bind:preview="onFilterPreview"
+    bind:apply="onFilterApply"
+    bind:reset="onFilterReset"
+    bind:close="onFilterClose"
+    bind:savescheme="onFilterSaveScheme"
+    bind:appliescheme="onFilterApplyScheme"
+    bind:deletescheme="onFilterDeleteScheme"
+    bind:renamescheme="onFilterRenameScheme"
+    bind:searchdiagnosis="onFilterDiagnosisSearch"
+    bind:diagnosisselect="onFilterDiagnosisSelect"
+  />
+
+  <pm-dialog
+    visible="{{checkoutDialogVisible}}"
+    title="办理离开"
+    confirm-text=""
+    cancel-text=""
+    confirm-type="primary"
+    close-on-confirm="{{false}}"
+    close-on-cancel="{{!checkoutSubmitting}}"
+    show-close="{{!checkoutSubmitting}}"
+    mask-closable="{{!checkoutSubmitting}}"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    bind:close="onCheckoutDialogClose"
+  >
+    <view class="checkout-dialog__body">
+      <view class="checkout-dialog__summary" wx:if="{{checkoutPatient}}">
+        <text class="checkout-dialog__name">{{checkoutPatient.patientName || '该住户'}}</text>
+        <text class="checkout-dialog__desc">办理后状态将更新为“已离开”。</text>
+      </view>
+      <pm-input
+        label="离开原因"
+        placeholder="例如病情好转、已转院（可选）"
+        value="{{checkoutForm.reason}}"
+        maxlength="60"
+        size="large"
+        disabled="{{checkoutSubmitting}}"
+        bind:input="onCheckoutReasonInput"
+      />
+      <pm-input
+        label="备注"
+        type="textarea"
+        placeholder="补充说明（可选）"
+        value="{{checkoutForm.note}}"
+        maxlength="200"
+        textarea-auto-height="{{true}}"
+        size="large"
+        disabled="{{checkoutSubmitting}}"
+        bind:input="onCheckoutNoteInput"
+      />
+    </view>
+    <view slot="footer" class="checkout-dialog__footer">
+      <pm-button
+        text="取消"
+        type="ghost"
+        size="medium"
+        disabled="{{checkoutSubmitting}}"
+        bindtap="onCheckoutDialogCancel"
+      />
+      <pm-button
+        text="{{checkoutSubmitting ? '办理中...' : '确认离开'}}"
+        type="primary"
+        size="medium"
+        loading="{{checkoutSubmitting}}"
+        disabled="{{checkoutSubmitting}}"
+        bindtap="onCheckoutConfirmTap"
+      />
+    </view>
+  </pm-dialog>
 </view>

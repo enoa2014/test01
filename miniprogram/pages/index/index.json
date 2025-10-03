@@ -5,6 +5,8 @@
     "pm-button": "/components/base/pm-button/index",
     "pm-badge": "/components/base/pm-badge/index",
     "smart-search-bar": "/components/business/smart-search-bar/index",
-    "patient-card": "/components/business/patient-card/index"
+    "patient-card": "/components/business/patient-card/index",
+    "filter-panel": "/components/business/filter-panel/index",
+    "pm-dialog": "/components/base/pm-dialog/index"
   }
 }
