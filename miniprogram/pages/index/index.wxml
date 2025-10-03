@@ -108,7 +108,7 @@
     />
   </scroll-view>
 
-  <view class="fab-container">
+  <view class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}}">
     <view class="fab-button">
       <pm-button
         icon="＋"

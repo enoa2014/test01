@@ -41,6 +41,11 @@ function makeQuotaPayload(quota) {
   const remainingBytes = Number.isFinite(normalized.remainingBytes)
     ? normalized.remainingBytes
     : Math.max(maxBytes - totalBytes, 0);
+
+  // 计算使用百分比
+  const countPercent = maxCount > 0 ? Math.min(Math.round((totalCount / maxCount) * 100), 100) : 0;
+  const sizePercent = maxBytes > 0 ? Math.min(Math.round((totalBytes / maxBytes) * 100), 100) : 0;
+
   return {
     totalCount,
     totalBytes,
@@ -51,6 +56,8 @@ function makeQuotaPayload(quota) {
     totalBytesText: formatFileSize(totalBytes),
     maxBytesText: formatFileSize(maxBytes),
     remainingBytesText: formatFileSize(remainingBytes),
+    countPercent,
+    sizePercent,
   };
 }
 

@@ -50,14 +50,28 @@
   color: var(--color-text-secondary);
 }
 
+/* P0-5: 扩大选择框触控区域至88rpx */
 .patient-card__select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88rpx;
+  min-height: 88rpx;
   margin-left: auto;
-  padding: var(--space-1);
+  margin-right: calc(var(--space-3) * -1);
 }
 
 .patient-card__select-icon {
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   color: var(--color-text-secondary);
+  pointer-events: none;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.patient-card__select:active .patient-card__select-icon {
+  transform: scale(0.9);
+  color: var(--color-primary);
 }
 
 .patient-card__badges {

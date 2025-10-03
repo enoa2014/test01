@@ -40,6 +40,7 @@
       data-filter="{{item}}"
     >
       <pm-badge text="{{item.label}}" type="{{item.active ? 'primary' : 'default'}}" size="small" />
+      <text class="smart-search__filter-count" wx:if="{{item.count !== undefined}}">{{item.count}}</text>
     </view>
   </view>
 
@@ -53,10 +54,18 @@
         wx:for="{{searchHistory}}"
         wx:key="*this"
         class="smart-search__history-item"
-        bindtap="handleHistoryTap"
-        data-keyword="{{item}}"
       >
-        {{item}}
+        <text class="smart-search__history-text" bindtap="handleHistoryTap" data-keyword="{{item}}">
+          {{item}}
+        </text>
+        <text
+          class="smart-search__history-delete"
+          bindtap="handleDeleteHistoryItem"
+          data-keyword="{{item}}"
+          aria-label="删除历史记录"
+        >
+          ✕
+        </text>
       </view>
     </view>
   </view>

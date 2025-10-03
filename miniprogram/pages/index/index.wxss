@@ -310,6 +310,13 @@
   right: var(--space-4);
   bottom: var(--space-8);
   z-index: 120;
+  transform: translateY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* P1-6: FAB隐藏状态 */
+.fab-container--hidden {
+  transform: translateY(200rpx);
 }
 
 .fab-button {

@@ -39,6 +39,135 @@ const { getDefaultQuota, makeQuotaPayload, createMediaService } = require('./med
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
 
+const STATUS_ALIAS_CONFIG = [
+  {
+    className: 'in-care',
+    label: '在住',
+    aliases: [
+      '在住',
+      '入住',
+      '入住中',
+      '已入住',
+      '入住家庭',
+      '在小家',
+      '在院',
+      '住院',
+      '入院',
+      'in care',
+      'in_care',
+      'in-care',
+      'incare',
+      'active',
+    ],
+  },
+  {
+    className: 'followup',
+    label: '随访',
+    aliases: ['随访', '随访中', '跟进', '跟进中', '待随访', 'followup', 'follow-up', 'follow_up'],
+  },
+  {
+    className: 'pending',
+    label: '待入住',
+    aliases: [
+      '待入住',
+      '待入驻',
+      '排队',
+      '排队中',
+      '排队入住',
+      '待安排',
+      '待入小家',
+      '候补',
+      'pending',
+      'queue',
+      'queued',
+      'waiting',
+    ],
+  },
+  {
+    className: 'checked-out',
+    label: '已离开',
+    aliases: [
+      '已离开',
+      '离开',
+      '离开中',
+      '已搬离',
+      '搬离',
+      '退住',
+      '退房',
+      'checkout',
+      'checkedout',
+      'checked-out',
+      'checked_out',
+      'discharged',
+      '出院',
+      '离院',
+      'closed',
+      '结案',
+      '已结案',
+      '去世',
+      '过世',
+      '逝世',
+      'deceased',
+    ],
+  },
+];
+
+function normalizeStatusKey(value) {
+  const text = normalizeString(value);
+  if (!text) {
+    return '';
+  }
+  const base = text.split(/[（(]/)[0];
+  return base.toLowerCase().replace(/[-_\s]+/g, '');
+}
+
+const STATUS_CLASS_MAP = {};
+const STATUS_LABEL_MAP = {};
+
+STATUS_ALIAS_CONFIG.forEach(({ aliases = [], className, label }) => {
+  if (!className || !Array.isArray(aliases)) {
+    return;
+  }
+  aliases.forEach(alias => {
+    const key = normalizeStatusKey(alias);
+    if (!key) {
+      return;
+    }
+    STATUS_CLASS_MAP[key] = className;
+    if (label) {
+      STATUS_LABEL_MAP[key] = label;
+    }
+  });
+});
+
+function resolveStatusClass(status) {
+  const key = normalizeStatusKey(status);
+  if (!key) {
+    return 'unknown';
+  }
+  const mapped = STATUS_CLASS_MAP[key];
+  if (mapped) {
+    return mapped;
+  }
+  const fallback = normalizeString(status)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return fallback || 'unknown';
+}
+
+function formatCareStatusLabel(status) {
+  const text = normalizeString(status);
+  if (!text) {
+    return '';
+  }
+  const key = normalizeStatusKey(text);
+  if (key && STATUS_LABEL_MAP[key]) {
+    return STATUS_LABEL_MAP[key];
+  }
+  return text;
+}
+
 function formatRecordStatus(status) {
   if (!status) {
     return '';
@@ -583,6 +712,22 @@ Page({
         wx.setNavigationBarTitle({ title: patientForEdit.patientName });
       } else if (patientDisplay && patientDisplay.patientName) {
         wx.setNavigationBarTitle({ title: patientDisplay.patientName });
+      }
+
+      if (Object.keys(patientDisplay).length) {
+        const statusValue =
+          [
+            patientDisplay.careStatus,
+            patientDisplay.status,
+            profileResult && profileResult.careStatus,
+            patientDisplay.statusDisplay,
+          ].find(item => Boolean(normalizeString(item))) || '';
+        const statusDisplay =
+          formatCareStatusLabel(statusValue) || formatCareStatusLabel(patientDisplay.statusDisplay);
+        if (statusDisplay) {
+          patientDisplay.statusDisplay = statusDisplay;
+        }
+        patientDisplay.statusClass = resolveStatusClass(statusValue || statusDisplay);
       }
 
       const patientInfoForDisplay = Object.keys(patientDisplay).length ? patientDisplay : null;

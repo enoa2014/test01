@@ -12,6 +12,8 @@ const PATIENT_CACHE_TTL = 5 * 60 * 1000;
 const PATIENT_PAGE_SIZE = 80;
 const MAX_SUGGESTIONS = 8;
 const MIN_SUGGESTION_LENGTH = 2;
+const SUGGEST_DEBOUNCE_TIME = 300; // 300ms防抖优化搜索建议
+const FILTER_PREVIEW_DEBOUNCE_TIME = 500; // 500ms防抖优化筛选预览
 const FAB_SCROLL_RESTORE_DELAY = 260;
 const AGE_BUCKETS = [
   { id: '0-3', label: '0-3岁', min: 0, max: 3 },
@@ -564,6 +566,11 @@ function clearPageEnterTimer(pageInstance) {
   }
 }
 Page({
+  // P0-1: 搜索建议防抖timer
+  suggestTimer: null,
+  // P0-4: 筛选预览防抖timer
+  filterPreviewTimer: null,
+
   data: {
     patients: [],
     displayPatients: [],
@@ -593,6 +600,8 @@ Page({
     hasMore: true,
     loadingMore: false,
     fabCompact: false,
+    fabVisible: true,
+    lastScrollTop: 0,
     pageTransitionClass: 'page-transition-enter',
     filterPanelVisible: false,
     filterStatusOptions: FILTER_STATUS_OPTIONS,
@@ -840,6 +849,8 @@ Page({
         () => {
           this.applyFilters();
           this.updateFilterOptions(mergedPatients);
+          // P0-3: 更新快速筛选器计数
+          this.updateFilterCounts(this.data.quickFilters);
         }
       );
       if (!shouldAppend && page === 0) {
@@ -1040,7 +1051,68 @@ Page({
       displayPatients: filtered,
       filterPreviewCount: filtered.length,
       filterPreviewLoading: false,
+      // P1-9: 更新空状态配置
+      emptyStateConfig: this.getEmptyStateConfig(filtered),
     });
+  },
+
+  // P1-9: 智能判断空状态类型
+  getEmptyStateConfig(displayPatients = []) {
+    const { searchKeyword, patients = [] } = this.data;
+    const hasSearch = Boolean(searchKeyword && searchKeyword.trim());
+
+    // 判断是否有激活的高级筛选
+    const advFilters = this.data.advancedFilters || {};
+    const hasActiveFilters =
+      (advFilters.statuses && advFilters.statuses.length > 0) ||
+      (advFilters.riskLevels && advFilters.riskLevels.length > 0) ||
+      (advFilters.hospitals && advFilters.hospitals.length > 0) ||
+      (advFilters.diagnosis && advFilters.diagnosis.length > 0) ||
+      (advFilters.genders && advFilters.genders.length > 0) ||
+      (advFilters.ethnicities && advFilters.ethnicities.length > 0) ||
+      (advFilters.nativePlaces && advFilters.nativePlaces.length > 0) ||
+      (advFilters.ageRanges && advFilters.ageRanges.length > 0) ||
+      (advFilters.doctors && advFilters.doctors.length > 0) ||
+      (advFilters.dateRange && (advFilters.dateRange.start || advFilters.dateRange.end));
+
+    // 场景1: 搜索无结果
+    if (hasSearch && displayPatients.length === 0) {
+      return {
+        type: 'search',
+        title: '未找到匹配的住户',
+        description: `没有找到与"${searchKeyword.trim()}"相关的住户`,
+        actionText: '清除搜索',
+        actionHandler: 'onSearchClear',
+        showCreateButton: false,
+      };
+    }
+
+    // 场景2: 筛选无结果
+    if (hasActiveFilters && displayPatients.length === 0) {
+      return {
+        type: 'filter',
+        title: '无符合条件的住户',
+        description: '当前筛选条件过于严格,请尝试调整筛选条件',
+        actionText: '清除筛选',
+        actionHandler: 'onFilterReset',
+        showCreateButton: false,
+      };
+    }
+
+    // 场景3: 首次使用(真实为空)
+    if (!patients || patients.length === 0) {
+      return {
+        type: 'initial',
+        title: '暂无住户档案',
+        description: '点击右下角按钮添加第一位住户',
+        actionText: '立即添加',
+        actionHandler: 'onCreatePatientTap',
+        showCreateButton: true,
+      };
+    }
+
+    // 默认空状态
+    return null;
   },
   calculatePreviewCount(filters) {
     const normalized = normalizeAdvancedFilters(filters);
@@ -1050,15 +1122,33 @@ Page({
     });
     return list.length;
   },
+  // P0-4: 筛选预览即时反馈 - 防抖自动预览
   onFilterPreview(event) {
     const value = event && event.detail ? event.detail.value : null;
     const normalized = normalizeAdvancedFilters(value);
-    const count = this.calculatePreviewCount(normalized);
+
+    // 立即更新pending状态
     this.setData({
       pendingAdvancedFilters: normalized,
-      filterPreviewCount: count,
-      filterPreviewLoading: false,
+      filterPreviewLoading: true,
     });
+
+    // 清除之前的防抖定时器
+    if (this.filterPreviewTimer) {
+      clearTimeout(this.filterPreviewTimer);
+      this.filterPreviewTimer = null;
+    }
+
+    // 防抖后自动计算预览数量
+    this.filterPreviewTimer = setTimeout(() => {
+      const count = this.calculatePreviewCount(normalized);
+      this.setData({
+        filterPreviewCount: count,
+        filterPreviewLabel: `将显示 ${count} 条结果`,
+        filterPreviewLoading: false,
+      });
+      this.filterPreviewTimer = null;
+    }, FILTER_PREVIEW_DEBOUNCE_TIME);
   },
   onFilterApply(event) {
     const value = event && event.detail ? event.detail.value : null;
@@ -1372,20 +1462,74 @@ Page({
       this.setData({ searchSuggestions: [], searchLoading: false });
     }
   },
+  // P0-1: 优化搜索建议 - 本地缓存 + 防抖
   async onSearchSuggest(event) {
     const keyword = (event.detail && event.detail.value) || '';
     if (!keyword) {
       this.setData({ searchSuggestions: [], searchLoading: false });
       return;
     }
-    this.setData({ searchLoading: true });
-    try {
-      const suggestions = await this.fetchSearchSuggestions(keyword);
-      this.setData({ searchSuggestions: suggestions, searchLoading: false });
-    } catch (error) {
-      logger.warn('fetchSearchSuggestions failed', error);
-      this.setData({ searchSuggestions: [], searchLoading: false });
+
+    // 立即更新UI - 优先使用本地缓存
+    const localSuggestions = this.getLocalSuggestions(keyword);
+    if (localSuggestions.length > 0) {
+      this.setData({ searchSuggestions: localSuggestions });
     }
+
+    // 清除之前的防抖定时器
+    if (this.suggestTimer) {
+      clearTimeout(this.suggestTimer);
+      this.suggestTimer = null;
+    }
+
+    // 防抖后调用云函数(如果有)或使用本地数据
+    this.suggestTimer = setTimeout(async () => {
+      this.setData({ searchLoading: true });
+      try {
+        const suggestions = await this.fetchSearchSuggestions(keyword);
+        this.setData({ searchSuggestions: suggestions, searchLoading: false });
+      } catch (error) {
+        logger.warn('fetchSearchSuggestions failed', error);
+        this.setData({ searchSuggestions: [], searchLoading: false });
+      }
+    }, SUGGEST_DEBOUNCE_TIME);
+  },
+
+  // P0-1: 本地快速搜索建议
+  getLocalSuggestions(keyword) {
+    const trimmed = safeString(keyword);
+    if (!trimmed || trimmed.length < MIN_SUGGESTION_LENGTH) {
+      return [];
+    }
+
+    const lowerKeyword = trimmed.toLowerCase();
+    const patients = Array.isArray(this.data.patients) ? this.data.patients : [];
+    const suggestions = new Set();
+
+    patients.forEach(patient => {
+      if (!patient || suggestions.size >= MAX_SUGGESTIONS) {
+        return;
+      }
+
+      const candidates = [
+        patient.patientName,
+        patient.档案号,
+        patient.latestHospital,
+        patient.latestDiagnosis,
+      ];
+
+      candidates.forEach(item => {
+        if (suggestions.size >= MAX_SUGGESTIONS) {
+          return;
+        }
+        const text = safeString(item);
+        if (text && text.toLowerCase().includes(lowerKeyword)) {
+          suggestions.add(text);
+        }
+      });
+    });
+
+    return Array.from(suggestions);
   },
   async fetchSearchSuggestions(keyword) {
     const trimmed = safeString(keyword);
@@ -1457,9 +1601,39 @@ Page({
       ...filter,
       active: filter.id === resolvedId,
     }));
+
+    // P0-3: 更新快速筛选器计数
+    this.updateFilterCounts(nextFilters);
+
     this.setData({ quickFilters: nextFilters }, () => {
       this.applyFilters();
     });
+  },
+
+  // P0-3: 动态计算每个快速筛选器的数量
+  updateFilterCounts(filters) {
+    const allPatients = this.data.patients || [];
+    const filtersWithCount = filters.map(filter => {
+      let count = 0;
+
+      if (filter.id === 'all') {
+        count = allPatients.length;
+      } else if (filter.id === 'in_care') {
+        count = allPatients.filter(p => p && p.careStatus === 'in_care').length;
+      } else if (filter.id === 'high_risk') {
+        count = allPatients.filter(p => {
+          if (!p) return false;
+          const daysSince = p.daysSinceLatestAdmission;
+          return typeof daysSince === 'number' && daysSince >= 14;
+        }).length;
+      } else if (filter.id === 'followup') {
+        count = allPatients.filter(p => p && p.careStatus === 'pending').length;
+      }
+
+      return { ...filter, count };
+    });
+
+    this.setData({ quickFilters: filtersWithCount });
   },
   onToggleAdvancedFilter() {
     const normalized = normalizeAdvancedFilters(this.data.advancedFilters);
@@ -1530,6 +1704,24 @@ Page({
   },
   onReachBottom() {
     this.loadMorePatients();
+  },
+
+  // P1-6: 滚动时智能隐藏/显示FAB
+  onPageScroll(e) {
+    const scrollTop = e.scrollTop || 0;
+    const lastScrollTop = this.data.lastScrollTop || 0;
+    const isScrollingDown = scrollTop > lastScrollTop;
+
+    // 向下滚动且超过100rpx时隐藏FAB
+    if (isScrollingDown && scrollTop > 100 && this.data.fabVisible) {
+      this.setData({ fabVisible: false });
+    }
+    // 向上滚动时显示FAB
+    else if (!isScrollingDown && !this.data.fabVisible) {
+      this.setData({ fabVisible: true });
+    }
+
+    this.setData({ lastScrollTop: scrollTop });
   },
   onScrollToLower() {
     this.loadMorePatients();

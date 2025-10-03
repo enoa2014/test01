@@ -4,13 +4,38 @@
   <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
     <view class="patient-header">
       <view class="patient-header-row">
-        <text class="patient-detail-name"
-          >{{editMode ? editForm.patientName : (patient.patientName || '')}}</text
-        >
+        <view class="patient-name-section">
+          <text class="patient-detail-name"
+            >{{editMode ? editForm.patientName : (patient.patientName || '')}}</text
+          >
+          <!-- 运营关键指标 -->
+          <view wx:if="{{!editMode && patient}}" class="patient-metrics">
+            <view
+              wx:if="{{patient.status}}"
+              class="metric-badge status-{{patient.statusClass || 'unknown'}}"
+            >
+              {{patient.statusDisplay || patient.status}}
+            </view>
+            <view wx:if="{{patient.admissionCount}}" class="metric-item">
+              <text class="metric-label">入住</text>
+              <text class="metric-value">{{patient.admissionCount}}次</text>
+            </view>
+            <view wx:if="{{patient.lastAdmissionTime}}" class="metric-item">
+              <text class="metric-label">最近</text>
+              <text class="metric-value">{{patient.lastAdmissionTimeDisplay}}</text>
+            </view>
+          </view>
+        </view>
         <view class="edit-toolbar">
           <view wx:if="{{!editMode}}" class="edit-button" bindtap="onEditStart">编辑资料</view>
           <block wx:else>
-            <view class="edit-button plain" bindtap="onEditCancel">放弃</view>
+            <view class="edit-button plain" bindtap="onEditCancel">取消</view>
+            <view
+              class="edit-button secondary {{!editDirty ? 'disabled' : ''}}"
+              bindtap="onSaveDraft"
+            >
+              暂存
+            </view>
             <view
               class="edit-button primary {{(!editCanSave || saving) ? 'disabled' : ''}}"
               bindtap="onSaveTap"
@@ -20,8 +45,9 @@
           </block>
         </view>
       </view>
-      <view wx:if="{{editMode}}" class="edit-hint">
-        未保存的修改离开页面将丢失，请完成校验后点击保存。
+      <view wx:if="{{editMode}}" class="edit-mode-banner">
+        <text class="edit-mode-icon">✏️</text>
+        <text class="edit-mode-text">编辑模式：修改后请点击"保存"按钮</text>
       </view>
     </view>
 
@@ -311,14 +337,34 @@
       <view wx:else>
         <view class="media-header">
           <view class="media-quota">
-            <text
-              >数量：{{media.quota.totalCount}} / {{media.quota.maxCount}}（剩余
-              {{media.quota.remainingCount}}）</text
-            >
-            <text
-              >容量：{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}（剩余
-              {{media.quota.remainingBytesText}}）</text
-            >
+            <view class="quota-item">
+              <view class="quota-header">
+                <text class="quota-label">文件数量</text>
+                <text class="quota-value"
+                  >{{media.quota.totalCount}} / {{media.quota.maxCount}}</text
+                >
+              </view>
+              <view class="quota-progress">
+                <view
+                  class="quota-progress-bar {{media.quota.countPercent >= 90 ? 'danger' : (media.quota.countPercent >= 70 ? 'warning' : 'success')}}"
+                  style="width: {{media.quota.countPercent}}%"
+                ></view>
+              </view>
+            </view>
+            <view class="quota-item">
+              <view class="quota-header">
+                <text class="quota-label">存储容量</text>
+                <text class="quota-value"
+                  >{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}</text
+                >
+              </view>
+              <view class="quota-progress">
+                <view
+                  class="quota-progress-bar {{media.quota.sizePercent >= 90 ? 'danger' : (media.quota.sizePercent >= 70 ? 'warning' : 'success')}}"
+                  style="width: {{media.quota.sizePercent}}%"
+                ></view>
+              </view>
+            </view>
           </view>
           <view class="media-tabs">
             <view

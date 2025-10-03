@@ -157,13 +157,49 @@ Component({
       this.saveHistory(cleaned);
     },
 
+    // P0-2: 清空历史增加二次确认
     handleClearHistory() {
+      wx.showModal({
+        title: '确认清空',
+        content: '清空后搜索历史将无法恢复',
+        confirmText: '清空',
+        confirmColor: '#FF4D4F',
+        success: res => {
+          if (res.confirm) {
+            this.clearAllHistory();
+          }
+        },
+      });
+    },
+
+    // P0-2: 执行清空历史
+    clearAllHistory() {
       try {
         wx.removeStorageSync(HISTORY_KEY);
       } catch (error) {
         // ignore
       }
       this.setData({ searchHistory: [] });
+      this.triggerEvent('historyclear');
+    },
+
+    // P0-2: 删除单个历史记录
+    handleDeleteHistoryItem(event) {
+      const keyword =
+        (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.keyword) || '';
+      const cleaned = this.safeString(keyword);
+      if (!cleaned) {
+        return;
+      }
+
+      try {
+        const history = wx.getStorageSync(HISTORY_KEY) || [];
+        const filtered = Array.isArray(history) ? history.filter(item => item !== cleaned) : [];
+        wx.setStorageSync(HISTORY_KEY, filtered);
+        this.setData({ searchHistory: filtered });
+      } catch (error) {
+        // ignore storage errors
+      }
     },
 
     loadHistory() {
