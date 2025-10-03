@@ -1,4 +1,9 @@
-const { parseDateValue, formatDate, calculateAge, formatAge } = require('../../../miniprogram/utils/date');
+const {
+  parseDateValue,
+  formatDate,
+  calculateAge,
+  formatAge,
+} = require('../../../miniprogram/utils/date');
 
 describe('date utilities', () => {
   describe('parseDateValue', () => {

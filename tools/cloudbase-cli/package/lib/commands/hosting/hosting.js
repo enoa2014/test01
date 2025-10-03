@@ -1,39 +1,88 @@
-"use strict";
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.HostingDownloadCommand = exports.HostingList = exports.HostingDeleteFiles = exports.HostingDeploy = exports.HostingDetail = void 0;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const inquirer_1 = __importDefault(require("inquirer"));
-const log_symbols_1 = __importDefault(require("log-symbols"));
-const common_1 = require("../common");
-const hosting_1 = require("../../hosting");
-const error_1 = require("../../error");
-const utils_1 = require("../../utils");
-const decorators_1 = require("../../decorators");
+'use strict'
+var __decorate =
+    (this && this.__decorate) ||
+    function (decorators, target, key, desc) {
+        var c = arguments.length,
+            r =
+                c < 3
+                    ? target
+                    : desc === null
+                      ? (desc = Object.getOwnPropertyDescriptor(target, key))
+                      : desc,
+            d
+        if (typeof Reflect === 'object' && typeof Reflect.decorate === 'function')
+            r = Reflect.decorate(decorators, target, key, desc)
+        else
+            for (var i = decorators.length - 1; i >= 0; i--)
+                if ((d = decorators[i]))
+                    r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r
+        return (c > 3 && r && Object.defineProperty(target, key, r), r)
+    }
+var __metadata =
+    (this && this.__metadata) ||
+    function (k, v) {
+        if (typeof Reflect === 'object' && typeof Reflect.metadata === 'function')
+            return Reflect.metadata(k, v)
+    }
+var __param =
+    (this && this.__param) ||
+    function (paramIndex, decorator) {
+        return function (target, key) {
+            decorator(target, key, paramIndex)
+        }
+    }
+var __awaiter =
+    (this && this.__awaiter) ||
+    function (thisArg, _arguments, P, generator) {
+        function adopt(value) {
+            return value instanceof P
+                ? value
+                : new P(function (resolve) {
+                      resolve(value)
+                  })
+        }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) {
+                try {
+                    step(generator.next(value))
+                } catch (e) {
+                    reject(e)
+                }
+            }
+            function rejected(value) {
+                try {
+                    step(generator['throw'](value))
+                } catch (e) {
+                    reject(e)
+                }
+            }
+            function step(result) {
+                result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected)
+            }
+            step((generator = generator.apply(thisArg, _arguments || [])).next())
+        })
+    }
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod }
+    }
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.HostingDownloadCommand =
+    exports.HostingList =
+    exports.HostingDeleteFiles =
+    exports.HostingDeploy =
+    exports.HostingDetail =
+        void 0
+const fs_1 = __importDefault(require('fs'))
+const path_1 = __importDefault(require('path'))
+const inquirer_1 = __importDefault(require('inquirer'))
+const log_symbols_1 = __importDefault(require('log-symbols'))
+const common_1 = require('../common')
+const hosting_1 = require('../../hosting')
+const error_1 = require('../../error')
+const utils_1 = require('../../utils')
+const decorators_1 = require('../../decorators')
 const HostingStatusMap = {
     init: '初始化中',
     process: '处理中',
@@ -42,12 +91,12 @@ const HostingStatusMap = {
     offline: '已下线',
     create_fail: '初始化失败',
     destroy_fail: '销毁失败'
-};
+}
 function getHostingService(envId) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { hosting } = yield (0, utils_1.getMangerService)(envId);
-        return hosting;
-    });
+        const { hosting } = yield (0, utils_1.getMangerService)(envId)
+        return hosting
+    })
 }
 let HostingDetail = class HostingDetail extends common_1.Command {
     get options() {
@@ -62,37 +111,43 @@ let HostingDetail = class HostingDetail extends common_1.Command {
                 }
             ],
             desc: '查看静态网站服务信息'
-        };
+        }
     }
     execute(envId, log) {
-        var _a;
+        var _a
         return __awaiter(this, void 0, void 0, function* () {
-            const res = yield (0, hosting_1.getHostingInfo)({ envId });
-            const website = (_a = res === null || res === void 0 ? void 0 : res.data) === null || _a === void 0 ? void 0 : _a[0];
+            const res = yield (0, hosting_1.getHostingInfo)({ envId })
+            const website =
+                (_a = res === null || res === void 0 ? void 0 : res.data) === null || _a === void 0
+                    ? void 0
+                    : _a[0]
             if (!website) {
-                yield (0, hosting_1.initHosting)({ envId });
-                return;
+                yield (0, hosting_1.initHosting)({ envId })
+                return
             }
-            const link = (0, utils_1.genClickableLink)(`https://${website.cdnDomain}`);
+            const link = (0, utils_1.genClickableLink)(`https://${website.cdnDomain}`)
             if (website.status !== 'offline') {
-                log.info(`静态网站域名：${link}`);
+                log.info(`静态网站域名：${link}`)
             }
-            log.info(`静态网站状态：【${HostingStatusMap[website.status]}】`);
-        });
+            log.info(`静态网站状态：【${HostingStatusMap[website.status]}】`)
+        })
     }
-};
-__decorate([
-    (0, decorators_1.InjectParams)(),
-    __param(0, (0, decorators_1.EnvId)()),
-    __param(1, (0, decorators_1.Log)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, decorators_1.Logger]),
-    __metadata("design:returntype", Promise)
-], HostingDetail.prototype, "execute", null);
-HostingDetail = __decorate([
-    (0, common_1.ICommand)()
-], HostingDetail);
-exports.HostingDetail = HostingDetail;
+}
+__decorate(
+    [
+        (0, decorators_1.InjectParams)(),
+        __param(0, (0, decorators_1.EnvId)()),
+        __param(1, (0, decorators_1.Log)()),
+        __metadata('design:type', Function),
+        __metadata('design:paramtypes', [Object, decorators_1.Logger]),
+        __metadata('design:returntype', Promise)
+    ],
+    HostingDetail.prototype,
+    'execute',
+    null
+)
+HostingDetail = __decorate([(0, common_1.ICommand)()], HostingDetail)
+exports.HostingDetail = HostingDetail
 let HostingDeploy = class HostingDeploy extends common_1.Command {
     get options() {
         return {
@@ -106,32 +161,35 @@ let HostingDeploy = class HostingDeploy extends common_1.Command {
                 }
             ],
             desc: '部署静态网站文件'
-        };
+        }
     }
     execute(envId, params, log) {
-        var _a;
+        var _a
         return __awaiter(this, void 0, void 0, function* () {
-            const localPath = (params === null || params === void 0 ? void 0 : params[0]) || '.';
-            const cloudPath = (params === null || params === void 0 ? void 0 : params[1]) || '';
-            log.verbose('本地目录', localPath);
-            const resolveLocalPath = path_1.default.resolve(localPath);
-            (0, utils_1.checkFullAccess)(resolveLocalPath, true);
-            const isDir = (0, utils_1.isDirectory)(resolveLocalPath);
-            const loading = (0, utils_1.loadingFactory)();
-            loading.start('准备上传中...');
-            let totalFiles = 0;
+            const localPath = (params === null || params === void 0 ? void 0 : params[0]) || '.'
+            const cloudPath = (params === null || params === void 0 ? void 0 : params[1]) || ''
+            log.verbose('本地目录', localPath)
+            const resolveLocalPath = path_1.default.resolve(localPath)
+            ;(0, utils_1.checkFullAccess)(resolveLocalPath, true)
+            const isDir = (0, utils_1.isDirectory)(resolveLocalPath)
+            const loading = (0, utils_1.loadingFactory)()
+            loading.start('准备上传中...')
+            let totalFiles = 0
             if (isDir) {
-                let files = yield (0, hosting_1.walkLocalDir)(envId, resolveLocalPath);
-                files = files.filter((item) => !(0, utils_1.isDirectory)(item));
-                totalFiles = files.length;
+                let files = yield (0, hosting_1.walkLocalDir)(envId, resolveLocalPath)
+                files = files.filter((item) => !(0, utils_1.isDirectory)(item))
+                totalFiles = files.length
             }
-            const onProgress = (0, utils_1.createUploadProgressBar)(() => {
-                !isDir && log.success('文件部署成功！');
-            }, () => {
-                loading.stop();
-            });
-            const successFiles = [];
-            const failedFiles = [];
+            const onProgress = (0, utils_1.createUploadProgressBar)(
+                () => {
+                    !isDir && log.success('文件部署成功！')
+                },
+                () => {
+                    loading.stop()
+                }
+            )
+            const successFiles = []
+            const failedFiles = []
             yield (0, hosting_1.hostingDeploy)({
                 filePath: resolveLocalPath,
                 cloudPath,
@@ -139,58 +197,69 @@ let HostingDeploy = class HostingDeploy extends common_1.Command {
                 isDir,
                 onProgress,
                 onFileFinish: (...args) => {
-                    const error = args[0];
-                    const fileInfo = args[2];
+                    const error = args[0]
+                    const fileInfo = args[2]
                     if (error) {
-                        failedFiles.push(fileInfo.Key);
-                    }
-                    else {
-                        successFiles.push(fileInfo.Key);
+                        failedFiles.push(fileInfo.Key)
+                    } else {
+                        successFiles.push(fileInfo.Key)
                     }
                 }
-            });
+            })
             const info = yield (0, hosting_1.getHostingInfo)({
                 envId
-            });
-            const website = (_a = info === null || info === void 0 ? void 0 : info.data) === null || _a === void 0 ? void 0 : _a[0];
-            const link = (0, utils_1.genClickableLink)(`https://${website.cdnDomain}`);
-            log.success(`\n部署完成 👉 ${link}`);
+            })
+            const website =
+                (_a = info === null || info === void 0 ? void 0 : info.data) === null ||
+                _a === void 0
+                    ? void 0
+                    : _a[0]
+            const link = (0, utils_1.genClickableLink)(`https://${website.cdnDomain}`)
+            log.success(`\n部署完成 👉 ${link}`)
             if (isDir) {
-                log.success(`文件共计 ${totalFiles} 个`);
-                log.success(`文件上传成功 ${successFiles.length} 个`);
+                log.success(`文件共计 ${totalFiles} 个`)
+                log.success(`文件上传成功 ${successFiles.length} 个`)
                 if (totalFiles <= 50) {
-                    (0, utils_1.printHorizontalTable)(['状态', '文件'], successFiles.map((item) => [log_symbols_1.default.success, item]));
+                    ;(0, utils_1.printHorizontalTable)(
+                        ['状态', '文件'],
+                        successFiles.map((item) => [log_symbols_1.default.success, item])
+                    )
                 }
-                log.error(`文件上传失败 ${failedFiles.length} 个`);
+                log.error(`文件上传失败 ${failedFiles.length} 个`)
                 if (failedFiles.length) {
                     if (totalFiles <= 50) {
-                        (0, utils_1.printHorizontalTable)(['状态', '文件'], failedFiles.map((item) => [log_symbols_1.default.error, item]));
+                        ;(0, utils_1.printHorizontalTable)(
+                            ['状态', '文件'],
+                            failedFiles.map((item) => [log_symbols_1.default.error, item])
+                        )
+                    } else {
+                        const errorLogPath = path_1.default.resolve('./cloudbase-error.log')
+                        log.error('上传失败文件：')
+                        console.log(errorLogPath)
+                        fs_1.default.writeFileSync(errorLogPath, failedFiles.join('\n'))
                     }
-                    else {
-                        const errorLogPath = path_1.default.resolve('./cloudbase-error.log');
-                        log.error('上传失败文件：');
-                        console.log(errorLogPath);
-                        fs_1.default.writeFileSync(errorLogPath, failedFiles.join('\n'));
-                    }
-                    throw new error_1.CloudBaseError('部分文件上传失败，进程退出');
+                    throw new error_1.CloudBaseError('部分文件上传失败，进程退出')
                 }
             }
-        });
+        })
     }
-};
-__decorate([
-    (0, decorators_1.InjectParams)(),
-    __param(0, (0, decorators_1.EnvId)()),
-    __param(1, (0, decorators_1.ArgsParams)()),
-    __param(2, (0, decorators_1.Log)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, decorators_1.Logger]),
-    __metadata("design:returntype", Promise)
-], HostingDeploy.prototype, "execute", null);
-HostingDeploy = __decorate([
-    (0, common_1.ICommand)()
-], HostingDeploy);
-exports.HostingDeploy = HostingDeploy;
+}
+__decorate(
+    [
+        (0, decorators_1.InjectParams)(),
+        __param(0, (0, decorators_1.EnvId)()),
+        __param(1, (0, decorators_1.ArgsParams)()),
+        __param(2, (0, decorators_1.Log)()),
+        __metadata('design:type', Function),
+        __metadata('design:paramtypes', [Object, Object, decorators_1.Logger]),
+        __metadata('design:returntype', Promise)
+    ],
+    HostingDeploy.prototype,
+    'execute',
+    null
+)
+HostingDeploy = __decorate([(0, common_1.ICommand)()], HostingDeploy)
+exports.HostingDeploy = HostingDeploy
 let HostingDeleteFiles = class HostingDeleteFiles extends common_1.Command {
     get options() {
         return {
@@ -208,58 +277,60 @@ let HostingDeleteFiles = class HostingDeleteFiles extends common_1.Command {
                 }
             ],
             desc: '删除静态网站文件/文件夹，文件夹需指定 --dir 选项'
-        };
+        }
     }
     execute(envId, options, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cloudPath = (params === null || params === void 0 ? void 0 : params[0]) || '';
-            let isDir = options.dir;
+            const cloudPath = (params === null || params === void 0 ? void 0 : params[0]) || ''
+            let isDir = options.dir
             if (!cloudPath) {
                 const { confirm } = yield inquirer_1.default.prompt({
                     type: 'confirm',
                     name: 'confirm',
                     message: '指定云端路径为空，将会删除所有文件，是否继续',
                     default: false
-                });
+                })
                 if (!confirm) {
-                    throw new error_1.CloudBaseError('操作终止！');
+                    throw new error_1.CloudBaseError('操作终止！')
                 }
-                isDir = true;
+                isDir = true
             }
             if (cloudPath === '/') {
-                isDir = true;
+                isDir = true
             }
-            const fileText = isDir ? '文件夹' : '文件';
-            const loading = (0, utils_1.loadingFactory)();
-            loading.start(`删除${fileText}中...`);
+            const fileText = isDir ? '文件夹' : '文件'
+            const loading = (0, utils_1.loadingFactory)()
+            loading.start(`删除${fileText}中...`)
             try {
                 yield (0, hosting_1.hostingDelete)({
                     envId,
                     isDir,
                     cloudPath
-                });
-                loading.succeed(`删除${fileText}成功！`);
+                })
+                loading.succeed(`删除${fileText}成功！`)
+            } catch (e) {
+                loading.fail(`删除${fileText}失败！`)
+                throw new error_1.CloudBaseError(e.message)
             }
-            catch (e) {
-                loading.fail(`删除${fileText}失败！`);
-                throw new error_1.CloudBaseError(e.message);
-            }
-        });
+        })
     }
-};
-__decorate([
-    (0, decorators_1.InjectParams)(),
-    __param(0, (0, decorators_1.EnvId)()),
-    __param(1, (0, decorators_1.ArgsOptions)()),
-    __param(2, (0, decorators_1.ArgsParams)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, Object]),
-    __metadata("design:returntype", Promise)
-], HostingDeleteFiles.prototype, "execute", null);
-HostingDeleteFiles = __decorate([
-    (0, common_1.ICommand)()
-], HostingDeleteFiles);
-exports.HostingDeleteFiles = HostingDeleteFiles;
+}
+__decorate(
+    [
+        (0, decorators_1.InjectParams)(),
+        __param(0, (0, decorators_1.EnvId)()),
+        __param(1, (0, decorators_1.ArgsOptions)()),
+        __param(2, (0, decorators_1.ArgsParams)()),
+        __metadata('design:type', Function),
+        __metadata('design:paramtypes', [Object, Object, Object]),
+        __metadata('design:returntype', Promise)
+    ],
+    HostingDeleteFiles.prototype,
+    'execute',
+    null
+)
+HostingDeleteFiles = __decorate([(0, common_1.ICommand)()], HostingDeleteFiles)
+exports.HostingDeleteFiles = HostingDeleteFiles
 let HostingList = class HostingList extends common_1.Command {
     get options() {
         return {
@@ -273,48 +344,50 @@ let HostingList = class HostingList extends common_1.Command {
                 }
             ],
             desc: '展示文件列表'
-        };
+        }
     }
     execute(envId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const loading = (0, utils_1.loadingFactory)();
-            loading.start('获取文件列表中...');
+            const loading = (0, utils_1.loadingFactory)()
+            loading.start('获取文件列表中...')
             try {
                 const list = yield (0, hosting_1.hostingList)({
                     envId
-                });
-                loading.stop();
-                const head = ['序号', 'Key', 'LastModified', 'ETag', 'Size(KB)'];
-                const notDir = (item) => !(Number(item.Size) === 0 && /\/$/g.test(item.Key));
+                })
+                loading.stop()
+                const head = ['序号', 'Key', 'LastModified', 'ETag', 'Size(KB)']
+                const notDir = (item) => !(Number(item.Size) === 0 && /\/$/g.test(item.Key))
                 const tableData = list
                     .filter(notDir)
                     .map((item, index) => [
-                    index + 1,
-                    item.Key,
-                    (0, utils_1.formatDate)(item.LastModified, 'yyyy-MM-dd hh:mm:ss'),
-                    item.ETag,
-                    String((0, utils_1.formateFileSize)(item.Size, 'KB'))
-                ]);
-                (0, utils_1.printHorizontalTable)(head, tableData);
+                        index + 1,
+                        item.Key,
+                        (0, utils_1.formatDate)(item.LastModified, 'yyyy-MM-dd hh:mm:ss'),
+                        item.ETag,
+                        String((0, utils_1.formateFileSize)(item.Size, 'KB'))
+                    ])
+                ;(0, utils_1.printHorizontalTable)(head, tableData)
+            } catch (e) {
+                loading.fail('获取文件列表失败！')
+                throw new error_1.CloudBaseError(e.message)
             }
-            catch (e) {
-                loading.fail('获取文件列表失败！');
-                throw new error_1.CloudBaseError(e.message);
-            }
-        });
+        })
     }
-};
-__decorate([
-    (0, decorators_1.InjectParams)(),
-    __param(0, (0, decorators_1.EnvId)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], HostingList.prototype, "execute", null);
-HostingList = __decorate([
-    (0, common_1.ICommand)()
-], HostingList);
-exports.HostingList = HostingList;
+}
+__decorate(
+    [
+        (0, decorators_1.InjectParams)(),
+        __param(0, (0, decorators_1.EnvId)()),
+        __metadata('design:type', Function),
+        __metadata('design:paramtypes', [Object]),
+        __metadata('design:returntype', Promise)
+    ],
+    HostingList.prototype,
+    'execute',
+    null
+)
+HostingList = __decorate([(0, common_1.ICommand)()], HostingList)
+exports.HostingList = HostingList
 let HostingDownloadCommand = class HostingDownloadCommand extends common_1.Command {
     get options() {
         return {
@@ -331,47 +404,49 @@ let HostingDownloadCommand = class HostingDownloadCommand extends common_1.Comma
                 }
             ],
             desc: '下载文件/文件夹，文件夹需指定 --dir 选项'
-        };
+        }
     }
     execute(envId, options, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            let cloudPath = params === null || params === void 0 ? void 0 : params[0];
-            const localPath = (params === null || params === void 0 ? void 0 : params[1]) || '.';
-            const hostingService = yield getHostingService(envId);
-            const resolveLocalPath = path_1.default.resolve(localPath);
-            const { dir } = options;
-            const fileText = dir ? '文件夹' : '文件';
-            const loading = (0, utils_1.loadingFactory)();
-            loading.start(`下载${fileText}中`);
+            let cloudPath = params === null || params === void 0 ? void 0 : params[0]
+            const localPath = (params === null || params === void 0 ? void 0 : params[1]) || '.'
+            const hostingService = yield getHostingService(envId)
+            const resolveLocalPath = path_1.default.resolve(localPath)
+            const { dir } = options
+            const fileText = dir ? '文件夹' : '文件'
+            const loading = (0, utils_1.loadingFactory)()
+            loading.start(`下载${fileText}中`)
             if (/^\/.+/.test(cloudPath)) {
-                cloudPath = cloudPath.slice(1);
+                cloudPath = cloudPath.slice(1)
             }
             if (dir) {
                 yield hostingService.downloadDirectory({
                     cloudPath,
                     localPath: resolveLocalPath
-                });
-            }
-            else {
+                })
+            } else {
                 yield hostingService.downloadFile({
                     cloudPath,
                     localPath: resolveLocalPath
-                });
+                })
             }
-            loading.succeed(`下载${fileText}成功！`);
-        });
+            loading.succeed(`下载${fileText}成功！`)
+        })
     }
-};
-__decorate([
-    (0, decorators_1.InjectParams)(),
-    __param(0, (0, decorators_1.EnvId)()),
-    __param(1, (0, decorators_1.ArgsOptions)()),
-    __param(2, (0, decorators_1.ArgsParams)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, Object]),
-    __metadata("design:returntype", Promise)
-], HostingDownloadCommand.prototype, "execute", null);
-HostingDownloadCommand = __decorate([
-    (0, common_1.ICommand)()
-], HostingDownloadCommand);
-exports.HostingDownloadCommand = HostingDownloadCommand;
+}
+__decorate(
+    [
+        (0, decorators_1.InjectParams)(),
+        __param(0, (0, decorators_1.EnvId)()),
+        __param(1, (0, decorators_1.ArgsOptions)()),
+        __param(2, (0, decorators_1.ArgsParams)()),
+        __metadata('design:type', Function),
+        __metadata('design:paramtypes', [Object, Object, Object]),
+        __metadata('design:returntype', Promise)
+    ],
+    HostingDownloadCommand.prototype,
+    'execute',
+    null
+)
+HostingDownloadCommand = __decorate([(0, common_1.ICommand)()], HostingDownloadCommand)
+exports.HostingDownloadCommand = HostingDownloadCommand

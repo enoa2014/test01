@@ -3,15 +3,18 @@
 ## 文档概述
 
 ### 文档目的
+
 本文档旨在定义微信小程序患者档案管理系统的完整信息架构，包括页面层级结构、导航体系、信息组织方式和内容分类，为设计和开发提供清晰的架构指导。
 
 ### 适用范围
+
 - 产品经理：理解产品架构和功能组织
 - UI/UX设计师：指导界面设计和用户体验设计
 - 前端开发工程师：指导页面结构和组件架构
 - 测试工程师：理解功能模块和测试范围
 
 ### 版本信息
+
 - **文档版本**: v1.0
 - **创建日期**: 2025年9月
 - **最后更新**: 2025年9月
@@ -53,6 +56,7 @@
 ### 1.2 信息分类体系
 
 #### 核心数据实体
+
 ```
 患者信息 (Patient Information)
 ├── 基本信息 (Basic Info)
@@ -74,6 +78,7 @@
 ```
 
 #### 业务流程分类
+
 ```
 业务流程 (Business Processes)
 ├── 入住流程 (Admission Process)
@@ -105,17 +110,19 @@
 ```
 
 #### 导航层级定义
-| 导航项 | 功能描述 | 用户角色 | 使用频率 |
-|--------|----------|----------|----------|
-| 🏠 首页 | 数据概览、快捷操作 | 所有用户 | 极高 |
-| 👥 患者 | 患者档案管理 | 所有用户 | 极高 |
-| ➕ 入住 | 新患者入住流程 | 管理员/护士 | 高 |
-| 📊 分析 | 数据统计分析 | 管理员 | 中 |
-| 👤 我的 | 个人设置、帮助 | 所有用户 | 低 |
+
+| 导航项  | 功能描述           | 用户角色    | 使用频率 |
+| ------- | ------------------ | ----------- | -------- |
+| 🏠 首页 | 数据概览、快捷操作 | 所有用户    | 极高     |
+| 👥 患者 | 患者档案管理       | 所有用户    | 极高     |
+| ➕ 入住 | 新患者入住流程     | 管理员/护士 | 高       |
+| 📊 分析 | 数据统计分析       | 管理员      | 中       |
+| 👤 我的 | 个人设置、帮助     | 所有用户    | 低       |
 
 ### 2.2 页面层级结构
 
 #### 2.2.1 首页模块 (Dashboard)
+
 ```
 🏠 首页 (L1)
 ├── 📋 今日概览 (L2)
@@ -141,6 +148,7 @@
 ```
 
 #### 2.2.2 患者档案模块 (Patient Records)
+
 ```
 👥 患者档案 (L1)
 ├── 🔍 搜索筛选 (L2)
@@ -185,6 +193,7 @@
 ```
 
 #### 2.2.3 入住管理模块 (Admission Management)
+
 ```
 ➕ 入住管理 (L1)
 ├── 🚀 快速入住 (L2) - 已有患者
@@ -235,6 +244,7 @@
 ```
 
 #### 2.2.4 数据分析模块 (Analytics)
+
 ```
 📊 数据分析 (L1)
 ├── 📈 概览统计 (L2)
@@ -290,6 +300,7 @@
 ```
 
 #### 2.2.5 个人中心模块 (Personal Center)
+
 ```
 👤 个人中心 (L1)
 ├── 👨‍💼 个人信息 (L2)
@@ -344,6 +355,7 @@
 ### 3.1 主导航系统
 
 #### 底部Tab导航 (Primary Navigation)
+
 ```
 ┌─────┬─────┬─────┬─────┬─────┐
 │ 🏠  │ 👥  │ ➕  │ 📊  │ 👤  │
@@ -352,12 +364,14 @@
 ```
 
 **设计原则**:
+
 - **5+2原则**: 5个主要功能 + 搜索和通知2个辅助功能
 - **高频前置**: 最常用功能位于左侧
 - **角色区分**: 不同角色看到不同的导航选项
 - **状态指示**: 通过角标显示未读消息和待处理事项
 
 #### 导航状态管理
+
 ```javascript
 // 导航状态配置
 const navigationConfig = {
@@ -367,43 +381,44 @@ const navigationConfig = {
       title: '首页',
       icon: '🏠',
       roles: ['all'],
-      badge: () => getPendingTasksCount()
+      badge: () => getPendingTasksCount(),
     },
     {
       name: 'patients',
       title: '患者',
       icon: '👥',
       roles: ['all'],
-      badge: () => getNewPatientsCount()
+      badge: () => getNewPatientsCount(),
     },
     {
       name: 'admission',
       title: '入住',
       icon: '➕',
       roles: ['admin', 'nurse'],
-      badge: () => getPendingAdmissionsCount()
+      badge: () => getPendingAdmissionsCount(),
     },
     {
       name: 'analytics',
       title: '分析',
       icon: '📊',
       roles: ['admin', 'manager'],
-      badge: null
+      badge: null,
     },
     {
       name: 'profile',
       title: '我的',
       icon: '👤',
       roles: ['all'],
-      badge: null
-    }
-  ]
-}
+      badge: null,
+    },
+  ],
+};
 ```
 
 ### 3.2 次级导航系统
 
 #### 顶部导航栏 (Secondary Navigation)
+
 ```
 ┌───────────────────────────────────────────────────┐
 │ ← 返回  │    页面标题    │  🔍搜索  ⚙️设置  │
@@ -411,12 +426,14 @@ const navigationConfig = {
 ```
 
 **组件构成**:
+
 - **返回按钮**: 层级导航返回
 - **页面标题**: 当前页面名称
 - **搜索入口**: 全局/局部搜索
 - **功能按钮**: 页面相关操作(筛选、排序、设置等)
 
 #### 面包屑导航 (Breadcrumb Navigation)
+
 ```
 首页 > 患者档案 > 张小明
 首页 > 入住管理 > 新建档案 > 基本信息
@@ -424,6 +441,7 @@ const navigationConfig = {
 ```
 
 **使用场景**:
+
 - 深层级页面导航
 - 复杂流程中的位置指示
 - 快速返回上级页面
@@ -431,6 +449,7 @@ const navigationConfig = {
 ### 3.3 操作导航系统
 
 #### 浮动操作按钮 (FAB)
+
 ```
 页面右下角: ➕ 快速操作
 ├── 新增患者
@@ -439,6 +458,7 @@ const navigationConfig = {
 ```
 
 #### 上下文菜单 (Context Menu)
+
 ```
 长按患者卡片:
 ├── 查看详情
@@ -449,6 +469,7 @@ const navigationConfig = {
 ```
 
 #### 手势导航
+
 - **左右滑动**: 切换Tab页面
 - **下拉刷新**: 更新页面数据
 - **上拉加载**: 加载更多内容
@@ -461,6 +482,7 @@ const navigationConfig = {
 ### 4.1 信息优先级矩阵
 
 #### 首页信息层级
+
 ```
 L1 - 关键信息 (立即可见)
 ├── 当前在住人数
@@ -482,6 +504,7 @@ L3 - 辅助信息 (需要滚动)
 ```
 
 #### 患者列表信息层级
+
 ```
 L1 - 核心信息 (卡片主体)
 ├── 患者姓名 (最大字号)
@@ -503,6 +526,7 @@ L3 - 详细信息 (点击展开)
 ```
 
 #### 患者详情信息层级
+
 ```
 L1 - 基础信息头部 (固定显示)
 ├── 患者照片/头像
@@ -526,28 +550,39 @@ L3 - 详细内容 (模块内部)
 ### 4.2 信息密度控制
 
 #### 信息密度等级
-| 等级 | 信息量 | 适用场景 | 设计原则 |
-|------|--------|----------|----------|
-| 高密度 | 8-12项 | 管理员概览 | 紧凑布局，小字体 |
-| 中密度 | 4-6项 | 日常操作 | 平衡布局，标准字体 |
-| 低密度 | 2-3项 | 移动端首页 | 宽松布局，大字体 |
+
+| 等级   | 信息量 | 适用场景   | 设计原则           |
+| ------ | ------ | ---------- | ------------------ |
+| 高密度 | 8-12项 | 管理员概览 | 紧凑布局，小字体   |
+| 中密度 | 4-6项  | 日常操作   | 平衡布局，标准字体 |
+| 低密度 | 2-3项  | 移动端首页 | 宽松布局，大字体   |
 
 #### 响应式信息层级
+
 ```css
 /* 不同屏幕尺寸的信息显示策略 */
 @media (max-width: 320px) {
   /* 超小屏幕：只显示L1信息 */
-  .info-level-2, .info-level-3 { display: none; }
+  .info-level-2,
+  .info-level-3 {
+    display: none;
+  }
 }
 
 @media (min-width: 321px) and (max-width: 375px) {
   /* 小屏幕：显示L1+L2信息 */
-  .info-level-3 { display: none; }
+  .info-level-3 {
+    display: none;
+  }
 }
 
 @media (min-width: 376px) {
   /* 大屏幕：显示所有信息 */
-  .info-level-1, .info-level-2, .info-level-3 { display: block; }
+  .info-level-1,
+  .info-level-2,
+  .info-level-3 {
+    display: block;
+  }
 }
 ```
 
@@ -558,6 +593,7 @@ L3 - 详细内容 (模块内部)
 ### 5.1 内容分类系统
 
 #### 按功能分类
+
 ```
 核心功能内容 (Core Content)
 ├── 患者基础数据
@@ -579,6 +615,7 @@ L3 - 详细内容 (模块内部)
 ```
 
 #### 按使用频率分类
+
 ```
 高频内容 (Daily Use - 80% 时间)
 ├── 患者基本信息查看
@@ -602,31 +639,33 @@ L3 - 详细内容 (模块内部)
 ### 5.2 内容优先级策略
 
 #### 内容重要性评估矩阵
-| 重要性 | 紧急性 | 显示策略 | 交互方式 |
-|--------|--------|----------|----------|
-| 高 | 高 | 首屏显示，突出样式 | 一键直达 |
-| 高 | 低 | 首屏显示，标准样式 | 点击查看 |
-| 低 | 高 | 折叠显示，提醒标识 | 展开查看 |
-| 低 | 低 | 隐藏显示，入口保留 | 多级导航 |
+
+| 重要性 | 紧急性 | 显示策略           | 交互方式 |
+| ------ | ------ | ------------------ | -------- |
+| 高     | 高     | 首屏显示，突出样式 | 一键直达 |
+| 高     | 低     | 首屏显示，标准样式 | 点击查看 |
+| 低     | 高     | 折叠显示，提醒标识 | 展开查看 |
+| 低     | 低     | 隐藏显示，入口保留 | 多级导航 |
 
 #### 动态内容优先级
+
 ```javascript
 // 内容优先级动态计算
-const calculateContentPriority = (content) => {
+const calculateContentPriority = content => {
   let priority = 0;
-  
+
   // 基于用户角色
   priority += getRolePriority(content.type, user.role);
-  
+
   // 基于使用频率
   priority += getUsageFrequency(content.id, user.id);
-  
+
   // 基于时间敏感性
   priority += getTimeSensitivity(content.timestamp);
-  
+
   // 基于个人偏好
   priority += getPersonalPreference(content.category, user.preferences);
-  
+
   return priority;
 };
 ```
@@ -634,6 +673,7 @@ const calculateContentPriority = (content) => {
 ### 5.3 内容呈现模式
 
 #### 卡片式布局 (Card Layout)
+
 ```
 ┌─────────────────────────────┐
 │ 🏷️ 标题                    │
@@ -646,6 +686,7 @@ const calculateContentPriority = (content) => {
 ```
 
 #### 列表式布局 (List Layout)
+
 ```
 👤 姓名         📞 联系方式    🏥 状态
 📅 入住时间     🏠 房间号      ⚡ 操作
@@ -655,6 +696,7 @@ const calculateContentPriority = (content) => {
 ```
 
 #### 表格式布局 (Table Layout)
+
 ```
 | 姓名   | 年龄 | 性别 | 入住时间   | 状态 | 操作     |
 |--------|------|------|------------|------|----------|
@@ -663,6 +705,7 @@ const calculateContentPriority = (content) => {
 ```
 
 #### 时间轴布局 (Timeline Layout)
+
 ```
 ⭕ 2024-01-15 入住登记
 │  └── 完成基本信息录入
@@ -681,6 +724,7 @@ const calculateContentPriority = (content) => {
 ### 6.1 搜索功能层级
 
 #### 全局搜索 (Global Search)
+
 ```
 搜索范围: 全系统内容
 ├── 患者姓名搜索
@@ -703,6 +747,7 @@ const calculateContentPriority = (content) => {
 ```
 
 #### 局部搜索 (Local Search)
+
 ```
 患者列表搜索:
 ├── 姓名搜索
@@ -728,6 +773,7 @@ const calculateContentPriority = (content) => {
 ### 6.2 搜索体验设计
 
 #### 搜索输入体验
+
 ```
 搜索框设计:
 ┌─────────────────────────────────────┐
@@ -748,6 +794,7 @@ const calculateContentPriority = (content) => {
 ```
 
 #### 搜索结果展示
+
 ```
 搜索结果页面结构:
 ┌─────────────────────────────────────┐
@@ -776,6 +823,7 @@ const calculateContentPriority = (content) => {
 ### 6.3 智能搜索功能
 
 #### 搜索建议与联想
+
 ```javascript
 // 搜索建议算法
 const generateSearchSuggestions = (query) => {
@@ -799,6 +847,7 @@ const generateSearchSuggestions = (query) => {
 ```
 
 #### 搜索过滤器
+
 ```
 高级搜索过滤器:
 ┌─────────────────────────────────────┐
@@ -829,6 +878,7 @@ const generateSearchSuggestions = (query) => {
 ### 7.1 角色权限模型
 
 #### 角色定义
+
 ```
 角色层级 (Role Hierarchy):
 ├── 🔵 超级管理员 (Super Admin)
@@ -858,161 +908,158 @@ const generateSearchSuggestions = (query) => {
 ```
 
 #### 权限矩阵
-| 功能模块 | 超级管理员 | 管理员 | 护士长 | 护士 | 志愿者 |
-|----------|------------|--------|--------|------|--------|
-| 患者档案查看 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 患者信息编辑 | ✅ | ✅ | ✅ | ⚠️ | ❌ |
-| 新患者入住 | ✅ | ✅ | ✅ | ⚠️ | ❌ |
-| 数据分析 | ✅ | ✅ | ⚠️ | ❌ | ❌ |
-| 系统设置 | ✅ | ⚠️ | ❌ | ❌ | ❌ |
-| 用户管理 | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-*说明: ✅ 完全权限, ⚠️ 有限权限, ❌ 无权限*
+| 功能模块     | 超级管理员 | 管理员 | 护士长 | 护士 | 志愿者 |
+| ------------ | ---------- | ------ | ------ | ---- | ------ |
+| 患者档案查看 | ✅         | ✅     | ✅     | ✅   | ✅     |
+| 患者信息编辑 | ✅         | ✅     | ✅     | ⚠️   | ❌     |
+| 新患者入住   | ✅         | ✅     | ✅     | ⚠️   | ❌     |
+| 数据分析     | ✅         | ✅     | ⚠️     | ❌   | ❌     |
+| 系统设置     | ✅         | ⚠️     | ❌     | ❌   | ❌     |
+| 用户管理     | ✅         | ❌     | ❌     | ❌   | ❌     |
+
+_说明: ✅ 完全权限, ⚠️ 有限权限, ❌ 无权限_
 
 ### 7.2 权限控制策略
 
 #### 页面级权限控制
+
 ```javascript
 // 页面权限配置
 const pagePermissions = {
   '/dashboard': {
     roles: ['all'],
-    permissions: ['read']
+    permissions: ['read'],
   },
   '/patients': {
     roles: ['admin', 'nurse', 'volunteer'],
-    permissions: ['read', 'search']
+    permissions: ['read', 'search'],
   },
   '/patients/edit': {
     roles: ['admin', 'head_nurse', 'nurse'],
     permissions: ['read', 'write'],
     conditions: {
-      nurse: 'own_patients_only' // 护士只能编辑自己负责的患者
-    }
+      nurse: 'own_patients_only', // 护士只能编辑自己负责的患者
+    },
   },
   '/admission': {
     roles: ['admin', 'head_nurse'],
-    permissions: ['read', 'write', 'create']
+    permissions: ['read', 'write', 'create'],
   },
   '/analytics': {
     roles: ['admin', 'head_nurse'],
     permissions: ['read'],
     conditions: {
-      head_nurse: 'department_data_only' // 护士长只能看科室数据
-    }
+      head_nurse: 'department_data_only', // 护士长只能看科室数据
+    },
   },
   '/system': {
     roles: ['super_admin'],
-    permissions: ['read', 'write', 'delete', 'configure']
-  }
+    permissions: ['read', 'write', 'delete', 'configure'],
+  },
 };
 ```
 
 #### 数据级权限控制
+
 ```javascript
 // 数据访问权限
 const dataPermissions = {
   patient_data: {
     super_admin: 'all_data',
-    admin: 'all_data', 
+    admin: 'all_data',
     head_nurse: 'department_data',
     nurse: 'assigned_patients',
-    volunteer: 'basic_info_only'
+    volunteer: 'basic_info_only',
   },
   medical_records: {
     super_admin: 'full_access',
     admin: 'full_access',
     head_nurse: 'department_records',
     nurse: 'assigned_patients_records',
-    volunteer: 'no_access'
+    volunteer: 'no_access',
   },
   sensitive_data: {
     super_admin: 'full_access',
     admin: 'masked_access', // 敏感信息脱敏
     head_nurse: 'masked_access',
     nurse: 'masked_access',
-    volunteer: 'no_access'
-  }
+    volunteer: 'no_access',
+  },
 };
 ```
 
 #### 操作权限控制
+
 ```javascript
 // 操作权限配置
 const operationPermissions = {
   create_patient: {
     roles: ['admin', 'head_nurse'],
-    workflow: 'approval_required' // 需要审批流程
+    workflow: 'approval_required', // 需要审批流程
   },
   edit_medical_info: {
     roles: ['admin', 'head_nurse', 'nurse'],
     conditions: {
-      nurse: 'supervisor_approval_required'
-    }
+      nurse: 'supervisor_approval_required',
+    },
   },
   delete_patient: {
     roles: ['super_admin'],
-    workflow: 'multi_level_approval'
+    workflow: 'multi_level_approval',
   },
   export_data: {
     roles: ['super_admin', 'admin'],
     audit: 'required', // 需要审计日志
-    approval: 'required'
-  }
+    approval: 'required',
+  },
 };
 ```
 
 ### 7.3 权限验证流程
 
 #### 权限验证中间件
+
 ```javascript
 // 权限验证流程
 const permissionMiddleware = async (req, res, next) => {
   try {
     // 1. 验证用户身份
     const user = await authenticateUser(req.token);
-    
+
     // 2. 获取用户角色
     const userRole = await getUserRole(user.id);
-    
+
     // 3. 检查页面访问权限
     const pagePermission = checkPagePermission(req.path, userRole);
     if (!pagePermission.allowed) {
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     // 4. 检查数据访问权限
     if (req.params.patientId) {
-      const dataPermission = await checkDataPermission(
-        req.params.patientId, 
-        userRole, 
-        user.id
-      );
+      const dataPermission = await checkDataPermission(req.params.patientId, userRole, user.id);
       if (!dataPermission.allowed) {
         return res.status(403).json({ error: 'Data access denied' });
       }
     }
-    
+
     // 5. 检查操作权限
-    const operationPermission = checkOperationPermission(
-      req.method, 
-      req.path, 
-      userRole
-    );
+    const operationPermission = checkOperationPermission(req.method, req.path, userRole);
     if (!operationPermission.allowed) {
       return res.status(403).json({ error: 'Operation not permitted' });
     }
-    
+
     // 6. 记录访问日志
     await logAccess(user.id, req.path, req.method);
-    
+
     req.user = user;
     req.permissions = {
       page: pagePermission,
       data: dataPermission,
-      operation: operationPermission
+      operation: operationPermission,
     };
-    
+
     next();
   } catch (error) {
     res.status(401).json({ error: 'Authentication failed' });
@@ -1027,6 +1074,7 @@ const permissionMiddleware = async (req, res, next) => {
 ### 8.1 应用状态分层
 
 #### 全局状态 (Global State)
+
 ```javascript
 // 全局状态结构
 const globalState = {
@@ -1035,29 +1083,30 @@ const globalState = {
     profile: userProfile,
     permissions: userPermissions,
     preferences: userPreferences,
-    session: sessionInfo
+    session: sessionInfo,
   },
-  
+
   // 应用状态
   app: {
     theme: 'light', // light | dark | auto
     language: 'zh-CN',
     networkStatus: 'online', // online | offline | slow
     loading: false,
-    notifications: []
+    notifications: [],
   },
-  
+
   // 系统配置
   config: {
     apiBaseUrl: configData.apiUrl,
     features: enabledFeatures,
     limits: systemLimits,
-    version: appVersion
-  }
+    version: appVersion,
+  },
 };
 ```
 
 #### 页面状态 (Page State)
+
 ```javascript
 // 患者列表页状态
 const patientListState = {
@@ -1066,9 +1115,9 @@ const patientListState = {
     patients: [],
     totalCount: 0,
     currentPage: 1,
-    pageSize: 20
+    pageSize: 20,
   },
-  
+
   // UI状态
   ui: {
     loading: false,
@@ -1076,9 +1125,9 @@ const patientListState = {
     selectedIds: [],
     viewMode: 'card', // card | list | table
     sortBy: 'admissionDate',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
   },
-  
+
   // 搜索状态
   search: {
     keyword: '',
@@ -1086,11 +1135,11 @@ const patientListState = {
       status: 'all',
       ageRange: [0, 18],
       gender: 'all',
-      dateRange: null
+      dateRange: null,
     },
     suggestions: [],
-    history: []
-  }
+    history: [],
+  },
 };
 
 // 患者详情页状态
@@ -1100,28 +1149,29 @@ const patientDetailState = {
     basicInfo: {},
     medicalInfo: {},
     admissionHistory: [],
-    documents: []
+    documents: [],
   },
-  
+
   // 编辑状态
   editing: {
     isEditing: false,
     editingSection: null, // basic | medical | documents
     hasChanges: false,
-    validationErrors: {}
+    validationErrors: {},
   },
-  
+
   // UI状态
   ui: {
     activeTab: 'basic',
     loading: false,
     saving: false,
-    error: null
-  }
+    error: null,
+  },
 };
 ```
 
 #### 组件状态 (Component State)
+
 ```javascript
 // 组件内部状态示例
 const componentState = {
@@ -1131,9 +1181,9 @@ const componentState = {
     errors: {},
     touched: {},
     isValid: false,
-    isSubmitting: false
+    isSubmitting: false,
   },
-  
+
   // 模态框状态
   modalState: {
     isOpen: false,
@@ -1141,83 +1191,85 @@ const componentState = {
     title: '',
     content: '',
     onConfirm: null,
-    onCancel: null
+    onCancel: null,
   },
-  
+
   // 文件上传状态
   uploadState: {
     files: [],
     uploading: false,
     progress: 0,
-    error: null
-  }
+    error: null,
+  },
 };
 ```
 
 ### 8.2 状态更新流程
 
 #### 状态变更流水线
+
 ```javascript
 // 状态更新流程
 const stateUpdatePipeline = {
   // 1. 动作派发 (Action Dispatch)
-  dispatch: (action) => {
+  dispatch: action => {
     // 记录动作日志
     logger.debug('Action dispatched:', action);
-    
+
     // 验证动作格式
     validateAction(action);
-    
+
     // 派发到对应的处理器
     return actionHandler.handle(action);
   },
-  
+
   // 2. 状态变更 (State Mutation)
   mutate: (state, payload) => {
     // 创建新状态对象
     const newState = { ...state };
-    
+
     // 应用变更
     applyMutation(newState, payload);
-    
+
     // 验证状态有效性
     validateState(newState);
-    
+
     return newState;
   },
-  
+
   // 3. 副作用处理 (Side Effects)
   effects: async (action, state) => {
     // API调用
     if (action.type.includes('_REQUEST')) {
       await handleApiCall(action);
     }
-    
+
     // 本地存储同步
     if (action.type.includes('_UPDATE')) {
       await syncToLocalStorage(state);
     }
-    
+
     // 通知推送
     if (action.type.includes('_NOTIFY')) {
       await sendNotification(action.payload);
     }
   },
-  
+
   // 4. 视图更新 (View Update)
   update: (component, newState) => {
     // 比较状态差异
     const diff = compareState(component.state, newState);
-    
+
     // 只更新有变化的部分
     if (diff.hasChanges) {
       component.setState(newState);
     }
-  }
+  },
 };
 ```
 
 #### 状态持久化策略
+
 ```javascript
 // 状态持久化配置
 const persistenceConfig = {
@@ -1226,34 +1278,29 @@ const persistenceConfig = {
     user: {
       storage: 'secure', // 安全存储
       keys: ['preferences', 'session'],
-      encryption: true
+      encryption: true,
     },
     search: {
       storage: 'local',
       keys: ['history', 'filters'],
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7天
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
     },
     cache: {
       storage: 'memory',
       keys: ['patients', 'config'],
-      maxSize: 50 * 1024 * 1024 // 50MB
-    }
+      maxSize: 50 * 1024 * 1024, // 50MB
+    },
   },
-  
+
   // 不持久化的状态
-  transient: [
-    'loading',
-    'error',
-    'networkStatus',
-    'notifications'
-  ],
-  
+  transient: ['loading', 'error', 'networkStatus', 'notifications'],
+
   // 持久化策略
   strategies: {
     immediate: ['user.session'], // 立即持久化
     debounced: ['search.filters'], // 防抖持久化
-    periodic: ['cache.patients'] // 定期持久化
-  }
+    periodic: ['cache.patients'], // 定期持久化
+  },
 };
 ```
 
@@ -1264,6 +1311,7 @@ const persistenceConfig = {
 ### 9.1 错误分类体系
 
 #### 错误类型分类
+
 ```javascript
 // 错误类型定义
 const ErrorTypes = {
@@ -1272,44 +1320,45 @@ const ErrorTypes = {
     CONNECTION_FAILED: 'network.connection_failed',
     TIMEOUT: 'network.timeout',
     SERVER_ERROR: 'network.server_error',
-    NO_INTERNET: 'network.no_internet'
+    NO_INTERNET: 'network.no_internet',
   },
-  
+
   // 验证错误
   VALIDATION: {
     REQUIRED_FIELD: 'validation.required_field',
     INVALID_FORMAT: 'validation.invalid_format',
     OUT_OF_RANGE: 'validation.out_of_range',
-    DUPLICATE_VALUE: 'validation.duplicate_value'
+    DUPLICATE_VALUE: 'validation.duplicate_value',
   },
-  
+
   // 权限错误
   PERMISSION: {
     ACCESS_DENIED: 'permission.access_denied',
     INSUFFICIENT_PRIVILEGES: 'permission.insufficient_privileges',
     SESSION_EXPIRED: 'permission.session_expired',
-    ACCOUNT_DISABLED: 'permission.account_disabled'
+    ACCOUNT_DISABLED: 'permission.account_disabled',
   },
-  
+
   // 业务错误
   BUSINESS: {
     PATIENT_NOT_FOUND: 'business.patient_not_found',
     ADMISSION_CONFLICT: 'business.admission_conflict',
     INVALID_OPERATION: 'business.invalid_operation',
-    DATA_INCONSISTENCY: 'business.data_inconsistency'
+    DATA_INCONSISTENCY: 'business.data_inconsistency',
   },
-  
+
   // 系统错误
   SYSTEM: {
     UNEXPECTED_ERROR: 'system.unexpected_error',
     SERVICE_UNAVAILABLE: 'system.service_unavailable',
     MAINTENANCE_MODE: 'system.maintenance_mode',
-    VERSION_MISMATCH: 'system.version_mismatch'
-  }
+    VERSION_MISMATCH: 'system.version_mismatch',
+  },
 };
 ```
 
 #### 错误严重性等级
+
 ```javascript
 // 错误严重性分级
 const ErrorSeverity = {
@@ -1317,105 +1366,109 @@ const ErrorSeverity = {
     level: 5,
     description: '系统崩溃，无法继续使用',
     action: 'immediate_attention',
-    recovery: 'restart_required'
+    recovery: 'restart_required',
   },
   HIGH: {
     level: 4,
     description: '核心功能受影响',
     action: 'urgent_fix',
-    recovery: 'alternative_path'
+    recovery: 'alternative_path',
   },
   MEDIUM: {
     level: 3,
     description: '部分功能受影响',
     action: 'scheduled_fix',
-    recovery: 'retry_available'
+    recovery: 'retry_available',
   },
   LOW: {
     level: 2,
     description: '轻微影响用户体验',
     action: 'enhancement',
-    recovery: 'auto_recovery'
+    recovery: 'auto_recovery',
   },
   INFO: {
     level: 1,
     description: '信息提示，无需处理',
     action: 'log_only',
-    recovery: 'none_required'
-  }
+    recovery: 'none_required',
+  },
 };
 ```
 
 ### 9.2 错误处理策略
 
 #### 错误处理流程
+
 ```javascript
 // 统一错误处理器
 class ErrorHandler {
   static handle(error, context = {}) {
     // 1. 错误分类
     const errorType = this.classifyError(error);
-    
+
     // 2. 严重性评估
     const severity = this.assessSeverity(errorType, context);
-    
+
     // 3. 用户提示
     const userMessage = this.generateUserMessage(errorType, severity);
-    
+
     // 4. 恢复策略
     const recovery = this.getRecoveryStrategy(errorType, severity);
-    
+
     // 5. 日志记录
     this.logError(error, errorType, severity, context);
-    
+
     // 6. 错误上报
     if (severity.level >= 3) {
       this.reportError(error, context);
     }
-    
+
     return {
       type: errorType,
       severity,
       message: userMessage,
       recovery,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   static generateUserMessage(errorType, severity) {
     const messages = {
       [ErrorTypes.NETWORK.CONNECTION_FAILED]: {
         title: '网络连接失败',
         description: '请检查网络连接后重试',
-        action: '重试'
+        action: '重试',
       },
       [ErrorTypes.VALIDATION.REQUIRED_FIELD]: {
         title: '信息填写不完整',
         description: '请填写必填项后提交',
-        action: '检查'
+        action: '检查',
       },
       [ErrorTypes.PERMISSION.ACCESS_DENIED]: {
         title: '访问被拒绝',
         description: '您没有权限执行此操作',
-        action: '联系管理员'
+        action: '联系管理员',
       },
       [ErrorTypes.BUSINESS.PATIENT_NOT_FOUND]: {
         title: '患者信息未找到',
         description: '该患者可能已被删除或转移',
-        action: '刷新页面'
+        action: '刷新页面',
+      },
+    };
+
+    return (
+      messages[errorType] || {
+        title: '操作失败',
+        description: '请稍后重试或联系技术支持',
+        action: '重试',
       }
-    };
-    
-    return messages[errorType] || {
-      title: '操作失败',
-      description: '请稍后重试或联系技术支持',
-      action: '重试'
-    };
+    );
   }
 }
 ```
 
 #### 错误恢复机制
+
 ```javascript
 // 错误恢复策略
 const RecoveryStrategies = {
@@ -1425,12 +1478,11 @@ const RecoveryStrategies = {
     backoffStrategy: 'exponential', // linear | exponential
     baseDelay: 1000,
     maxDelay: 10000,
-    shouldRetry: (error) => {
-      return error.type.startsWith('network.') && 
-             error.status >= 500;
-    }
+    shouldRetry: error => {
+      return error.type.startsWith('network.') && error.status >= 500;
+    },
   },
-  
+
   // 降级服务
   FALLBACK: {
     strategies: {
@@ -1445,10 +1497,10 @@ const RecoveryStrategies = {
       'feature.disabled': () => {
         // 隐藏功能入口
         return hideFeature();
-      }
-    }
+      },
+    },
   },
-  
+
   // 用户引导
   USER_GUIDANCE: {
     'validation.required_field': () => {
@@ -1459,9 +1511,9 @@ const RecoveryStrategies = {
     },
     'network.no_internet': () => {
       return showNetworkTroubleshooting();
-    }
+    },
   },
-  
+
   // 数据修复
   DATA_REPAIR: {
     'data.inconsistency': async () => {
@@ -1470,27 +1522,28 @@ const RecoveryStrategies = {
         return { strategy: 'repaired', data: repair.data };
       }
       return { strategy: 'manual_intervention_required' };
-    }
-  }
+    },
+  },
 };
 ```
 
 ### 9.3 用户错误反馈界面
 
 #### 错误提示组件设计
+
 ```vue
 <!-- 错误提示组件 -->
 <template>
   <view class="error-container" v-if="error">
     <!-- 轻微错误 - Toast提示 -->
-    <Toast 
+    <Toast
       v-if="error.severity.level <= 2"
       :type="error.type"
       :message="error.message.description"
       :duration="3000"
       @close="handleErrorDismiss"
     />
-    
+
     <!-- 中等错误 - 卡片提示 -->
     <ErrorCard
       v-else-if="error.severity.level === 3"
@@ -1500,7 +1553,7 @@ const RecoveryStrategies = {
       @retry="handleRetry"
       @dismiss="handleErrorDismiss"
     />
-    
+
     <!-- 严重错误 - 全屏提示 -->
     <ErrorPage
       v-else
@@ -1518,61 +1571,61 @@ export default {
   props: {
     error: {
       type: Object,
-      default: null
-    }
+      default: null,
+    },
   },
-  
+
   methods: {
     handleRetry() {
       this.$emit('retry');
     },
-    
+
     handleErrorDismiss() {
       this.$emit('dismiss');
     },
-    
+
     handleErrorAction(action) {
       this.$emit('action', action);
     },
-    
+
     getErrorIllustration(errorType) {
       const illustrations = {
         'network.': '🌐',
         'permission.': '🔒',
         'validation.': '📝',
         'business.': '💼',
-        'system.': '⚙️'
+        'system.': '⚙️',
       };
-      
+
       for (const [prefix, icon] of Object.entries(illustrations)) {
         if (errorType.startsWith(prefix)) {
           return icon;
         }
       }
-      
+
       return '❌';
     },
-    
+
     getErrorActions(error) {
       const actions = [];
-      
+
       if (error.recovery.canRetry) {
         actions.push({ type: 'retry', text: '重试', primary: true });
       }
-      
+
       if (error.recovery.hasFallback) {
         actions.push({ type: 'fallback', text: '使用备用方案' });
       }
-      
+
       if (error.severity.level >= 4) {
         actions.push({ type: 'contact', text: '联系技术支持' });
       }
-      
+
       actions.push({ type: 'dismiss', text: '知道了' });
-      
+
       return actions;
-    }
-  }
+    },
+  },
 };
 </script>
 ```
@@ -1584,6 +1637,7 @@ export default {
 ### 10.1 加载性能优化
 
 #### 分层加载策略
+
 ```javascript
 // 分层加载配置
 const LoadingStrategy = {
@@ -1591,35 +1645,22 @@ const LoadingStrategy = {
   critical: {
     priority: 1,
     timeout: 2000,
-    resources: [
-      'app-shell',
-      'navigation',
-      'user-info',
-      'critical-css'
-    ]
+    resources: ['app-shell', 'navigation', 'user-info', 'critical-css'],
   },
-  
+
   // L2: 重要内容延迟加载
   important: {
     priority: 2,
     timeout: 5000,
-    resources: [
-      'patient-list',
-      'dashboard-cards',
-      'search-functionality'
-    ]
+    resources: ['patient-list', 'dashboard-cards', 'search-functionality'],
   },
-  
+
   // L3: 辅助内容按需加载
   optional: {
     priority: 3,
     timeout: 10000,
-    resources: [
-      'analytics-charts',
-      'help-content',
-      'advanced-features'
-    ]
-  }
+    resources: ['analytics-charts', 'help-content', 'advanced-features'],
+  },
 };
 
 // 渐进式加载实现
@@ -1629,11 +1670,11 @@ class ProgressiveLoader {
     this.loadedResources = new Set();
     this.loadingPromises = new Map();
   }
-  
+
   async loadLevel(level) {
     const config = this.strategy[level];
     const promises = [];
-    
+
     for (const resource of config.resources) {
       if (!this.loadedResources.has(resource)) {
         const promise = this.loadResource(resource, config.timeout);
@@ -1641,20 +1682,20 @@ class ProgressiveLoader {
         this.loadingPromises.set(resource, promise);
       }
     }
-    
+
     try {
       await Promise.allSettled(promises);
     } catch (error) {
       console.warn(`Failed to load ${level} resources:`, error);
     }
   }
-  
+
   async loadResource(resource, timeout) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         reject(new Error(`Resource ${resource} loading timeout`));
       }, timeout);
-      
+
       // 模拟资源加载
       this.fetchResource(resource)
         .then(() => {
@@ -1662,7 +1703,7 @@ class ProgressiveLoader {
           this.loadedResources.add(resource);
           resolve(resource);
         })
-        .catch((error) => {
+        .catch(error => {
           clearTimeout(timer);
           reject(error);
         });
@@ -1672,29 +1713,30 @@ class ProgressiveLoader {
 ```
 
 #### 代码分割策略
+
 ```javascript
 // 路由级代码分割
 const routes = [
   {
     path: '/dashboard',
-    component: () => import(/* webpackChunkName: "dashboard" */ '@/pages/Dashboard.vue')
+    component: () => import(/* webpackChunkName: "dashboard" */ '@/pages/Dashboard.vue'),
   },
   {
     path: '/patients',
-    component: () => import(/* webpackChunkName: "patients" */ '@/pages/PatientList.vue')
+    component: () => import(/* webpackChunkName: "patients" */ '@/pages/PatientList.vue'),
   },
   {
     path: '/patients/:id',
-    component: () => import(/* webpackChunkName: "patient-detail" */ '@/pages/PatientDetail.vue')
+    component: () => import(/* webpackChunkName: "patient-detail" */ '@/pages/PatientDetail.vue'),
   },
   {
     path: '/admission',
-    component: () => import(/* webpackChunkName: "admission" */ '@/pages/Admission.vue')
+    component: () => import(/* webpackChunkName: "admission" */ '@/pages/Admission.vue'),
   },
   {
     path: '/analytics',
-    component: () => import(/* webpackChunkName: "analytics" */ '@/pages/Analytics.vue')
-  }
+    component: () => import(/* webpackChunkName: "analytics" */ '@/pages/Analytics.vue'),
+  },
 ];
 
 // 组件级代码分割
@@ -1703,14 +1745,14 @@ const AsyncComponents = {
   DataVisualization: () => import('@/components/DataVisualization.vue'),
   PatientTimeline: () => import('@/components/PatientTimeline.vue'),
   FileUploader: () => import('@/components/FileUploader.vue'),
-  
+
   // 条件加载的组件
   AdminPanel: () => {
     if (userRole.includes('admin')) {
       return import('@/components/AdminPanel.vue');
     }
     return Promise.resolve(null);
-  }
+  },
 };
 
 // 第三方库按需加载
@@ -1718,20 +1760,21 @@ const LazyLibraries = {
   chartjs: () => import('chart.js'),
   excel: () => import('xlsx'),
   pdf: () => import('jspdf'),
-  
+
   loadChart: async () => {
     if (!window.Chart) {
       const { Chart } = await LazyLibraries.chartjs();
       window.Chart = Chart;
     }
     return window.Chart;
-  }
+  },
 };
 ```
 
 ### 10.2 运行时性能优化
 
 #### 虚拟滚动实现
+
 ```vue
 <!-- 虚拟滚动列表组件 -->
 <template>
@@ -1756,56 +1799,57 @@ export default {
     items: Array,
     itemHeight: {
       type: Number,
-      default: 120
+      default: 120,
     },
     containerHeight: {
       type: Number,
-      default: 600
-    }
+      default: 600,
+    },
   },
-  
+
   data() {
     return {
       scrollTop: 0,
-      visibleItemCount: Math.ceil(this.containerHeight / this.itemHeight) + 2
+      visibleItemCount: Math.ceil(this.containerHeight / this.itemHeight) + 2,
     };
   },
-  
+
   computed: {
     phantomHeight() {
       return this.items.length * this.itemHeight;
     },
-    
+
     startIndex() {
       return Math.floor(this.scrollTop / this.itemHeight);
     },
-    
+
     endIndex() {
       return Math.min(this.startIndex + this.visibleItemCount, this.items.length);
     },
-    
+
     visibleItems() {
       return this.items.slice(this.startIndex, this.endIndex).map((item, index) => ({
         ...item,
-        _index: this.startIndex + index
+        _index: this.startIndex + index,
       }));
     },
-    
+
     offsetY() {
       return this.startIndex * this.itemHeight;
-    }
+    },
   },
-  
+
   methods: {
     handleScroll(e) {
       this.scrollTop = e.detail.scrollTop;
-    }
-  }
+    },
+  },
 };
 </script>
 ```
 
 #### 数据缓存策略
+
 ```javascript
 // 多级缓存系统
 class CacheManager {
@@ -1814,7 +1858,7 @@ class CacheManager {
     this.localCache = new LocalStorageCache(); // L2: 本地存储缓存
     this.networkCache = new NetworkCache(); // L3: 网络缓存
   }
-  
+
   async get(key, options = {}) {
     // L1: 检查内存缓存
     if (this.memoryCache.has(key)) {
@@ -1823,7 +1867,7 @@ class CacheManager {
         return cached.data;
       }
     }
-    
+
     // L2: 检查本地存储缓存
     const localData = await this.localCache.get(key);
     if (localData && !this.isExpired(localData, options.ttl)) {
@@ -1831,7 +1875,7 @@ class CacheManager {
       this.memoryCache.set(key, localData);
       return localData.data;
     }
-    
+
     // L3: 检查网络缓存
     const networkData = await this.networkCache.get(key);
     if (networkData && !this.isExpired(networkData, options.ttl)) {
@@ -1840,32 +1884,32 @@ class CacheManager {
       await this.localCache.set(key, networkData);
       return networkData.data;
     }
-    
+
     return null;
   }
-  
+
   async set(key, data, options = {}) {
     const cacheItem = {
       data,
       timestamp: Date.now(),
       ttl: options.ttl || 300000, // 默认5分钟
-      tags: options.tags || []
+      tags: options.tags || [],
     };
-    
+
     // 写入所有缓存层级
     this.memoryCache.set(key, cacheItem);
     await this.localCache.set(key, cacheItem);
-    
+
     if (options.persistent) {
       await this.networkCache.set(key, cacheItem);
     }
   }
-  
+
   isExpired(cacheItem, ttl) {
     if (!ttl) ttl = cacheItem.ttl;
-    return (Date.now() - cacheItem.timestamp) > ttl;
+    return Date.now() - cacheItem.timestamp > ttl;
   }
-  
+
   // 标签化缓存失效
   invalidateByTag(tag) {
     for (const [key, item] of this.memoryCache.entries()) {
@@ -1883,22 +1927,22 @@ const cacheManager = new CacheManager();
 // 患者数据缓存
 async function getPatientData(patientId) {
   const cacheKey = `patient:${patientId}`;
-  
+
   // 尝试从缓存获取
   let patientData = await cacheManager.get(cacheKey, { ttl: 300000 }); // 5分钟TTL
-  
+
   if (!patientData) {
     // 缓存未命中，从API获取
     patientData = await api.getPatient(patientId);
-    
+
     // 写入缓存
     await cacheManager.set(cacheKey, patientData, {
       ttl: 300000,
       tags: ['patient', `patient:${patientId}`],
-      persistent: true
+      persistent: true,
     });
   }
-  
+
   return patientData;
 }
 
@@ -1911,6 +1955,7 @@ function invalidatePatientCache(patientId) {
 ### 10.3 资源优化策略
 
 #### 图片优化方案
+
 ```javascript
 // 图片优化配置
 const ImageOptimization = {
@@ -1918,32 +1963,32 @@ const ImageOptimization = {
   formats: {
     webp: {
       quality: 80,
-      support: () => supportsWebP()
+      support: () => supportsWebP(),
     },
     jpeg: {
       quality: 85,
-      fallback: true
+      fallback: true,
     },
     png: {
       compression: 6,
-      useFor: ['icons', 'transparent']
-    }
+      useFor: ['icons', 'transparent'],
+    },
   },
-  
+
   // 响应式图片尺寸
   sizes: {
     thumbnail: { width: 120, height: 120 },
     small: { width: 300, height: 200 },
     medium: { width: 600, height: 400 },
-    large: { width: 1200, height: 800 }
+    large: { width: 1200, height: 800 },
   },
-  
+
   // 懒加载配置
   lazyLoading: {
     threshold: 100, // 提前100px开始加载
     placeholder: 'data:image/svg+xml;base64,...', // base64占位图
-    errorFallback: '/images/error-placeholder.png'
-  }
+    errorFallback: '/images/error-placeholder.png',
+  },
 };
 
 // 图片组件实现
@@ -1953,33 +1998,33 @@ const OptimizedImage = {
     alt: String,
     size: {
       type: String,
-      default: 'medium'
+      default: 'medium',
     },
     lazy: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
-  
+
   data() {
     return {
       loaded: false,
       error: false,
-      inView: false
+      inView: false,
     };
   },
-  
+
   computed: {
     optimizedSrc() {
       if (!this.src) return ImageOptimization.lazyLoading.placeholder;
-      
+
       const sizeConfig = ImageOptimization.sizes[this.size];
       const format = this.getBestFormat();
-      
+
       return this.buildImageUrl(this.src, sizeConfig, format);
-    }
+    },
   },
-  
+
   methods: {
     getBestFormat() {
       for (const [format, config] of Object.entries(ImageOptimization.formats)) {
@@ -1989,16 +2034,17 @@ const OptimizedImage = {
       }
       return 'jpeg'; // 默认格式
     },
-    
+
     buildImageUrl(src, size, format) {
       // 构建优化后的图片URL
       return `${src}?w=${size.width}&h=${size.height}&f=${format}&q=80`;
-    }
-  }
+    },
+  },
 };
 ```
 
 #### 网络请求优化
+
 ```javascript
 // 请求优化管理器
 class RequestOptimizer {
@@ -2007,39 +2053,39 @@ class RequestOptimizer {
     this.retryConfig = {
       maxRetries: 3,
       backoffFactor: 2,
-      initialDelay: 1000
+      initialDelay: 1000,
     };
   }
-  
+
   // 请求去重
   async deduplicate(url, options = {}) {
     const key = this.generateRequestKey(url, options);
-    
+
     if (this.requestQueue.has(key)) {
       // 返回正在进行的请求
       return this.requestQueue.get(key);
     }
-    
+
     const promise = this.makeRequest(url, options);
     this.requestQueue.set(key, promise);
-    
+
     // 请求完成后清理
     promise.finally(() => {
       this.requestQueue.delete(key);
     });
-    
+
     return promise;
   }
-  
+
   // 批量请求合并
   async batchRequest(requests) {
     const batchSize = 5;
     const results = [];
-    
+
     for (let i = 0; i < requests.length; i += batchSize) {
       const batch = requests.slice(i, i + batchSize);
       const batchPromises = batch.map(req => this.deduplicate(req.url, req.options));
-      
+
       try {
         const batchResults = await Promise.allSettled(batchPromises);
         results.push(...batchResults);
@@ -2047,10 +2093,10 @@ class RequestOptimizer {
         console.error('Batch request failed:', error);
       }
     }
-    
+
     return results;
   }
-  
+
   // 智能重试
   async retryWithBackoff(fn, retryCount = 0) {
     try {
@@ -2059,30 +2105,29 @@ class RequestOptimizer {
       if (retryCount >= this.retryConfig.maxRetries) {
         throw error;
       }
-      
+
       if (this.shouldRetry(error)) {
-        const delay = this.retryConfig.initialDelay * 
-                     Math.pow(this.retryConfig.backoffFactor, retryCount);
-        
+        const delay =
+          this.retryConfig.initialDelay * Math.pow(this.retryConfig.backoffFactor, retryCount);
+
         await this.sleep(delay);
         return this.retryWithBackoff(fn, retryCount + 1);
       }
-      
+
       throw error;
     }
   }
-  
+
   shouldRetry(error) {
     // 重试条件判断
     const retryableErrors = [500, 502, 503, 504];
-    return retryableErrors.includes(error.status) || 
-           error.code === 'NETWORK_ERROR';
+    return retryableErrors.includes(error.status) || error.code === 'NETWORK_ERROR';
   }
-  
+
   generateRequestKey(url, options) {
     return `${options.method || 'GET'}:${url}:${JSON.stringify(options.data || {})}`;
   }
-  
+
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -2096,6 +2141,7 @@ class RequestOptimizer {
 ### 11.1 无障碍设计原则
 
 #### WCAG 2.1 合规性
+
 ```javascript
 // 无障碍设计检查清单
 const AccessibilityChecklist = {
@@ -2106,39 +2152,39 @@ const AccessibilityChecklist = {
       rules: [
         'All images must have alt text',
         'Decorative images should have empty alt=""',
-        'Complex images need detailed descriptions'
+        'Complex images need detailed descriptions',
       ],
       implementation: {
         images: 'Use semantic alt attributes',
         icons: 'Use aria-label for icon buttons',
-        charts: 'Provide data tables as alternatives'
-      }
+        charts: 'Provide data tables as alternatives',
+      },
     },
-    
+
     colorContrast: {
       // 确保足够的颜色对比度
       minimumRatio: {
         normalText: 4.5, // AA级标准
-        largeText: 3.0,  // 18pt或14pt粗体
-        enhanced: 7.0    // AAA级标准
+        largeText: 3.0, // 18pt或14pt粗体
+        enhanced: 7.0, // AAA级标准
       },
       tools: [
         'Use contrast checking tools',
         'Test with different lighting conditions',
-        'Consider color blindness'
-      ]
+        'Consider color blindness',
+      ],
     },
-    
+
     resizeText: {
       // 文本可缩放至200%而不影响功能
       requirements: [
         'Text scales up to 200% without horizontal scrolling',
         'UI components remain functional when scaled',
-        'No content is cut off or overlapped'
-      ]
-    }
+        'No content is cut off or overlapped',
+      ],
+    },
   },
-  
+
   // 可操作性 (Operable)
   operable: {
     keyboardAccessible: {
@@ -2147,43 +2193,43 @@ const AccessibilityChecklist = {
         'All interactive elements are keyboard accessible',
         'Tab order is logical and predictable',
         'Focus indicators are clearly visible',
-        'No keyboard traps exist'
+        'No keyboard traps exist',
       ],
       keyBindings: {
         navigation: {
-          'Tab': 'Move to next focusable element',
+          Tab: 'Move to next focusable element',
           'Shift+Tab': 'Move to previous focusable element',
           'Enter/Space': 'Activate button or link',
-          'Escape': 'Close modal or cancel action'
+          Escape: 'Close modal or cancel action',
         },
         lists: {
           'Arrow Keys': 'Navigate through list items',
           'Home/End': 'Jump to first/last item',
-          'Page Up/Down': 'Navigate by page'
-        }
-      }
+          'Page Up/Down': 'Navigate by page',
+        },
+      },
     },
-    
+
     seizuresPrevention: {
       // 避免引起癫痫发作的内容
       guidelines: [
         'No more than 3 flashes per second',
         'Avoid large flashing areas',
-        'Provide option to disable animations'
-      ]
+        'Provide option to disable animations',
+      ],
     },
-    
+
     navigable: {
       // 帮助用户导航和查找内容
       requirements: [
         'Skip links for main content',
         'Descriptive page titles',
         'Clear heading structure',
-        'Breadcrumb navigation'
-      ]
-    }
+        'Breadcrumb navigation',
+      ],
+    },
   },
-  
+
   // 可理解性 (Understandable)
   understandable: {
     readable: {
@@ -2192,21 +2238,21 @@ const AccessibilityChecklist = {
         'Use clear and simple language',
         'Define unusual words and jargon',
         'Use consistent terminology',
-        'Provide language attributes'
-      ]
+        'Provide language attributes',
+      ],
     },
-    
+
     predictable: {
       // 界面功能以可预测的方式运行
       requirements: [
         'Consistent navigation across pages',
         'Consistent component behavior',
         'Context changes are user-initiated',
-        'Clear error messages and help text'
-      ]
-    }
+        'Clear error messages and help text',
+      ],
+    },
   },
-  
+
   // 健壮性 (Robust)
   robust: {
     compatible: {
@@ -2215,21 +2261,22 @@ const AccessibilityChecklist = {
         'Valid HTML markup',
         'Proper ARIA attributes',
         'Compatible with screen readers',
-        'Works across different browsers'
-      ]
-    }
-  }
+        'Works across different browsers',
+      ],
+    },
+  },
 };
 ```
 
 #### ARIA 属性使用规范
+
 ```vue
 <!-- 语义化HTML和ARIA示例 -->
 <template>
   <!-- 页面主要结构 -->
   <view role="main" aria-labelledby="page-title">
     <text id="page-title" class="sr-only">患者档案管理</text>
-    
+
     <!-- 导航区域 -->
     <nav role="navigation" aria-label="主导航">
       <view class="tab-bar" role="tablist">
@@ -2246,7 +2293,7 @@ const AccessibilityChecklist = {
         </button>
       </view>
     </nav>
-    
+
     <!-- 搜索区域 -->
     <view role="search" aria-label="患者搜索">
       <label for="patient-search" class="sr-only">搜索患者</label>
@@ -2258,24 +2305,18 @@ const AccessibilityChecklist = {
         :aria-describedby="searchQuery ? 'search-results-count' : 'search-help'"
         @input="onSearchInput"
       />
-      <text id="search-help" class="sr-only">
-        可以通过姓名、电话号码或诊断信息搜索患者
-      </text>
+      <text id="search-help" class="sr-only"> 可以通过姓名、电话号码或诊断信息搜索患者 </text>
       <text id="search-results-count" v-if="searchResults.length" class="sr-only">
         找到 {{ searchResults.length }} 条结果
       </text>
     </view>
-    
+
     <!-- 患者列表 -->
-    <view 
-      role="region" 
-      aria-label="患者列表"
-      :aria-describedby="listDescription"
-    >
+    <view role="region" aria-label="患者列表" :aria-describedby="listDescription">
       <text id="list-description" class="sr-only">
         当前显示 {{ patients.length }} 名患者，按入住时间排序
       </text>
-      
+
       <view role="list" class="patient-list">
         <PatientCard
           v-for="patient in patients"
@@ -2287,7 +2328,7 @@ const AccessibilityChecklist = {
         />
       </view>
     </view>
-    
+
     <!-- 模态框 -->
     <Modal
       v-if="showModal"
@@ -2314,14 +2355,14 @@ export default {
       currentTab: 'dashboard',
       searchQuery: '',
       modalTitleId: 'modal-title-' + Date.now(),
-      modalDescId: 'modal-desc-' + Date.now()
+      modalDescId: 'modal-desc-' + Date.now(),
     };
   },
-  
+
   methods: {
     // 键盘导航支持
     onKeyDown(event) {
-      switch(event.key) {
+      switch (event.key) {
         case 'Escape':
           if (this.showModal) {
             this.closeModal();
@@ -2332,12 +2373,12 @@ export default {
           break;
       }
     },
-    
+
     // 焦点管理
     manageFocusOrder(event) {
       const focusableElements = this.getFocusableElements();
       const currentIndex = focusableElements.indexOf(document.activeElement);
-      
+
       if (event.shiftKey) {
         // Shift+Tab - 向前导航
         const nextIndex = currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
@@ -2347,18 +2388,18 @@ export default {
         const nextIndex = currentIndex < focusableElements.length - 1 ? currentIndex + 1 : 0;
         focusableElements[nextIndex].focus();
       }
-      
+
       event.preventDefault();
     },
-    
+
     getFocusableElements() {
       return Array.from(
         this.$el.querySelectorAll(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         )
       ).filter(el => !el.disabled && this.isVisible(el));
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -2382,7 +2423,7 @@ input:focus,
 select:focus,
 textarea:focus,
 [tabindex]:focus {
-  outline: 2px solid #007AFF;
+  outline: 2px solid #007aff;
   outline-offset: 2px;
 }
 
@@ -2391,7 +2432,7 @@ textarea:focus,
   .patient-card {
     border: 2px solid;
   }
-  
+
   .button-primary {
     background: ButtonFace;
     color: ButtonText;
@@ -2413,6 +2454,7 @@ textarea:focus,
 ### 11.2 辅助技术支持
 
 #### 屏幕阅读器优化
+
 ```javascript
 // 屏幕阅读器公告管理
 class ScreenReaderAnnouncer {
@@ -2421,6 +2463,7 @@ class ScreenReaderAnnouncer {
     this.queue = [];
     this.isAnnouncing = false;
   }
-  
+
   createAnnounceElement() {
     const el = document.createElement('div');
+```

@@ -337,15 +337,15 @@ module.exports = [
       options: [
         { label: '身份证', value: 'idcard' },
         { label: '护照', value: 'passport', description: '适用于境外人士' },
-        { label: '港澳通行证', value: 'hk' }
+        { label: '港澳通行证', value: 'hk' },
       ],
       maxTagCount: 3,
       labelPosition: 'top',
       required: false,
-      dropdownPlacement: 'auto'
+      dropdownPlacement: 'auto',
     },
     options: {
-      labelPosition: { values: ['top', 'left'] }
+      labelPosition: { values: ['top', 'left'] },
     },
     toggles: ['multiple', 'searchable', 'clearable', 'disabled', 'block', 'required'],
     presets: [
@@ -358,9 +358,9 @@ module.exports = [
           options: [
             { label: '身份证', value: 'idcard' },
             { label: '护照', value: 'passport' },
-            { label: '军官证', value: 'military' }
-          ]
-        }
+            { label: '军官证', value: 'military' },
+          ],
+        },
       },
       {
         id: 'multi',
@@ -375,9 +375,9 @@ module.exports = [
             { label: '物理康复', value: 'rehab' },
             { label: '心理疏导', value: 'counsel' },
             { label: '营养指导', value: 'nutrition' },
-            { label: '生活照料', value: 'care' }
-          ]
-        }
+            { label: '生活照料', value: 'care' },
+          ],
+        },
       },
       {
         id: 'disabled',
@@ -389,11 +389,11 @@ module.exports = [
           helper: '由系统自动分配',
           options: [
             { label: '总部院区', value: 'a' },
-            { label: '东城区院区', value: 'b' }
-          ]
-        }
-      }
-    ]
+            { label: '东城区院区', value: 'b' },
+          ],
+        },
+      },
+    ],
   },
   {
     id: 'pm-badge',
@@ -469,12 +469,20 @@ module.exports = [
       useHeaderSlot: false,
       useFooterSlot: false,
       closeOnConfirm: true,
-      closeOnCancel: true
+      closeOnCancel: true,
     },
-    toggles: ['visible', 'showClose', 'closeOnOverlay', 'scrollable', 'useSlot', 'useHeaderSlot', 'useFooterSlot'],
+    toggles: [
+      'visible',
+      'showClose',
+      'closeOnOverlay',
+      'scrollable',
+      'useSlot',
+      'useHeaderSlot',
+      'useFooterSlot',
+    ],
     options: {
       confirmType: { values: ['primary', 'secondary', 'danger'] },
-      cancelType: { values: ['ghost', 'secondary'] }
+      cancelType: { values: ['ghost', 'secondary'] },
     },
     textFields: ['title', 'content', 'confirmText', 'cancelText'],
     presets: [
@@ -487,8 +495,8 @@ module.exports = [
           confirmText: '确认删除',
           cancelText: '返回',
           confirmType: 'danger',
-          visible: true
-        }
+          visible: true,
+        },
       },
       {
         id: 'info',
@@ -500,8 +508,8 @@ module.exports = [
           cancelText: '',
           confirmType: 'primary',
           showClose: false,
-          visible: true
-        }
+          visible: true,
+        },
       },
       {
         id: 'custom-footer',
@@ -513,9 +521,9 @@ module.exports = [
           useSlot: true,
           visible: true,
           confirmText: '确定',
-          cancelText: '暂不'
-        }
-      }
-    ]
+          cancelText: '暂不',
+        },
+      },
+    ],
   },
 ];

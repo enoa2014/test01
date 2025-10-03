@@ -21,11 +21,13 @@
 **问题**: 搜索建议依赖云函数调用,存在延迟且无防抖处理
 
 **解决方案**:
+
 - 实现**本地缓存优先**策略: 立即从已加载患者数据中匹配建议
 - 添加**300ms防抖机制**: 减少云函数调用频率
 - **双重搜索策略**: 本地快速响应 + 云函数补充
 
 **技术实现**:
+
 ```javascript
 // index.js: 1465-1533行
 async onSearchSuggest(event) {
@@ -50,6 +52,7 @@ async onSearchSuggest(event) {
 ```
 
 **性能提升**:
+
 - 本地建议响应时间: **<100ms** (从800ms优化)
 - 云函数调用减少: **60%+**
 - 用户感知延迟: **显著降低**
@@ -61,11 +64,13 @@ async onSearchSuggest(event) {
 **问题**: 搜索历史缺少单项删除, 清空无二次确认
 
 **解决方案**:
+
 - 添加**单项删除按钮**: 每个历史记录旁显示"✕"图标
 - 实现**清空确认弹窗**: 防止误操作导致历史丢失
 - 优化**视觉交互**: 删除按钮带aria-label无障碍支持
 
 **技术实现**:
+
 ```javascript
 // smart-search-bar/index.js: 160-203行
 handleClearHistory() {
@@ -92,6 +97,7 @@ handleDeleteHistoryItem(event) {
 ```
 
 **用户体验提升**:
+
 - 误删除率: **预计降低80%+**
 - 历史管理灵活性: **显著提升**
 - 无障碍支持: **完善**
@@ -103,11 +109,13 @@ handleDeleteHistoryItem(event) {
 **问题**: 筛选器仅显示文本标签, 无数量统计, 用户无法预判结果
 
 **解决方案**:
+
 - 实现**动态计数功能**: 实时计算每个筛选器匹配的住户数量
 - 添加**计数徽章显示**: 在筛选器标签旁展示数量
 - **自动更新机制**: 数据加载/筛选后自动刷新计数
 
 **技术实现**:
+
 ```javascript
 // index.js: 1613-1637行
 updateFilterCounts(filters) {
@@ -135,6 +143,7 @@ updateFilterCounts(filters) {
 ```
 
 **信息价值提升**:
+
 - 决策效率: **提升40%+** (用户可预判结果)
 - 空结果困惑: **消除**
 - 数据透明度: **显著增强**
@@ -146,11 +155,13 @@ updateFilterCounts(filters) {
 **问题**: 筛选面板需点击"预览"才能看到结果数量, 交互效率低
 
 **解决方案**:
+
 - 实现**500ms防抖自动预览**: 用户调整筛选条件时自动计算
 - 添加**加载状态指示**: 预览计算时显示loading状态
 - 优化**预览信息展示**: 底部固定栏实时显示"将显示 X 条结果"
 
 **技术实现**:
+
 ```javascript
 // index.js: 1125-1152行
 onFilterPreview(event) {
@@ -180,6 +191,7 @@ onFilterPreview(event) {
 ```
 
 **交互效率提升**:
+
 - 预览操作减少: **90%+** (无需手动点击)
 - 筛选调整速度: **提升2-3倍**
 - 用户满意度: **预计显著提升**
@@ -191,11 +203,13 @@ onFilterPreview(event) {
 **问题**: FAB固定在右下角, 可能遮挡列表内容
 
 **解决方案**:
+
 - 实现**滚动检测机制**: 监听页面滚动方向
 - 添加**智能隐藏逻辑**: 向下滚动超过100rpx时隐藏FAB
 - 优化**动画效果**: 使用transform实现流畅的滑入滑出
 
 **技术实现**:
+
 ```javascript
 // index.js: 1709-1725行
 onPageScroll(e) {
@@ -228,6 +242,7 @@ onPageScroll(e) {
 ```
 
 **用户体验改善**:
+
 - 内容遮挡问题: **完全解决**
 - 操作便捷性: **保持**
 - 视觉干扰: **降低60%+**
@@ -239,11 +254,13 @@ onPageScroll(e) {
 **问题**: 骨架屏固定显示5个, 不响应不同设备屏幕高度
 
 **解决方案**:
+
 - 实现**屏幕高度检测**: 获取设备窗口高度
 - **动态计算数量**: 根据估计卡片高度计算可见骨架数量
 - 添加**最大限制**: 防止过多骨架影响性能
 
 **技术实现**:
+
 ```javascript
 // index.js: 637-644行
 onLoad() {
@@ -263,6 +280,7 @@ onLoad() {
 ```
 
 **适配效果**:
+
 - 小屏设备(iPhone SE): **3-4个骨架**
 - 中屏设备(iPhone 12): **5-6个骨架**
 - 大屏设备(iPad): **7-8个骨架**
@@ -275,11 +293,13 @@ onLoad() {
 **问题**: 首次使用、搜索无结果、筛选无结果使用相同提示, 用户困惑
 
 **解决方案**:
+
 - 实现**场景智能识别**: 区分3种空状态场景
 - 提供**针对性文案**: 每种场景定制标题、描述、操作按钮
 - 优化**视觉设计**: 使用emoji图标区分场景类型
 
 **技术实现**:
+
 ```javascript
 // index.js: 1059-1116行
 getEmptyStateConfig(displayPatients = []) {
@@ -326,6 +346,7 @@ getEmptyStateConfig(displayPatients = []) {
 ```
 
 **用户理解度提升**:
+
 - 状态误解率: **降低75%+**
 - 操作引导准确性: **提升90%+**
 - 用户满意度: **预计显著提升**
@@ -337,11 +358,13 @@ getEmptyStateConfig(displayPatients = []) {
 **问题**: 错误状态仅显示文本, 无操作按钮, 恢复体验差
 
 **解决方案**:
+
 - **视觉升级**: 大图标 + 标题 + 描述的三层信息架构
 - **重试按钮**: 显眼的"重试"主操作按钮
 - **卡片容器**: 使用卡片样式提升专业感
 
 **技术实现**:
+
 ```xml
 <!-- index.wxml: 72-87行 -->
 <view wx:elif="{{error}}" class="error-state">
@@ -377,12 +400,13 @@ getEmptyStateConfig(displayPatients = []) {
 .error-illustration {
   width: 200rpx;
   height: 200rpx;
-  background: var(--color-danger-light, #FFF1F0);
+  background: var(--color-danger-light, #fff1f0);
   border-radius: var(--radius-full);
 }
 ```
 
 **错误恢复改善**:
+
 - 重试成功率: **预计提升60%+**
 - 用户流失率: **预计降低40%+**
 - 视觉专业度: **显著提升**
@@ -392,11 +416,13 @@ getEmptyStateConfig(displayPatients = []) {
 ### 9. 空状态WXML模板优化 ✅
 
 **优化内容**:
+
 - 替换SVG图片为**emoji图标**: 减少资源加载, 提升性能
 - 实现**动态按钮组**: 根据场景显示不同操作按钮
 - 添加**视觉层次**: icon容器 + 圆形背景增强设计感
 
 **技术实现**:
+
 ```xml
 <!-- index.wxml: 89-119行 -->
 <pm-card
@@ -431,6 +457,7 @@ getEmptyStateConfig(displayPatients = []) {
 ```
 
 **性能与体验提升**:
+
 - 资源加载时间: **减少50%+** (移除SVG图片)
 - 视觉一致性: **提升**
 - 交互灵活性: **增强**
@@ -442,11 +469,13 @@ getEmptyStateConfig(displayPatients = []) {
 **问题**: 复选框触控区域仅40rpx × 40rpx,低于WCAG推荐的88rpx × 88rpx最小触控目标
 
 **解决方案**:
+
 - 扩大选择框触控区域至**88rpx × 88rpx**
 - 保持视觉大小不变,仅扩大可点击区域
 - 添加触控反馈动画
 
 **技术实现**:
+
 ```css
 /* patient-card/index.wxss: 54-75行 */
 .patient-card__select {
@@ -454,7 +483,7 @@ getEmptyStateConfig(displayPatients = []) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 88rpx;   /* 符合WCAG标准 */
+  min-width: 88rpx; /* 符合WCAG标准 */
   min-height: 88rpx;
   margin-left: auto;
   margin-right: calc(var(--space-3) * -1);
@@ -464,7 +493,9 @@ getEmptyStateConfig(displayPatients = []) {
   font-size: var(--text-xl);
   color: var(--color-text-secondary);
   pointer-events: none;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .patient-card__select:active .patient-card__select-icon {
@@ -474,6 +505,7 @@ getEmptyStateConfig(displayPatients = []) {
 ```
 
 **无障碍改善**:
+
 - WCAG 2.1 AA 合规: **100%**
 - 误操作率: **预计降低70%+**
 - 批量选择效率: **显著提升**
@@ -485,11 +517,13 @@ getEmptyStateConfig(displayPatients = []) {
 **问题**: "高级筛选"按钮无视觉提示表明是否激活,用户可能忘记已激活的筛选条件
 
 **解决方案**:
+
 - 添加**激活状态徽章**: 高级筛选激活时显示蓝色背景
 - 实时显示**筛选器数量**: 徽章显示已激活的筛选维度数量
 - 增强**视觉区分**: 使用颜色和字重区分激活/未激活状态
 
 **技术实现**:
+
 ```xml
 <!-- smart-search-bar/index.wxml: 15-23行 -->
 <view
@@ -506,7 +540,7 @@ getEmptyStateConfig(displayPatients = []) {
 ```css
 /* smart-search-bar/index.wxss: 33-49行 */
 .advanced-filter-btn.active {
-  background: var(--color-primary-light, #E6F4FF);
+  background: var(--color-primary-light, #e6f4ff);
   color: var(--color-primary);
   font-weight: var(--font-semibold);
 }
@@ -526,6 +560,7 @@ calculateActiveFilterCount(filters) {
 ```
 
 **用户体验提升**:
+
 - 筛选器遗忘率: **预计降低85%+**
 - 操作透明度: **显著增强**
 - 筛选器管理效率: **提升40%+**
@@ -537,35 +572,38 @@ calculateActiveFilterCount(filters) {
 **问题**: 标题与次要信息字号差距仅12rpx,层级感不强,中间层级未充分利用
 
 **解决方案**:
+
 - **患者姓名提升**: 从36rpx(--text-lg)提升到44rpx(--text-xl),字重从600提升到700
 - **次要信息收敛**: 年龄从24rpx(--text-sm)减小到20rpx(--text-xs)
 - **启用中间层级**: 信息值使用28rpx(--text-base)增强可读性
 - **增加行高**: 所有文本添加行高提升阅读体验
 
 **技术实现**:
+
 ```css
 /* patient-card/index.wxss: 42-55行 */
 .patient-card__name {
-  font-size: var(--text-xl);     /* 从36rpx→44rpx */
-  font-weight: var(--font-bold);  /* 从600→700 */
+  font-size: var(--text-xl); /* 从36rpx→44rpx */
+  font-weight: var(--font-bold); /* 从600→700 */
   color: var(--color-text-primary);
   line-height: 1.2;
 }
 
 .patient-card__age {
-  font-size: var(--text-xs);      /* 从24rpx→20rpx */
+  font-size: var(--text-xs); /* 从24rpx→20rpx */
   color: var(--color-text-secondary);
   line-height: 1.4;
 }
 
 .patient-card__info-value {
-  font-size: var(--text-base);    /* 从24rpx→28rpx */
+  font-size: var(--text-base); /* 从24rpx→28rpx */
   font-weight: var(--font-medium);
   line-height: 1.5;
 }
 ```
 
 **视觉改善效果**:
+
 - 字号层级对比度: **从1.5倍提升到2.2倍**
 - 信息扫视速度: **预计提升35%+**
 - 视觉疲劳度: **降低25%+**
@@ -577,11 +615,13 @@ calculateActiveFilterCount(filters) {
 **问题**: 长按操作无振动反馈和视觉动画,用户不确定是否触发
 
 **解决方案**:
+
 - 添加**中等强度振动反馈**: 长按时触发wx.vibrateShort
 - 实现**微缩放动画**: 按下时缩小至0.98倍,释放时恢复
 - 平滑过渡效果: 150ms缓动函数
 
 **技术实现**:
+
 ```javascript
 // index.js: 2240-2249行
 onCardLongPress(event) {
@@ -608,6 +648,7 @@ onCardLongPress(event) {
 ```
 
 **交互体验提升**:
+
 - 反馈及时性: **<100ms**
 - 用户确定性: **提升90%+**
 - 操作满意度: **预计显著提升**
@@ -619,11 +660,13 @@ onCardLongPress(event) {
 **问题**: FAB仅显示"+"图标,新用户可能不理解其功能
 
 **解决方案**:
+
 - **首次访问自动展开**: 1秒后展开"添加住户"标签
 - **智能收起机制**: 3秒后自动收起并标记已查看
 - **优雅动画效果**: 标签从右侧滑入,带透明度渐变
 
 **技术实现**:
+
 ```javascript
 // index.js: 693-704行
 onShow() {
@@ -658,12 +701,19 @@ onShow() {
 }
 
 @keyframes fab-label-enter {
-  0% { opacity: 0; transform: translateX(20rpx); }
-  100% { opacity: 1; transform: translateX(0); }
+  0% {
+    opacity: 0;
+    transform: translateX(20rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 ```
 
 **功能可发现性提升**:
+
 - 首次用户困惑率: **预计降低80%+**
 - FAB使用率: **预计提升45%+**
 - 新手引导效率: **显著提升**
@@ -675,12 +725,14 @@ onShow() {
 **问题**: 筛选方案已达5个上限时,用户点击保存仅显示toast提示,易被忽略
 
 **解决方案**:
+
 - **视觉方案数量提示**: 标题显示 "已保存方案 (X/5)"
 - **管理模式切换**: 添加"管理/完成"切换链接
 - **模态对话框警告**: 达到上限时显示模态对话框而非toast
 - **管理模式UI**: 区分查看和管理两种状态,管理时显示重命名和删除按钮
 
 **技术实现**:
+
 ```xml
 <!-- filter-panel/index.wxml: 70-100行 -->
 <view class="filter-section__header">
@@ -742,6 +794,7 @@ if (schemes.length >= 5) {
 ```
 
 **用户体验改善**:
+
 - 上限感知率: **提升100%** (从toast到modal)
 - 方案管理效率: **提升60%+** (一键切换管理模式)
 - 操作分离: **显著增强** (查看与管理状态清晰)
@@ -753,12 +806,14 @@ if (schemes.length >= 5) {
 **问题**: 患者卡片固定为compact模式,无法适应不同用户的浏览偏好
 
 **解决方案**:
+
 - **三种密度模式**: compact(紧凑), comfortable(舒适), spacious(宽松)
 - **工具栏切换按钮**: 显示当前模式图标,点击循环切换
 - **用户偏好持久化**: 自动保存到本地存储
 - **触觉反馈**: 切换时振动提示
 
 **技术实现**:
+
 ```javascript
 // index.js: 637-643行 (data)
 cardDensityMode: 'comfortable', // 'compact' | 'comfortable' | 'spacious'
@@ -800,15 +855,15 @@ onToggleDensityMode() {
 const MODE_PRESETS = {
   compact: {
     cardVariant: 'elevated',
-    padding: 'var(--space-3)',  // 24rpx
+    padding: 'var(--space-3)', // 24rpx
   },
   comfortable: {
     cardVariant: 'elevated',
-    padding: 'var(--space-4)',  // 32rpx
+    padding: 'var(--space-4)', // 32rpx
   },
   spacious: {
     cardVariant: 'elevated',
-    padding: 'var(--space-6)',  // 48rpx
+    padding: 'var(--space-6)', // 48rpx
   },
   // ... 其他模式
 };
@@ -844,18 +899,19 @@ const MODE_PRESETS = {
 }
 
 /* index.wxss: 94-107行 */
-.patient-item[mode="compact"] {
-  margin-bottom: var(--space-2);   /* 16rpx */
+.patient-item[mode='compact'] {
+  margin-bottom: var(--space-2); /* 16rpx */
 }
-.patient-item[mode="comfortable"] {
-  margin-bottom: var(--space-3);   /* 24rpx */
+.patient-item[mode='comfortable'] {
+  margin-bottom: var(--space-3); /* 24rpx */
 }
-.patient-item[mode="spacious"] {
-  margin-bottom: var(--space-4);   /* 32rpx */
+.patient-item[mode='spacious'] {
+  margin-bottom: var(--space-4); /* 32rpx */
 }
 ```
 
 **用户体验提升**:
+
 - 浏览偏好满足: **3种模式可选**
 - 信息密度差异: **compact vs spacious: 50%+**
 - 个性化体验: **持久化偏好存储**
@@ -868,31 +924,34 @@ const MODE_PRESETS = {
 **问题**: warning黄色徽章对比度仅3.8:1,低于WCAG AA标准(4.5:1)
 
 **解决方案**:
+
 - **加深warning主色**: 从#FAAD14调整为#FA8C16 (对比度提升至4.6:1)
 - **添加warningDark色**: 新增#D46B08用于深色文字
 - **浅背景+深文字方案**: warning徽章使用浅背景色+深色文字,增加描边
 - **重新生成token**: 自动生成CSS变量应用全局
 
 **技术实现**:
+
 ```json
 // design-tokens.json: 12-14行
 {
-  "warning": "#FA8C16",        // 从#FAAD14调深
-  "warningLight": "#FFF3E0",   // 浅背景保持
-  "warningDark": "#D46B08",    // 新增深色文字
+  "warning": "#FA8C16", // 从#FAAD14调深
+  "warningLight": "#FFF3E0", // 浅背景保持
+  "warningDark": "#D46B08" // 新增深色文字
 }
 ```
 
 ```css
 /* pm-badge/index.wxss: 48-53行 */
 .pm-badge--type-warning {
-  background: var(--color-warning-light);  /* 浅背景 */
-  color: var(--color-warning-dark);        /* 深色文字 */
+  background: var(--color-warning-light); /* 浅背景 */
+  color: var(--color-warning-dark); /* 深色文字 */
   border: 1rpx solid var(--color-warning); /* 描边增强 */
 }
 ```
 
 **无障碍改善**:
+
 - WCAG 2.1 AA 合规: **100%** (对比度4.6:1 > 4.5:1)
 - 强光环境可读性: **显著提升**
 - 视觉障碍用户友好: **提升40%+**
@@ -905,16 +964,19 @@ const MODE_PRESETS = {
 ### 1. 防抖优化策略
 
 **搜索建议防抖** (300ms):
+
 - 减少云函数调用60%+
 - 本地优先策略确保<100ms响应
 
 **筛选预览防抖** (500ms):
+
 - 自动计算预览结果
 - 避免频繁计算影响性能
 
 ### 2. 智能状态管理
 
 **空状态场景识别**:
+
 ```javascript
 // 3种场景自动判断
 场景1: 搜索无结果 → 清除搜索按钮
@@ -923,6 +985,7 @@ const MODE_PRESETS = {
 ```
 
 **筛选器计数实时更新**:
+
 ```javascript
 // 数据加载后自动更新
 fetchPatients() → updateFilterCounts()
@@ -932,14 +995,16 @@ applyFilters() → updateFilterCounts()
 ### 3. 响应式设计
 
 **骨架屏自适应算法**:
+
 ```javascript
 skeletonCount = min(
   ceil(screenHeight / estimatedCardHeight) + 1,
-  8  // 最大限制
-)
+  8 // 最大限制
+);
 ```
 
 **FAB滚动检测**:
+
 ```javascript
 // 基于滚动方向和位置
 向下滚动 + scrollTop > 100 → 隐藏
@@ -950,25 +1015,27 @@ skeletonCount = min(
 
 ## 性能指标对比
 
-| 指标 | 优化前 | 优化后 | 提升幅度 |
-|------|--------|--------|----------|
-| 搜索建议响应时间 | ~800ms | <100ms (本地) | **87.5%↓** |
-| 云函数调用频率 | 每次输入 | 300ms防抖 | **60%↓** |
-| 筛选预览操作 | 手动点击 | 自动计算 | **90%↓** |
-| 骨架屏适配性 | 固定5个 | 动态3-8个 | **屏幕覆盖率100%** |
-| 空状态识别准确性 | 33% (1/3场景) | 100% (3/3场景) | **200%↑** |
-| 错误恢复便捷性 | 无重试按钮 | 一键重试 | **新增功能** |
+| 指标             | 优化前        | 优化后         | 提升幅度           |
+| ---------------- | ------------- | -------------- | ------------------ |
+| 搜索建议响应时间 | ~800ms        | <100ms (本地)  | **87.5%↓**         |
+| 云函数调用频率   | 每次输入      | 300ms防抖      | **60%↓**           |
+| 筛选预览操作     | 手动点击      | 自动计算       | **90%↓**           |
+| 骨架屏适配性     | 固定5个       | 动态3-8个      | **屏幕覆盖率100%** |
+| 空状态识别准确性 | 33% (1/3场景) | 100% (3/3场景) | **200%↑**          |
+| 错误恢复便捷性   | 无重试按钮    | 一键重试       | **新增功能**       |
 
 ---
 
 ## 用户体验改善
 
 ### 搜索体验
+
 - ✅ 即时本地建议 (<100ms)
 - ✅ 历史管理完善 (删除+确认)
 - ✅ 减少等待焦虑
 
 ### 筛选体验
+
 - ✅ 实时预览反馈 (500ms自动)
 - ✅ 筛选器计数可见
 - ✅ 决策信息充分
@@ -976,11 +1043,13 @@ skeletonCount = min(
 - ✅ 筛选器遗忘率降低85%+
 
 ### 状态反馈
+
 - ✅ 智能空状态识别 (3场景)
 - ✅ 友好错误恢复 (重试按钮)
 - ✅ 动态骨架屏适配
 
 ### 交互优化
+
 - ✅ FAB智能隐藏 (减少遮挡)
 - ✅ FAB标签提示 (首次自动展开)
 - ✅ 长按振动反馈 (中等强度)
@@ -989,6 +1058,7 @@ skeletonCount = min(
 - ✅ 操作引导准确
 
 ### 视觉体验
+
 - ✅ 字号层级重构 (对比度从1.5倍→2.2倍)
 - ✅ 信息扫视速度提升35%+
 - ✅ 视觉疲劳度降低25%+
@@ -999,46 +1069,35 @@ skeletonCount = min(
 
 ### 文件修改清单
 
-| 文件 | 改动类型 | 行数变化 | 主要内容 |
-|------|----------|----------|----------|
-| `miniprogram/pages/index/index.js` | 功能增强 | +115行 | 骨架屏动态计算, 空状态逻辑, 筛选激活状态, 长按反馈, FAB提示, 密度切换, 方案上限警告 |
-| `miniprogram/pages/index/index.wxml` | UI重构 | +47行 | 错误状态, 空状态模板, FAB标签, 密度切换按钮 |
-| `miniprogram/pages/index/index.wxss` | 样式优化 | +103行 | 错误/空状态样式, FAB标签动画, 密度模式间距 |
-| `miniprogram/components/business/smart-search-bar/index.js` | 功能增强 | +10行 | 高级筛选激活状态属性 |
-| `miniprogram/components/business/smart-search-bar/index.wxml` | UI增强 | +6行 | 激活徽章显示 |
-| `miniprogram/components/business/smart-search-bar/index.wxss` | 样式增强 | +17行 | 激活状态样式 |
-| `miniprogram/components/business/patient-card/index.js` | 模式扩展 | +10行 | 新增comfortable和spacious密度预设 |
-| `miniprogram/components/business/patient-card/index.wxss` | 样式优化 | +27行 | 视觉层级, 长按反馈, 触控目标 |
-| `miniprogram/components/business/filter-panel/index.js` | 功能增强 | +8行 | 方案管理模式切换 |
-| `miniprogram/components/business/filter-panel/index.wxml` | UI增强 | +15行 | 方案数量显示, 管理链接, 管理模式UI |
-| `miniprogram/components/business/filter-panel/index.wxss` | 样式增强 | +33行 | 方案管理UI样式 |
-| `miniprogram/components/base/pm-badge/index.wxss` | 无障碍优化 | +4行 | Warning徽章对比度增强 |
-| `design-tokens.json` | 设计token优化 | +1行 | Warning颜色调整, 新增warningDark |
+| 文件                                                          | 改动类型      | 行数变化 | 主要内容                                                                            |
+| ------------------------------------------------------------- | ------------- | -------- | ----------------------------------------------------------------------------------- |
+| `miniprogram/pages/index/index.js`                            | 功能增强      | +115行   | 骨架屏动态计算, 空状态逻辑, 筛选激活状态, 长按反馈, FAB提示, 密度切换, 方案上限警告 |
+| `miniprogram/pages/index/index.wxml`                          | UI重构        | +47行    | 错误状态, 空状态模板, FAB标签, 密度切换按钮                                         |
+| `miniprogram/pages/index/index.wxss`                          | 样式优化      | +103行   | 错误/空状态样式, FAB标签动画, 密度模式间距                                          |
+| `miniprogram/components/business/smart-search-bar/index.js`   | 功能增强      | +10行    | 高级筛选激活状态属性                                                                |
+| `miniprogram/components/business/smart-search-bar/index.wxml` | UI增强        | +6行     | 激活徽章显示                                                                        |
+| `miniprogram/components/business/smart-search-bar/index.wxss` | 样式增强      | +17行    | 激活状态样式                                                                        |
+| `miniprogram/components/business/patient-card/index.js`       | 模式扩展      | +10行    | 新增comfortable和spacious密度预设                                                   |
+| `miniprogram/components/business/patient-card/index.wxss`     | 样式优化      | +27行    | 视觉层级, 长按反馈, 触控目标                                                        |
+| `miniprogram/components/business/filter-panel/index.js`       | 功能增强      | +8行     | 方案管理模式切换                                                                    |
+| `miniprogram/components/business/filter-panel/index.wxml`     | UI增强        | +15行    | 方案数量显示, 管理链接, 管理模式UI                                                  |
+| `miniprogram/components/business/filter-panel/index.wxss`     | 样式增强      | +33行    | 方案管理UI样式                                                                      |
+| `miniprogram/components/base/pm-badge/index.wxss`             | 无障碍优化    | +4行     | Warning徽章对比度增强                                                               |
+| `design-tokens.json`                                          | 设计token优化 | +1行     | Warning颜色调整, 新增warningDark                                                    |
 
 ### 新增功能点
 
 **第一批优化 (9项)**:
+
 1. onLoad骨架屏计算 (index.js: 645-647)
 2. getEmptyStateConfig场景识别 (index.js: 1070-1129)
 3. 错误状态UI模板 (index.wxml: 72-87)
 4. 智能空状态模板 (index.wxml: 89-119)
 5. 错误/空状态样式 (index.wxss: 31-77, 231-250)
 
-**第二批优化 (8项)**:
-6. calculateActiveFilterCount计算方法 (index.js: 1139-1155)
-7. updateFilterActiveState更新方法 (index.js: 1157-1163)
-8. 高级筛选激活徽章 (smart-search-bar/index.wxml: 15-23)
-9. 患者姓名视觉层级优化 (patient-card/index.wxss: 42-55)
-10. 长按振动反馈 (index.js: 2240-2249)
-11. 长按缩放动画 (patient-card/index.wxss: 3-11)
-12. FAB标签自动展开 (index.js: 693-704)
-13. FAB标签UI和动画 (index.wxml: 147-150, index.wxss: 386-406)
+**第二批优化 (8项)**: 6. calculateActiveFilterCount计算方法 (index.js: 1139-1155) 7. updateFilterActiveState更新方法 (index.js: 1157-1163) 8. 高级筛选激活徽章 (smart-search-bar/index.wxml: 15-23) 9. 患者姓名视觉层级优化 (patient-card/index.wxss: 42-55) 10. 长按振动反馈 (index.js: 2240-2249) 11. 长按缩放动画 (patient-card/index.wxss: 3-11) 12. FAB标签自动展开 (index.js: 693-704) 13. FAB标签UI和动画 (index.wxml: 147-150, index.wxss: 386-406)
 
-**第三批优化 (3项)**:
-14. 筛选方案管理模式 (filter-panel/index.js: showSchemeManager状态)
-15. 方案上限模态警告 (index.js: 1417-1426)
-16. 卡片密度切换系统 (index.js: cardDensityMode + onToggleDensityMode)
-17. Warning徽章对比度优化 (pm-badge/index.wxss: 48-53, design-tokens.json: 12-14)
+**第三批优化 (3项)**: 14. 筛选方案管理模式 (filter-panel/index.js: showSchemeManager状态) 15. 方案上限模态警告 (index.js: 1417-1426) 16. 卡片密度切换系统 (index.js: cardDensityMode + onToggleDensityMode) 17. Warning徽章对比度优化 (pm-badge/index.wxss: 48-53, design-tokens.json: 12-14)
 
 ---
 

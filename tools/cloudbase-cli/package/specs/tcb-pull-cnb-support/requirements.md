@@ -47,7 +47,3 @@ tcb pull https://cnb.cool/shuishenhuole/learning/tree/main/examples
 # 指定输出目录
 tcb pull https://cnb.cool/username/repo --output ./my-project
 ```
-
-
-
-

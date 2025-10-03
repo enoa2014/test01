@@ -7,7 +7,7 @@ class DevtoolsEnvironment extends NodeEnvironment {
     super(config, context);
     const options = {
       ...(config.projectConfig?.testEnvironmentOptions || {}),
-      ...(config.testEnvironmentOptions || {})
+      ...(config.testEnvironmentOptions || {}),
     };
     this.wsEndpoint = options.wsEndpoint || process.env.WX_DEVTOOLS_WS || 'ws://127.0.0.1:9421';
     this.projectPath = options.projectPath || path.resolve(process.cwd(), 'miniprogram');
@@ -21,7 +21,7 @@ class DevtoolsEnvironment extends NodeEnvironment {
     } else {
       this.global.miniProgram = await automator.launch({
         projectPath: this.projectPath,
-        cliPath: this.cliPath
+        cliPath: this.cliPath,
       });
     }
 

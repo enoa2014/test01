@@ -4,10 +4,10 @@ module.exports = {
       '@babel/preset-env',
       {
         targets: {
-          node: 'current'
-        }
-      }
-    ]
+          node: 'current',
+        },
+      },
+    ],
   ],
   env: {
     test: {
@@ -16,11 +16,11 @@ module.exports = {
           '@babel/preset-env',
           {
             targets: {
-              node: 'current'
-            }
-          }
-        ]
-      ]
-    }
-  }
+              node: 'current',
+            },
+          },
+        ],
+      ],
+    },
+  },
 };

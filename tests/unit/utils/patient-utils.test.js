@@ -16,7 +16,7 @@ describe('patient utils', () => {
   });
 
   test('normalizeSpacing collapses internal whitespace', () => {
-    expect(normalizeSpacing('父亲  联系') ).toBe('父亲 联系');
+    expect(normalizeSpacing('父亲  联系')).toBe('父亲 联系');
     expect(normalizeSpacing('\t母亲\n电话')).toBe('母亲 电话');
   });
 
@@ -38,11 +38,11 @@ describe('patient utils', () => {
       raw: '胡斌 15278506397 452525197910271216',
       name: '胡斌',
       phone: '15278506397',
-      idNumber: '452525197910271216'
+      idNumber: '452525197910271216',
     });
     expect(parseFamilyContact('黄丽华', 'mother')).toMatchObject({
       role: 'mother',
-      name: '黄丽华'
+      name: '黄丽华',
     });
   });
 

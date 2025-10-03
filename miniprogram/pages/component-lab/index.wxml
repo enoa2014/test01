@@ -365,25 +365,41 @@
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.multiple}}" data-prop="multiple" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.multiple}}"
+              data-prop="multiple"
+              bindchange="handleToggle"
+            />
             启用多选</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.searchable}}" data-prop="searchable" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.searchable}}"
+              data-prop="searchable"
+              bindchange="handleToggle"
+            />
             支持搜索</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.clearable}}" data-prop="clearable" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.clearable}}"
+              data-prop="clearable"
+              bindchange="handleToggle"
+            />
             显示清除按钮</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.required}}" data-prop="required" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.required}}"
+              data-prop="required"
+              bindchange="handleToggle"
+            />
             必填提示</label
           >
         </view>
@@ -398,7 +414,12 @@
       <block wx:elif="{{current.id === 'pm-dialog'}}">
         <view class="lab__panel-field">
           <text class="lab__panel-label">标题</text>
-          <input value="{{propsState.title}}" data-key="title" bindinput="handleTextInput" placeholder="弹窗标题" />
+          <input
+            value="{{propsState.title}}"
+            data-key="title"
+            bindinput="handleTextInput"
+            placeholder="弹窗标题"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">内容</text>
@@ -412,11 +433,21 @@
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">确认按钮</text>
-          <input value="{{propsState.confirmText}}" data-key="confirmText" bindinput="handleTextInput" placeholder="确认按钮文案" />
+          <input
+            value="{{propsState.confirmText}}"
+            data-key="confirmText"
+            bindinput="handleTextInput"
+            placeholder="确认按钮文案"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">取消按钮</text>
-          <input value="{{propsState.cancelText}}" data-key="cancelText" bindinput="handleTextInput" placeholder="取消按钮文案" />
+          <input
+            value="{{propsState.cancelText}}"
+            data-key="cancelText"
+            bindinput="handleTextInput"
+            placeholder="取消按钮文案"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">确认样式</text>
@@ -444,37 +475,61 @@
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.visible}}" data-prop="visible" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.visible}}"
+              data-prop="visible"
+              bindchange="handleToggle"
+            />
             显示弹窗</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.showClose}}" data-prop="showClose" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.showClose}}"
+              data-prop="showClose"
+              bindchange="handleToggle"
+            />
             顶部关闭按钮</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.closeOnOverlay}}" data-prop="closeOnOverlay" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.closeOnOverlay}}"
+              data-prop="closeOnOverlay"
+              bindchange="handleToggle"
+            />
             点击遮罩关闭</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.scrollable}}" data-prop="scrollable" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.scrollable}}"
+              data-prop="scrollable"
+              bindchange="handleToggle"
+            />
             内容可滚动</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.useSlot}}" data-prop="useSlot" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
             自定义内容</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.useFooterSlot}}" data-prop="useFooterSlot" bindchange="handleToggle" />
+            ><switch
+              checked="{{propsState.useFooterSlot}}"
+              data-prop="useFooterSlot"
+              bindchange="handleToggle"
+            />
             自定义底部</label
           >
         </view>
@@ -483,11 +538,21 @@
       <block wx:elif="{{current.id === 'pm-badge'}}">
         <view class="lab__panel-field">
           <text class="lab__panel-label">文本</text>
-          <input value="{{propsState.text}}" data-key="text" bindinput="handleTextInput" placeholder="Badge 文本" />
+          <input
+            value="{{propsState.text}}"
+            data-key="text"
+            bindinput="handleTextInput"
+            placeholder="Badge 文本"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">数量</text>
-          <input value="{{propsState.count}}" data-key="count" bindinput="handleTextInput" placeholder="数量或留空" />
+          <input
+            value="{{propsState.count}}"
+            data-key="count"
+            bindinput="handleTextInput"
+            placeholder="数量或留空"
+          />
         </view>
         <view class="lab__panel-field">
           <text class="lab__panel-label">最大计数</text>
@@ -525,17 +590,24 @@
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.dotted}}" data-prop="dotted" bindchange="handleToggle" /> 状态点模式</label
+            ><switch checked="{{propsState.dotted}}" data-prop="dotted" bindchange="handleToggle" />
+            状态点模式</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" /> 胶囊模式</label
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            胶囊模式</label
           >
         </view>
         <view class="lab__panel-field lab__panel-field--row">
           <label class="lab__switch"
-            ><switch checked="{{propsState.useSlot}}" data-prop="useSlot" bindchange="handleToggle" /> 自定义内容</label
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            自定义内容</label
           >
         </view>
       </block>
@@ -811,6 +883,6 @@
         <text>文档：</text>
         <text class="lab__link">{{current.docs}}</text>
       </view>
-</view>
+    </view>
   </view>
 </view>

@@ -38,7 +38,7 @@ function createComponent(componentName) {
     json: generateJSONTemplate(),
     wxml: generateWXMLTemplate(componentName),
     wxss: generateWXSSTemplate(componentName),
-    test: generateTestTemplate(componentName)
+    test: generateTestTemplate(componentName),
   };
 
   // 创建组件文件
@@ -46,7 +46,7 @@ function createComponent(componentName) {
     { name: `${componentName}.js`, content: templates.js },
     { name: `${componentName}.json`, content: templates.json },
     { name: `${componentName}.wxml`, content: templates.wxml },
-    { name: `${componentName}.wxss`, content: templates.wxss }
+    { name: `${componentName}.wxss`, content: templates.wxss },
   ];
 
   files.forEach(file => {
@@ -56,10 +56,7 @@ function createComponent(componentName) {
   // 创建测试文件
   const testDir = path.join('tests', 'unit', 'components');
   fs.mkdirSync(testDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(testDir, `${componentName}.test.js`),
-    templates.test
-  );
+  fs.writeFileSync(path.join(testDir, `${componentName}.test.js`), templates.test);
 
   console.log(`✅ 组件 "${componentName}" 创建成功！`);
   console.log(`📁 组件位置: ${componentDir}`);
@@ -72,9 +69,10 @@ function createComponent(componentName) {
 }
 
 function generateJSTemplate(componentName) {
-  const pascalName = componentName.split('-').map(word =>
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join('');
+  const pascalName = componentName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
 
   return `// ${pascalName}组件
 Component({
@@ -210,9 +208,10 @@ function generateWXSSTemplate(componentName) {
 }
 
 function generateTestTemplate(componentName) {
-  const pascalName = componentName.split('-').map(word =>
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join('');
+  const pascalName = componentName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
 
   return `// ${pascalName}组件测试
 describe('${pascalName}组件', () => {

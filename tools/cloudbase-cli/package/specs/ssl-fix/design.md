@@ -14,16 +14,19 @@
 ## 技术选型
 
 ### 1. SSL错误检测
+
 - 使用 `process.on('uncaughtException')` 捕获SSL错误
 - 通过错误信息模式匹配识别SSL协议问题
 - 集成环境信息收集功能
 
 ### 2. SSL配置优化
+
 - 使用 `process.env.NODE_OPTIONS` 设置SSL配置
 - 支持 `--tls-min-v1.2` 和 `--tls-max-v1.3` 参数
 - 提供环境变量配置选项
 
 ### 3. 网络适配
+
 - 集成现有的代理配置系统
 - 支持企业网络环境检测
 - 提供SSL证书验证选项
@@ -31,29 +34,31 @@
 ## 数据库/接口设计
 
 ### 配置存储
+
 ```typescript
 interface SSLConfig {
-  tlsMinVersion: string;
-  tlsMaxVersion: string;
-  secureProtocol: string;
-  rejectUnauthorized: boolean;
-  proxyEnabled: boolean;
-  proxyUrl?: string;
+    tlsMinVersion: string
+    tlsMaxVersion: string
+    secureProtocol: string
+    rejectUnauthorized: boolean
+    proxyEnabled: boolean
+    proxyUrl?: string
 }
 ```
 
 ### 错误诊断接口
+
 ```typescript
 interface SSLDiagnostic {
-  errorType: 'EPROTO' | 'CERTIFICATE' | 'PROXY' | 'UNKNOWN';
-  errorMessage: string;
-  environment: {
-    nodeVersion: string;
-    platform: string;
-    arch: string;
-    sslVersion: string;
-  };
-  solutions: SSLSolution[];
+    errorType: 'EPROTO' | 'CERTIFICATE' | 'PROXY' | 'UNKNOWN'
+    errorMessage: string
+    environment: {
+        nodeVersion: string
+        platform: string
+        arch: string
+        sslVersion: string
+    }
+    solutions: SSLSolution[]
 }
 ```
 
@@ -73,21 +78,25 @@ interface SSLDiagnostic {
 ## 实施计划
 
 ### 阶段1：错误检测与诊断
+
 - 实现SSL错误自动检测
 - 添加环境信息收集
 - 提供诊断报告功能
 
 ### 阶段2：配置优化
+
 - 实现SSL配置自动优化
 - 添加环境变量配置
 - 提供代理配置选项
 
 ### 阶段3：降级处理
+
 - 实现TLS版本降级
 - 添加兼容性模式
 - 提供自动修复功能
 
 ### 阶段4：用户交互
+
 - 实现CLI交互界面
 - 添加自动修复选项
 - 提供配置管理功能

@@ -1,10 +1,10 @@
-﻿const ONE_PIXEL_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/Pqe3RQAAAABJRU5ErkJggg==';
+﻿const ONE_PIXEL_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/Pqe3RQAAAABJRU5ErkJggg==';
 const ONE_PIXEL_PNG = Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64');
 
 const TXT_LIMIT = 1024 * 1024;
 
 jest.mock('wx-server-sdk');
-
 
 describe('patientMedia cloud function service tests', () => {
   let patientMedia;
@@ -35,7 +35,7 @@ describe('patientMedia cloud function service tests', () => {
       action: 'prepareUpload',
       patientKey: 'p-unsupported',
       fileName: 'malware.exe',
-      sizeBytes: 1024
+      sizeBytes: 1024,
     });
     expect(result.success).toBe(false);
     expect(result.error.code).toBe('UNSUPPORTED_FILE_TYPE');
@@ -47,7 +47,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey: 'p-large',
       fileName: 'photo.jpg',
       mimeType: 'image/jpeg',
-      sizeBytes: 11 * 1024 * 1024
+      sizeBytes: 11 * 1024 * 1024,
     });
     expect(result.success).toBe(false);
     expect(result.error.code).toBe('FILE_TOO_LARGE');
@@ -59,7 +59,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey,
       totalCount: 20,
       totalBytes: 30 * 1024 * 1024,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
 
     const result = await patientMedia.main({
@@ -67,7 +67,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey,
       fileName: 'note.txt',
       mimeType: 'text/plain',
-      sizeBytes: 1024
+      sizeBytes: 1024,
     });
 
     expect(result.success).toBe(false);
@@ -82,7 +82,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey,
       totalCount: 19,
       totalBytes: largeQuotaBytes,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
 
     const prepare = await patientMedia.main({
@@ -90,7 +90,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey,
       fileName: 'image.png',
       mimeType: 'image/png',
-      sizeBytes: ONE_PIXEL_PNG.length
+      sizeBytes: ONE_PIXEL_PNG.length,
     });
 
     expect(prepare.success).toBe(true);
@@ -107,7 +107,7 @@ describe('patientMedia cloud function service tests', () => {
       fileName: 'image.png',
       displayName: 'image.png',
       mimeType: 'image/png',
-      sizeBytes: ONE_PIXEL_PNG.length
+      sizeBytes: ONE_PIXEL_PNG.length,
     });
 
     expect(complete.success).toBe(true);
@@ -119,7 +119,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey,
       fileName: 'another.png',
       mimeType: 'image/png',
-      sizeBytes: ONE_PIXEL_PNG.length
+      sizeBytes: ONE_PIXEL_PNG.length,
     });
 
     expect(secondPrepare.success).toBe(false);
@@ -135,7 +135,7 @@ describe('patientMedia cloud function service tests', () => {
 
     const result = await patientMedia.main({
       action: 'list',
-      patientKey: 'p-auth'
+      patientKey: 'p-auth',
     });
 
     expect(result.success).toBe(false);
@@ -149,7 +149,7 @@ describe('patientMedia cloud function service tests', () => {
       patientKey,
       fileName: 'big.txt',
       mimeType: 'text/plain',
-      sizeBytes: TXT_LIMIT + 1
+      sizeBytes: TXT_LIMIT + 1,
     });
 
     expect(prepare.success).toBe(true);
@@ -166,7 +166,7 @@ describe('patientMedia cloud function service tests', () => {
       fileName: 'big.txt',
       displayName: 'big.txt',
       mimeType: 'text/plain',
-      sizeBytes: TXT_LIMIT + 1
+      sizeBytes: TXT_LIMIT + 1,
     });
 
     expect(complete.success).toBe(true);
@@ -174,7 +174,7 @@ describe('patientMedia cloud function service tests', () => {
 
     const preview = await patientMedia.main({
       action: 'previewTxt',
-      mediaId
+      mediaId,
     });
 
     expect(preview.success).toBe(false);

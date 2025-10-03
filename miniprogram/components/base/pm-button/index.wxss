@@ -31,7 +31,6 @@
   background-color: var(--color-bg-secondary);
 }
 
-
 .pm-button--primary {
   background: var(--gradient-primary-button);
   color: var(--color-bg-primary);

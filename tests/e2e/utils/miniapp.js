@@ -2,7 +2,7 @@ const automator = require('miniprogram-automator');
 const config = require('../config/devtools');
 
 async function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function connectDevtools() {
@@ -20,11 +20,10 @@ async function connectDevtools() {
   throw lastError || new Error('Unable to connect to DevTools');
 }
 
-async function waitForCondition(checker, {
-  timeout = 15000,
-  interval = 250,
-  message = 'Condition not met'
-} = {}) {
+async function waitForCondition(
+  checker,
+  { timeout = 15000, interval = 250, message = 'Condition not met' } = {}
+) {
   const start = Date.now();
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -41,20 +40,26 @@ async function waitForCondition(checker, {
 async function waitForElement(page, selector, options = {}) {
   const { timeout = 15000, interval = 250 } = options;
   let found = null;
-  await waitForCondition(async () => {
-    found = await page.$(selector);
-    return !!found;
-  }, { timeout, interval, message: `Element '${selector}' not found` });
+  await waitForCondition(
+    async () => {
+      found = await page.$(selector);
+      return !!found;
+    },
+    { timeout, interval, message: `Element '${selector}' not found` }
+  );
   return found;
 }
 
 async function waitForElements(page, selector, options = {}) {
   const { min = 1, timeout = 15000, interval = 250 } = options;
   let elements = [];
-  await waitForCondition(async () => {
-    elements = await page.$$(selector);
-    return Array.isArray(elements) && elements.length >= min;
-  }, { timeout, interval, message: `Elements '${selector}' not found` });
+  await waitForCondition(
+    async () => {
+      elements = await page.$$(selector);
+      return Array.isArray(elements) && elements.length >= min;
+    },
+    { timeout, interval, message: `Elements '${selector}' not found` }
+  );
   return elements;
 }
 
@@ -111,19 +116,19 @@ function situationText() {
   return '\u60a3\u8005\u5f53\u524d\u75c5\u60c5\u9700\u8981\u6301\u7eed\u62a4\u7406\u652f\u6301\uff0c\u5b58\u5728\u529f\u80fd\u969c\u788d\uff0c\u9700\u62a4\u58eb\u56e2\u961f\u63d0\u4f9b\u5eb7\u590d\u62a4\u7406\u8ba1\u5212\u4fdd\u969c\u3002';
 }
 
-async function waitForPage(miniProgram, expectedRoute, {
-  timeout = 15000,
-  interval = 300
-} = {}) {
+async function waitForPage(miniProgram, expectedRoute, { timeout = 15000, interval = 300 } = {}) {
   let page = await miniProgram.currentPage();
   if (page && (page.route === expectedRoute || page.path === expectedRoute)) {
     return page;
   }
-  await waitForCondition(async () => {
-    page = await miniProgram.currentPage();
-    const route = page?.route || page?.path || '';
-    return route === expectedRoute;
-  }, { timeout, interval, message: `Route '${expectedRoute}' not reached` });
+  await waitForCondition(
+    async () => {
+      page = await miniProgram.currentPage();
+      const route = page?.route || page?.path || '';
+      return route === expectedRoute;
+    },
+    { timeout, interval, message: `Route '${expectedRoute}' not reached` }
+  );
   return page;
 }
 
@@ -141,5 +146,5 @@ module.exports = {
   generateIdNumber,
   generateMobile,
   situationText,
-  waitForPage
+  waitForPage,
 };

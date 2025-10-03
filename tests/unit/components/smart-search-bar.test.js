@@ -103,10 +103,10 @@ describe('smart-search-bar component', () => {
 
     config.methods.saveHistory.call(ctx, ' 心血管 ');
 
-    expect(global.wx.setStorageSync).toHaveBeenCalledWith(
-      'smart_search_history',
-      ['心血管', '肺炎']
-    );
+    expect(global.wx.setStorageSync).toHaveBeenCalledWith('smart_search_history', [
+      '心血管',
+      '肺炎',
+    ]);
     expect(ctx.data.searchHistory).toEqual(['心血管', '肺炎']);
   });
 
@@ -122,7 +122,9 @@ describe('smart-search-bar component', () => {
     };
     ctx.safeString = config.methods.safeString.bind(ctx);
 
-    config.methods.handleFilterTap.call(ctx, { currentTarget: { dataset: { filter: { id: 'risk' } } } });
+    config.methods.handleFilterTap.call(ctx, {
+      currentTarget: { dataset: { filter: { id: 'risk' } } },
+    });
     config.methods.handleToggleAdvanced.call(ctx);
 
     expect(triggerEvent).toHaveBeenNthCalledWith(1, 'filtertap', { filter: { id: 'risk' } });

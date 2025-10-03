@@ -402,11 +402,7 @@
         <view wx:if="{{media.tab === 'images'}}">
           <view class="media-upload-hint">单次最多 5 个，支持 JPG/PNG/WebP，单个文件 ≤ 10MB。</view>
           <view wx:if="{{media.images.length}}" class="media-grid">
-            <view
-              class="media-card-item"
-              wx:for="{{media.images}}"
-              wx:key="id"
-            >
+            <view class="media-card-item" wx:for="{{media.images}}" wx:key="id">
               <pm-card
                 variant="outlined"
                 clickable="{{true}}"

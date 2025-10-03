@@ -1,5 +1,5 @@
-const cloud = require("wx-server-sdk");
-const XLSX = require("xlsx");
+const cloud = require('wx-server-sdk');
+const XLSX = require('xlsx');
 const {
   normalizeValue,
   normalizeSpacing,
@@ -14,55 +14,55 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
 // 集合名称
-const COLLECTION = "excel_records";
-const CACHE_COLLECTION = "excel_cache";
-const PATIENT_CACHE_DOC_ID = "patients_summary_cache";
-const PATIENTS_COLLECTION = "patients";
-const PATIENT_INTAKE_COLLECTION = "patient_intake_records";
-const RAW_COLLECTION = "excel_raw_records";
+const COLLECTION = 'excel_records';
+const CACHE_COLLECTION = 'excel_cache';
+const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
+const PATIENTS_COLLECTION = 'patients';
+const PATIENT_INTAKE_COLLECTION = 'patient_intake_records';
+const RAW_COLLECTION = 'excel_raw_records';
 
 // Excel文件ID（从环境变量获取）
 const EXCEL_FILE_ID = process.env.EXCEL_FILE_ID;
 
 // 字段映射配置
 const LABEL_MAP = {
-  patientName: ["患者姓名", "姓名", "患者"],
-  gender: ["性别"],
-  birthDate: ["出生日期", "生日"],
-  nativePlace: ["籍贯"],
-  ethnicity: ["民族"],
-  idNumber: ["身份证号", "证件号"],
-  caregivers: ["监护人"],
-  admissionDate: ["入院日期", "入院时间", "入住日期", "入住时间", "收治日期", "收治时间"],
-  hospital: ["医院", "收治医院", "就诊情况_就诊医院", "就诊医院"],
-  diagnosis: ["诊断", "初步诊断", "诊断结果", "就诊情况_医院诊断", "医院诊断"],
-  doctor: ["医生", "主治医师", "就诊情况_医生姓名", "医生姓名"],
-  symptoms: ["症状", "主要症状", "症状详情"],
-  treatmentProcess: ["治疗过程", "康复过程", "医治过程"],
-  followUpPlan: ["康复计划", "后续计划", "后续治疗安排"],
-  address: ["地址", "家庭地址", "居住地址"],
+  patientName: ['患者姓名', '姓名', '患者'],
+  gender: ['性别'],
+  birthDate: ['出生日期', '生日'],
+  nativePlace: ['籍贯'],
+  ethnicity: ['民族'],
+  idNumber: ['身份证号', '证件号'],
+  caregivers: ['监护人'],
+  admissionDate: ['入院日期', '入院时间', '入住日期', '入住时间', '收治日期', '收治时间'],
+  hospital: ['医院', '收治医院', '就诊情况_就诊医院', '就诊医院'],
+  diagnosis: ['诊断', '初步诊断', '诊断结果', '就诊情况_医院诊断', '医院诊断'],
+  doctor: ['医生', '主治医师', '就诊情况_医生姓名', '医生姓名'],
+  symptoms: ['症状', '主要症状', '症状详情'],
+  treatmentProcess: ['治疗过程', '康复过程', '医治过程'],
+  followUpPlan: ['康复计划', '后续计划', '后续治疗安排'],
+  address: ['地址', '家庭地址', '居住地址'],
   fatherInfo: [
-    "父亲",
-    "父亲信息",
-    "爸爸",
-    "家庭基础信息_父亲姓名联系电话身份证号",
-    "家庭基本情况_父亲姓名、电话、身份证号",
-    "父亲姓名、电话、身份证号",
-    "父亲姓名联系电话身份证号"
+    '父亲',
+    '父亲信息',
+    '爸爸',
+    '家庭基础信息_父亲姓名联系电话身份证号',
+    '家庭基本情况_父亲姓名、电话、身份证号',
+    '父亲姓名、电话、身份证号',
+    '父亲姓名联系电话身份证号',
   ],
   motherInfo: [
-    "母亲",
-    "母亲信息",
-    "妈妈",
-    "家庭基础信息_母亲姓名联系电话身份证号",
-    "家庭基本情况_母亲姓名、电话、身份证号",
-    "母亲姓名、电话、身份证号",
-    "母亲姓名联系电话身份证号"
+    '母亲',
+    '母亲信息',
+    '妈妈',
+    '家庭基础信息_母亲姓名联系电话身份证号',
+    '家庭基本情况_母亲姓名、电话、身份证号',
+    '母亲姓名、电话、身份证号',
+    '母亲姓名联系电话身份证号',
   ],
-  otherGuardian: ["其他监护人", "家庭基础信息_其他监护人", "家庭基本情况_其他监护人"],
-  familyEconomy: ["家庭基础信息_家庭经济", "家庭基本情况_家庭经济", "家庭经济"],
-  hospitalAdditional: ["就诊情况_医院诊断", "医院诊断"],
-  diagnosisAdditional: ["医疗情况_症状详情", "症状详情"]
+  otherGuardian: ['其他监护人', '家庭基础信息_其他监护人', '家庭基本情况_其他监护人'],
+  familyEconomy: ['家庭基础信息_家庭经济', '家庭基本情况_家庭经济', '家庭经济'],
+  hospitalAdditional: ['就诊情况_医院诊断', '医院诊断'],
+  diagnosisAdditional: ['医疗情况_症状详情', '症状详情'],
 };
 
 // 工具函数
@@ -120,11 +120,11 @@ function generateRecordKey(record) {
 async function downloadExcelBuffer(providedFileId) {
   const fileId = normalizeValue(providedFileId) || normalizeValue(EXCEL_FILE_ID);
   if (!fileId) {
-    const error = new Error("Excel file id is not configured");
+    const error = new Error('Excel file id is not configured');
     error.code = 'INVALID_EXCEL_FILE_ID';
     error.details = {
       providedFileId: normalizeValue(providedFileId) || null,
-      envFileId: normalizeValue(EXCEL_FILE_ID) || null
+      envFileId: normalizeValue(EXCEL_FILE_ID) || null,
     };
     throw error;
   }
@@ -134,10 +134,10 @@ async function downloadExcelBuffer(providedFileId) {
 
 // 解析Excel文件
 function parseExcel(buffer) {
-  const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true, sheetStubs: true });
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true, sheetStubs: true });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) {
-    return { sheetName: "", headers: [], subHeaders: [], rows: [] };
+    return { sheetName: '', headers: [], subHeaders: [], rows: [] };
   }
 
   const sheet = workbook.Sheets[sheetName];
@@ -176,8 +176,8 @@ function buildLabelIndex(headers, subHeaders) {
   const maxLength = Math.max(headers.length, subHeaders.length);
 
   for (let i = 0; i < maxLength; i += 1) {
-    const top = (headers[i] || "").toString().trim();
-    const sub = (subHeaders[i] || "").toString().trim();
+    const top = (headers[i] || '').toString().trim();
+    const sub = (subHeaders[i] || '').toString().trim();
     const candidates = [];
 
     if (top && sub) {
@@ -220,7 +220,7 @@ function parseDateValue(value) {
   if (value instanceof Date) {
     return {
       text: value.toISOString().split('T')[0],
-      timestamp: value.getTime()
+      timestamp: value.getTime(),
     };
   }
 
@@ -232,16 +232,18 @@ function parseDateValue(value) {
   // 尝试解析各种日期格式
   const formats = [
     /^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})$/,
-    /^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})$/
+    /^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})$/,
   ];
 
   for (const format of formats) {
     const match = str.match(format);
     if (match) {
       let year, month, day;
-      if (format === formats[0]) { // YYYY-MM-DD
+      if (format === formats[0]) {
+        // YYYY-MM-DD
         [, year, month, day] = match;
-      } else { // MM-DD-YYYY 或 DD-MM-YYYY
+      } else {
+        // MM-DD-YYYY 或 DD-MM-YYYY
         [, month, day, year] = match;
       }
 
@@ -249,7 +251,7 @@ function parseDateValue(value) {
       if (!isNaN(date.getTime())) {
         return {
           text: `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`,
-          timestamp: date.getTime()
+          timestamp: date.getTime(),
         };
       }
     }
@@ -261,13 +263,27 @@ function parseDateValue(value) {
 // 提取记录
 function extractRecords(rows, labelIndex) {
   const records = [];
-  const isRowEmpty = (row) => !row || row.every(cell => !normalizeValue(cell));
+  const isRowEmpty = row => !row || row.every(cell => !normalizeValue(cell));
 
   const contentFields = [
-    'patientName', 'gender', 'birthDate', 'nativePlace', 'ethnicity',
-    'caregivers', 'admissionDate', 'hospital', 'diagnosis', 'doctor',
-    'symptoms', 'treatmentProcess', 'followUpPlan', 'address',
-    'fatherInfo', 'motherInfo', 'otherGuardian', 'familyEconomy'
+    'patientName',
+    'gender',
+    'birthDate',
+    'nativePlace',
+    'ethnicity',
+    'caregivers',
+    'admissionDate',
+    'hospital',
+    'diagnosis',
+    'doctor',
+    'symptoms',
+    'treatmentProcess',
+    'followUpPlan',
+    'address',
+    'fatherInfo',
+    'motherInfo',
+    'otherGuardian',
+    'familyEconomy',
   ];
 
   rows.forEach((row, rawIndex) => {
@@ -283,9 +299,10 @@ function extractRecords(rows, labelIndex) {
     const idNumberRaw = normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.idNumber));
     const normalizedId = idNumberRaw ? idNumberRaw.toUpperCase() : '';
     const admissionInfo = parseDateValue(getFieldValue(row, labelIndex, LABEL_MAP.admissionDate));
-    const normalizedAdmissionTimestamp = (admissionInfo.timestamp !== null && Number.isFinite(admissionInfo.timestamp))
-      ? admissionInfo.timestamp
-      : null;
+    const normalizedAdmissionTimestamp =
+      admissionInfo.timestamp !== null && Number.isFinite(admissionInfo.timestamp)
+        ? admissionInfo.timestamp
+        : null;
     const excelRowIndex = rawIndex + 1;
 
     const record = {
@@ -304,25 +321,29 @@ function extractRecords(rows, labelIndex) {
       importOrder: excelRowIndex,
       excelRowIndex,
       hospital: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.hospital)),
-      diagnosis: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.diagnosis)) ||
-                 normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.hospitalAdditional)),
+      diagnosis:
+        normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.diagnosis)) ||
+        normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.hospitalAdditional)),
       doctor: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.doctor)),
-      symptoms: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.symptoms)) ||
-                normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.diagnosisAdditional)),
-      treatmentProcess: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.treatmentProcess)),
+      symptoms:
+        normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.symptoms)) ||
+        normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.diagnosisAdditional)),
+      treatmentProcess: normalizeSpacing(
+        getFieldValue(row, labelIndex, LABEL_MAP.treatmentProcess)
+      ),
       followUpPlan: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.followUpPlan)),
       address: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.address)),
       fatherInfo: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.fatherInfo)),
       motherInfo: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.motherInfo)),
       otherGuardian: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.otherGuardian)),
-      familyEconomy: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.familyEconomy))
+      familyEconomy: normalizeSpacing(getFieldValue(row, labelIndex, LABEL_MAP.familyEconomy)),
     };
 
     const stableKey = generateRecordKey(record);
     record.key = stableKey;
     record.recordKey = stableKey;
 
-    const hasContent = contentFields.some((field) => normalizeValue(record[field]));
+    const hasContent = contentFields.some(field => normalizeValue(record[field]));
     if (hasContent) {
       records.push(record);
     }
@@ -341,12 +362,12 @@ async function saveSummariesToCache(summaries) {
   const cacheDoc = {
     patients: summaries,
     updatedAt: Date.now(),
-    totalCount: summaries.length
+    totalCount: summaries.length,
   };
 
   try {
     await db.collection(CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
-      data: cacheDoc
+      data: cacheDoc,
     });
   } catch (error) {
     console.error('saveSummariesToCache failed', PATIENT_CACHE_DOC_ID, error);
@@ -367,11 +388,16 @@ async function clearCollection(collection) {
 
     await Promise.all(
       docs
-        .filter((doc) => doc && doc._id)
-        .map((doc) => collection.doc(doc._id).remove().catch((error) => {
-          console.warn('clearCollection remove failed', collection._name, doc._id, error);
-          return null;
-        }))
+        .filter(doc => doc && doc._id)
+        .map(doc =>
+          collection
+            .doc(doc._id)
+            .remove()
+            .catch(error => {
+              console.warn('clearCollection remove failed', collection._name, doc._id, error);
+              return null;
+            })
+        )
     );
   }
 }
@@ -400,7 +426,7 @@ async function importToDatabase(records) {
       excelRowIndex: record.excelRowIndex || importOrder,
       importedAt: fallbackTimestamp,
       _importedAt: fallbackTimestamp,
-      _rowIndex: index + 1
+      _rowIndex: index + 1,
     };
   });
 
@@ -443,7 +469,11 @@ async function findExistingPatientDoc(collection, normalizedKey) {
       return { id: normalizedKey, doc: docRes.data };
     }
   } catch (error) {
-    const notFound = error && (error.errCode === -1 || error.code === 'DOCUMENT_NOT_FOUND' || error.code === 'DATABASE_DOCUMENT_NOT_EXIST');
+    const notFound =
+      error &&
+      (error.errCode === -1 ||
+        error.code === 'DOCUMENT_NOT_FOUND' ||
+        error.code === 'DATABASE_DOCUMENT_NOT_EXIST');
     if (!notFound) {
       console.warn('findExistingPatientDoc direct lookup failed', normalizedKey, error);
     }
@@ -477,7 +507,7 @@ async function removeDuplicatePatientDocs(collection, patientName, keepId, prima
   }
 
   const docs = Array.isArray(res.data) ? res.data : [];
-  const normalizeIdNumber = (value) => normalizeSpacing(value);
+  const normalizeIdNumber = value => normalizeSpacing(value);
   const baselineIdNumber = normalizeIdNumber(primaryIdNumber);
 
   for (const doc of docs) {
@@ -499,25 +529,32 @@ async function removeDuplicatePatientDocs(collection, patientName, keepId, prima
 
 // 构建患者文档数据
 function buildPatientPayload(group, latestRecord) {
-  const normalizedRecordKey = normalizeSpacing(group.recordKey || group.key || group.patientName || '');
+  const normalizedRecordKey = normalizeSpacing(
+    group.recordKey || group.key || group.patientName || ''
+  );
 
   const emergencyContactCandidates = [];
   if (group.summaryCaregivers) {
     emergencyContactCandidates.push(group.summaryCaregivers);
   }
-  const guardianParts = [group.fatherInfo, group.motherInfo, group.otherGuardian]
-    .filter(part => normalizeSpacing(part));
+  const guardianParts = [group.fatherInfo, group.motherInfo, group.otherGuardian].filter(part =>
+    normalizeSpacing(part)
+  );
   if (guardianParts.length) {
     emergencyContactCandidates.push(guardianParts.join('、'));
   }
-  const normalizedEmergencyContact = emergencyContactCandidates.find(value => normalizeSpacing(value));
+  const normalizedEmergencyContact = emergencyContactCandidates.find(value =>
+    normalizeSpacing(value)
+  );
 
   const contacts = Array.isArray(group.familyContacts) ? group.familyContacts : [];
-  const contactToString = (contact) => {
+  const contactToString = contact => {
     if (!contact) {
       return '';
     }
-    const parts = [contact.name, contact.phone, contact.idNumber].map(part => normalizeSpacing(part)).filter(Boolean);
+    const parts = [contact.name, contact.phone, contact.idNumber]
+      .map(part => normalizeSpacing(part))
+      .filter(Boolean);
     if (parts.length) {
       return parts.join(' ');
     }
@@ -554,14 +591,15 @@ function buildPatientPayload(group, latestRecord) {
     latestDoctor: group.latestDoctor || '',
     fatherInfo: contactToString(fatherContact) || group.fatherInfo || group.fatherInfoRaw || '',
     motherInfo: contactToString(motherContact) || group.motherInfo || group.motherInfoRaw || '',
-    otherGuardian: contactToString(guardianContact) || group.otherGuardian || group.otherGuardianRaw || '',
+    otherGuardian:
+      contactToString(guardianContact) || group.otherGuardian || group.otherGuardianRaw || '',
     familyEconomy: group.familyEconomy || group.familyEconomyRaw || '',
     familyContacts: Array.isArray(group.familyContacts)
       ? group.familyContacts.map(contact => ({ ...contact }))
       : [],
     recordKey: normalizedRecordKey,
     createdAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
   };
 }
 
@@ -578,19 +616,23 @@ async function upsertPatientDocument(patientKey, payload, syncBatchId, options =
   const docPayload = {
     ...payload,
     recordKey: normalizedKey,
-    createdAt: existing && existing.doc && existing.doc.createdAt ? existing.doc.createdAt : (payload.createdAt || serverDate),
+    createdAt:
+      existing && existing.doc && existing.doc.createdAt
+        ? existing.doc.createdAt
+        : payload.createdAt || serverDate,
     updatedAt: serverDate,
     meta: {
       ...baseMeta,
       ...(payload.meta || {}),
       lastExcelSyncAt: serverDate,
-      lastExcelSyncBatchId: syncBatchId
-    }
+      lastExcelSyncBatchId: syncBatchId,
+    },
   };
 
-  const targetId = existing && existing.id
-    ? existing.id
-    : sanitizeIdentifier(normalizedKey ? `excel_${normalizedKey}` : '', `excel_${Date.now()}`);
+  const targetId =
+    existing && existing.id
+      ? existing.id
+      : sanitizeIdentifier(normalizedKey ? `excel_${normalizedKey}` : '', `excel_${Date.now()}`);
 
   await collection.doc(targetId).set({ data: docPayload });
   await removeDuplicatePatientDocs(
@@ -605,36 +647,40 @@ async function upsertPatientDocument(patientKey, payload, syncBatchId, options =
 // 构建入住记录数据
 function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
   const latestRecord = group.records && group.records[0] ? group.records[0] : {};
-  const normalize = (value) => normalizeSpacing(value) || '';
+  const normalize = value => normalizeSpacing(value) || '';
   const medicalInfo = {
     hospital: normalize(latestRecord.hospital),
     diagnosis: normalize(latestRecord.diagnosis),
     doctor: normalize(latestRecord.doctor),
     treatmentProcess: normalize(latestRecord.treatmentProcess),
     followUpPlan: normalize(latestRecord.followUpPlan),
-    symptoms: normalize(latestRecord.symptoms)
+    symptoms: normalize(latestRecord.symptoms),
   };
 
-  Object.keys(medicalInfo).forEach((key) => {
+  Object.keys(medicalInfo).forEach(key => {
     if (!medicalInfo[key]) {
       delete medicalInfo[key];
     }
   });
 
-  const situationText = normalize(latestRecord.symptoms)
-    || normalize(latestRecord.diagnosis)
-    || normalize(latestRecord.treatmentProcess);
+  const situationText =
+    normalize(latestRecord.symptoms) ||
+    normalize(latestRecord.diagnosis) ||
+    normalize(latestRecord.treatmentProcess);
 
   const emergencyContactParts = [];
   if (group.summaryCaregivers) {
     emergencyContactParts.push(group.summaryCaregivers);
   }
-  const guardianContact = [group.fatherInfo, group.motherInfo, group.otherGuardian]
-    .filter(part => normalizeSpacing(part));
+  const guardianContact = [group.fatherInfo, group.motherInfo, group.otherGuardian].filter(part =>
+    normalizeSpacing(part)
+  );
   if (guardianContact.length) {
     emergencyContactParts.push(guardianContact.join('、'));
   }
-  const emergencyContact = normalize(emergencyContactParts.find(value => normalizeSpacing(value)) || '');
+  const emergencyContact = normalize(
+    emergencyContactParts.find(value => normalizeSpacing(value)) || ''
+  );
 
   return {
     patientKey,
@@ -646,7 +692,7 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
       idNumber: group.idNumber || latestRecord.idNumber || '',
       gender: group.gender || latestRecord.gender || '',
       birthDate: group.birthDate || latestRecord.birthDate || '',
-      phone: ''
+      phone: '',
     },
     contactInfo: {
       address: latestRecord.address || '',
@@ -656,24 +702,24 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
       backupPhone: '',
       familyContacts: Array.isArray(group.familyContacts)
         ? group.familyContacts.map(contact => ({ ...contact }))
-        : []
+        : [],
     },
     intakeInfo: {
       intakeTime: group.latestAdmissionTimestamp || Date.now(),
       situation: situationText,
       followUpPlan: normalize(latestRecord.followUpPlan),
       medicalHistory: [],
-      attachments: []
+      attachments: [],
     },
     medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
     metadata: {
       submittedAt: serverDate,
       lastModifiedAt: serverDate,
       submittedBy: 'excel-import',
-      syncBatchId
+      syncBatchId,
     },
     createdAt: serverDate,
-    updatedAt: serverDate
+    updatedAt: serverDate,
   };
 }
 
@@ -691,8 +737,8 @@ async function upsertIntakeRecord(patientKey, intakePayload, options = {}) {
     meta: {
       ...(intakePayload.meta || {}),
       lastExcelSyncAt: serverDate,
-      lastExcelSyncBatchId: intakePayload.syncBatchId
-    }
+      lastExcelSyncBatchId: intakePayload.syncBatchId,
+    },
   };
 
   await collection.doc(docId).set({ data: payload });
@@ -707,7 +753,9 @@ async function syncPatientsFromGroups(groups, options = {}) {
 
   const groupList = Array.isArray(groups)
     ? groups
-    : (typeof groups.values === 'function' ? Array.from(groups.values()) : Object.values(groups));
+    : typeof groups.values === 'function'
+      ? Array.from(groups.values())
+      : Object.values(groups);
 
   const db = cloud.database();
   const serverDate = options.serverDate || db.serverDate();
@@ -733,7 +781,9 @@ async function syncPatientsFromGroups(groups, options = {}) {
       }
       const latestRecord = group.records && group.records[0] ? group.records[0] : {};
       const patientPayload = buildPatientPayload(group, latestRecord);
-      const patientDocId = await upsertPatientDocument(patientKey, patientPayload, syncBatchId, { serverDate });
+      const patientDocId = await upsertPatientDocument(patientKey, patientPayload, syncBatchId, {
+        serverDate,
+      });
       patientCount += 1;
 
       const intakePayload = buildIntakePayload(group, patientDocId, syncBatchId, serverDate);
@@ -743,7 +793,7 @@ async function syncPatientsFromGroups(groups, options = {}) {
       console.error('syncPatientsFromGroups item failed', group.patientName, error);
       errors.push({
         patientName: group.patientName,
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
       });
     }
   }
@@ -752,7 +802,7 @@ async function syncPatientsFromGroups(groups, options = {}) {
     syncBatchId,
     patients: patientCount,
     intakeRecords: intakeCount,
-    errors
+    errors,
   };
 }
 
@@ -783,7 +833,7 @@ function normalizeRawRecord(rawRecord, index) {
 
   const importOrder = Number.isFinite(doc.importOrder)
     ? Number(doc.importOrder)
-    : (Number(doc.excelRowIndex) || index + 1);
+    : Number(doc.excelRowIndex) || index + 1;
   doc.importOrder = importOrder;
   if (!doc.excelRowIndex) {
     doc.excelRowIndex = importOrder;
@@ -816,10 +866,7 @@ async function fetchRawRecordsFromDatabase() {
   const limit = 100;
 
   while (true) {
-    const res = await db.collection(RAW_COLLECTION)
-      .skip(skip)
-      .limit(limit)
-      .get();
+    const res = await db.collection(RAW_COLLECTION).skip(skip).limit(limit).get();
     const data = res && Array.isArray(res.data) ? res.data : [];
     if (!data.length) {
       break;
@@ -839,7 +886,8 @@ async function fetchRecordsFromDatabase() {
   const limit = 100;
 
   while (true) {
-    const res = await db.collection(COLLECTION)
+    const res = await db
+      .collection(COLLECTION)
       .orderBy('updatedAt', 'desc')
       .skip(skip)
       .limit(limit)
@@ -864,7 +912,7 @@ exports.main = async (event = {}) => {
     );
 
     // import操作：从Excel文件导入数据到数据库
-    if (event.action === "import") {
+    if (event.action === 'import') {
       const buffer = await downloadExcelBuffer(requestedFileId);
       const parsed = parseExcel(buffer);
       const labelIndex = buildLabelIndex(parsed.headers, parsed.subHeaders);
@@ -880,16 +928,16 @@ exports.main = async (event = {}) => {
       const sync = await syncPatientsFromGroups(groups, { syncBatchId });
 
       return {
-        action: "import",
+        action: 'import',
         sheetName: parsed.sheetName,
         imported: stats,
         totalPatients: summaries.length,
-        sync
+        sync,
       };
     }
 
     // syncPatients操作：从excel_records同步数据到patients集合
-    if (event.action === "syncPatients") {
+    if (event.action === 'syncPatients') {
       const syncBatchId = event.syncBatchId || `manual-${Date.now()}`;
       const dbRecords = await fetchRecordsFromDatabase();
       const groups = buildPatientGroups(dbRecords);
@@ -900,14 +948,14 @@ exports.main = async (event = {}) => {
       await saveSummariesToCache(summaries);
 
       return {
-        action: "syncPatients",
+        action: 'syncPatients',
         totalPatients: summaries.length,
-        sync
+        sync,
       };
     }
 
     // normalizeFromRaw 操作：基于 excel_raw_records 初始化派生集合
-    if (event.action === "normalizeFromRaw") {
+    if (event.action === 'normalizeFromRaw') {
       const rawRecords = await fetchRawRecordsFromDatabase();
       if (!rawRecords.length) {
         throw makeError('RAW_DATA_EMPTY', 'excel_raw_records 集合为空');
@@ -928,19 +976,19 @@ exports.main = async (event = {}) => {
       await ensureCollectionExists(db, CACHE_COLLECTION);
       await saveSummariesToCache(summaries);
 
-      const syncBatchId = event.syncBatchId || ('raw-' + Date.now());
+      const syncBatchId = event.syncBatchId || 'raw-' + Date.now();
       const sync = await syncPatientsFromGroups(groups, { syncBatchId });
 
       return {
-        action: "normalizeFromRaw",
+        action: 'normalizeFromRaw',
         imported: stats,
         totalPatients: summaries.length,
-        sync
+        sync,
       };
     }
 
     // 测试操作：验证Excel解析功能
-    if (event.action === "test") {
+    if (event.action === 'test') {
       const buffer = await downloadExcelBuffer(requestedFileId);
       const parsed = parseExcel(buffer);
       const labelIndex = buildLabelIndex(parsed.headers, parsed.subHeaders);
@@ -948,18 +996,17 @@ exports.main = async (event = {}) => {
       const summaries = buildGroupSummaries(buildPatientGroups(records));
 
       return {
-        action: "test",
+        action: 'test',
         sheetName: parsed.sheetName,
         headerCount: parsed.headers.length,
         recordCount: records.length,
         patientCount: summaries.length,
         sampleRecords: records.slice(0, 3),
-        samplePatients: summaries.slice(0, 3)
+        samplePatients: summaries.slice(0, 3),
       };
     }
 
     throw makeError('UNSUPPORTED_ACTION', `未支持的操作：${event.action || 'unknown'}`);
-
   } catch (error) {
     console.error('readExcel action failed', event.action, error);
     return {
@@ -967,8 +1014,8 @@ exports.main = async (event = {}) => {
       error: {
         code: error.code || 'INTERNAL_ERROR',
         message: error.message || '服务内部错误',
-        details: error.details || null
-      }
+        details: error.details || null,
+      },
     };
   }
 };

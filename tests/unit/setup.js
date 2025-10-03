@@ -31,12 +31,12 @@ global.wx = {
         where: jestFn(),
         orderBy: jestFn(),
         limit: jestFn(),
-        skip: jestFn()
-      }))
+        skip: jestFn(),
+      })),
     })),
     uploadFile: jestFn(),
-    downloadFile: jestFn()
-  }
+    downloadFile: jestFn(),
+  },
 };
 
 global.App = jestFn();
@@ -48,5 +48,5 @@ global.getCurrentPages = jestFn(() => []);
 global.console = {
   ...console,
   warn: jestFn(),
-  error: jestFn()
+  error: jestFn(),
 };

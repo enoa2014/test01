@@ -199,7 +199,7 @@ Page({
         return null;
       }
 
-      const pickByRegex = (patterns) => {
+      const pickByRegex = patterns => {
         for (const key of keys) {
           if (patterns.some(pattern => pattern.test(key))) {
             const value = this.normalizeExcelSpacing(rawValue[key]);
@@ -247,9 +247,7 @@ Page({
     }
     const phone = phoneMatch[0];
 
-    let name = value
-      .replace(/[^\u4e00-\u9fa5A-Za-z]+/g, ' ')
-      .replace(/1[3-9]\d{9}/g, ' ');
+    let name = value.replace(/[^\u4e00-\u9fa5A-Za-z]+/g, ' ').replace(/1[3-9]\d{9}/g, ' ');
     name = name
       .replace(/\d{15,18}[Xx]?/g, ' ')
       .replace(/身份证|证件|电话号码|联系电话|联系方式|手机|手机号/g, ' ')
@@ -399,12 +397,22 @@ Page({
         // 更新情况说明配置
         if (config.situationConfig) {
           this.setData({
-        situationConfig: {
-          ...this.data.situationConfig,
-          ...config.situationConfig,
-          minLength: Math.max(0, Number((config.situationConfig && config.situationConfig.minLength) || 0)),
-          maxLength: Math.max(0, Number((config.situationConfig && config.situationConfig.maxLength) || this.data.situationConfig.maxLength || 0)),
-        },
+            situationConfig: {
+              ...this.data.situationConfig,
+              ...config.situationConfig,
+              minLength: Math.max(
+                0,
+                Number((config.situationConfig && config.situationConfig.minLength) || 0)
+              ),
+              maxLength: Math.max(
+                0,
+                Number(
+                  (config.situationConfig && config.situationConfig.maxLength) ||
+                    this.data.situationConfig.maxLength ||
+                    0
+                )
+              ),
+            },
           });
         }
 
@@ -1015,7 +1023,8 @@ Page({
           error = '请输入证件号码';
         } else if (this.data.formData.idType === '身份证') {
           const trimmed = String(value).trim();
-          const regex18 = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/;
+          const regex18 =
+            /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/;
           const regex15 = /^[1-9]\d{7}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}$/;
           if (!regex18.test(trimmed) && !regex15.test(trimmed)) {
             error = '身份证号码格式不正确';
@@ -1276,7 +1285,9 @@ Page({
 
       const latestForm = this.data.formData || {};
       const dirtyPatientKey =
-        (submitResult && submitResult.data && submitResult.data.patientKey) || this.data.patientKey || '';
+        (submitResult && submitResult.data && submitResult.data.patientKey) ||
+        this.data.patientKey ||
+        '';
       if (dirtyPatientKey) {
         try {
           wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, {
@@ -1526,7 +1537,9 @@ Page({
           const contactFromRecords = this._extractContactFromRecords(payload.records || []);
           const resolved = this._preferContact(
             contactFromPatientDoc,
-            contactFromProfile && contactFromProfile.emergencyContact && contactFromProfile.emergencyPhone
+            contactFromProfile &&
+              contactFromProfile.emergencyContact &&
+              contactFromProfile.emergencyPhone
               ? contactFromProfile
               : null,
             contactFromRecords
@@ -1555,11 +1568,15 @@ Page({
 
             const latestIntake = detailRes.result.data && detailRes.result.data.latestIntake;
             if (latestIntake) {
-              const intakeContact = this._extractContactFromPatientDoc(latestIntake.contactInfo || {});
+              const intakeContact = this._extractContactFromPatientDoc(
+                latestIntake.contactInfo || {}
+              );
               if (intakeContact) {
                 return intakeContact;
               }
-              const intakeCaregiver = this._parseContactInfo(latestIntake.intakeInfo && latestIntake.intakeInfo.guardianInfo);
+              const intakeCaregiver = this._parseContactInfo(
+                latestIntake.intakeInfo && latestIntake.intakeInfo.guardianInfo
+              );
               if (intakeCaregiver) {
                 return {
                   emergencyContact: intakeCaregiver.name,

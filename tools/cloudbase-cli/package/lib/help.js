@@ -1,10 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.outputHelpInfo = void 0;
-const chalk_1 = __importDefault(require("chalk"));
+'use strict'
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod }
+    }
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.outputHelpInfo = void 0
+const chalk_1 = __importDefault(require('chalk'))
 const outputHelpInfo = () => {
     const commands = `
   命令
@@ -16,7 +18,7 @@ const outputHelpInfo = () => {
     hosting           [cmd]                      静态托管资源管理操作
     storage           [cmd]                      云存储资源管理操作
     service           [cmd]                      HTTP 访问服务管理操作
-    cloudrun          [cmd]                      云托管服务管理操作`;
+    cloudrun          [cmd]                      云托管服务管理操作`
     const options = `
   选项
 
@@ -25,7 +27,7 @@ const outputHelpInfo = () => {
     --mode <mode>                              指定加载 env 文件的环境
     --config-file <path>                       指定配置文件路径
     -v, --version                              输出当前版本
-    -h, --help                                 查看命令帮助信息`;
+    -h, --help                                 查看命令帮助信息`
     const tips = `
   Tips:
 
@@ -36,7 +38,7 @@ const outputHelpInfo = () => {
     ${chalk_1.default.gray('–')} 使用 AI 全栈开发部署
 
       ${chalk_1.default.cyan('$ tcb ai')}
-`;
-    console.log(commands, '\n', options, '\n', tips);
-};
-exports.outputHelpInfo = outputHelpInfo;
+`
+    console.log(commands, '\n', options, '\n', tips)
+}
+exports.outputHelpInfo = outputHelpInfo

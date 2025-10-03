@@ -4,40 +4,40 @@
 
 ## 属性
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `visible` | Boolean | `false` | 是否显示筛选面板 |
-| `closeOnOverlay` | Boolean | `true` | 点击遮罩是否关闭面板 |
-| `statuses` | Array<{ id, label }> | 见源码 | 患者状态选项列表 |
-| `riskLevels` | Array<{ id, label }> | 见源码 | 风险等级选项 |
-| `diagnosisOptions` | Array<{ id, label }> | 见源码 | 常用诊断建议列表 |
-| `hospitalOptions` | Array<{ id, label }> | 见源码 | 医院筛选选项 |
-| `genderOptions` | Array<{ id, label }> | `[]` | 性别筛选选项 |
-| `ethnicityOptions` | Array<{ id, label }> | `[]` | 民族筛选选项 |
-| `nativePlaceOptions` | Array<{ id, label }> | `[]` | 籍贯筛选选项 |
-| `doctorOptions` | Array<{ id, label }> | `[]` | 责任医生筛选选项 |
-| `ageRangeOptions` | Array<{ id, label }> | `[]` | 年龄段筛选选项 |
-| `value` | Object | `{ statuses: [], riskLevels: [], hospitals: [], diagnosis: [], genders: [], ethnicities: [], nativePlaces: [], ageRanges: [], doctors: [], dateRange: { start: '', end: '' }, logicMode: 'AND' }` | 初始选中值 |
-| `previewCount` | Number | `-1` | 预览数量（由父级实时传入） |
-| `previewLabel` | String | `名患者符合筛选` | 预览数量描述文本 |
-| `previewLoading` | Boolean | `false` | 是否显示“计算中”状态 |
-| `schemes` | Array<{ id, name, summary }> | `[]` | 已保存筛选方案列表 |
+| 属性                 | 类型                         | 默认值                                                                                                                                                                                            | 说明                       |
+| -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `visible`            | Boolean                      | `false`                                                                                                                                                                                           | 是否显示筛选面板           |
+| `closeOnOverlay`     | Boolean                      | `true`                                                                                                                                                                                            | 点击遮罩是否关闭面板       |
+| `statuses`           | Array<{ id, label }>         | 见源码                                                                                                                                                                                            | 患者状态选项列表           |
+| `riskLevels`         | Array<{ id, label }>         | 见源码                                                                                                                                                                                            | 风险等级选项               |
+| `diagnosisOptions`   | Array<{ id, label }>         | 见源码                                                                                                                                                                                            | 常用诊断建议列表           |
+| `hospitalOptions`    | Array<{ id, label }>         | 见源码                                                                                                                                                                                            | 医院筛选选项               |
+| `genderOptions`      | Array<{ id, label }>         | `[]`                                                                                                                                                                                              | 性别筛选选项               |
+| `ethnicityOptions`   | Array<{ id, label }>         | `[]`                                                                                                                                                                                              | 民族筛选选项               |
+| `nativePlaceOptions` | Array<{ id, label }>         | `[]`                                                                                                                                                                                              | 籍贯筛选选项               |
+| `doctorOptions`      | Array<{ id, label }>         | `[]`                                                                                                                                                                                              | 责任医生筛选选项           |
+| `ageRangeOptions`    | Array<{ id, label }>         | `[]`                                                                                                                                                                                              | 年龄段筛选选项             |
+| `value`              | Object                       | `{ statuses: [], riskLevels: [], hospitals: [], diagnosis: [], genders: [], ethnicities: [], nativePlaces: [], ageRanges: [], doctors: [], dateRange: { start: '', end: '' }, logicMode: 'AND' }` | 初始选中值                 |
+| `previewCount`       | Number                       | `-1`                                                                                                                                                                                              | 预览数量（由父级实时传入） |
+| `previewLabel`       | String                       | `名患者符合筛选`                                                                                                                                                                                  | 预览数量描述文本           |
+| `previewLoading`     | Boolean                      | `false`                                                                                                                                                                                           | 是否显示“计算中”状态       |
+| `schemes`            | Array<{ id, name, summary }> | `[]`                                                                                                                                                                                              | 已保存筛选方案列表         |
 
 ## 事件
 
-| 事件 | detail | 说明 |
-| --- | --- | --- |
-| `change` | `{ source, value }` | 任一筛选项变更时触发，`source` 标识来源（status/risk/hospital/date/diagnosis/reset/logic） |
-| `preview` | `{ value, activeFilters, logicMode }` | 每次变更后触发，返回当前条件与激活项，便于父级实时预览 |
-| `apply` | `{ value }` | 点击“应用筛选”按钮触发 |
-| `reset` | `{}` | 点击“重置”按钮触发 |
-| `close` | `{}` | 点击关闭按钮或遮罩触发 |
-| `savescheme` | `{}` | 点击“保存方案”按钮触发 |
-| `appliescheme` | `{ id }` | 点击已保存方案的“应用”按钮触发 |
-| `deletescheme` | `{ id }` | 点击已保存方案的“删除”按钮触发 |
-| `renamescheme` | `{ id }` | 点击已保存方案的“重命名”按钮触发 |
-| `searchdiagnosis` | `{ keyword }` | 诊断关键字输入（200ms 防抖） |
-| `diagnosisselect` | `{ id, label }` | 选择建议诊断时触发 |
+| 事件              | detail                                | 说明                                                                                       |
+| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `change`          | `{ source, value }`                   | 任一筛选项变更时触发，`source` 标识来源（status/risk/hospital/date/diagnosis/reset/logic） |
+| `preview`         | `{ value, activeFilters, logicMode }` | 每次变更后触发，返回当前条件与激活项，便于父级实时预览                                     |
+| `apply`           | `{ value }`                           | 点击“应用筛选”按钮触发                                                                     |
+| `reset`           | `{}`                                  | 点击“重置”按钮触发                                                                         |
+| `close`           | `{}`                                  | 点击关闭按钮或遮罩触发                                                                     |
+| `savescheme`      | `{}`                                  | 点击“保存方案”按钮触发                                                                     |
+| `appliescheme`    | `{ id }`                              | 点击已保存方案的“应用”按钮触发                                                             |
+| `deletescheme`    | `{ id }`                              | 点击已保存方案的“删除”按钮触发                                                             |
+| `renamescheme`    | `{ id }`                              | 点击已保存方案的“重命名”按钮触发                                                           |
+| `searchdiagnosis` | `{ keyword }`                         | 诊断关键字输入（200ms 防抖）                                                               |
+| `diagnosisselect` | `{ id, label }`                       | 选择建议诊断时触发                                                                         |
 
 ## 使用示例
 
@@ -65,6 +65,7 @@
 ```
 
 ## 后续计划
+
 - 结合后端数据源动态加载诊断、医院选项
 - 支持 AND/OR 逻辑下的后端筛选与预览数量联动
 - 提供筛选方案重命名与排序能力

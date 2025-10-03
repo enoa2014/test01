@@ -34,7 +34,7 @@ function main() {
         runtime.log('catch exit')
         finish(null, null, false)
     })
-    process.on('uncaughtException', err => {
+    process.on('uncaughtException', (err) => {
         runtime.log('catch exception')
         finish(err, null, false)
     })
@@ -50,7 +50,7 @@ function cleanEnv() {
         }
     }
 
-    envToDelete.forEach(e => {
+    envToDelete.forEach((e) => {
         delete process.env[e]
     })
 }
@@ -92,7 +92,7 @@ function invoke(invokeInfo) {
         }
     }
 
-    ctx['environ'].split(';').forEach(e => {
+    ctx['environ'].split(';').forEach((e) => {
         if (e == '') return
         var kv = e.split('=', 2)
         process.env[kv[0]] = kv[1]
@@ -220,14 +220,14 @@ class EventHandler {
                 getContext() {
                     return ctx
                 },
-                done: function(err, data) {
+                done: function (err, data) {
                     wait = false
                     callback(err, data)
                 },
-                succeed: function(data) {
+                succeed: function (data) {
                     ctxx.done(null, data)
                 },
-                fail: function(err) {
+                fail: function (err) {
                     ctxx.done(err, null)
                 }
             },
@@ -237,11 +237,7 @@ class EventHandler {
         try {
             _user_exception = false
             var ret = this.realHandler(ev, ctxx, callback)
-            if (
-                ret &&
-                ret.then !== undefined &&
-                typeof ret.then === 'function'
-            ) {
+            if (ret && ret.then !== undefined && typeof ret.then === 'function') {
                 ret.then(ctxx.succeed, ctxx.fail)
             }
         } catch (err) {

@@ -6,21 +6,14 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 module.exports = {
   rootDir: projectRoot,
   displayName: 'Unit Tests',
-  testMatch: [
-    '**/tests/unit/**/*.test.js',
-    '**/miniprogram/**/*.test.js'
-  ],
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/miniprogram_npm/',
-    '/tests/e2e/'
-  ],
+  testMatch: ['**/tests/unit/**/*.test.js', '**/miniprogram/**/*.test.js'],
+  testPathIgnorePatterns: ['/node_modules/', '/miniprogram_npm/', '/tests/e2e/'],
   collectCoverageFrom: [
     'miniprogram/**/*.js',
     '!miniprogram/app.js',
     '!miniprogram/config/**',
     '!miniprogram/**/*.test.js',
-    '!miniprogram/miniprogram_npm/**'
+    '!miniprogram/miniprogram_npm/**',
   ],
   coverageDirectory: 'coverage/unit',
   coverageReporters: ['text', 'lcov', 'html'],
@@ -29,16 +22,16 @@ module.exports = {
       branches: 80,
       functions: 80,
       lines: 80,
-      statements: 80
-    }
+      statements: 80,
+    },
   },
   transform: {
-    '^.+\\.js$': 'babel-jest'
+    '^.+\\.js$': 'babel-jest',
   },
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: [path.join(projectRoot, 'tests', 'unit', 'setup.js')],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/miniprogram/$1'
+    '^@/(.*)$': '<rootDir>/miniprogram/$1',
   },
   globals: {
     wx: {},
@@ -46,6 +39,6 @@ module.exports = {
     Page: jestFn(),
     Component: jestFn(),
     getApp: jestFn(),
-    getCurrentPages: jestFn()
-  }
+    getCurrentPages: jestFn(),
+  },
 };

@@ -6,7 +6,7 @@ async function waitForFieldElement(page, field, { timeout = 12000 } = {}) {
   const selectors = [
     `input[data-field="${field}"]`,
     `textarea[data-field="${field}"]`,
-    `.pm-input__field[data-field="${field}"]`
+    `.pm-input__field[data-field="${field}"]`,
   ];
   let lastError = null;
   for (const selector of selectors) {
@@ -38,8 +38,8 @@ async function resolvePatientKey(miniProgram, patientData, successPage) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const response = await evaluator.evaluate(
-        (payload) =>
-          new Promise((resolve) => {
+        payload =>
+          new Promise(resolve => {
             if (!wx || !wx.cloud || typeof wx.cloud.callFunction !== 'function') {
               resolve({ error: 'wx.cloud unavailable' });
               return;
@@ -67,7 +67,7 @@ async function resolvePatientKey(miniProgram, patientData, successPage) {
           ? response.result.patients
           : [];
 
-      const matched = list.find((item) => {
+      const matched = list.find(item => {
         if (!item) return false;
         const sameName = item.patientName === patientData.patientName;
         const sameId = item.idNumber === patientData.idNumber;
@@ -115,9 +115,7 @@ function generateIdNumber(birthDate = '2012-04-16', gender = '女') {
   const partial = `${regionCode}${birth}${sequence}`;
   const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
   const mods = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
-  const sum = partial
-    .split('')
-    .reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
+  const sum = partial.split('').reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
   const checksum = mods[sum % 11];
   return `${partial}${checksum}`;
 }
@@ -246,7 +244,10 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     if (typeof wizardPage.callMethod === 'function') {
       await wizardPage.callMethod('onSubmit');
     } else {
-      const submitButton = await waitForElement(wizardPage, '.action-buttons pm-button[type="primary"]');
+      const submitButton = await waitForElement(
+        wizardPage,
+        '.action-buttons pm-button[type="primary"]'
+      );
       await submitButton.tap();
     }
 
@@ -260,9 +261,8 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       successPage = await miniProgram.currentPage();
     }
 
-    const successData = successPage && typeof successPage.data === 'function'
-      ? await successPage.data()
-      : {};
+    const successData =
+      successPage && typeof successPage.data === 'function' ? await successPage.data() : {};
 
     let patientKey = successData?.patientKey;
     if (!patientKey) {

@@ -11,7 +11,9 @@
             <block wx:for="{{displayTags}}" wx:key="value">
               <view class="pm-picker__tag">{{item}}</view>
             </block>
-            <view wx:if="extraTagCount>0" class="pm-picker__tag pm-picker__tag--extra">+{{extraTagCount}}</view>
+            <view wx:if="extraTagCount>0" class="pm-picker__tag pm-picker__tag--extra"
+              >+{{extraTagCount}}</view
+            >
           </view>
         </block>
         <block wx:else>
@@ -25,7 +27,8 @@
         wx:if="clearable && hasSelection"
         class="pm-picker__icon pm-picker__icon--clear"
         catchtap="handleClear"
-      >×</view>
+        >×</view
+      >
       <view class="pm-picker__icon pm-picker__icon--arrow"></view>
     </view>
   </view>
@@ -36,19 +39,16 @@
   </view>
 </view>
 
-<view
-  wx:if="opened"
-  class="pm-picker__overlay"
-  catchtouchmove="noop"
-  bindtap="handleOverlayTap"
-/>
+<view wx:if="opened" class="pm-picker__overlay" catchtouchmove="noop" bindtap="handleOverlayTap" />
 
 <view wx:if="opened" class="pm-picker__panel" catchtap="noop">
   <view class="pm-picker__panel-header">
     <view class="pm-picker__panel-title">{{panelTitle}}</view>
     <view class="pm-picker__panel-actions">
       <text class="pm-picker__panel-action" bindtap="handleCancel">取消</text>
-      <text class="pm-picker__panel-action pm-picker__panel-action--primary" bindtap="handleConfirm">确定</text>
+      <text class="pm-picker__panel-action pm-picker__panel-action--primary" bindtap="handleConfirm"
+        >确定</text
+      >
     </view>
   </view>
 

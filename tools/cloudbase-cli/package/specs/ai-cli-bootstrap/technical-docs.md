@@ -10,14 +10,14 @@ tcb ai [options] -- [agent-args]
 
 ## 路径说明
 
-* `options` 为 AI 开发套件的配置选项，如 `-a claude`、`-e my-env` 等。
-* `agent-args` 为目标 AI CLI 工具的原生参数，通过 `--` 分隔符透传。
+- `options` 为 AI 开发套件的配置选项，如 `-a claude`、`-e my-env` 等。
+- `agent-args` 为目标 AI CLI 工具的原生参数，通过 `--` 分隔符透传。
 
 ⚠️ 注意事项
 
-* `--` 分隔符后的所有参数将原样传递给目标 AI CLI 工具，请确保参数格式正确。
-* 首次使用需要运行 `tcb ai --setup` 进行配置。
-* 确保已安装目标 AI CLI 工具，如 Claude Code、OpenAI CLI 等。
+- `--` 分隔符后的所有参数将原样传递给目标 AI CLI 工具，请确保参数格式正确。
+- 首次使用需要运行 `tcb ai --setup` 进行配置。
+- 确保已安装目标 AI CLI 工具，如 Claude Code、OpenAI CLI 等。
 
 ## 快速开始
 
@@ -31,6 +31,7 @@ tcb ai --setup
 ```
 
 配置向导将引导您：
+
 - 选择默认的 AI 工具（Claude Code、OpenAI Codex、Gemini CLI）
 - 配置 API 密钥和基础 URL
 - 设置云开发环境 ID
@@ -62,11 +63,13 @@ tcb ai -a <agent> [options] -- [agent-args]
 ```
 
 **参数说明：**
+
 - `-a, --agent <name>`: 指定 AI 工具名称（claude/codex/gemini）
 - `-e, --envId <id>`: 指定云开发环境 ID
 - `--`: 参数分隔符，后面的参数将透传给 AI 工具
 
 **使用示例：**
+
 ```bash
 # 启动 Claude Code 并继续上次会话
 tcb ai -a claude -- --continue
@@ -87,6 +90,7 @@ tcb ai --config
 ```
 
 显示当前配置信息，包括：
+
 - 默认 AI 工具
 - API 密钥状态
 - 环境 ID 配置
@@ -107,6 +111,7 @@ tcb ai --setup
 ```
 
 启动交互式配置向导，引导您完成：
+
 - AI 工具选择和配置
 - API 密钥设置
 - 云开发环境绑定
@@ -119,16 +124,19 @@ tcb ai --setup
 Claude Code 是 Anthropic 推出的 AI 编程助手，支持自然语言编程和代码生成。
 
 **安装命令：**
+
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
 **配置要求：**
+
 - API 密钥：`ANTHROPIC_API_KEY`
 - 基础 URL：`https://api.anthropic.com`
 - 支持模型：claude-3.5-sonnet, claude-3-opus 等
 
 **使用示例：**
+
 ```bash
 # 启动 Claude Code
 tcb ai -a claude -- --continue
@@ -142,16 +150,19 @@ tcb ai -a claude -- --model=claude-3.5-sonnet --max-tokens=4096
 OpenAI Codex 是 OpenAI 的代码生成 AI，基于 GPT 模型优化。
 
 **安装命令：**
+
 ```bash
 npm install -g openai
 ```
 
 **配置要求：**
+
 - API 密钥：`OPENAI_API_KEY`
 - 基础 URL：`https://api.openai.com`
 - 支持模型：gpt-4, gpt-3.5-turbo 等
 
 **使用示例：**
+
 ```bash
 # 启动 OpenAI Codex
 tcb ai -a codex -- --model=gpt-4
@@ -165,16 +176,19 @@ tcb ai -a codex -- --temperature=0.7 --max-tokens=2048
 Gemini CLI 是 Google 的 AI 编程工具，基于 Gemini 模型。
 
 **安装命令：**
+
 ```bash
 npm install -g @google/generative-ai
 ```
 
 **配置要求：**
+
 - API 密钥：`GOOGLE_API_KEY`
 - 基础 URL：`https://generativelanguage.googleapis.com`
 - 支持模型：gemini-2.0-flash, gemini-2.0-pro 等
 
 **使用示例：**
+
 ```bash
 # 启动 Gemini CLI
 tcb ai -a gemini -- --model=gemini-2.0-pro
@@ -243,6 +257,7 @@ tcb ai --template vue
 ```
 
 **支持的模板类型：**
+
 - `rules`: AI 编辑器配置模板
 - `react`: React + CloudBase 全栈应用
 - `vue`: Vue + CloudBase 全栈应用
@@ -269,15 +284,15 @@ tcb ai -a claude -e my-env -- --prompt="创建一个用户注册云函数"
 
 ```json
 {
-  "defaultAgent": "custom",
-  "agents": {
-    "custom": {
-      "command": "claude",
-      "apiKey": "sk-xxx",
-      "baseUrl": "https://api.custom-ai.com",
-      "model": "custom-model"
+    "defaultAgent": "custom",
+    "agents": {
+        "custom": {
+            "command": "claude",
+            "apiKey": "sk-xxx",
+            "baseUrl": "https://api.custom-ai.com",
+            "model": "custom-model"
+        }
     }
-  }
 }
 ```
 
@@ -315,6 +330,7 @@ tcb ai -a claude -- --continue
 **错误信息：** `⚠️ claude 工具未安装`
 
 **解决方案：**
+
 ```bash
 # 安装 Claude Code
 npm install -g @anthropic-ai/claude-code
@@ -328,6 +344,7 @@ claude doctor
 **错误信息：** `❌ API 密钥无效`
 
 **解决方案：**
+
 ```bash
 # 重新配置
 tcb ai --setup
@@ -343,6 +360,7 @@ tcb ai --setup
 **错误信息：** `❌ 网络连接失败`
 
 **解决方案：**
+
 ```bash
 # 检查网络连接
 ping api.anthropic.com
@@ -359,6 +377,7 @@ tcb ai -a claude -- --base-url=https://api.anthropic.cn
 **错误信息：** `❌ 模板下载失败`
 
 **解决方案：**
+
 ```bash
 # 检查网络连接
 curl -I https://static.cloudbase.net
@@ -418,4 +437,4 @@ tcb ai -a claude -- --verbose --continue
 
 ---
 
-上一页[云存储](./storage) 下一页[静态网站托管](./hosting) 
+上一页[云存储](./storage) 下一页[静态网站托管](./hosting)

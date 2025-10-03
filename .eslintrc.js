@@ -4,9 +4,7 @@ module.exports = {
     es6: true,
     node: true,
   },
-  extends: [
-    'eslint:recommended',
-  ],
+  extends: ['eslint:recommended'],
   globals: {
     // 微信小程序全局对象
     wx: 'readonly',
@@ -42,10 +40,13 @@ module.exports = {
   rules: {
     'no-console': 'warn',
     'no-debugger': 'error',
-    'no-unused-vars': ['warn', {
-      argsIgnorePattern: '^_',
-      varsIgnorePattern: '^_',
-    }],
+    'no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      },
+    ],
     'no-var': 'warn',
     'prefer-const': 'warn',
     'prefer-arrow-callback': 'warn',
@@ -62,9 +63,12 @@ module.exports = {
     'no-useless-call': 'error',
     'no-useless-concat': 'error',
     'no-useless-return': 'error',
-    'no-undef': ['error', {
-      typeof: false,
-    }],
+    'no-undef': [
+      'error',
+      {
+        typeof: false,
+      },
+    ],
   },
   overrides: [
     {

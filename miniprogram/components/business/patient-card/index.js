@@ -6,7 +6,7 @@ const MODE_PRESETS = {
   },
   compact: {
     cardVariant: 'elevated',
-    padding: 'var(--space-3)',
+    padding: 'var(--space-4)',
   },
   comfortable: {
     cardVariant: 'elevated',
@@ -110,6 +110,7 @@ Component({
     cardVariant: 'default',
     cardPadding: 'var(--space-4)',
     infoItems: [],
+    hasActions: false,
   },
   lifetimes: {
     attached() {
@@ -126,16 +127,32 @@ Component({
       const patient = this.data.patient || {};
       const modePreset = MODE_PRESETS[this.data.mode] || MODE_PRESETS.compact;
       const avatarText = getInitials(patient.name || patient.patientName || patient.fullName);
-      const avatarBackground = AVATAR_COLORS[hashToIndex(patient.name || patient.patientName || '', AVATAR_COLORS.length)];
-      const ageText = safeString(patient.ageText || patient.age ? `${patient.age || patient.ageText}` : '');
-      const primaryLine = safeString(patient.latestAdmissionDisplay || patient.latestEvent || patient.latestDiagnosis || patient.firstDiagnosis);
+      const avatarBackground =
+        AVATAR_COLORS[hashToIndex(patient.name || patient.patientName || '', AVATAR_COLORS.length)];
+      const ageSource =
+        patient.ageText !== undefined && patient.ageText !== null
+          ? patient.ageText
+          : patient.age !== undefined && patient.age !== null
+            ? patient.age
+            : patient.ageYears;
+      const ageText = safeString(ageSource !== undefined ? `${ageSource}` : '');
+      const primaryLine = safeString(
+        patient.latestAdmissionDisplay ||
+          patient.latestEvent ||
+          patient.latestDiagnosis ||
+          patient.firstDiagnosis
+      );
       const secondaryLine = safeString(patient.latestHospital || patient.firstHospital);
       const tags = Array.isArray(patient.tags) ? patient.tags : [];
       const infoItems = [];
 
       // P0: 最近入住时间 - 小家入住周期管理核心
       if (patient.latestAdmissionDateFormatted) {
-        infoItems.push({ label: '最近入住', value: patient.latestAdmissionDateFormatted, priority: 0 });
+        infoItems.push({
+          label: '最近入住',
+          value: patient.latestAdmissionDateFormatted,
+          priority: 0,
+        });
       } else {
         infoItems.push({ label: '最近入住', value: '未入住', priority: 0 });
       }
@@ -160,6 +177,8 @@ Component({
         infoItems.push({ label: '籍贯', value: patient.nativePlace, priority: 4 });
       }
 
+      const hasActions = Array.isArray(this.data.actions) && this.data.actions.length > 0;
+
       this.setData({
         avatarText,
         avatarBackground,
@@ -170,6 +189,7 @@ Component({
         cardVariant: modePreset.cardVariant,
         cardPadding: modePreset.padding,
         infoItems,
+        hasActions,
       });
     },
     handleCardTap() {
@@ -185,6 +205,19 @@ Component({
         event.stopPropagation();
       }
     },
+    handleActionTap(event) {
+      const action =
+        event && event.currentTarget && event.currentTarget.dataset
+          ? event.currentTarget.dataset.action
+          : undefined;
+      if (!action) {
+        return;
+      }
+      this.triggerEvent('actiontap', {
+        action,
+        patient: this.data.patient,
+      });
+    },
     handleLongPress() {
       this.triggerEvent('longpress', { patient: this.data.patient });
     },
@@ -192,7 +225,7 @@ Component({
       const { type } = event.currentTarget.dataset;
       this.triggerEvent('mediatap', {
         patient: this.data.patient,
-        mediaType: type
+        mediaType: type,
       });
       if (event && typeof event.stopPropagation === 'function') {
         event.stopPropagation();

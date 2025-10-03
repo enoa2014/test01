@@ -1,19 +1,21 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.warnLog = exports.successLog = exports.errorLog = void 0;
-const log_symbols_1 = __importDefault(require("log-symbols"));
+'use strict'
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod }
+    }
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.warnLog = exports.successLog = exports.errorLog = void 0
+const log_symbols_1 = __importDefault(require('log-symbols'))
 function errorLog(msg) {
-    console.log(`${log_symbols_1.default.error} ${msg}`);
+    console.log(`${log_symbols_1.default.error} ${msg}`)
 }
-exports.errorLog = errorLog;
+exports.errorLog = errorLog
 function successLog(msg) {
-    console.log(`${log_symbols_1.default.success} ${msg}`);
+    console.log(`${log_symbols_1.default.success} ${msg}`)
 }
-exports.successLog = successLog;
+exports.successLog = successLog
 function warnLog(msg) {
-    console.log(`${log_symbols_1.default.warning} ${msg}`);
+    console.log(`${log_symbols_1.default.warning} ${msg}`)
 }
-exports.warnLog = warnLog;
+exports.warnLog = warnLog

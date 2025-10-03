@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 /* global __wxConfig */
-const isDevelopment = typeof __wxConfig !== 'undefined' ? __wxConfig.envVersion !== 'release' : true;
+const isDevelopment =
+  typeof __wxConfig !== 'undefined' ? __wxConfig.envVersion !== 'release' : true;
 
 function debug(...args) {
   if (isDevelopment) {

@@ -35,7 +35,7 @@ describe('patientIntake updatePatient', () => {
       backupPhone: '13300000002',
       lastIntakeNarrative: 'old narrative',
       updatedAt: 1600000000000,
-      createdAt: 1590000000000
+      createdAt: 1590000000000,
     };
     cloud.__setCollectionDoc(PATIENT_COLLECTION, patientKey, { ...base, ...overrides });
   };
@@ -50,27 +50,27 @@ describe('patientIntake updatePatient', () => {
         idNumber: '1234567890',
         gender: '男',
         birthDate: 946656000000,
-        phone: '13300000000'
+        phone: '13300000000',
       },
       contactInfo: {
         address: '旧地址',
         emergencyContact: '李四',
         emergencyPhone: '13300000001',
         backupContact: '王五',
-        backupPhone: '13300000002'
+        backupPhone: '13300000002',
       },
       intakeInfo: {
         intakeTime: 1600000000000,
         situation: 'old narrative',
         followUpPlan: 'old plan',
         medicalHistory: ['糖尿病'],
-        attachments: []
+        attachments: [],
       },
       metadata: {
         submittedAt: 1600000000000,
-        lastModifiedAt: 1600000000000
+        lastModifiedAt: 1600000000000,
       },
-      updatedAt: 1600000000000
+      updatedAt: 1600000000000,
     };
     cloud.__setCollectionDoc(INTAKE_COLLECTION, intakeId, { ...base, ...overrides });
   };
@@ -95,32 +95,32 @@ describe('patientIntake updatePatient', () => {
         phone: '13311112222',
         address: '新地址',
         lastIntakeNarrative: '最新情况',
-        expectedUpdatedAt: 1600000000000
+        expectedUpdatedAt: 1600000000000,
       },
       intakeUpdates: {
         intakeId,
         expectedUpdatedAt: 1600000000000,
         basicInfo: {
           patientName: '李雷',
-          phone: '13311112222'
+          phone: '13311112222',
         },
         contactInfo: {
           address: '新地址',
           emergencyContact: '韩梅梅',
-          emergencyPhone: '13311112223'
+          emergencyPhone: '13311112223',
         },
         intakeInfo: {
           intakeTime: 1650000000000,
           followUpPlan: '新的计划',
-          situation: '最新情况'
+          situation: '最新情况',
         },
         medicalHistory: ['糖尿病', '高血压'],
-        attachments: [{ id: 'att-1', displayName: '方案.pdf' }]
+        attachments: [{ id: 'att-1', displayName: '方案.pdf' }],
       },
       audit: {
         message: '患者详情页内联编辑',
-        changes: ['patientName', 'phone', 'followUpPlan']
-      }
+        changes: ['patientName', 'phone', 'followUpPlan'],
+      },
     });
 
     expect(result.success).toBe(true);
@@ -155,13 +155,13 @@ describe('patientIntake updatePatient', () => {
       patientKey,
       patientUpdates: {
         patientName: '李雷',
-        expectedUpdatedAt: 1500000000000
+        expectedUpdatedAt: 1500000000000,
       },
       intakeUpdates: {
         intakeId,
-        expectedUpdatedAt: 1600000000000
+        expectedUpdatedAt: 1600000000000,
       },
-      audit: {}
+      audit: {},
     });
 
     expect(result.success).toBe(false);
@@ -178,13 +178,13 @@ describe('patientIntake updatePatient', () => {
       action: 'updatePatient',
       patientKey,
       patientUpdates: {
-        expectedUpdatedAt: 1600000000000
+        expectedUpdatedAt: 1600000000000,
       },
       intakeUpdates: {
         intakeId,
-        expectedUpdatedAt: 1500000000000
+        expectedUpdatedAt: 1500000000000,
       },
-      audit: {}
+      audit: {},
     });
 
     expect(result.success).toBe(false);
@@ -201,17 +201,16 @@ describe('patientIntake updatePatient', () => {
       action: 'updatePatient',
       patientKey,
       patientUpdates: {
-        expectedUpdatedAt: 1600000000000
+        expectedUpdatedAt: 1600000000000,
       },
       intakeUpdates: {
         intakeId,
-        expectedUpdatedAt: 1600000000000
+        expectedUpdatedAt: 1600000000000,
       },
-      audit: {}
+      audit: {},
     });
 
     expect(result.success).toBe(false);
     expect(result.error.code).toBe('NO_CHANGES');
   });
 });
-

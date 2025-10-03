@@ -5,6 +5,7 @@
 本报告对微信小程序中的住户档案详情页面（`patient-detail`）进行了全面的用户体验和界面设计分析。该页面是住户管理系统的核心界面，集成了信息展示、编辑、入住记录管理和资料文件管理等多个功能模块。
 
 **主要发现：**
+
 - ✅ **优势**：功能完整、设计系统规范、编辑流程安全可靠
 - ⚠️ **关键问题**：信息密度过高、视觉层次不清晰、移动端交互体验需优化
 - 🎯 **改进潜力**：通过渐进式信息展示、优化视觉层次和增强移动端交互可显著提升用户体验
@@ -67,16 +68,19 @@
 #### ❌ 问题 1.1：信息过载（Critical）
 
 **现状：**
+
 - 页面包含 7 个主要功能模块，垂直滚动距离过长
 - 所有信息一次性展示，无渐进式加载或折叠机制
 - 用户需要滚动 3-5 屏才能浏览完整页面
 
 **影响：**
+
 - 认知负荷过高，用户难以快速找到关键信息
 - 移动端体验差，频繁滚动导致操作疲劳
 - 核心功能（如编辑、查看最新记录）被淹没在大量信息中
 
 **建议：**
+
 ```javascript
 // 优先级：P0（高）
 // 实施方案：
@@ -89,25 +93,35 @@
 #### ⚠️ 问题 1.2：模式切换视觉跳跃
 
 **现状：**
+
 - 编辑模式与浏览模式切换时，页面内容完全替换
 - 表单区域（编辑）与信息展示区（浏览）无过渡动画
 - 用户点击"编辑资料"后，下方内容瞬间消失
 
 **影响：**
+
 - 视觉连续性差，用户容易迷失当前位置
 - 编辑取消后需要重新定位到之前浏览位置
 
 **建议：**
+
 ```css
 /* 优先级：P1（中）
 /* 添加淡入淡出过渡 */
-.form-section, .info-section {
+.form-section,
+.info-section {
   animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10rpx); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 ```
 
@@ -120,11 +134,13 @@
 #### ✅ 优势：设计 Token 系统完善
 
 **现状分析：**
+
 - 使用 `design-tokens.json` 统一管理颜色、间距、字体、阴影等设计变量
 - 所有样式引用 CSS 变量（如 `var(--color-primary)`），易于维护
 - 设计规范完整，包含 8 级间距系统（0-16）、5 种阴影层次
 
 **代码示例：**
+
 ```css
 /* detail.wxss 中的规范使用 */
 .patient-header {
@@ -140,15 +156,20 @@
 #### ❌ 问题 2.1：卡片层次不够清晰（High）
 
 **现状：**
+
 - 所有信息块使用相同的卡片样式（白色背景 + 基础阴影）
 - 缺少视觉权重差异，无法快速区分核心与次要信息
 - 住户头部与下方信息区视觉重要性相同
 
 **对比分析：**
+
 ```css
 /* 当前实现 - 所有卡片样式相同 */
-.info-section, .form-section, .intake-records-section,
-.operation-log-section, .media-section {
+.info-section,
+.form-section,
+.intake-records-section,
+.operation-log-section,
+.media-section {
   background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
@@ -157,6 +178,7 @@
 ```
 
 **建议：**
+
 ```css
 /* 优先级：P0（高）
 /* 核心信息区增强 */
@@ -181,11 +203,13 @@
 #### ⚠️ 问题 2.2：色彩使用单调
 
 **现状：**
+
 - 主要使用灰度系统（白、浅灰、深灰），品牌色使用不足
 - 仅在按钮和 Tab 切换时使用蓝色（`--color-info`）
 - 缺少色彩引导和视觉焦点
 
 **建议：**
+
 ```css
 /* 优先级：P1（中）
 /* 为不同信息类型添加色彩线索 */
@@ -209,23 +233,28 @@
 #### ⚠️ 问题 2.3：文本对比度不足
 
 **现状：**
+
 ```css
 /* 当前次要文本颜色 */
-.label, .field-label {
+.label,
+.field-label {
   color: var(--color-text-secondary); /* #595959 */
 }
 ```
 
 **WCAG 合规性检查：**
+
 - 背景 `#FFFFFF` + 文字 `#595959` = 对比度 **4.75:1**
 - 标准要求：AA 级（正常文本）需 **≥4.5:1** ✅ 勉强通过
 - AAA 级（正常文本）需 **≥7:1** ❌ 未达标
 
 **建议：**
+
 ```css
 /* 优先级：P2（低）
 /* 提升次要文本对比度 */
-.label, .field-label {
+.label,
+.field-label {
   color: var(--color-text-primary); /* #262626, 对比度 15.3:1 */
   font-size: var(--text-xs); /* 通过字号区分层次 */
   opacity: 0.7; /* 而非使用低对比度颜色 */
@@ -241,13 +270,15 @@
 #### ✅ 优势：安全可靠的编辑机制
 
 **现状分析：**
+
 1. **防丢失保护**：
+
    ```javascript
    // detail.js:686-692
    if (wx.enableAlertBeforeUnload && wx.disableAlertBeforeUnload) {
      if (dirty) {
        wx.enableAlertBeforeUnload({
-         message: '当前编辑内容尚未保存，确定离开吗？'
+         message: '当前编辑内容尚未保存，确定离开吗？',
        });
      }
    }
@@ -262,12 +293,14 @@
    - 保存前全量验证（`validateAllFields`）
 
 **优势：**
+
 - 用户数据安全，误操作风险低
 - 符合企业级应用标准
 
 #### ❌ 问题 3.1：编辑按钮可用性差（Critical）
 
 **现状：**
+
 ```wxml
 <!-- detail.wxml:27-42 -->
 <view class="edit-toolbar">
@@ -285,17 +318,19 @@
 ```
 
 **问题分析：**
+
 1. **视觉不明确**：
    - 按钮无图标，仅文字说明
    - "暂存"与"保存"的区别不清晰
    - 禁用状态（`disabled`）仅通过颜色变淡表示
 
 2. **移动端触控问题**：
-   - 按钮高度 `~60rpx`（计算：padding 16rpx*2 + 文字 28rpx）
+   - 按钮高度 `~60rpx`（计算：padding 16rpx\*2 + 文字 28rpx）
    - 建议触控目标 ≥88rpx（iOS HIG）
    - 当前尺寸导致误触风险
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P0（高） -->
 <view class="edit-toolbar">
@@ -358,6 +393,7 @@
 #### ⚠️ 问题 3.2：选择器（Picker）用户体验差
 
 **现状：**
+
 ```wxml
 <!-- detail.wxml:54-68 - 原生Picker组件 -->
 <picker mode="selector" range="{{item.options}}"
@@ -370,6 +406,7 @@
 ```
 
 **问题分析：**
+
 1. **视觉一致性差**：
    - 原生 Picker 样式与自定义 `pm-input` 组件不一致
    - 缺少下拉箭头图标提示
@@ -380,6 +417,7 @@
    - 无加载或焦点动画
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P1（中） -->
 <!-- 使用自定义 pm-picker 组件统一交互 -->
@@ -425,6 +463,7 @@
 #### ❌ 问题 3.3：错误提示不够显眼（High）
 
 **现状：**
+
 ```css
 /* detail.wxss:609-612 */
 .field-error {
@@ -434,11 +473,13 @@
 ```
 
 **问题：**
+
 - 错误文字过小，老年用户难以阅读
 - 仅依赖文字，缺少图标强化
 - 无动画提示，用户易忽略
 
 **建议：**
+
 ```css
 /* 优先级：P0（高） */
 .field-error {
@@ -456,9 +497,16 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4rpx); }
-  75% { transform: translateX(4rpx); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4rpx);
+  }
+  75% {
+    transform: translateX(4rpx);
+  }
 }
 ```
 
@@ -467,6 +515,7 @@
 #### ✅ 优势：排序功能设计良好
 
 **现状分析：**
+
 ```wxml
 <!-- detail.wxml:248-256 -->
 <view class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}"
@@ -479,6 +528,7 @@
 ```
 
 **优势：**
+
 - 图标 + 文字双重提示，语义清晰
 - 状态样式明确（`desc` / `asc` 不同颜色）
 - 符合用户心智模型（▼ = 降序，▲ = 升序）
@@ -486,11 +536,13 @@
 #### ⚠️ 问题 3.4：记录展开/折叠缺失
 
 **现状：**
+
 - 所有入住记录完全展开显示
 - 每条记录包含"就诊情况"和"医疗情况"两大块
 - 多条记录时页面极长
 
 **建议：**
+
 ```javascript
 // 优先级：P1（中）
 // 默认仅展示最新 3 条记录，其余折叠
@@ -532,36 +584,39 @@ onToggleAllRecords() {
 #### ⚠️ 问题 4.1：信息分组不够直观
 
 **当前分组：**
+
 1. 住户基本信息（姓名、性别、出生日期、身份证号、籍贯、民族、照护人）
 2. 联系信息（家庭地址、父母、监护人、紧急联系人）
 3. 经济情况（家庭经济情况）
 
 **问题：**
+
 - "照护人"放在"基本信息"中不够合理（应属于医疗/护理相关）
 - "经济情况"单独一个分组，但仅 1 个字段
 - 缺少"医疗信息"专属分组（病史、过敏等）
 
 **建议重组：**
+
 ```javascript
 // 优先级：P2（低）
 // 更符合用户认知的信息分组
 const RESTRUCTURED_SECTIONS = {
   personalInfo: {
     title: '个人身份',
-    fields: ['姓名', '性别', '出生日期', '身份证号', '籍贯', '民族']
+    fields: ['姓名', '性别', '出生日期', '身份证号', '籍贯', '民族'],
   },
   contactInfo: {
     title: '联系方式',
-    fields: ['家庭地址', '紧急联系人', '紧急联系电话', '备用联系人']
+    fields: ['家庭地址', '紧急联系人', '紧急联系电话', '备用联系人'],
   },
   familyInfo: {
     title: '家庭关系',
-    fields: ['父亲联系方式', '母亲联系方式', '其他监护人', '家庭经济情况']
+    fields: ['父亲联系方式', '母亲联系方式', '其他监护人', '家庭经济情况'],
   },
   careInfo: {
     title: '护理信息',
-    fields: ['主要照护人', '特殊护理需求', '饮食偏好']
-  }
+    fields: ['主要照护人', '特殊护理需求', '饮食偏好'],
+  },
 };
 ```
 
@@ -570,6 +625,7 @@ const RESTRUCTURED_SECTIONS = {
 #### ⚠️ 问题 4.2：字段标签不一致
 
 **现状示例：**
+
 ```javascript
 // constants.js 中的字段配置
 { key: 'emergencyContact', label: '紧急联系人' }
@@ -577,6 +633,7 @@ const RESTRUCTURED_SECTIONS = {
 ```
 
 **vs 页面展示：**
+
 ```wxml
 <!-- detail.wxml:565-573 -->
 <text class="label">紧急联系人</text>
@@ -584,10 +641,12 @@ const RESTRUCTURED_SECTIONS = {
 ```
 
 **问题：**
+
 - 字段标签过长，移动端显示拥挤
 - 无简写规范，不同上下文显示不一致
 
 **建议：**
+
 ```javascript
 // 优先级：P2（低）
 // 引入响应式标签系统
@@ -595,13 +654,13 @@ const FIELD_LABELS = {
   emergencyContact: {
     full: '紧急联系人',
     short: '联系人',
-    mobile: '紧急'
+    mobile: '紧急',
   },
   emergencyPhone: {
     full: '紧急联系电话',
     short: '电话',
-    mobile: '电话'
-  }
+    mobile: '电话',
+  },
 };
 
 // 根据屏幕宽度自动选择
@@ -621,6 +680,7 @@ function getLabel(key, screenWidth) {
 #### ✅ 优势：完善的验证机制
 
 **现状分析：**
+
 ```javascript
 // form-utils.js 中的验证逻辑
 function validateField(key, value, form) {
@@ -647,6 +707,7 @@ function validateField(key, value, form) {
 ```
 
 **优势：**
+
 - 三层验证（必填 → 格式 → 关联），覆盖全面
 - 错误信息具体，易于理解
 - 实时验证 + 提交前校验，双重保障
@@ -654,6 +715,7 @@ function validateField(key, value, form) {
 #### ⚠️ 问题 5.1：错误汇总弹窗体验差
 
 **现状：**
+
 ```javascript
 // detail.js:779-799
 async showValidationErrors(errors) {
@@ -676,6 +738,7 @@ async showValidationErrors(errors) {
 ```
 
 **问题：**
+
 1. **文本密度高**：
    - 多个错误堆叠在弹窗中，可读性差
    - 无法快速定位到具体字段
@@ -685,6 +748,7 @@ async showValidationErrors(errors) {
    - 需要手动滚动找到第一个错误字段
 
 **建议：**
+
 ```javascript
 // 优先级：P1（中）
 // 方案 1：内联错误提示 + Toast 汇总
@@ -734,8 +798,13 @@ highlightErrorFields(keys) {
 }
 
 @keyframes errorPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4); }
-  50% { box-shadow: 0 0 0 10rpx rgba(255, 77, 79, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10rpx rgba(255, 77, 79, 0);
+  }
 }
 ```
 
@@ -744,6 +813,7 @@ highlightErrorFields(keys) {
 #### ✅ 优势：智能草稿恢复
 
 **现状分析：**
+
 ```javascript
 // detail.js:730-756
 async onEditStart() {
@@ -765,6 +835,7 @@ async onEditStart() {
 ```
 
 **优势：**
+
 - 自动检测草稿，用户无需手动查找
 - 显示草稿时间，帮助用户判断新鲜度
 - 明确的选择（恢复 vs 放弃），避免误操作
@@ -772,6 +843,7 @@ async onEditStart() {
 #### ⚠️ 问题 5.2：草稿保存提示不够明显
 
 **现状：**
+
 ```javascript
 // detail.js:860-875
 onSaveDraft() {
@@ -789,11 +861,13 @@ onSaveDraft() {
 ```
 
 **问题：**
+
 - 仅通过 Toast 提示，2 秒后消失
 - 无持久化视觉反馈（如草稿角标）
 - 用户不知道草稿保存位置和有效期
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P2（低） -->
 <!-- 在编辑模式横幅中显示草稿状态 -->
@@ -848,6 +922,7 @@ updateDraftAgeTimer() {
 #### ✅ 优势：清晰的配额可视化
 
 **现状分析：**
+
 ```wxml
 <!-- detail.wxml:336-365 - 配额进度条 -->
 <view class="media-quota">
@@ -866,6 +941,7 @@ updateDraftAgeTimer() {
 ```
 
 **优势：**
+
 - 双重指标（数量 + 容量），信息完整
 - 颜色编码（绿色 < 70% < 黄色 < 90% < 红色），直观
 - 百分比进度条，易于理解
@@ -873,10 +949,12 @@ updateDraftAgeTimer() {
 #### ⚠️ 问题 6.1：配额警告缺少操作引导
 
 **现状：**
+
 - 当配额达到 90% 时，进度条变红
 - 仅视觉反馈,无文字说明或操作建议
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P1（中） -->
 <view class="quota-item">
@@ -909,8 +987,13 @@ updateDraftAgeTimer() {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .quota-warning-text {
@@ -931,6 +1014,7 @@ updateDraftAgeTimer() {
 #### ⚠️ 问题 6.2：Tab 切换无过渡动画
 
 **现状：**
+
 ```wxml
 <!-- detail.wxml:399-504 - 内容直接替换 -->
 <view wx:if="{{media.tab === 'images'}}">
@@ -943,10 +1027,12 @@ updateDraftAgeTimer() {
 ```
 
 **问题：**
+
 - 内容瞬间切换，无过渡效果
 - 视觉跳跃感强，用户体验差
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P1（中） -->
 <!-- 使用 swiper 组件实现滑动切换 -->
@@ -981,6 +1067,7 @@ onMediaSwiperChange(event) {
 #### ❌ 问题 6.3：删除操作确认不够安全（High）
 
 **现状：**
+
 ```javascript
 // detail.js:1495-1524
 async onDeleteMediaTap(event) {
@@ -998,6 +1085,7 @@ async onDeleteMediaTap(event) {
 ```
 
 **问题：**
+
 1. **确认弹窗信息不足**：
    - 未显示文件名，用户不确定删除对象
    - 无文件预览，可能误删重要文件
@@ -1007,6 +1095,7 @@ async onDeleteMediaTap(event) {
    - 无"回收站"或"撤销"功能
 
 **建议：**
+
 ```javascript
 // 优先级：P0（高）
 async onDeleteMediaTap(event) {
@@ -1115,6 +1204,7 @@ onUndoDelete() {
 #### ❌ 问题 7.1：文档表格在小屏幕上不可用（Critical）
 
 **现状：**
+
 ```wxml
 <!-- detail.wxml:456-501 - 固定列宽表格 -->
 <view class="media-table">
@@ -1131,15 +1221,28 @@ onUndoDelete() {
 
 ```css
 /* detail.wxss:464-490 - 固定 flex 比例 */
-.media-cell.name { flex: 2.6; }
-.media-cell.type { flex: 1; }
-.media-cell.size { flex: 1.2; }
-.media-cell.time { flex: 1.8; }
-.media-cell.uploader { flex: 1.2; }
-.media-cell.actions { flex: 1.8; }
+.media-cell.name {
+  flex: 2.6;
+}
+.media-cell.type {
+  flex: 1;
+}
+.media-cell.size {
+  flex: 1.2;
+}
+.media-cell.time {
+  flex: 1.8;
+}
+.media-cell.uploader {
+  flex: 1.2;
+}
+.media-cell.actions {
+  flex: 1.8;
+}
 ```
 
 **问题：**
+
 1. **小屏幕溢出**：
    - iPhone SE (375px 宽度) 上，表格内容被压缩
    - 文件名（flex: 2.6）仍然显示不全
@@ -1150,6 +1253,7 @@ onUndoDelete() {
    - 在小屏幕上难以阅读
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P0（高） -->
 <!-- 方案：小屏幕下切换为卡片布局 -->
@@ -1270,11 +1374,13 @@ onLoad() {
 #### ⚠️ 问题 7.2：缺少无障碍标签（ARIA）
 
 **现状：**
+
 - 所有交互元素使用 `<view>` 标签
 - 无 `role`、`aria-label` 等无障碍属性
 - 屏幕阅读器无法正确识别功能
 
 **示例问题代码：**
+
 ```wxml
 <!-- detail.wxml:27 - 编辑按钮无语义 -->
 <view class="edit-button" bindtap="onEditStart">编辑资料</view>
@@ -1284,6 +1390,7 @@ onLoad() {
 ```
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P2（低） -->
 <!-- 增加无障碍属性 -->
@@ -1313,10 +1420,12 @@ onLoad() {
 #### ⚠️ 问题 7.3：键盘导航支持不足
 
 **现状：**
+
 - 无 `tabindex` 设置，键盘用户无法聚焦到自定义按钮
 - 缺少 `:focus` 样式，无焦点反馈
 
 **建议：**
+
 ```css
 /* 优先级：P2（低） */
 /* 为所有可交互元素添加焦点样式 */
@@ -1361,6 +1470,7 @@ onLoad() {
 #### ⚠️ 问题 8.1：所有数据一次性加载
 
 **现状分析：**
+
 ```javascript
 // detail.js:163-243 - onLoad 中并行加载 3 个接口
 async fetchPatientDetail() {
@@ -1387,11 +1497,13 @@ async fetchPatientDetail() {
 ```
 
 **问题：**
+
 - 首次渲染需要等待所有数据加载完成（可能 2-5 秒）
 - 用户在加载期间仅看到"正在加载住户信息…"文字
 - 入住记录（可能很多）和媒体文件（非关键）也同步加载
 
 **建议：**
+
 ```javascript
 // 优先级：P1（中）
 // 分阶段加载：核心信息 → 次要信息 → 媒体文件
@@ -1435,17 +1547,20 @@ setupLazyLoadMedia() {
 #### ❌ 问题 8.2：加载状态过于简单（High）
 
 **现状：**
+
 ```wxml
 <!-- detail.wxml:2 - 仅纯文字提示 -->
 <view wx:if="{{loading}}" class="placeholder">正在加载住户信息…</view>
 ```
 
 **问题：**
+
 - 无内容预览，用户无法预判页面结构
 - 纯文字枯燥，等待体验差
 - 无进度指示，用户不知道还需等待多久
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P0（高） -->
 <!-- 使用骨架屏提升感知速度 -->
@@ -1488,8 +1603,12 @@ setupLazyLoadMedia() {
 }
 
 @keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-header {
@@ -1533,9 +1652,15 @@ setupLazyLoadMedia() {
   margin-bottom: var(--space-2);
 }
 
-.skeleton-row:nth-child(2) { width: 100%; }
-.skeleton-row:nth-child(3) { width: 85%; }
-.skeleton-row:nth-child(4) { width: 95%; }
+.skeleton-row:nth-child(2) {
+  width: 100%;
+}
+.skeleton-row:nth-child(3) {
+  width: 85%;
+}
+.skeleton-row:nth-child(4) {
+  width: 95%;
+}
 ```
 
 ### 8.3 图片加载优化
@@ -1543,6 +1668,7 @@ setupLazyLoadMedia() {
 #### ⚠️ 问题 8.3：照片墙无懒加载
 
 **现状：**
+
 ```wxml
 <!-- detail.wxml:401-447 - 所有图片同时加载 -->
 <view class="media-grid">
@@ -1553,11 +1679,13 @@ setupLazyLoadMedia() {
 ```
 
 **问题：**
+
 - 20 张图片同时请求，带宽占用高
 - 首屏可见区域外的图片也立即加载
 - 移动网络环境下体验差
 
 **建议：**
+
 ```wxml
 <!-- 优先级：P1（中） -->
 <!-- 使用 lazy-load 属性 -->
@@ -1599,43 +1727,43 @@ onImageError(event) {
 
 ### 9.1 P0 级别（关键问题，必须修复）
 
-| 问题编号 | 问题描述 | 影响范围 | 预估工时 |
-|---------|---------|---------|---------|
-| 1.1 | 信息过载 - 添加折叠面板 | 整体用户体验 | 3 天 |
-| 2.1 | 卡片层次不清晰 - 优化视觉权重 | 信息可读性 | 2 天 |
-| 3.1 | 编辑按钮触控目标过小 | 移动端可用性 | 1 天 |
-| 6.3 | 删除操作缺少撤销机制 | 数据安全 | 2 天 |
-| 7.1 | 文档表格移动端不可用 | 核心功能 | 3 天 |
-| 8.2 | 加载骨架屏实现 | 感知性能 | 2 天 |
+| 问题编号 | 问题描述                      | 影响范围     | 预估工时 |
+| -------- | ----------------------------- | ------------ | -------- |
+| 1.1      | 信息过载 - 添加折叠面板       | 整体用户体验 | 3 天     |
+| 2.1      | 卡片层次不清晰 - 优化视觉权重 | 信息可读性   | 2 天     |
+| 3.1      | 编辑按钮触控目标过小          | 移动端可用性 | 1 天     |
+| 6.3      | 删除操作缺少撤销机制          | 数据安全     | 2 天     |
+| 7.1      | 文档表格移动端不可用          | 核心功能     | 3 天     |
+| 8.2      | 加载骨架屏实现                | 感知性能     | 2 天     |
 
 **总计：13 天**
 
 ### 9.2 P1 级别（重要问题，优先修复）
 
-| 问题编号 | 问题描述 | 影响范围 | 预估工时 |
-|---------|---------|---------|---------|
-| 1.2 | 编辑/浏览模式切换动画 | 视觉连续性 | 1 天 |
-| 2.2 | 色彩引导优化 | 视觉吸引力 | 1 天 |
-| 3.2 | Picker 组件统一化 | 表单一致性 | 2 天 |
-| 3.4 | 入住记录折叠展开 | 信息密度 | 1 天 |
-| 5.1 | 错误提示优化（高亮+滚动） | 表单可用性 | 2 天 |
-| 6.1 | 配额警告引导 | 用户引导 | 1 天 |
-| 6.2 | Tab 切换动画 | 视觉流畅度 | 1 天 |
-| 8.1 | 分阶段数据加载 | 实际性能 | 3 天 |
-| 8.3 | 图片懒加载 | 网络性能 | 1 天 |
+| 问题编号 | 问题描述                  | 影响范围   | 预估工时 |
+| -------- | ------------------------- | ---------- | -------- |
+| 1.2      | 编辑/浏览模式切换动画     | 视觉连续性 | 1 天     |
+| 2.2      | 色彩引导优化              | 视觉吸引力 | 1 天     |
+| 3.2      | Picker 组件统一化         | 表单一致性 | 2 天     |
+| 3.4      | 入住记录折叠展开          | 信息密度   | 1 天     |
+| 5.1      | 错误提示优化（高亮+滚动） | 表单可用性 | 2 天     |
+| 6.1      | 配额警告引导              | 用户引导   | 1 天     |
+| 6.2      | Tab 切换动画              | 视觉流畅度 | 1 天     |
+| 8.1      | 分阶段数据加载            | 实际性能   | 3 天     |
+| 8.3      | 图片懒加载                | 网络性能   | 1 天     |
 
 **总计：13 天**
 
 ### 9.3 P2 级别（次要问题，条件允许时修复）
 
-| 问题编号 | 问题描述 | 影响范围 | 预估工时 |
-|---------|---------|---------|---------|
-| 2.3 | 文本对比度优化 | 可访问性 | 0.5 天 |
-| 4.1 | 信息分组逻辑重构 | 信息架构 | 2 天 |
-| 4.2 | 字段标签响应式 | 细节优化 | 1 天 |
-| 5.2 | 草稿状态持久化显示 | 用户反馈 | 1 天 |
-| 7.2 | ARIA 无障碍标签 | 辅助功能 | 2 天 |
-| 7.3 | 键盘导航支持 | 辅助功能 | 2 天 |
+| 问题编号 | 问题描述           | 影响范围 | 预估工时 |
+| -------- | ------------------ | -------- | -------- |
+| 2.3      | 文本对比度优化     | 可访问性 | 0.5 天   |
+| 4.1      | 信息分组逻辑重构   | 信息架构 | 2 天     |
+| 4.2      | 字段标签响应式     | 细节优化 | 1 天     |
+| 5.2      | 草稿状态持久化显示 | 用户反馈 | 1 天     |
+| 7.2      | ARIA 无障碍标签    | 辅助功能 | 2 天     |
+| 7.3      | 键盘导航支持       | 辅助功能 | 2 天     |
 
 **总计：8.5 天**
 
@@ -1648,17 +1776,20 @@ onImageError(event) {
 **目标：解决影响用户完成核心任务的关键问题**
 
 **Week 1:**
+
 - ✅ 信息过载折叠优化（1.1）
 - ✅ 编辑按钮移动端适配（3.1）
 - ✅ 文档表格响应式重构（7.1）
 - ✅ 加载骨架屏实现（8.2）
 
 **Week 2:**
+
 - ✅ 卡片视觉层次优化（2.1）
 - ✅ 删除撤销机制（6.3）
 - ✅ 分阶段数据加载（8.1）
 
 **验收标准：**
+
 - [ ] 移动端（375px 宽度）全功能可用
 - [ ] 首屏加载时间 < 1.5 秒
 - [ ] 用户误操作率降低 60%
@@ -1668,18 +1799,21 @@ onImageError(event) {
 **目标：提升操作流畅度和视觉反馈**
 
 **Week 3:**
+
 - ✅ Picker 组件统一（3.2）
 - ✅ 表单错误提示优化（5.1）
 - ✅ 入住记录折叠（3.4）
 - ✅ 图片懒加载（8.3）
 
 **Week 4:**
+
 - ✅ 编辑模式切换动画（1.2）
 - ✅ Tab 切换优化（6.2）
 - ✅ 色彩引导系统（2.2）
 - ✅ 配额警告引导（6.1）
 
 **验收标准：**
+
 - [ ] 所有交互有明确反馈（≤ 100ms）
 - [ ] 表单填写错误率降低 40%
 - [ ] 用户满意度评分 > 4.2/5
@@ -1689,6 +1823,7 @@ onImageError(event) {
 **目标：覆盖特殊场景和辅助功能**
 
 **Week 5:**
+
 - ✅ 信息分组逻辑优化（4.1）
 - ✅ ARIA 标签完善（7.2）
 - ✅ 键盘导航支持（7.3）
@@ -1696,6 +1831,7 @@ onImageError(event) {
 - ✅ 草稿状态显示（5.2）
 
 **验收标准：**
+
 - [ ] WCAG 2.1 AA 级合规
 - [ ] 屏幕阅读器兼容性测试通过
 - [ ] 键盘可完成所有操作
@@ -1706,28 +1842,30 @@ onImageError(event) {
 
 ### 11.1 量化指标
 
-| 指标类别 | 当前状态 | 目标值 | 测量方法 |
-|---------|---------|-------|---------|
-| **性能指标** |
-| 首屏加载时间 | 3.2s | < 1.5s | Performance API |
-| 页面总加载时间 | 6.8s | < 3.5s | Performance API |
-| 骨架屏显示延迟 | N/A | < 200ms | Time to First Paint |
-| **可用性指标** |
-| 移动端触控成功率 | 78% | > 95% | 热图分析 |
-| 表单填写错误率 | 32% | < 15% | 错误提交统计 |
-| 编辑取消率 | 45% | < 25% | 用户行为分析 |
-| **体验指标** |
-| 用户满意度评分 | 3.6/5 | > 4.2/5 | 问卷调查 |
-| 任务完成率 | 68% | > 85% | A/B 测试 |
-| 平均操作时长 | 4.5分钟 | < 3分钟 | 行为路径分析 |
+| 指标类别         | 当前状态 | 目标值  | 测量方法            |
+| ---------------- | -------- | ------- | ------------------- |
+| **性能指标**     |
+| 首屏加载时间     | 3.2s     | < 1.5s  | Performance API     |
+| 页面总加载时间   | 6.8s     | < 3.5s  | Performance API     |
+| 骨架屏显示延迟   | N/A      | < 200ms | Time to First Paint |
+| **可用性指标**   |
+| 移动端触控成功率 | 78%      | > 95%   | 热图分析            |
+| 表单填写错误率   | 32%      | < 15%   | 错误提交统计        |
+| 编辑取消率       | 45%      | < 25%   | 用户行为分析        |
+| **体验指标**     |
+| 用户满意度评分   | 3.6/5    | > 4.2/5 | 问卷调查            |
+| 任务完成率       | 68%      | > 85%   | A/B 测试            |
+| 平均操作时长     | 4.5分钟  | < 3分钟 | 行为路径分析        |
 | **可访问性指标** |
-| WCAG 合规等级 | 部分 A | AA | 自动化检测工具 |
-| 屏幕阅读器成功率 | 未测试 | > 90% | 人工测试 |
+| WCAG 合规等级    | 部分 A   | AA      | 自动化检测工具      |
+| 屏幕阅读器成功率 | 未测试   | > 90%   | 人工测试            |
 
 ### 11.2 用户反馈收集
 
 **方法：**
+
 1. **内置反馈入口**：
+
    ```wxml
    <!-- 页面右上角添加反馈按钮 -->
    <view class="feedback-button" bindtap="onFeedbackTap">
@@ -1736,6 +1874,7 @@ onImageError(event) {
    ```
 
 2. **关键操作后弹窗**：
+
    ```javascript
    // 编辑保存成功后
    async onSaveTap() {
@@ -1780,16 +1919,19 @@ onImageError(event) {
 ### 12.1 核心发现
 
 #### ✅ **当前优势**
+
 1. **设计系统成熟**：Design Token 体系完善，样式统一可维护
 2. **功能完整**：编辑、验证、草稿、媒体管理等核心功能齐全
 3. **数据安全**：防误操作机制完善（二次确认、草稿恢复）
 
 #### ❌ **关键短板**
+
 1. **信息密度过高**：7 个功能模块堆叠，无渐进式展示
 2. **移动端体验差**：触控目标过小、表格不可用、滚动距离长
 3. **视觉层次不清**：所有卡片样式相同,缺少焦点引导
 
 #### 🎯 **最高优先级改进**
+
 1. **折叠面板系统**：降低认知负荷 → 预计提升任务完成率 25%
 2. **移动端重构**：文档表格卡片化 → 解决小屏幕不可用问题
 3. **骨架屏加载**：提升感知速度 → 预计降低跳出率 30%
@@ -1797,6 +1939,7 @@ onImageError(event) {
 ### 12.2 实施建议
 
 **阶段性推进策略：**
+
 ```
 第一阶段（2周）：核心可用性修复
   → 移动端全功能可用
@@ -1812,6 +1955,7 @@ onImageError(event) {
 ```
 
 **技术实施要点：**
+
 1. **组件化优先**：
    - 抽象 `<collapse-panel>` 折叠面板组件
    - 统一 `<pm-picker>` 替代原生 picker
@@ -1851,6 +1995,7 @@ onImageError(event) {
 ### A. 设计规范速查
 
 **间距系统：**
+
 ```javascript
 space-1: 8rpx   // 小间距（图标与文字）
 space-2: 16rpx  // 常规间距（段落、卡片内部）
@@ -1860,6 +2005,7 @@ space-5: 40rpx  // 特大间距（区域分隔）
 ```
 
 **色彩用途：**
+
 ```javascript
 primary: #2E86AB   // 品牌色（强调、链接）
 info: #1890FF      // 信息色（按钮、Tab）
@@ -1869,6 +2015,7 @@ danger: #FF4D4F    // 危险色（删除、错误）
 ```
 
 **字体层级：**
+
 ```javascript
 text-xs: 20rpx    // 辅助说明、时间戳
 text-sm: 24rpx    // 次要内容、标签
@@ -1880,15 +2027,15 @@ text-xl: 44rpx    // 主标题（住户姓名）
 
 ### B. 相关文件清单
 
-| 文件路径 | 功能说明 | 代码行数 |
-|---------|---------|---------|
-| `miniprogram/pages/patient-detail/detail.wxml` | 页面结构 | 521 行 |
-| `miniprogram/pages/patient-detail/detail.wxss` | 页面样式 | 693 行 |
-| `miniprogram/pages/patient-detail/detail.js` | 核心逻辑 | 1566 行 |
-| `miniprogram/pages/patient-detail/constants.js` | 字段配置 | ~100 行 |
-| `miniprogram/pages/patient-detail/form-utils.js` | 表单工具 | ~200 行 |
-| `miniprogram/pages/patient-detail/media-service.js` | 媒体管理 | ~400 行 |
-| `design-tokens.json` | 设计变量 | 126 行 |
+| 文件路径                                            | 功能说明 | 代码行数 |
+| --------------------------------------------------- | -------- | -------- |
+| `miniprogram/pages/patient-detail/detail.wxml`      | 页面结构 | 521 行   |
+| `miniprogram/pages/patient-detail/detail.wxss`      | 页面样式 | 693 行   |
+| `miniprogram/pages/patient-detail/detail.js`        | 核心逻辑 | 1566 行  |
+| `miniprogram/pages/patient-detail/constants.js`     | 字段配置 | ~100 行  |
+| `miniprogram/pages/patient-detail/form-utils.js`    | 表单工具 | ~200 行  |
+| `miniprogram/pages/patient-detail/media-service.js` | 媒体管理 | ~400 行  |
+| `design-tokens.json`                                | 设计变量 | 126 行   |
 
 **总计：~3600 行代码**
 

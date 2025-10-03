@@ -11,6 +11,7 @@
 Excel文件导入的原始数据，作为数据源。
 
 **新增同步字段**：
+
 ```javascript
 {
   // 现有字段...
@@ -25,6 +26,7 @@ Excel文件导入的原始数据，作为数据源。
 患者基础信息的主表，由Excel数据同步生成并可由入住向导更新。
 
 **字段定义**：
+
 ```javascript
 {
   _id: String,                    // 患者Key（格式：P{timestamp}_{uuid}）
@@ -65,6 +67,7 @@ Excel文件导入的原始数据，作为数据源。
 每次患者入住的详细记录。
 
 **字段定义**：
+
 ```javascript
 {
   _id: String,                    // 记录ID
@@ -113,10 +116,12 @@ Excel文件导入的原始数据，作为数据源。
 ### Excel → Patients 同步规则
 
 **触发条件**：
+
 - Excel导入完成后自动调用
 - 手动调用 patientIntake.syncFromExcel 接口
 
 **字段映射规则**：
+
 ```javascript
 // excel_records → patients
 {
@@ -139,6 +144,7 @@ Excel文件导入的原始数据，作为数据源。
 ```
 
 **幂等性保证**：
+
 - 使用姓名+证件号作为唯一性判断
 - 重复同步时更新统计信息，不创建新记录
 - 记录syncBatchId避免重复处理

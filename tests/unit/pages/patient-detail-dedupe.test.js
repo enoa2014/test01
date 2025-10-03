@@ -1,16 +1,18 @@
 const path = require('path');
 
 describe('dedupeIntakeRecords', () => {
-  const { dedupeIntakeRecords } = require(path.join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'miniprogram',
-    'pages',
-    'patient-detail',
-    'data-mappers.js'
-  ));
+  const { dedupeIntakeRecords } = require(
+    path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'miniprogram',
+      'pages',
+      'patient-detail',
+      'data-mappers.js'
+    )
+  );
 
   test('keeps active record when duplicate with non-active status exists', () => {
     const duplicate = [

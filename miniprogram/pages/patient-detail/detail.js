@@ -432,11 +432,7 @@ Page({
           medicalInfo.diagnosis,
           intakeInfo.visitReason
         );
-        const doctorDisplay = coalesceValue(
-          record.doctor,
-          medicalInfo.doctor,
-          intakeInfo.doctor
-        );
+        const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor, intakeInfo.doctor);
         const symptomDetailDisplay = coalesceValue(
           medicalInfo.symptoms,
           record.symptoms,
@@ -1235,7 +1231,7 @@ Page({
       emergencyPhone: form.emergencyPhone,
     };
 
-    const nextBasicInfo = (this.data.basicInfo || []).map((item) => {
+    const nextBasicInfo = (this.data.basicInfo || []).map(item => {
       if (!item || typeof item !== 'object') {
         return item;
       }
@@ -1258,7 +1254,7 @@ Page({
       nextBasicInfo.unshift({ label: '姓名', value: form.patientName || '' });
     }
 
-    const nextFamilyInfo = (this.data.familyInfo || []).map((item) => {
+    const nextFamilyInfo = (this.data.familyInfo || []).map(item => {
       if (!item || typeof item !== 'object') {
         return item;
       }

@@ -176,35 +176,51 @@ Component({
   },
   observers: {
     statuses(list) {
-      const selected = (this.data.statusOptions || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.statusOptions || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateStatusOptions(list, selected);
     },
     riskLevels(list) {
-      const selected = (this.data.riskOptions || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.riskOptions || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateRiskOptions(list, selected);
     },
     hospitalOptions(list) {
-      const selected = (this.data.hospitalList || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.hospitalList || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateHospitalOptions(list, selected);
     },
     genderOptions(list) {
-      const selected = (this.data.genderOptionsList || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.genderOptionsList || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateGenderOptions(list, selected);
     },
     ethnicityOptions(list) {
-      const selected = (this.data.ethnicityOptionsList || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.ethnicityOptionsList || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateEthnicityOptions(list, selected);
     },
     nativePlaceOptions(list) {
-      const selected = (this.data.nativePlaceOptionsList || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.nativePlaceOptionsList || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateNativePlaceOptions(list, selected);
     },
     doctorOptions(list) {
-      const selected = (this.data.doctorOptionsList || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.doctorOptionsList || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateDoctorOptions(list, selected);
     },
     ageRangeOptions(list) {
-      const selected = (this.data.ageRangeOptionsList || []).filter(item => item.active).map(item => item.id);
+      const selected = (this.data.ageRangeOptionsList || [])
+        .filter(item => item.active)
+        .map(item => item.id);
       this.updateAgeRangeOptions(list, selected);
     },
     diagnosisOptions(list) {
@@ -223,9 +239,10 @@ Component({
   },
   lifetimes: {
     attached() {
-      const initialDiagnosis = this.properties.diagnosisOptions && this.properties.diagnosisOptions.length
-        ? this.properties.diagnosisOptions
-        : DEFAULT_DIAGNOSIS_OPTIONS;
+      const initialDiagnosis =
+        this.properties.diagnosisOptions && this.properties.diagnosisOptions.length
+          ? this.properties.diagnosisOptions
+          : DEFAULT_DIAGNOSIS_OPTIONS;
       this.setData({
         availableDiagnosis: initialDiagnosis,
       });
@@ -286,27 +303,42 @@ Component({
     },
 
     updateGenderOptions(list, selected) {
-      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      const normalized = normalizeOptions(
+        Array.isArray(list) && list.length ? list : [],
+        ensureArray(selected)
+      );
       this.setData({ genderOptionsList: normalized });
     },
 
     updateEthnicityOptions(list, selected) {
-      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      const normalized = normalizeOptions(
+        Array.isArray(list) && list.length ? list : [],
+        ensureArray(selected)
+      );
       this.setData({ ethnicityOptionsList: normalized });
     },
 
     updateNativePlaceOptions(list, selected) {
-      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      const normalized = normalizeOptions(
+        Array.isArray(list) && list.length ? list : [],
+        ensureArray(selected)
+      );
       this.setData({ nativePlaceOptionsList: normalized });
     },
 
     updateDoctorOptions(list, selected) {
-      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      const normalized = normalizeOptions(
+        Array.isArray(list) && list.length ? list : [],
+        ensureArray(selected)
+      );
       this.setData({ doctorOptionsList: normalized });
     },
 
     updateAgeRangeOptions(list, selected) {
-      const normalized = normalizeOptions(Array.isArray(list) && list.length ? list : [], ensureArray(selected));
+      const normalized = normalizeOptions(
+        Array.isArray(list) && list.length ? list : [],
+        ensureArray(selected)
+      );
       this.setData({ ageRangeOptionsList: normalized });
     },
 
@@ -315,11 +347,17 @@ Component({
         statuses: this.data.statusOptions.filter(item => item.active).map(item => item.id),
         riskLevels: this.data.riskOptions.filter(item => item.active).map(item => item.id),
         hospitals: this.data.hospitalList.filter(item => item.active).map(item => item.id),
-        diagnosis: ensureArray(this.data.selectedDiagnosis).map(item => (item && item.id ? item.id : item)),
+        diagnosis: ensureArray(this.data.selectedDiagnosis).map(item =>
+          item && item.id ? item.id : item
+        ),
         dateRange: ensureDateRange(this.data.dateRange),
         genders: this.data.genderOptionsList.filter(item => item.active).map(item => item.id),
-        ethnicities: this.data.ethnicityOptionsList.filter(item => item.active).map(item => item.id),
-        nativePlaces: this.data.nativePlaceOptionsList.filter(item => item.active).map(item => item.id),
+        ethnicities: this.data.ethnicityOptionsList
+          .filter(item => item.active)
+          .map(item => item.id),
+        nativePlaces: this.data.nativePlaceOptionsList
+          .filter(item => item.active)
+          .map(item => item.id),
         ageRanges: this.data.ageRangeOptionsList.filter(item => item.active).map(item => item.id),
         doctors: this.data.doctorOptionsList.filter(item => item.active).map(item => item.id),
         logicMode: this.data.logicMode === 'OR' ? 'OR' : 'AND',
@@ -466,26 +504,32 @@ Component({
 
     onStartDateChange(event) {
       const value = (event.detail && event.detail.value) || '';
-      this.setData({
-        dateRange: {
-          ...this.data.dateRange,
-          start: value,
+      this.setData(
+        {
+          dateRange: {
+            ...this.data.dateRange,
+            start: value,
+          },
         },
-      }, () => {
-        this.emitChange('date');
-      });
+        () => {
+          this.emitChange('date');
+        }
+      );
     },
 
     onEndDateChange(event) {
       const value = (event.detail && event.detail.value) || '';
-      this.setData({
-        dateRange: {
-          ...this.data.dateRange,
-          end: value,
+      this.setData(
+        {
+          dateRange: {
+            ...this.data.dateRange,
+            end: value,
+          },
         },
-      }, () => {
-        this.emitChange('date');
-      });
+        () => {
+          this.emitChange('date');
+        }
+      );
     },
 
     onDiagnosisInput(event) {
@@ -565,21 +609,24 @@ Component({
     },
 
     onApplySchemeTap(event) {
-      const id = event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id;
+      const id =
+        event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id;
       if (id) {
         this.triggerEvent('appliescheme', { id });
       }
     },
 
     onDeleteSchemeTap(event) {
-      const id = event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id;
+      const id =
+        event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id;
       if (id) {
         this.triggerEvent('deletescheme', { id });
       }
     },
 
     onRenameSchemeTap(event) {
-      const id = event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id;
+      const id =
+        event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id;
       if (id) {
         this.triggerEvent('renamescheme', { id });
       }

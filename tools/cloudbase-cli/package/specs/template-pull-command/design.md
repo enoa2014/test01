@@ -8,11 +8,11 @@
 
 - **语言**: TypeScript
 - **框架**: 基于现有的 CloudBase CLI 架构
-- **依赖**: 
-  - `simple-git`: Git 操作
-  - `fs-extra`: 文件系统操作
-  - `path`: 路径处理
-  - `inquirer`: 交互式提示
+- **依赖**:
+    - `simple-git`: Git 操作
+    - `fs-extra`: 文件系统操作
+    - `path`: 路径处理
+    - `inquirer`: 交互式提示
 
 ## 技术选型
 
@@ -30,9 +30,9 @@ Git 本身不支持直接下载子目录，但可以通过以下方式实现：
 
 ```typescript
 interface TemplateSource {
-  type: 'builtin' | 'github' | 'gitee' | 'git';
-  identifier: string;
-  subpath?: string;
+    type: 'builtin' | 'github' | 'gitee' | 'git'
+    identifier: string
+    subpath?: string
 }
 ```
 
@@ -42,26 +42,26 @@ interface TemplateSource {
 
 ```typescript
 const BUILTIN_TEMPLATES = {
-  miniprogram: {
-    url: 'https://static.cloudbase.net/cloudbase-examples/miniprogram-cloudbase-miniprogram-template.zip',
-    name: '微信小程序 + CloudBase'
-  },
-  react: {
-    url: 'https://static.cloudbase.net/cloudbase-examples/web-cloudbase-react-template.zip',
-    name: 'Web 应用 - React + CloudBase'
-  },
-  vue: {
-    url: 'https://static.cloudbase.net/cloudbase-examples/web-cloudbase-vue-template.zip',
-    name: 'Web 应用 - Vue + CloudBase'
-  },
-  uniapp: {
-    url: 'https://static.cloudbase.net/cloudbase-examples/universal-cloudbase-uniapp-template.zip',
-    name: '跨端应用 - UniApp + CloudBase'
-  },
-  rules: {
-    url: 'https://static.cloudbase.net/cloudbase-examples/web-cloudbase-project.zip',
-    name: 'AI 规则和配置'
-  }
+    miniprogram: {
+        url: 'https://static.cloudbase.net/cloudbase-examples/miniprogram-cloudbase-miniprogram-template.zip',
+        name: '微信小程序 + CloudBase'
+    },
+    react: {
+        url: 'https://static.cloudbase.net/cloudbase-examples/web-cloudbase-react-template.zip',
+        name: 'Web 应用 - React + CloudBase'
+    },
+    vue: {
+        url: 'https://static.cloudbase.net/cloudbase-examples/web-cloudbase-vue-template.zip',
+        name: 'Web 应用 - Vue + CloudBase'
+    },
+    uniapp: {
+        url: 'https://static.cloudbase.net/cloudbase-examples/universal-cloudbase-uniapp-template.zip',
+        name: '跨端应用 - UniApp + CloudBase'
+    },
+    rules: {
+        url: 'https://static.cloudbase.net/cloudbase-examples/web-cloudbase-project.zip',
+        name: 'AI 规则和配置'
+    }
 }
 ```
 
@@ -69,11 +69,11 @@ const BUILTIN_TEMPLATES = {
 
 ```typescript
 interface GitUrlInfo {
-  platform: 'github' | 'gitee' | 'git';
-  owner: string;
-  repo: string;
-  branch: string;
-  subpath?: string;
+    platform: 'github' | 'gitee' | 'git'
+    owner: string
+    repo: string
+    branch: string
+    subpath?: string
 }
 ```
 
@@ -85,12 +85,12 @@ interface GitUrlInfo {
 
 ```typescript
 class TemplateManager {
-  async pullTemplate(source: string, options: PullOptions): Promise<void>
-  async downloadBuiltinTemplate(templateId: string, targetPath: string): Promise<void>
-  async downloadGitTemplate(gitUrl: string, targetPath: string, subpath?: string): Promise<void>
-  private parseGitUrl(url: string): GitUrlInfo
-  private cloneWithSparse(gitUrl: string, targetPath: string, subpath: string): Promise<void>
-  private cloneFull(gitUrl: string, targetPath: string): Promise<void>
+    async pullTemplate(source: string, options: PullOptions): Promise<void>
+    async downloadBuiltinTemplate(templateId: string, targetPath: string): Promise<void>
+    async downloadGitTemplate(gitUrl: string, targetPath: string, subpath?: string): Promise<void>
+    private parseGitUrl(url: string): GitUrlInfo
+    private cloneWithSparse(gitUrl: string, targetPath: string, subpath: string): Promise<void>
+    private cloneFull(gitUrl: string, targetPath: string): Promise<void>
 }
 ```
 

@@ -3,6 +3,23 @@ const MAX_HISTORY = 10;
 const DEFAULT_DEBOUNCE = 300;
 const MAX_SUGGESTIONS = 8;
 
+function clearHistoryState(ctx) {
+  const wxApi = typeof wx !== 'undefined' ? wx : undefined;
+  try {
+    if (wxApi && typeof wxApi.removeStorageSync === 'function') {
+      wxApi.removeStorageSync(HISTORY_KEY);
+    }
+  } catch (error) {
+    // ignore storage errors
+  }
+  if (ctx && typeof ctx.setData === 'function') {
+    ctx.setData({ searchHistory: [] });
+  }
+  if (ctx && typeof ctx.triggerEvent === 'function') {
+    ctx.triggerEvent('historyclear');
+  }
+}
+
 Component({
   options: {
     addGlobalClass: true,
@@ -17,10 +34,6 @@ Component({
       value: '搜索住户姓名/档案号/诊断标签',
     },
     suggestions: {
-      type: Array,
-      value: [],
-    },
-    filters: {
       type: Array,
       value: [],
     },
@@ -132,7 +145,10 @@ Component({
 
     handleSuggestionTap(event) {
       const suggestion =
-        (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.suggestion) || '';
+        (event.currentTarget &&
+          event.currentTarget.dataset &&
+          event.currentTarget.dataset.suggestion) ||
+        '';
       const keyword = this.safeString(suggestion);
       if (!keyword) {
         return;
@@ -143,19 +159,16 @@ Component({
       this.saveHistory(keyword);
     },
 
-    handleFilterTap(event) {
-      const filter =
-        (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.filter) || {};
-      this.triggerEvent('filtertap', { filter });
-    },
-
     handleToggleAdvanced() {
       this.triggerEvent('toggleadv');
     },
 
     handleHistoryTap(event) {
       const keyword =
-        (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.keyword) || '';
+        (event.currentTarget &&
+          event.currentTarget.dataset &&
+          event.currentTarget.dataset.keyword) ||
+        '';
       const cleaned = this.safeString(keyword);
       if (!cleaned) {
         return;
@@ -168,43 +181,51 @@ Component({
 
     // P0-2: 清空历史增加二次确认
     handleClearHistory() {
-      wx.showModal({
-        title: '确认清空',
-        content: '清空后搜索历史将无法恢复',
-        confirmText: '清空',
-        confirmColor: '#FF4D4F',
-        success: res => {
-          if (res.confirm) {
-            this.clearAllHistory();
-          }
-        },
-      });
+      const wxApi = typeof wx !== 'undefined' ? wx : undefined;
+      if (wxApi && typeof wxApi.showModal === 'function') {
+        wxApi.showModal({
+          title: '确认清空',
+          content: '清空后搜索历史将无法恢复',
+          confirmText: '清空',
+          confirmColor: '#FF4D4F',
+          success: res => {
+            if (res && res.confirm) {
+              clearHistoryState(this);
+            }
+          },
+        });
+        return;
+      }
+      clearHistoryState(this);
     },
 
     // P0-2: 执行清空历史
     clearAllHistory() {
-      try {
-        wx.removeStorageSync(HISTORY_KEY);
-      } catch (error) {
-        // ignore
-      }
-      this.setData({ searchHistory: [] });
-      this.triggerEvent('historyclear');
+      clearHistoryState(this);
     },
 
     // P0-2: 删除单个历史记录
     handleDeleteHistoryItem(event) {
       const keyword =
-        (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.keyword) || '';
+        (event.currentTarget &&
+          event.currentTarget.dataset &&
+          event.currentTarget.dataset.keyword) ||
+        '';
       const cleaned = this.safeString(keyword);
       if (!cleaned) {
         return;
       }
 
       try {
-        const history = wx.getStorageSync(HISTORY_KEY) || [];
+        const wxApi = typeof wx !== 'undefined' ? wx : undefined;
+        const history =
+          wxApi && typeof wxApi.getStorageSync === 'function'
+            ? wxApi.getStorageSync(HISTORY_KEY) || []
+            : [];
         const filtered = Array.isArray(history) ? history.filter(item => item !== cleaned) : [];
-        wx.setStorageSync(HISTORY_KEY, filtered);
+        if (wxApi && typeof wxApi.setStorageSync === 'function') {
+          wxApi.setStorageSync(HISTORY_KEY, filtered);
+        }
         this.setData({ searchHistory: filtered });
       } catch (error) {
         // ignore storage errors
@@ -216,7 +237,11 @@ Component({
         return;
       }
       try {
-        const history = wx.getStorageSync(HISTORY_KEY) || [];
+        const wxApi = typeof wx !== 'undefined' ? wx : undefined;
+        const history =
+          wxApi && typeof wxApi.getStorageSync === 'function'
+            ? wxApi.getStorageSync(HISTORY_KEY) || []
+            : [];
         if (Array.isArray(history)) {
           this.setData({ searchHistory: history.slice(0, MAX_HISTORY) });
         }
@@ -234,12 +259,18 @@ Component({
         return;
       }
       try {
-        let history = wx.getStorageSync(HISTORY_KEY) || [];
+        const wxApi = typeof wx !== 'undefined' ? wx : undefined;
+        let history =
+          wxApi && typeof wxApi.getStorageSync === 'function'
+            ? wxApi.getStorageSync(HISTORY_KEY) || []
+            : [];
         if (!Array.isArray(history)) {
           history = [];
         }
         history = [cleaned, ...history.filter(item => item !== cleaned)].slice(0, MAX_HISTORY);
-        wx.setStorageSync(HISTORY_KEY, history);
+        if (wxApi && typeof wxApi.setStorageSync === 'function') {
+          wxApi.setStorageSync(HISTORY_KEY, history);
+        }
         this.setData({ searchHistory: history });
       } catch (error) {
         // ignore storage errors

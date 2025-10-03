@@ -1,6 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.layerCommonOptions = void 0;
+'use strict'
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.layerCommonOptions = void 0
 const layerCommonOptions = (sub) => ({
     cmd: 'fn',
     childCmd: {
@@ -8,5 +8,5 @@ const layerCommonOptions = (sub) => ({
         desc: '云函数层管理'
     },
     childSubCmd: sub
-});
-exports.layerCommonOptions = layerCommonOptions;
+})
+exports.layerCommonOptions = layerCommonOptions

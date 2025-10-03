@@ -55,10 +55,10 @@ describe('analysis month panel ordering', () => {
     ];
 
     const panels = buildPanels.call(pageConfig, samplePatients);
-    const monthPanel = panels.find((panel) => panel.title === '按最近入住月份分析');
+    const monthPanel = panels.find(panel => panel.title === '按最近入住月份分析');
     expect(monthPanel).toBeTruthy();
 
-    const labels = monthPanel.stats.map((stat) => stat.label);
+    const labels = monthPanel.stats.map(stat => stat.label);
     expect(labels).toEqual(['2024-08', '2024-07', '2023-12', '未知月份']);
   });
 });

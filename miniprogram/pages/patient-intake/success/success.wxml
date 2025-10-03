@@ -46,14 +46,14 @@
     <view class="reminder-card">
       <view class="reminder-icon">📋</view>
       <view class="reminder-content">
-      <view class="reminder-title">温馨提醒</view>
-      <view class="reminder-list">
-        <block wx:for="{{reminderItems}}" wx:key="*this">
-          <view class="reminder-item">• {{item}}</view>
-        </block>
+        <view class="reminder-title">温馨提醒</view>
+        <view class="reminder-list">
+          <block wx:for="{{reminderItems}}" wx:key="*this">
+            <view class="reminder-item">• {{item}}</view>
+          </block>
+        </view>
       </view>
     </view>
-  </view>
 
     <!-- 快捷操作 -->
     <view class="quick-actions">

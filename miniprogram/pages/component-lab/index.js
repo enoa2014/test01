@@ -60,7 +60,8 @@ Page({
         if (!this.data.propsState.icon) {
           updates['propsState.icon'] = '🔔';
         }
-        const labelSource = this.data.propsState.ariaLabel || this.data.propsState.text || '图标按钮';
+        const labelSource =
+          this.data.propsState.ariaLabel || this.data.propsState.text || '图标按钮';
         updates['propsState.ariaLabel'] = labelSource;
       }
     }
@@ -71,11 +72,11 @@ Page({
         ? Array.isArray(currentValue)
           ? currentValue
           : currentValue
-          ? [currentValue]
-          : []
+            ? [currentValue]
+            : []
         : Array.isArray(currentValue)
-        ? currentValue[0] || ''
-        : currentValue;
+          ? currentValue[0] || ''
+          : currentValue;
     }
 
     if (this.data.current.id === 'pm-dialog' && prop === 'visible' && next) {

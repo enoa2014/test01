@@ -1,10 +1,7 @@
 const cloud = require('wx-server-sdk');
 const { v4: uuidv4 } = require('uuid');
 
-const {
-  normalizeSpacing,
-  ensureCollectionExists,
-} = require('./utils/patient');
+const { normalizeSpacing, ensureCollectionExists } = require('./utils/patient');
 
 const createExcelSync = require('./excel-sync');
 
@@ -33,16 +30,19 @@ const MAX_INTAKE_QUERY_LIMIT = 100; // fetch limit for intake history queries
 async function invalidatePatientSummaryCache() {
   try {
     await ensureCollection(EXCEL_CACHE_COLLECTION);
-    await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
-      data: {
-        patients: [],
-        totalCount: 0,
-        hasMore: true,
-        limit: 0,
-        updatedAt: 0,
-        invalidatedAt: Date.now(),
-      },
-    });
+    await db
+      .collection(EXCEL_CACHE_COLLECTION)
+      .doc(PATIENT_CACHE_DOC_ID)
+      .set({
+        data: {
+          patients: [],
+          totalCount: 0,
+          hasMore: true,
+          limit: 0,
+          updatedAt: 0,
+          invalidatedAt: Date.now(),
+        },
+      });
   } catch (error) {
     console.warn('invalidatePatientSummaryCache failed', error);
   }
@@ -81,7 +81,9 @@ function validateChineseId(idNumber) {
   const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
   const validateCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
   const digits = value.split('');
-  const sum = digits.slice(0, 17).reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
+  const sum = digits
+    .slice(0, 17)
+    .reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
   const code = validateCodes[sum % 11];
   return code === digits[17];
 }
@@ -94,7 +96,7 @@ function generateIntakeId() {
   return `I${Date.now()}_${uuidv4().slice(0, 8)}`;
 }
 
-const ensureCollection = (name) => ensureCollectionExists(db, name);
+const ensureCollection = name => ensureCollectionExists(db, name);
 
 const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = createExcelSync({
   db,
@@ -468,8 +470,7 @@ async function handleGetAllIntakeRecords(event) {
       const isAggregatedBySubmitter =
         (metadata.submittedBy === 'excel-import' || metadata.importMode === 'excel-import') &&
         recordId.endsWith('-excel');
-      const isAggregatedByIdSuffix =
-        recordId.endsWith('-excel') && !metadata.excelRecordId;
+      const isAggregatedByIdSuffix = recordId.endsWith('-excel') && !metadata.excelRecordId;
 
       if (isAggregatedBySource || isAggregatedBySubmitter || isAggregatedByIdSuffix) {
         return false;
@@ -484,26 +485,12 @@ async function handleGetAllIntakeRecords(event) {
       const medicalInfo = rawIntake.medicalInfo || {};
       const contactInfo = rawIntake.contactInfo || {};
 
-      const hospital =
-        medicalInfo.hospital ||
-        rawIntake.hospital ||
-        intakeInfo.hospital ||
-        '';
+      const hospital = medicalInfo.hospital || rawIntake.hospital || intakeInfo.hospital || '';
       const diagnosis =
-        medicalInfo.diagnosis ||
-        intakeInfo.visitReason ||
-        rawIntake.diagnosis ||
-        '';
-      const doctor =
-        medicalInfo.doctor ||
-        rawIntake.doctor ||
-        intakeInfo.doctor ||
-        '';
+        medicalInfo.diagnosis || intakeInfo.visitReason || rawIntake.diagnosis || '';
+      const doctor = medicalInfo.doctor || rawIntake.doctor || intakeInfo.doctor || '';
       const followUpPlan =
-        intakeInfo.followUpPlan ||
-        medicalInfo.followUpPlan ||
-        rawIntake.followUpPlan ||
-        '';
+        intakeInfo.followUpPlan || medicalInfo.followUpPlan || rawIntake.followUpPlan || '';
 
       const medicalInfoPayload = {};
       ['hospital', 'diagnosis', 'doctor', 'symptoms', 'treatmentProcess', 'followUpPlan'].forEach(
@@ -1266,10 +1253,7 @@ async function handleUpdatePatient(event = {}) {
 }
 
 async function handleCheckoutPatient(event = {}) {
-  const {
-    patientKey,
-    checkout = {},
-  } = event;
+  const { patientKey, checkout = {} } = event;
 
   if (!patientKey) {
     throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
@@ -1286,7 +1270,7 @@ async function handleCheckoutPatient(event = {}) {
   await ensureCollection(PATIENTS_COLLECTION);
   await ensureCollection(PATIENT_INTAKE_COLLECTION);
 
-  const result = await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async transaction => {
     const patientRef = transaction.collection(PATIENTS_COLLECTION).doc(patientKey);
     const snapshot = await patientRef.get();
     if (!snapshot.data) {
@@ -1337,7 +1321,10 @@ async function handleCheckoutPatient(event = {}) {
       },
     };
 
-    await transaction.collection(PATIENT_INTAKE_COLLECTION).doc(intakeId).set({ data: checkoutRecord });
+    await transaction
+      .collection(PATIENT_INTAKE_COLLECTION)
+      .doc(intakeId)
+      .set({ data: checkoutRecord });
 
     const patientUpdate = {
       careStatus: 'discharged',
@@ -1380,6 +1367,105 @@ async function handleCheckoutPatient(event = {}) {
       checkoutAt,
       reason,
       note,
+    },
+  };
+}
+
+async function handleManualStatusUpdate(event = {}) {
+  const patientKey = normalizeString(event.patientKey);
+  if (!patientKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
+  }
+
+  const targetStatusRaw = normalizeString(event.status || event.careStatus);
+  const allowedStatuses = ['in_care', 'pending', 'discharged'];
+  if (!allowedStatuses.includes(targetStatusRaw)) {
+    throw makeError('INVALID_STATUS', '不支持的目标状态');
+  }
+
+  const note = normalizeString(event.note);
+  const timestampRaw = Number(event.timestamp);
+  const now = Date.now();
+  const statusAdjustedAt = Number.isFinite(timestampRaw) ? timestampRaw : now;
+
+  const wxContext = cloud.getWXContext();
+  const operatorId = normalizeString(
+    event.operatorId || event.operatorOpenId || (wxContext && wxContext.OPENID) || ''
+  );
+  const operatorName = normalizeString(event.operatorName || event.operator || '');
+
+  await ensureCollection(PATIENTS_COLLECTION);
+
+  await db.runTransaction(async transaction => {
+    const patientRef = transaction.collection(PATIENTS_COLLECTION).doc(patientKey);
+    const snapshot = await patientRef.get();
+    if (!snapshot.data) {
+      throw makeError('PATIENT_NOT_FOUND', '患者不存在');
+    }
+
+    const patientDoc = snapshot.data;
+
+    const updates = {
+      careStatus: targetStatusRaw,
+      updatedAt: now,
+      'data.updatedAt': now,
+      manualStatusUpdatedAt: statusAdjustedAt,
+      manualStatusOperatorId: operatorId || '',
+    };
+
+    if (operatorName) {
+      updates.manualStatusOperatorName = operatorName;
+    } else {
+      updates.manualStatusOperatorName = _.remove();
+    }
+
+    if (note) {
+      updates.manualStatusNote = note;
+    } else {
+      updates.manualStatusNote = _.remove();
+    }
+
+    if (targetStatusRaw === 'discharged') {
+      updates.checkoutAt = statusAdjustedAt;
+      if (note) {
+        updates.checkoutNote = note;
+        if (!patientDoc.checkoutReason) {
+          updates.checkoutReason = note;
+        }
+      }
+    } else {
+      updates.checkoutAt = _.remove();
+      updates.checkoutReason = _.remove();
+      updates.checkoutNote = _.remove();
+    }
+
+    await patientRef.update({ data: updates });
+  });
+
+  await writePatientOperationLog({
+    patientKey,
+    action: 'manual-status-update',
+    operatorId: operatorId || '',
+    operatorName: operatorName || '',
+    message: '手动调整住户状态',
+    changes: ['careStatus'],
+    extra: {
+      careStatus: targetStatusRaw,
+      note,
+      statusAdjustedAt,
+    },
+  });
+
+  await invalidatePatientSummaryCache();
+
+  return {
+    success: true,
+    data: {
+      patientKey,
+      careStatus: targetStatusRaw,
+      note,
+      statusAdjustedAt,
+      checkoutAt: targetStatusRaw === 'discharged' ? statusAdjustedAt : null,
     },
   };
 }
@@ -1560,6 +1646,8 @@ exports.main = async event => {
         return await handleUpdatePatient(event);
       case 'checkoutPatient':
         return await handleCheckoutPatient(event);
+      case 'updateCareStatus':
+        return await handleManualStatusUpdate(event);
       case 'getConfig':
         return await handleGetConfig(event);
       case 'cleanupDrafts':

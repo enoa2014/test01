@@ -1,6 +1,7 @@
 # 微信小程序患者档案管理系统视觉设计文档
 
 ## 文档信息
+
 - **项目名称**: 微信小程序患者档案管理系统重构
 - **文档版本**: v1.0
 - **创建日期**: 2025-09-22
@@ -10,6 +11,7 @@
 ---
 
 ## 目录
+
 1. [设计概述](#1-设计概述)
 2. [设计原则](#2-设计原则)
 3. [视觉设计系统](#3-视觉设计系统)
@@ -25,15 +27,18 @@
 ## 1. 设计概述
 
 ### 1.1 项目背景
+
 本项目旨在重构微信小程序患者档案管理系统，为公益组织提供更加人性化、高效的患者档案管理解决方案。系统主要服务于护理人员、管理人员和志愿者，帮助他们更好地管理大病儿童的档案信息。
 
 ### 1.2 设计目标
+
 - **提升用户体验**: 创建直观、易用的界面，降低学习成本
 - **体现人文关怀**: 通过视觉设计传达温暖、关爱的公益属性
 - **提高工作效率**: 优化信息展示和操作流程，提升工作效率
 - **确保信息安全**: 在设计中体现数据安全和隐私保护
 
 ### 1.3 目标用户
+
 - **护理工作人员** (主要用户): 25-45岁，日常患者信息管理
 - **管理人员** (次要用户): 30-50岁，数据查看和决策支持
 - **志愿者** (偶尔用户): 20-60岁，辅助信息录入和查看
@@ -45,32 +50,40 @@
 ### 2.1 核心设计原则
 
 #### 温暖关怀 (Warm Care)
+
 **理念**: 体现公益组织的人文关怀，传递温暖与希望
 **执行方式**:
+
 - 使用温暖的色彩搭配，以橙色系为主色调
 - 采用圆角设计语言，营造亲和感
 - 选择具有亲和力的图标和插画
 - 使用鼓励性、正向的文案表达
 
-#### 简洁高效 (Simple & Efficient)  
+#### 简洁高效 (Simple & Efficient)
+
 **理念**: 降低使用门槛，提高工作效率
 **执行方式**:
+
 - 清晰的信息层级和视觉引导
 - 最小化操作步骤，减少认知负担
 - 统一的界面元素和交互模式
 - 智能化的辅助功能和提示
 
 #### 安全可靠 (Safe & Reliable)
+
 **理念**: 保护隐私数据，确保系统安全性
 **执行方式**:
+
 - 权限状态的可视化表达
 - 操作可追溯的设计呈现
 - 数据加密状态的明确提示
 - 重要操作的二次确认机制
 
 #### 专业可信 (Professional & Trustworthy)
+
 **理念**: 建立专业形象，获得用户信任
 **执行方式**:
+
 - 一致性的设计系统和规范
 - 精准的信息呈现和状态反馈
 - 高品质的视觉细节处理
@@ -83,77 +96,91 @@
 ### 3.1 色彩系统
 
 #### 主色调 (Primary Colors)
+
 ```css
 /* 主色调 - 温暖橙色系 */
---primary-color: #FF7A45;          /* 主橙色 */
---primary-light: #FF9A6B;          /* 浅橙色 */
---primary-lighter: #FFB894;        /* 更浅橙色 */
---primary-dark: #E85D2B;           /* 深橙色 */
---primary-darker: #CC4A1A;         /* 更深橙色 */
+--primary-color: #ff7a45; /* 主橙色 */
+--primary-light: #ff9a6b; /* 浅橙色 */
+--primary-lighter: #ffb894; /* 更浅橙色 */
+--primary-dark: #e85d2b; /* 深橙色 */
+--primary-darker: #cc4a1a; /* 更深橙色 */
 
 /* 主色调应用场景 */
-.primary-button { background-color: var(--primary-color); }
-.primary-link { color: var(--primary-color); }
-.primary-badge { background-color: var(--primary-color); }
+.primary-button {
+  background-color: var(--primary-color);
+}
+.primary-link {
+  color: var(--primary-color);
+}
+.primary-badge {
+  background-color: var(--primary-color);
+}
 ```
 
 #### 辅助色调 (Secondary Colors)
+
 ```css
 /* 辅助色 - 蓝色系 */
---secondary-color: #1890FF;        /* 主蓝色 */
---secondary-light: #40A9FF;        /* 浅蓝色 */
---secondary-dark: #096DD9;         /* 深蓝色 */
+--secondary-color: #1890ff; /* 主蓝色 */
+--secondary-light: #40a9ff; /* 浅蓝色 */
+--secondary-dark: #096dd9; /* 深蓝色 */
 
 /* 辅助色应用场景 */
-.secondary-button { background-color: var(--secondary-color); }
-.info-tag { background-color: var(--secondary-light); }
+.secondary-button {
+  background-color: var(--secondary-color);
+}
+.info-tag {
+  background-color: var(--secondary-light);
+}
 ```
 
 #### 功能色系 (Functional Colors)
+
 ```css
 /* 成功色 - 绿色 */
---success-color: #52C41A;          /* 成功绿 */
---success-light: #73D13D;          /* 浅成功绿 */
---success-dark: #389E0D;           /* 深成功绿 */
---success-bg: #F6FFED;             /* 成功背景色 */
+--success-color: #52c41a; /* 成功绿 */
+--success-light: #73d13d; /* 浅成功绿 */
+--success-dark: #389e0d; /* 深成功绿 */
+--success-bg: #f6ffed; /* 成功背景色 */
 
 /* 警告色 - 黄色 */
---warning-color: #FAAD14;          /* 警告黄 */
---warning-light: #FFC53D;          /* 浅警告黄 */
---warning-dark: #D48806;           /* 深警告黄 */
---warning-bg: #FFFBE6;             /* 警告背景色 */
+--warning-color: #faad14; /* 警告黄 */
+--warning-light: #ffc53d; /* 浅警告黄 */
+--warning-dark: #d48806; /* 深警告黄 */
+--warning-bg: #fffbe6; /* 警告背景色 */
 
 /* 错误色 - 红色 */
---error-color: #FF4D4F;            /* 错误红 */
---error-light: #FF7875;            /* 浅错误红 */
---error-dark: #CF1322;             /* 深错误红 */
---error-bg: #FFF2F0;               /* 错误背景色 */
+--error-color: #ff4d4f; /* 错误红 */
+--error-light: #ff7875; /* 浅错误红 */
+--error-dark: #cf1322; /* 深错误红 */
+--error-bg: #fff2f0; /* 错误背景色 */
 
 /* 信息色 - 蓝色 */
---info-color: #1890FF;             /* 信息蓝 */
---info-light: #40A9FF;             /* 浅信息蓝 */
---info-dark: #096DD9;              /* 深信息蓝 */
---info-bg: #E6F7FF;                /* 信息背景色 */
+--info-color: #1890ff; /* 信息蓝 */
+--info-light: #40a9ff; /* 浅信息蓝 */
+--info-dark: #096dd9; /* 深信息蓝 */
+--info-bg: #e6f7ff; /* 信息背景色 */
 ```
 
 #### 中性色系 (Neutral Colors)
+
 ```css
 /* 文字颜色 */
---text-color-primary: #262626;     /* 主要文字 */
---text-color-secondary: #595959;   /* 次要文字 */
---text-color-disabled: #BFBFBF;    /* 禁用文字 */
---text-color-white: #FFFFFF;       /* 白色文字 */
+--text-color-primary: #262626; /* 主要文字 */
+--text-color-secondary: #595959; /* 次要文字 */
+--text-color-disabled: #bfbfbf; /* 禁用文字 */
+--text-color-white: #ffffff; /* 白色文字 */
 
 /* 背景颜色 */
---bg-color-white: #FFFFFF;         /* 白色背景 */
---bg-color-light: #FAFAFA;         /* 浅色背景 */
---bg-color-gray: #F5F5F5;          /* 灰色背景 */
---bg-color-dark: #001529;          /* 深色背景 */
+--bg-color-white: #ffffff; /* 白色背景 */
+--bg-color-light: #fafafa; /* 浅色背景 */
+--bg-color-gray: #f5f5f5; /* 灰色背景 */
+--bg-color-dark: #001529; /* 深色背景 */
 
 /* 边框颜色 */
---border-color-light: #F0F0F0;     /* 浅边框 */
---border-color-base: #D9D9D9;      /* 基础边框 */
---border-color-dark: #595959;      /* 深边框 */
+--border-color-light: #f0f0f0; /* 浅边框 */
+--border-color-base: #d9d9d9; /* 基础边框 */
+--border-color-dark: #595959; /* 深边框 */
 
 /* 阴影颜色 */
 --shadow-light: rgba(0, 0, 0, 0.04);
@@ -162,6 +189,7 @@
 ```
 
 #### 色彩使用规范
+
 ```css
 /* 主色调使用场景 */
 .primary-usage {
@@ -191,62 +219,51 @@
 ### 3.2 字体系统
 
 #### 字体族 (Font Family)
+
 ```css
 /* 主字体 - 系统字体栈 */
---font-family-primary: 
-  -apple-system,
-  BlinkMacSystemFont,
-  "Segoe UI",
-  "PingFang SC",
-  "Hiragino Sans GB",
-  "Microsoft YaHei",
-  "Helvetica Neue",
-  Helvetica,
-  Arial,
-  sans-serif;
+--font-family-primary:
+  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+  'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
 /* 数字字体 - 等宽字体 */
---font-family-mono: 
-  "SF Mono",
-  Monaco,
-  "Inconsolata",
-  "Roboto Mono",
-  "Source Code Pro",
-  monospace;
+--font-family-mono: 'SF Mono', Monaco, 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
 ```
 
 #### 字体规格 (Font Scale)
+
 ```css
 /* 标题字体 */
---font-size-h1: 32rpx;             /* 页面主标题 */
---font-size-h2: 28rpx;             /* 区块标题 */
---font-size-h3: 26rpx;             /* 卡片标题 */
---font-size-h4: 24rpx;             /* 小标题 */
+--font-size-h1: 32rpx; /* 页面主标题 */
+--font-size-h2: 28rpx; /* 区块标题 */
+--font-size-h3: 26rpx; /* 卡片标题 */
+--font-size-h4: 24rpx; /* 小标题 */
 
 /* 正文字体 */
---font-size-body-lg: 28rpx;        /* 大正文 */
---font-size-body: 26rpx;           /* 标准正文 */
---font-size-body-sm: 24rpx;        /* 小正文 */
+--font-size-body-lg: 28rpx; /* 大正文 */
+--font-size-body: 26rpx; /* 标准正文 */
+--font-size-body-sm: 24rpx; /* 小正文 */
 
 /* 辅助字体 */
---font-size-caption: 22rpx;        /* 说明文字 */
---font-size-note: 20rpx;           /* 注释文字 */
---font-size-mini: 18rpx;           /* 极小文字 */
+--font-size-caption: 22rpx; /* 说明文字 */
+--font-size-note: 20rpx; /* 注释文字 */
+--font-size-mini: 18rpx; /* 极小文字 */
 
 /* 字重 */
---font-weight-light: 300;          /* 细体 */
---font-weight-normal: 400;         /* 常规 */
---font-weight-medium: 500;         /* 中等 */
---font-weight-semibold: 600;       /* 半粗 */
---font-weight-bold: 700;           /* 粗体 */
+--font-weight-light: 300; /* 细体 */
+--font-weight-normal: 400; /* 常规 */
+--font-weight-medium: 500; /* 中等 */
+--font-weight-semibold: 600; /* 半粗 */
+--font-weight-bold: 700; /* 粗体 */
 
 /* 行高 */
---line-height-tight: 1.2;          /* 紧密行高 */
---line-height-normal: 1.5;         /* 标准行高 */
---line-height-loose: 1.8;          /* 宽松行高 */
+--line-height-tight: 1.2; /* 紧密行高 */
+--line-height-normal: 1.5; /* 标准行高 */
+--line-height-loose: 1.8; /* 宽松行高 */
 ```
 
 #### 字体使用规范
+
 ```css
 /* 页面标题 */
 .page-title {
@@ -290,25 +307,27 @@
 ### 3.3 间距系统
 
 #### 间距规格 (Spacing Scale)
+
 ```css
 /* 基础间距单位 */
---spacing-base: 8rpx;              /* 基础单位 */
+--spacing-base: 8rpx; /* 基础单位 */
 
 /* 间距规格 */
---spacing-xs: 8rpx;                /* 极小间距 */
---spacing-sm: 16rpx;               /* 小间距 */
---spacing-md: 24rpx;               /* 中间距 */
---spacing-lg: 32rpx;               /* 大间距 */
---spacing-xl: 48rpx;               /* 极大间距 */
---spacing-xxl: 64rpx;              /* 超大间距 */
+--spacing-xs: 8rpx; /* 极小间距 */
+--spacing-sm: 16rpx; /* 小间距 */
+--spacing-md: 24rpx; /* 中间距 */
+--spacing-lg: 32rpx; /* 大间距 */
+--spacing-xl: 48rpx; /* 极大间距 */
+--spacing-xxl: 64rpx; /* 超大间距 */
 
 /* 页面级间距 */
---spacing-page-margin: 32rpx;      /* 页面边距 */
---spacing-section-margin: 48rpx;   /* 区块间距 */
---spacing-card-padding: 24rpx;     /* 卡片内边距 */
+--spacing-page-margin: 32rpx; /* 页面边距 */
+--spacing-section-margin: 48rpx; /* 区块间距 */
+--spacing-card-padding: 24rpx; /* 卡片内边距 */
 ```
 
 #### 间距使用规范
+
 ```css
 /* 页面布局 */
 .page-container {
@@ -339,17 +358,19 @@
 ### 3.4 圆角系统
 
 #### 圆角规格 (Border Radius)
+
 ```css
 /* 圆角尺寸 */
---border-radius-sm: 4rpx;          /* 小圆角 */
---border-radius-base: 8rpx;        /* 基础圆角 */
---border-radius-lg: 12rpx;         /* 大圆角 */
---border-radius-xl: 16rpx;         /* 超大圆角 */
---border-radius-round: 50%;        /* 圆形 */
---border-radius-pill: 1000rpx;     /* 胶囊形 */
+--border-radius-sm: 4rpx; /* 小圆角 */
+--border-radius-base: 8rpx; /* 基础圆角 */
+--border-radius-lg: 12rpx; /* 大圆角 */
+--border-radius-xl: 16rpx; /* 超大圆角 */
+--border-radius-round: 50%; /* 圆形 */
+--border-radius-pill: 1000rpx; /* 胶囊形 */
 ```
 
 #### 圆角使用规范
+
 ```css
 /* 卡片 */
 .card {
@@ -379,19 +400,21 @@
 ### 3.5 阴影系统
 
 #### 阴影规格 (Box Shadow)
+
 ```css
 /* 阴影层级 */
---shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);     /* 小阴影 */
---shadow-base: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);   /* 基础阴影 */
---shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);     /* 大阴影 */
---shadow-xl: 0 12rpx 32rpx rgba(0, 0, 0, 0.16);    /* 超大阴影 */
+--shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.04); /* 小阴影 */
+--shadow-base: 0 4rpx 16rpx rgba(0, 0, 0, 0.08); /* 基础阴影 */
+--shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.12); /* 大阴影 */
+--shadow-xl: 0 12rpx 32rpx rgba(0, 0, 0, 0.16); /* 超大阴影 */
 
 /* 特殊阴影 */
 --shadow-focus: 0 0 0 4rpx rgba(255, 122, 69, 0.2); /* 聚焦阴影 */
---shadow-error: 0 0 0 4rpx rgba(255, 77, 79, 0.2);  /* 错误阴影 */
+--shadow-error: 0 0 0 4rpx rgba(255, 77, 79, 0.2); /* 错误阴影 */
 ```
 
 #### 阴影使用规范
+
 ```css
 /* 卡片阴影 */
 .card {
@@ -425,51 +448,54 @@
 ### 3.6 图标系统
 
 #### 图标风格
+
 - **设计风格**: 线性图标，2rpx描边，圆角端点
 - **设计尺寸**: 32rpx, 48rpx, 64rpx三种规格
 - **色彩规范**: 跟随文字色彩或使用主题色
 
 #### 核心图标库
+
 ```javascript
 // 导航图标
 const navigationIcons = {
-  home: 'icon-home',           // 🏠 首页
-  patients: 'icon-patients',   // 👥 患者
-  admission: 'icon-plus',      // ➕ 入住
-  analytics: 'icon-chart',     // 📊 分析
-  profile: 'icon-user',        // 👤 个人
-  search: 'icon-search',       // 🔍 搜索
-  menu: 'icon-menu',           // ☰ 菜单
-  back: 'icon-arrow-left',     // ← 返回
-  more: 'icon-more'            // ⋯ 更多
-}
+  home: 'icon-home', // 🏠 首页
+  patients: 'icon-patients', // 👥 患者
+  admission: 'icon-plus', // ➕ 入住
+  analytics: 'icon-chart', // 📊 分析
+  profile: 'icon-user', // 👤 个人
+  search: 'icon-search', // 🔍 搜索
+  menu: 'icon-menu', // ☰ 菜单
+  back: 'icon-arrow-left', // ← 返回
+  more: 'icon-more', // ⋯ 更多
+};
 
 // 状态图标
 const statusIcons = {
-  success: 'icon-check-circle',    // ✅ 成功
-  warning: 'icon-warning-circle',  // ⚠️ 警告
-  error: 'icon-error-circle',      // ❌ 错误
-  info: 'icon-info-circle',        // ℹ️ 信息
-  loading: 'icon-loading',         // ⏳ 加载
-  pending: 'icon-clock'            // 🕐 等待
-}
+  success: 'icon-check-circle', // ✅ 成功
+  warning: 'icon-warning-circle', // ⚠️ 警告
+  error: 'icon-error-circle', // ❌ 错误
+  info: 'icon-info-circle', // ℹ️ 信息
+  loading: 'icon-loading', // ⏳ 加载
+  pending: 'icon-clock', // 🕐 等待
+};
 
 // 操作图标
 const actionIcons = {
-  edit: 'icon-edit',               // ✏️ 编辑
-  delete: 'icon-delete',           // 🗑️ 删除
-  view: 'icon-eye',                // 👁️ 查看
-  copy: 'icon-copy',               // 📄 复制
-  upload: 'icon-upload',           // 📤 上传
-  download: 'icon-download',       // 📥 下载
-  refresh: 'icon-refresh',         // 🔄 刷新
-  settings: 'icon-settings',       // ⚙️ 设置
-  filter: 'icon-filter',           // 🔽 筛选
-  sort: 'icon-sort'                // ↕️ 排序
-}
+  edit: 'icon-edit', // ✏️ 编辑
+  delete: 'icon-delete', // 🗑️ 删除
+  view: 'icon-eye', // 👁️ 查看
+  copy: 'icon-copy', // 📄 复制
+  upload: 'icon-upload', // 📤 上传
+  download: 'icon-download', // 📥 下载
+  refresh: 'icon-refresh', // 🔄 刷新
+  settings: 'icon-settings', // ⚙️ 设置
+  filter: 'icon-filter', // 🔽 筛选
+  sort: 'icon-sort', // ↕️ 排序
+};
 ```
 
 #### 图标使用规范
+
 ```css
 /* 图标基础样式 */
 .icon {
@@ -482,17 +508,35 @@ const actionIcons = {
 }
 
 /* 图标尺寸 */
-.icon-sm { font-size: 32rpx; }
-.icon-md { font-size: 48rpx; }
-.icon-lg { font-size: 64rpx; }
+.icon-sm {
+  font-size: 32rpx;
+}
+.icon-md {
+  font-size: 48rpx;
+}
+.icon-lg {
+  font-size: 64rpx;
+}
 
 /* 图标颜色 */
-.icon-primary { color: var(--primary-color); }
-.icon-secondary { color: var(--secondary-color); }
-.icon-success { color: var(--success-color); }
-.icon-warning { color: var(--warning-color); }
-.icon-error { color: var(--error-color); }
-.icon-disabled { color: var(--text-color-disabled); }
+.icon-primary {
+  color: var(--primary-color);
+}
+.icon-secondary {
+  color: var(--secondary-color);
+}
+.icon-success {
+  color: var(--success-color);
+}
+.icon-warning {
+  color: var(--warning-color);
+}
+.icon-error {
+  color: var(--error-color);
+}
+.icon-disabled {
+  color: var(--text-color-disabled);
+}
 
 /* 带文字的图标 */
 .icon-with-text {
@@ -511,6 +555,7 @@ const actionIcons = {
 ### 4.1 首页设计
 
 #### 布局结构
+
 ```
 ┌─────────────────────────────────┐
 │ 顶部导航栏 (Navigation Bar)        │
@@ -536,6 +581,7 @@ const actionIcons = {
 ```
 
 #### 设计要点
+
 - **视觉层次**: 重要信息使用更大字体和更强对比度
 - **卡片设计**: 使用卡片容器组织不同功能模块
 - **色彩引导**: 使用主色调突出重要操作按钮
@@ -544,6 +590,7 @@ const actionIcons = {
 ### 4.2 患者列表页设计
 
 #### 布局结构
+
 ```
 ┌─────────────────────────────────┐
 │ 顶部导航栏 + 搜索入口              │
@@ -564,6 +611,7 @@ const actionIcons = {
 ```
 
 #### 患者卡片设计
+
 ```css
 .patient-card {
   background: var(--bg-color-white);
@@ -613,6 +661,7 @@ const actionIcons = {
 ### 4.3 患者详情页设计
 
 #### 信息层级设计
+
 ```
 1. 患者头部 (Level 1)
    ├── 基本信息概览
@@ -621,7 +670,7 @@ const actionIcons = {
 
 2. 详细信息模块 (Level 1)
    ├── 基本信息
-   ├── 医疗信息  
+   ├── 医疗信息
    ├── 联系信息
    └── 入住记录
 
@@ -632,6 +681,7 @@ const actionIcons = {
 ```
 
 #### Tab导航设计
+
 ```css
 .detail-tabs {
   background: var(--bg-color-white);
@@ -658,12 +708,14 @@ const actionIcons = {
 ### 4.4 表单页面设计
 
 #### 表单布局原则
+
 - **单列布局**: 移动端优先使用单列表单布局
 - **逻辑分组**: 相关字段进行分组，使用分割线或卡片区分
 - **渐进披露**: 优先显示必填项，选填项可折叠显示
 - **实时反馈**: 提供实时验证和错误提示
 
 #### 表单样式规范
+
 ```css
 .form-section {
   background: var(--bg-color-white);
@@ -693,7 +745,7 @@ const actionIcons = {
 }
 
 .form-label.required::after {
-  content: " *";
+  content: ' *';
   color: var(--error-color);
 }
 
@@ -731,6 +783,7 @@ const actionIcons = {
 ### 5.1 按钮组件 (Button)
 
 #### 按钮类型
+
 ```css
 /* 主要按钮 - Primary Button */
 .btn-primary {
@@ -831,6 +884,7 @@ const actionIcons = {
 ```
 
 #### 按钮状态设计
+
 - **默认状态**: 基础样式
 - **悬停状态**: 颜色加深，轻微上浮效果
 - **点击状态**: 颜色更深，取消上浮效果
@@ -840,6 +894,7 @@ const actionIcons = {
 ### 5.2 输入框组件 (Input)
 
 #### 输入框类型
+
 ```css
 /* 基础输入框 */
 .input-base {
@@ -922,6 +977,7 @@ const actionIcons = {
 ### 5.3 卡片组件 (Card)
 
 #### 卡片类型
+
 ```css
 /* 基础卡片 */
 .card-base {
@@ -1001,6 +1057,7 @@ const actionIcons = {
 ### 5.4 标签组件 (Tag)
 
 #### 标签类型
+
 ```css
 /* 基础标签 */
 .tag-base {
@@ -1069,6 +1126,7 @@ const actionIcons = {
 ### 5.5 加载组件 (Loading)
 
 #### 加载状态设计
+
 ```css
 /* 骨架屏加载 */
 .skeleton {
@@ -1084,8 +1142,12 @@ const actionIcons = {
 }
 
 @keyframes skeleton-loading {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .skeleton-avatar {
@@ -1123,8 +1185,12 @@ const actionIcons = {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 页面加载 */
@@ -1150,35 +1216,37 @@ const actionIcons = {
 ### 6.1 手势交互
 
 #### 微信小程序手势规范
+
 ```javascript
 // 下拉刷新
 const pullToRefresh = {
   triggerDistance: 50, // 触发距离 50px
-  maxDistance: 80,     // 最大下拉距离 80px
-  damping: 0.3,        // 阻尼系数
-  duration: 300        // 回弹动画时长 300ms
-}
+  maxDistance: 80, // 最大下拉距离 80px
+  damping: 0.3, // 阻尼系数
+  duration: 300, // 回弹动画时长 300ms
+};
 
 // 左滑操作
 const swipeActions = {
-  threshold: 30,       // 触发阈值 30px
-  maxOffset: 160,      // 最大偏移 160px
-  snapBack: true,      // 是否回弹
+  threshold: 30, // 触发阈值 30px
+  maxOffset: 160, // 最大偏移 160px
+  snapBack: true, // 是否回弹
   actions: [
     { text: '编辑', color: '#1890FF' },
-    { text: '删除', color: '#FF4D4F' }
-  ]
-}
+    { text: '删除', color: '#FF4D4F' },
+  ],
+};
 
 // 长按操作
 const longPress = {
-  duration: 500,       // 长按时长 500ms
+  duration: 500, // 长按时长 500ms
   feedback: 'vibrate', // 反馈方式：震动
-  showMenu: true       // 显示操作菜单
-}
+  showMenu: true, // 显示操作菜单
+};
 ```
 
 #### 手势反馈设计
+
 - **触感反馈**: 重要操作提供震动反馈
 - **视觉反馈**: 清晰的按压状态和动画效果
 - **音频反馈**: 成功操作的提示音（可选）
@@ -1186,6 +1254,7 @@ const longPress = {
 ### 6.2 页面转场动画
 
 #### 转场动画类型
+
 ```css
 /* 页面进入动画 */
 @keyframes page-enter {
@@ -1225,8 +1294,12 @@ const longPress = {
 
 /* 淡入动画 */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 滑入动画 */
@@ -1243,11 +1316,12 @@ const longPress = {
 ```
 
 #### 动画时长规范
+
 ```css
 /* 动画持续时间 */
---duration-fast: 150ms;      /* 快速动画 */
---duration-base: 300ms;      /* 基础动画 */
---duration-slow: 500ms;      /* 慢速动画 */
+--duration-fast: 150ms; /* 快速动画 */
+--duration-base: 300ms; /* 基础动画 */
+--duration-slow: 500ms; /* 慢速动画 */
 
 /* 缓动函数 */
 --ease-out: cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -1258,6 +1332,7 @@ const longPress = {
 ### 6.3 状态反馈
 
 #### 操作反馈设计
+
 ```css
 /* 即时反馈 */
 .btn-feedback {
@@ -1306,13 +1381,28 @@ const longPress = {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-10rpx); }
-  20%, 40%, 60%, 80% { transform: translateX(10rpx); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-10rpx);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(10rpx);
+  }
 }
 ```
 
 #### 加载状态反馈
+
 ```css
 /* 按钮加载状态 */
 .btn-loading {
@@ -1357,6 +1447,7 @@ const longPress = {
 ### 7.1 断点系统
 
 #### 设备断点
+
 ```css
 /* 超小屏设备 (手机竖屏) */
 @media (max-width: 375px) {
@@ -1382,7 +1473,7 @@ const longPress = {
     max-width: 750px;
     margin: 0 auto;
   }
-  
+
   .grid-two-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1396,7 +1487,7 @@ const longPress = {
     max-width: 1200px;
     margin: 0 auto;
   }
-  
+
   .grid-three-columns {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -1408,6 +1499,7 @@ const longPress = {
 ### 7.2 布局适配
 
 #### Flex布局规范
+
 ```css
 /* 水平居中 */
 .flex-center {
@@ -1446,6 +1538,7 @@ const longPress = {
 ```
 
 #### 字体响应式
+
 ```css
 /* 响应式字体 */
 @media (max-width: 375px) {
@@ -1474,6 +1567,7 @@ const longPress = {
 ### 8.1 色彩对比度
 
 #### 对比度标准
+
 ```css
 /* WCAG 2.1 AA 标准对比度要求 */
 /* 正常文字: 对比度 ≥ 4.5:1 */
@@ -1483,12 +1577,12 @@ const longPress = {
 .high-contrast-text {
   /* 深色文字 + 白色背景: 对比度 15.3:1 */
   color: #262626;
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 .high-contrast-inverse {
   /* 白色文字 + 深色背景: 对比度 15.3:1 */
-  color: #FFFFFF;
+  color: #ffffff;
   background: #262626;
 }
 
@@ -1496,24 +1590,25 @@ const longPress = {
 .medium-contrast-text {
   /* 灰色文字 + 白色背景: 对比度 4.6:1 */
   color: #595959;
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 /* 错误示例 - 对比度不足 */
 .low-contrast-text {
   /* 浅灰色文字 + 白色背景: 对比度 2.3:1 (不符合标准) */
-  color: #BFBFBF;
-  background: #FFFFFF;
+  color: #bfbfbf;
+  background: #ffffff;
 }
 ```
 
 #### 色盲友好设计
+
 ```css
 /* 避免仅用颜色传达信息 */
 .status-indicator {
   /* 错误做法: 仅用颜色区分状态 */
   /* color: var(--success-color); */
-  
+
   /* 正确做法: 颜色 + 图标 + 文字 */
   color: var(--success-color);
 }
@@ -1526,17 +1621,18 @@ const longPress = {
 /* 色盲安全色彩组合 */
 .colorblind-safe {
   /* 使用蓝色和橙色的组合，对色盲友好 */
-  --safe-primary: #0066CC;
-  --safe-secondary: #FF6600;
-  --safe-success: #228B22;
-  --safe-warning: #FFB347;
-  --safe-error: #DC143C;
+  --safe-primary: #0066cc;
+  --safe-secondary: #ff6600;
+  --safe-success: #228b22;
+  --safe-warning: #ffb347;
+  --safe-error: #dc143c;
 }
 ```
 
 ### 8.2 键盘导航
 
 #### 焦点管理
+
 ```css
 /* 焦点样式 */
 .focusable {
@@ -1598,6 +1694,7 @@ const longPress = {
 ### 8.3 屏幕阅读器支持
 
 #### ARIA属性使用
+
 ```html
 <!-- 语义化标签示例 -->
 <header role="banner">
@@ -1617,14 +1714,12 @@ const longPress = {
 <form role="form">
   <fieldset>
     <legend>基本信息</legend>
-    
-    <label for="patient-name">
-      患者姓名 <span aria-label="必填项">*</span>
-    </label>
-    <input 
-      id="patient-name" 
-      type="text" 
-      required 
+
+    <label for="patient-name"> 患者姓名 <span aria-label="必填项">*</span> </label>
+    <input
+      id="patient-name"
+      type="text"
+      required
       aria-describedby="name-error"
       aria-invalid="false"
     />
@@ -1648,6 +1743,7 @@ const longPress = {
 ```
 
 #### 屏幕阅读器专用样式
+
 ```css
 /* 仅屏幕阅读器可见 */
 .sr-only {
@@ -1682,6 +1778,7 @@ const longPress = {
 ### 9.1 设计文件交付
 
 #### Figma文件结构
+
 ```
 📁 患者档案管理系统设计
 ├── 📄 封面页 (Cover)
@@ -1702,29 +1799,30 @@ const longPress = {
 ```
 
 #### 组件库规范
+
 ```javascript
 // 组件命名规范
 const componentNaming = {
   // 基础组件
   'Button/Primary': '主要按钮',
-  'Button/Secondary': '次要按钮', 
+  'Button/Secondary': '次要按钮',
   'Button/Text': '文字按钮',
-  
+
   // 表单组件
   'Input/Base': '基础输入框',
   'Input/Search': '搜索输入框',
   'Input/WithIcon': '带图标输入框',
-  
+
   // 数据展示
   'Card/Patient': '患者卡片',
   'Card/Stat': '统计卡片',
   'Tag/Status': '状态标签',
-  
+
   // 业务组件
-  'PatientCard': '患者信息卡片',
-  'SearchBar': '搜索栏',
-  'FilterPanel': '筛选面板'
-}
+  PatientCard: '患者信息卡片',
+  SearchBar: '搜索栏',
+  FilterPanel: '筛选面板',
+};
 
 // 变量命名规范
 const tokenNaming = {
@@ -1732,22 +1830,23 @@ const tokenNaming = {
   'Primary/500': '主色调',
   'Gray/50': '浅灰色背景',
   'Success/500': '成功色',
-  
+
   // 字体变量
   'Text/H1': '一级标题',
   'Text/Body': '正文',
   'Text/Caption': '说明文字',
-  
+
   // 间距变量
   'Space/XS': '极小间距 8rpx',
   'Space/SM': '小间距 16rpx',
-  'Space/MD': '中间距 24rpx'
-}
+  'Space/MD': '中间距 24rpx',
+};
 ```
 
 ### 9.2 切图资源交付
 
 #### 切图命名规范
+
 ```
 图标类型_功能描述_状态_尺寸@倍数.格式
 
@@ -1771,6 +1870,7 @@ avatar_placeholder_large@3x.png
 ```
 
 #### 导出配置
+
 ```javascript
 // Figma导出设置
 const exportSettings = {
@@ -1780,65 +1880,68 @@ const exportSettings = {
     svgSettings: {
       outlineText: true,
       includeId: false,
-      simplifyStroke: true
-    }
+      simplifyStroke: true,
+    },
   },
-  
+
   images: {
     formats: ['PNG', 'WebP'],
     scales: ['1x', '2x', '3x'],
-    quality: 90
+    quality: 90,
   },
-  
+
   components: {
     format: 'SVG',
     includeIds: true,
-    outline: false
-  }
-}
+    outline: false,
+  },
+};
 ```
 
 ### 9.3 开发资源交付
 
 #### CSS变量文件
+
 ```css
 /* design-tokens.css */
 :root {
   /* === 色彩系统 === */
   /* 主色调 */
-  --primary-50: #FFF7F0;
-  --primary-100: #FFEDE0;
-  --primary-200: #FFDBCC;
-  --primary-300: #FFC2A3;
-  --primary-400: #FF9A6B;
-  --primary-500: #FF7A45;  /* 主色 */
-  --primary-600: #E85D2B;
-  --primary-700: #CC4A1A;
-  --primary-800: #B8360F;
-  --primary-900: #A02D0C;
+  --primary-50: #fff7f0;
+  --primary-100: #ffede0;
+  --primary-200: #ffdbcc;
+  --primary-300: #ffc2a3;
+  --primary-400: #ff9a6b;
+  --primary-500: #ff7a45; /* 主色 */
+  --primary-600: #e85d2b;
+  --primary-700: #cc4a1a;
+  --primary-800: #b8360f;
+  --primary-900: #a02d0c;
 
   /* 中性色 */
-  --gray-50: #FAFAFA;
-  --gray-100: #F5F5F5;
-  --gray-200: #F0F0F0;
-  --gray-300: #D9D9D9;
-  --gray-400: #BFBFBF;
-  --gray-500: #8C8C8C;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #f0f0f0;
+  --gray-300: #d9d9d9;
+  --gray-400: #bfbfbf;
+  --gray-500: #8c8c8c;
   --gray-600: #595959;
   --gray-700: #434343;
   --gray-800: #262626;
-  --gray-900: #1F1F1F;
+  --gray-900: #1f1f1f;
 
   /* 功能色 */
-  --success-500: #52C41A;
-  --warning-500: #FAAD14;
-  --error-500: #FF4D4F;
-  --info-500: #1890FF;
+  --success-500: #52c41a;
+  --warning-500: #faad14;
+  --error-500: #ff4d4f;
+  --info-500: #1890ff;
 
   /* === 字体系统 === */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-family-mono: 'SF Mono', Monaco, 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
-  
+
   /* 字体大小 */
   --text-xs: 18rpx;
   --text-sm: 20rpx;
@@ -1878,7 +1981,7 @@ const exportSettings = {
   /* === 阴影系统 === */
   --shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   --shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 6rpx 20rpx rgba(0, 0, 0, 0.10);
+  --shadow-md: 0 6rpx 20rpx rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
   --shadow-xl: 0 12rpx 32rpx rgba(0, 0, 0, 0.16);
 
@@ -1894,6 +1997,7 @@ const exportSettings = {
 ```
 
 #### 组件样式模板
+
 ```css
 /* button.css - 按钮组件样式 */
 .btn {
@@ -2001,7 +2105,9 @@ const exportSettings = {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 图标按钮 */
@@ -2026,6 +2132,7 @@ const exportSettings = {
 ### 9.4 技术规范文档
 
 #### 组件开发规范
+
 ```javascript
 // 组件接口规范
 interface ButtonProps {
@@ -2034,16 +2141,16 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
-  
+
   // 样式属性
   round?: boolean
   block?: boolean
   ghost?: boolean
-  
+
   // 图标属性
   icon?: string
   iconPosition?: 'left' | 'right'
-  
+
   // 事件属性
   onClick?: (event: Event) => void
   onTouchStart?: (event: TouchEvent) => void
@@ -2051,9 +2158,9 @@ interface ButtonProps {
 }
 
 // 使用示例
-<Button 
-  type="primary" 
-  size="lg" 
+<Button
+  type="primary"
+  size="lg"
   icon="icon-plus"
   loading={isSubmitting}
   onClick={handleSubmit}
@@ -2063,6 +2170,7 @@ interface ButtonProps {
 ```
 
 #### 动画规范
+
 ```javascript
 // 动画配置
 const animations = {
@@ -2070,14 +2178,14 @@ const animations = {
   pageTransition: {
     enter: {
       opacity: [0, 1],
-      transform: ['translateX(100%)', 'translateX(0%)']
+      transform: ['translateX(100%)', 'translateX(0%)'],
     },
     exit: {
       opacity: [1, 0],
-      transform: ['translateX(0%)', 'translateX(-100%)']
+      transform: ['translateX(0%)', 'translateX(-100%)'],
     },
     duration: 300,
-    easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)'
+    easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
   },
 
   // 模态框
@@ -2085,30 +2193,31 @@ const animations = {
     enter: {
       opacity: [0, 1],
       transform: ['scale(0.9)', 'scale(1)'],
-      transformOrigin: 'center'
+      transformOrigin: 'center',
     },
     exit: {
       opacity: [1, 0],
-      transform: ['scale(1)', 'scale(0.9)']
+      transform: ['scale(1)', 'scale(0.9)'],
     },
     duration: 200,
-    easing: 'cubic-bezier(0, 0, 0.2, 1)'
+    easing: 'cubic-bezier(0, 0, 0.2, 1)',
   },
 
   // 列表项
   listItem: {
     enter: {
       opacity: [0, 1],
-      transform: ['translateY(20rpx)', 'translateY(0)']
+      transform: ['translateY(20rpx)', 'translateY(0)'],
     },
-    stagger: 50 // 每个项目延迟50ms
-  }
-}
+    stagger: 50, // 每个项目延迟50ms
+  },
+};
 ```
 
 ### 9.5 设计协作流程
 
 #### 设计评审流程
+
 ```mermaid
 graph LR
     A[设计需求] --> B[设计方案]
@@ -2124,28 +2233,33 @@ graph LR
 ```
 
 #### 设计交付清单
+
 ```markdown
 ## 设计交付检查清单
 
 ### 设计文件 ✓
+
 - [ ] Figma设计文件完整
 - [ ] 组件库搭建完成
 - [ ] 设计系统文档齐全
 - [ ] 页面设计覆盖所有功能
 
 ### 切图资源 ✓
+
 - [ ] 图标资源导出 (SVG + PNG)
 - [ ] 插画资源导出
 - [ ] 多倍图资源完整
 - [ ] 命名规范统一
 
 ### 技术文档 ✓
+
 - [ ] CSS变量文件
 - [ ] 组件样式模板
 - [ ] 动画规范说明
 - [ ] 响应式断点设置
 
 ### 标注说明 ✓
+
 - [ ] 间距标注完整
 - [ ] 字体样式标注
 - [ ] 颜色值标注
@@ -2153,6 +2267,7 @@ graph LR
 - [ ] 交互动效说明
 
 ### 协作支持 ✓
+
 - [ ] 开发环境搭建指导
 - [ ] 组件使用文档
 - [ ] 常见问题解答
@@ -2166,18 +2281,21 @@ graph LR
 ### 10.1 参考资源
 
 #### 设计系统参考
+
 - **Material Design 3** - Google最新设计系统
-- **Apple Human Interface Guidelines** - iOS设计规范  
+- **Apple Human Interface Guidelines** - iOS设计规范
 - **Ant Design** - 企业级UI设计语言
 - **Carbon Design System** - IBM开源设计系统
 - **Atlassian Design System** - 协作工具设计系统
 
 #### 无障碍性参考
+
 - **WCAG 2.1** - Web内容无障碍指南
 - **Section 508** - 美国联邦无障碍标准
 - **GB/T 37668-2019** - 中国信息技术无障碍设计规范
 
 #### 微信小程序设计参考
+
 - **微信小程序设计指南** - 官方设计规范
 - **WeUI** - 微信官方UI组件库
 - **小程序人机界面指南** - 微信官方交互规范
@@ -2185,6 +2303,7 @@ graph LR
 ### 10.2 设计工具
 
 #### 主要设计工具
+
 - **Figma** - 主要设计和原型工具
 - **Sketch** - 设计稿制作 (备选)
 - **Principle** - 交互原型工具
@@ -2192,6 +2311,7 @@ graph LR
 - **Contrast** - 对比度检测工具
 
 #### 辅助工具
+
 - **ColorBox** - 色彩系统生成器
 - **Type Scale** - 字体比例工具
 - **Modular Scale** - 间距系统计算器
@@ -2200,30 +2320,29 @@ graph LR
 ### 10.3 技术实现建议
 
 #### 性能优化建议
+
 ```javascript
 // 图片懒加载
 const lazyImages = {
   threshold: 0.1,
   rootMargin: '50px',
-  loadingPlaceholder: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2VlZSIvPjwvc3ZnPg=='
-}
+  loadingPlaceholder:
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2VlZSIvPjwvc3ZnPg==',
+};
 
 // 组件懒加载
-const lazyComponents = [
-  'PatientDetail',
-  'DataAnalytics', 
-  'DocumentViewer'
-]
+const lazyComponents = ['PatientDetail', 'DataAnalytics', 'DocumentViewer'];
 
 // 代码分割策略
 const codesplitting = {
-  pages: 'by-route',    // 按路由分割
+  pages: 'by-route', // 按路由分割
   components: 'by-size', // 按大小分割
-  vendors: 'by-usage'   // 按使用频率分割
-}
+  vendors: 'by-usage', // 按使用频率分割
+};
 ```
 
 #### 兼容性处理
+
 ```css
 /* CSS兼容性 */
 .compat-grid {
@@ -2231,7 +2350,7 @@ const codesplitting = {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-4);
-  
+
   /* 降级方案 */
   display: flex;
   flex-wrap: wrap;
@@ -2251,7 +2370,7 @@ const codesplitting = {
     display: grid;
     margin: 0;
   }
-  
+
   .compat-grid > * {
     margin: 0;
   }
@@ -2265,20 +2384,25 @@ const codesplitting = {
 本视觉设计文档为微信小程序患者档案管理系统重构提供了全面的设计指导，涵盖了从设计原则、视觉系统到具体实现的各个方面。
 
 ### 核心价值
+
 - **用户体验优先**: 以用户需求为中心，创造直观易用的界面
-- **设计系统化**: 建立一致性的设计语言和组件体系  
+- **设计系统化**: 建立一致性的设计语言和组件体系
 - **无障碍友好**: 确保所有用户都能平等访问和使用
 - **技术实现友好**: 提供详细的开发指导和资源支持
 
 ### 预期效果
+
 通过实施本设计方案，预期能够：
+
 - **提升用户满意度60%** - 通过人性化设计和流程优化
 - **提高工作效率40%** - 通过界面简化和智能化功能
 - **降低学习成本50%** - 通过一致性设计和直观交互
 - **增强品牌形象** - 通过专业的视觉设计展现公益组织的专业性
 
 ### 持续改进
+
 设计系统将持续迭代和优化：
+
 - **用户反馈驱动** - 基于真实用户反馈进行设计优化
 - **技术发展跟进** - 跟进微信小程序平台的技术更新
 - **无障碍性提升** - 持续改进无障碍性支持
@@ -2286,7 +2410,7 @@ const codesplitting = {
 
 ---
 
-*本文档将随着项目进展持续更新，确保设计方案的时效性和准确性。如有疑问或建议，请联系设计团队。*
+_本文档将随着项目进展持续更新，确保设计方案的时效性和准确性。如有疑问或建议，请联系设计团队。_
 
 **文档版本**: v1.0  
 **最后更新**: 2025年9月22日  

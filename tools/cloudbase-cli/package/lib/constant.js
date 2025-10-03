@@ -1,30 +1,40 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EnvType = exports.DEFAULT_CPU_MEM_SET = exports.CPU_MEM_OPTS = exports.ConcurrencyTaskStatus = exports.StatusMap = exports.ALL_COMMANDS = exports.STATUS_TEXT = exports.REQUEST_TIMEOUT = exports.DefaultCloudBaseConfig = exports.DefaultFunctionDeployConfig = exports.ConfigItems = void 0;
-class ConfigItems {
-}
-exports.ConfigItems = ConfigItems;
-ConfigItems.credential = 'credential';
-ConfigItems.ssh = 'ssh';
+'use strict'
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.EnvType =
+    exports.DEFAULT_CPU_MEM_SET =
+    exports.CPU_MEM_OPTS =
+    exports.ConcurrencyTaskStatus =
+    exports.StatusMap =
+    exports.ALL_COMMANDS =
+    exports.STATUS_TEXT =
+    exports.REQUEST_TIMEOUT =
+    exports.DefaultCloudBaseConfig =
+    exports.DefaultFunctionDeployConfig =
+    exports.ConfigItems =
+        void 0
+class ConfigItems {}
+exports.ConfigItems = ConfigItems
+ConfigItems.credential = 'credential'
+ConfigItems.ssh = 'ssh'
 exports.DefaultFunctionDeployConfig = {
     timeout: 3,
     handler: 'index.main',
     runtime: 'Nodejs10.15',
     installDependency: true,
     ignore: ['node_modules', 'node_modules/**/*', '.git']
-};
+}
 exports.DefaultCloudBaseConfig = {
     functionRoot: './functions',
     functions: []
-};
-exports.REQUEST_TIMEOUT = 15000;
+}
+exports.REQUEST_TIMEOUT = 15000
 exports.STATUS_TEXT = {
     UNAVAILABLE: '创建中',
     NORMAL: '正常',
     ISOLATE: '隔离中',
     ABNORMAL: '异常',
     ERROR: '异常'
-};
+}
 exports.ALL_COMMANDS = [
     'login',
     'logout',
@@ -96,7 +106,7 @@ exports.ALL_COMMANDS = [
     'run service:deploy',
     'run deploy',
     'run service:config'
-];
+]
 exports.StatusMap = {
     Active: '部署完成',
     Creating: '创建中',
@@ -107,12 +117,12 @@ exports.StatusMap = {
     PublishFailed: '函数版本发布失败',
     Deleting: '函数删除中',
     DeleteFailed: '函数删除失败'
-};
+}
 exports.ConcurrencyTaskStatus = {
     Done: '已完成',
     InProgress: '进行中',
     Failed: '失败'
-};
+}
 exports.CPU_MEM_OPTS = [
     { cpu: 0.25, mems: [0.5] },
     { cpu: 0.5, mems: [1] },
@@ -120,8 +130,8 @@ exports.CPU_MEM_OPTS = [
     { cpu: 2, mems: [4] },
     { cpu: 4, mems: [8] },
     { cpu: 8, mems: [16] },
-    { cpu: 16, mems: [32] },
-];
+    { cpu: 16, mems: [32] }
+]
 exports.DEFAULT_CPU_MEM_SET = [
     {
         PolicyType: 'mem',
@@ -130,12 +140,12 @@ exports.DEFAULT_CPU_MEM_SET = [
     {
         PolicyType: 'cpu',
         PolicyThreshold: 60
-    },
-];
-var EnvType;
-(function (EnvType) {
-    EnvType["BAAS"] = "baas";
-    EnvType["RUN"] = "run";
-    EnvType["HOTING"] = "hoting";
-    EnvType["WEDA"] = "weda";
-})(EnvType = exports.EnvType || (exports.EnvType = {}));
+    }
+]
+var EnvType
+;(function (EnvType) {
+    EnvType['BAAS'] = 'baas'
+    EnvType['RUN'] = 'run'
+    EnvType['HOTING'] = 'hoting'
+    EnvType['WEDA'] = 'weda'
+})((EnvType = exports.EnvType || (exports.EnvType = {})))

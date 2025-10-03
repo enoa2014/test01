@@ -1,12 +1,8 @@
-const {
-  IMAGE_EXTENSIONS,
-  DOCUMENT_EXTENSIONS,
-  EXTENSION_MIME_MAP
-} = require("./constants.js");
+const { IMAGE_EXTENSIONS, DOCUMENT_EXTENSIONS, EXTENSION_MIME_MAP } = require('./constants.js');
 
 function normalizeString(value) {
   if (value === undefined || value === null) {
-    return "";
+    return '';
   }
   return String(value).trim();
 }
@@ -15,7 +11,7 @@ function generateUuid() {
   const timePart = Date.now().toString(16);
   const randomPart = Math.floor(Math.random() * 0xffffffff)
     .toString(16)
-    .padStart(8, "0");
+    .padStart(8, '0');
   return `${timePart}${randomPart}`;
 }
 
@@ -33,53 +29,53 @@ function formatFileSize(bytes) {
 function formatDateTime(timestamp) {
   const timeValue = Number(timestamp);
   if (!Number.isFinite(timeValue)) {
-    return "";
+    return '';
   }
   const date = new Date(timeValue);
   if (Number.isNaN(date.getTime())) {
-    return "";
+    return '';
   }
   const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const hour = `${date.getHours()}`.padStart(2, "0");
-  const minute = `${date.getMinutes()}`.padStart(2, "0");
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  const hour = `${date.getHours()}`.padStart(2, '0');
+  const minute = `${date.getMinutes()}`.padStart(2, '0');
   return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
 function formatDateForInput(value) {
   if (!value) {
-    return "";
+    return '';
   }
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) {
       return [
         date.getFullYear(),
-        `${date.getMonth() + 1}`.padStart(2, "0"),
-        `${date.getDate()}`.padStart(2, "0")
-      ].join("-");
+        `${date.getMonth() + 1}`.padStart(2, '0'),
+        `${date.getDate()}`.padStart(2, '0'),
+      ].join('-');
     }
   }
-  if (typeof value === "string" && value.length >= 8) {
-    const normalized = value.replace(/[./]/g, "-");
+  if (typeof value === 'string' && value.length >= 8) {
+    const normalized = value.replace(/[./]/g, '-');
     const date = new Date(normalized);
     if (!Number.isNaN(date.getTime())) {
       return [
         date.getFullYear(),
-        `${date.getMonth() + 1}`.padStart(2, "0"),
-        `${date.getDate()}`.padStart(2, "0")
-      ].join("-");
+        `${date.getMonth() + 1}`.padStart(2, '0'),
+        `${date.getDate()}`.padStart(2, '0'),
+      ].join('-');
     }
   }
-  return "";
+  return '';
 }
 
 function toTimestampFromDateInput(value) {
   if (!value) {
     return undefined;
   }
-  const normalized = `${value}`.replace(/[./]/g, "-");
+  const normalized = `${value}`.replace(/[./]/g, '-');
   const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) {
     return undefined;
@@ -90,7 +86,7 @@ function toTimestampFromDateInput(value) {
 function sanitizeFileName(name) {
   const value = normalizeString(name);
   if (!value) {
-    return "";
+    return '';
   }
   return value.split(/[\\/]/).pop();
 }
@@ -98,7 +94,7 @@ function sanitizeFileName(name) {
 function inferExtension(fileName) {
   const sanitized = sanitizeFileName(fileName).toLowerCase();
   const match = sanitized.match(/\.([a-z0-9]+)$/);
-  return match ? match[1] : "";
+  return match ? match[1] : '';
 }
 
 function inferMimeType(fileName, fallback) {
@@ -110,7 +106,7 @@ function inferMimeType(fileName, fallback) {
   if (normalizedFallback) {
     return normalizedFallback;
   }
-  return "";
+  return '';
 }
 
 function isImageExtension(ext) {
@@ -123,7 +119,7 @@ function isDocumentExtension(ext) {
 
 function safeTrim(value) {
   if (value === undefined || value === null) {
-    return "";
+    return '';
   }
   return String(value).trim();
 }
@@ -140,5 +136,5 @@ module.exports = {
   inferMimeType,
   isImageExtension,
   isDocumentExtension,
-  safeTrim
+  safeTrim,
 };

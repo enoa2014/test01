@@ -1,9 +1,8 @@
 const path = require('path');
 
-const { createMediaService } = require(path.resolve(
-  __dirname,
-  '../../../miniprogram/pages/patient-detail/media-service.js'
-));
+const { createMediaService } = require(
+  path.resolve(__dirname, '../../../miniprogram/pages/patient-detail/media-service.js')
+);
 
 describe('patient-detail media service dispose lifecycle', () => {
   let page;

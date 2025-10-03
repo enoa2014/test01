@@ -8,6 +8,7 @@
 ## 📊 改进概览
 
 ### 核心问题
+
 1. **按钮拥挤** - 5个操作按钮排列混乱,占用空间大
 2. **层次不清** - 所有按钮样式相同,缺乏主次区分
 3. **信息弱化** - 已选计数不够醒目
@@ -15,12 +16,12 @@
 
 ### 改进前后对比
 
-| 指标 | 改进前 | 改进后 | 提升 |
-|------|--------|--------|------|
-| **工具栏按钮数量** | 5个 | 2个 | **-60%** |
-| **已选计数醒目度** | 小文字 | 大数字+强调色 | **+200%** |
-| **全选操作步骤** | 无直接入口 | 一键全选/反选 | **+100%** |
-| **批量操作可见性** | 所有按钮常驻 | 按需展开菜单 | **+50%** |
+| 指标               | 改进前       | 改进后        | 提升      |
+| ------------------ | ------------ | ------------- | --------- |
+| **工具栏按钮数量** | 5个          | 2个           | **-60%**  |
+| **已选计数醒目度** | 小文字       | 大数字+强调色 | **+200%** |
+| **全选操作步骤**   | 无直接入口   | 一键全选/反选 | **+100%** |
+| **批量操作可见性** | 所有按钮常驻 | 按需展开菜单  | **+50%**  |
 
 ---
 
@@ -29,6 +30,7 @@
 ### 1. 工具栏视觉重构 ✅
 
 **改进前**:
+
 ```xml
 <view class="batch-toolbar">
   <view class="batch-toolbar__info">已选 0 项</view>
@@ -43,6 +45,7 @@
 ```
 
 **改进后**:
+
 ```xml
 <view class="batch-toolbar">
   <view class="batch-toolbar__left">
@@ -61,6 +64,7 @@
 ```
 
 **效果**:
+
 - ✅ 按钮数量从 5 个减少到 2 个 (-60%)
 - ✅ 已选计数使用大数字 + 主题色高亮
 - ✅ 全选/反选一键切换,提升操作效率
@@ -71,15 +75,21 @@
 ### 2. 视觉层次优化 ✅
 
 **新增渐变背景**:
+
 ```wxss
 .batch-toolbar {
-  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-bg-tertiary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-lighter) 0%,
+    var(--color-bg-tertiary) 100%
+  );
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 ```
 
 **已选计数强化**:
+
 ```wxss
 .batch-toolbar__count {
   font-size: var(--text-2xl);
@@ -91,6 +101,7 @@
 ```
 
 **效果**:
+
 - ✅ 批量模式状态更加醒目
 - ✅ 已选数量视觉重心突出
 - ✅ 品牌色贯穿整体设计
@@ -100,6 +111,7 @@
 ### 3. 智能全选/反选 ✅
 
 **新增全选逻辑** (index.js 第 1349-1371 行):
+
 ```javascript
 handleBatchSelectAll() {
   const currentMap = this.data.selectedPatientMap || {};
@@ -127,16 +139,20 @@ handleBatchSelectAll() {
 ```
 
 **全选状态同步** (index.js 第 1324-1329 行):
+
 ```javascript
 // 计算是否全选
 const all = this.buildFilteredPatients(this.data.patients || []);
-const allSelected = all.length > 0 && all.every(item => {
-  const key = this.resolvePatientKey(item);
-  return key && nextMap[key];
-});
+const allSelected =
+  all.length > 0 &&
+  all.every(item => {
+    const key = this.resolvePatientKey(item);
+    return key && nextMap[key];
+  });
 ```
 
 **效果**:
+
 - ✅ 一键全选/反选,提升批量操作效率
 - ✅ 全选状态实时同步,视觉反馈准确
 - ✅ 支持筛选后的局部全选
@@ -146,6 +162,7 @@ const allSelected = all.length > 0 && all.every(item => {
 ### 4. 批量操作菜单 ✅
 
 **新增 ActionSheet 菜单** (index.js 第 1395-1418 行):
+
 ```javascript
 showBatchActionSheet() {
   const patients = Object.values(this.data.selectedPatientMap || {});
@@ -168,6 +185,7 @@ showBatchActionSheet() {
 ```
 
 **效果**:
+
 - ✅ 减少常驻按钮,工具栏更简洁
 - ✅ 操作集中管理,交互更流畅
 - ✅ 符合微信小程序操作习惯
@@ -177,6 +195,7 @@ showBatchActionSheet() {
 ### 5. 全选按钮交互优化 ✅
 
 **新增全选按钮样式**:
+
 ```wxss
 .batch-toolbar__select-all {
   display: flex;
@@ -200,6 +219,7 @@ showBatchActionSheet() {
 ```
 
 **效果**:
+
 - ✅ 全选按钮视觉独立,易于识别
 - ✅ 按压动画提供即时反馈
 - ✅ 图标+文字双重提示
@@ -209,16 +229,19 @@ showBatchActionSheet() {
 ## 📈 用户体验提升
 
 ### 视觉优化
+
 - **信息层次**: 已选数量 → 全选按钮 → 操作按钮,视觉权重递减
 - **颜色系统**: 主题色渐变背景 + 品牌色数字高亮
 - **空间利用**: 按钮数量减少 60%,视觉干扰降低
 
 ### 交互优化
+
 - **全选效率**: 从逐个点击 → 一键全选/反选
 - **操作发现**: 批量操作从隐藏 → 显式"操作"按钮
 - **状态反馈**: 全选图标实时同步 (☐/☑)
 
 ### 性能优化
+
 - **渲染优化**: 减少 3 个按钮渲染,提升渲染性能
 - **状态管理**: 优化全选状态计算逻辑
 
@@ -251,20 +274,20 @@ showBatchActionSheet() {
 
 ### 文件修改清单
 
-| 文件 | 变更类型 | 行数变化 | 说明 |
-|------|----------|----------|------|
-| `index.wxml` | 重构 | -8, +17 | 批量工具栏重构 |
-| `index.wxss` | 重构 | -14, +48 | 批量工具栏样式优化 |
-| `index.js` | 新增/修改 | +45 | 全选逻辑 + 批量操作菜单 |
-| **总计** | - | **-22, +110** | **净增 88 行** |
+| 文件         | 变更类型  | 行数变化      | 说明                    |
+| ------------ | --------- | ------------- | ----------------------- |
+| `index.wxml` | 重构      | -8, +17       | 批量工具栏重构          |
+| `index.wxss` | 重构      | -14, +48      | 批量工具栏样式优化      |
+| `index.js`   | 新增/修改 | +45           | 全选逻辑 + 批量操作菜单 |
+| **总计**     | -         | **-22, +110** | **净增 88 行**          |
 
 ### 新增方法
 
 ```javascript
 // index.js
-showBatchActionSheet()  // 显示批量操作菜单
-handleBatchSelectAll()  // 智能全选/反选 (重构)
-setBatchState()         // 新增 allSelected 状态计算 (增强)
+showBatchActionSheet(); // 显示批量操作菜单
+handleBatchSelectAll(); // 智能全选/反选 (重构)
+setBatchState(); // 新增 allSelected 状态计算 (增强)
 ```
 
 ### 新增数据字段
@@ -293,6 +316,7 @@ data: {
 ### 🟡 P1 - 短期优化
 
 #### 1. 批量操作进度提示
+
 **目标**: 大量患者批量操作时提供进度反馈
 
 ```javascript
@@ -311,6 +335,7 @@ async handleBatchRemind() {
 ```
 
 #### 2. 批量模式引导动画
+
 **目标**: 首次进入批量模式时提供操作引导
 
 ```xml
@@ -323,12 +348,15 @@ async handleBatchRemind() {
 ### 🟢 P2 - 长期优化
 
 #### 1. 批量模式快捷手势
+
 支持长按拖动连续选择患者
 
 #### 2. 批量操作撤销功能
+
 批量删除/导出后支持撤销操作
 
 #### 3. 批量选择记忆
+
 退出批量模式后保留选择状态,再次进入时恢复
 
 ---
@@ -336,16 +364,19 @@ async handleBatchRemind() {
 ## 💡 设计决策记录
 
 ### 为什么将批量操作收起到菜单?
+
 - **数据**: 批量操作使用频率 <20%,不应占据显著位置
 - **方案**: ActionSheet 菜单平衡了功能可用性和视觉简洁性
 - **收益**: 工具栏按钮减少 60%,视觉干扰降低
 
 ### 为什么使用大数字显示已选数量?
+
 - **原因**: 已选数量是批量模式的核心信息,需要醒目
 - **方案**: 大数字 + 品牌色高亮 + 专用样式
 - **收益**: 信息获取效率提升 200%
 
 ### 为什么全选按钮支持反选?
+
 - **数据**: 用户全选后经常需要取消全选重新选择
 - **方案**: 智能判断当前状态,一键切换全选/反选
 - **收益**: 操作步骤减少 50%,交互更流畅
@@ -355,6 +386,7 @@ async handleBatchRemind() {
 ## 🐛 已知问题修复
 
 ### 问题 1: 点击"更多"按钮会进入详情页 ✅
+
 - **原因**: PatientCard 组件使用 `bindtap`,无法阻止事件冒泡
 - **修复**: 将 `bindtap="handleActionTap"` 改为 `catchtap="handleActionTap"`
 - **影响文件**: [miniprogram/components/business/patient-card/index.wxml:54](miniprogram/components/business/patient-card/index.wxml#L54)

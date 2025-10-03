@@ -16,12 +16,12 @@
 
 本项目使用以下云数据库集合：
 
-| 集合名称 | 用途 | 记录类型 |
-|---------|------|----------|
-| `excel_records` | Excel原始数据存储 | 患者入院记录原始数据 |
-| `excel_cache` | 患者汇总缓存 | 30分钟TTL的患者列表缓存 |
-| `patients` | 患者档案 | 去重后的患者基本信息 |
-| `patient_intake_records` | 入住记录 | 患者入住流程记录 |
+| 集合名称                 | 用途              | 记录类型                |
+| ------------------------ | ----------------- | ----------------------- |
+| `excel_records`          | Excel原始数据存储 | 患者入院记录原始数据    |
+| `excel_cache`            | 患者汇总缓存      | 30分钟TTL的患者列表缓存 |
+| `patients`               | 患者档案          | 去重后的患者基本信息    |
+| `patient_intake_records` | 入住记录          | 患者入住流程记录        |
 
 ### 数据流架构
 
@@ -75,13 +75,13 @@ npm list xlsx
 
 ```javascript
 // backup-database.js
-const tcb = require("@cloudbase/node-sdk");
+const tcb = require('@cloudbase/node-sdk');
 
 // 初始化配置
 const app = tcb.init({
   env: process.env.TCB_ENV,
   secretId: process.env.TENCENTCLOUD_SECRETID,
-  secretKey: process.env.TENCENTCLOUD_SECRETKEY
+  secretKey: process.env.TENCENTCLOUD_SECRETKEY,
 });
 
 async function backupCollection(collectionName) {
@@ -91,10 +91,7 @@ async function backupCollection(collectionName) {
   const limit = 100;
 
   while (true) {
-    const res = await db.collection(collectionName)
-      .skip(skip)
-      .limit(limit)
-      .get();
+    const res = await db.collection(collectionName).skip(skip).limit(limit).get();
 
     if (!res.data || res.data.length === 0) break;
 
@@ -118,21 +115,16 @@ async function backupCollection(collectionName) {
 
 ```javascript
 // clear-database.js
-const tcb = require("@cloudbase/node-sdk");
+const tcb = require('@cloudbase/node-sdk');
 
 const app = tcb.init({
   env: process.env.TCB_ENV,
   secretId: process.env.TENCENTCLOUD_SECRETID,
-  secretKey: process.env.TENCENTCLOUD_SECRETKEY
+  secretKey: process.env.TENCENTCLOUD_SECRETKEY,
 });
 
 const db = app.database();
-const collections = [
-  'excel_records',
-  'excel_cache',
-  'patients',
-  'patient_intake_records'
-];
+const collections = ['excel_records', 'excel_cache', 'patients', 'patient_intake_records'];
 
 async function clearCollection(collectionName) {
   console.log(`开始清空集合: ${collectionName}`);
@@ -151,7 +143,9 @@ async function clearCollection(collectionName) {
       const deletePromises = docs
         .filter(doc => doc && doc._id)
         .map(doc =>
-          collection.doc(doc._id).remove()
+          collection
+            .doc(doc._id)
+            .remove()
             .catch(error => {
               console.warn(`删除文档失败 ${collectionName}/${doc._id}:`, error.message);
               return null;
@@ -165,10 +159,11 @@ async function clearCollection(collectionName) {
 
     console.log(`✅ 集合 ${collectionName} 清空完成，共删除 ${totalDeleted} 条记录`);
     return totalDeleted;
-
   } catch (error) {
-    if (error.errCode === -502005 ||
-        (error.errMsg && error.errMsg.includes('DATABASE_COLLECTION_NOT_EXIST'))) {
+    if (
+      error.errCode === -502005 ||
+      (error.errMsg && error.errMsg.includes('DATABASE_COLLECTION_NOT_EXIST'))
+    ) {
       console.log(`ℹ️  集合 ${collectionName} 不存在，跳过清空`);
       return 0;
     }
@@ -200,6 +195,7 @@ node clear-database.js
 ```
 
 **预期输出示例：**
+
 ```
 开始清空集合: excel_records
   已删除 20 条记录，累计 20 条
@@ -235,18 +231,19 @@ node clear-database.js
 
 ```javascript
 // import-data.js
-const tcb = require("@cloudbase/node-sdk");
+const tcb = require('@cloudbase/node-sdk');
 
 const app = tcb.init({
   env: process.env.TCB_ENV,
   secretId: process.env.TENCENTCLOUD_SECRETID,
-  secretKey: process.env.TENCENTCLOUD_SECRETKEY
+  secretKey: process.env.TENCENTCLOUD_SECRETKEY,
 });
 
 async function importData() {
   console.log('🚀 开始导入Excel数据...');
 
-  const excelFileId = process.env.EXCEL_FILE_ID ||
+  const excelFileId =
+    process.env.EXCEL_FILE_ID ||
     'cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx';
 
   try {
@@ -254,8 +251,8 @@ async function importData() {
       name: 'readExcel',
       data: {
         action: 'import',
-        fileId: excelFileId
-      }
+        fileId: excelFileId,
+      },
     });
 
     if (result.result && result.result.success !== false) {
@@ -275,7 +272,6 @@ async function importData() {
     } else {
       throw new Error('数据导入失败: ' + JSON.stringify(result.result?.error));
     }
-
   } catch (error) {
     console.error('❌ 导入失败:', error.message);
     throw error;
@@ -295,6 +291,7 @@ node import-data.js
 ```
 
 **预期输出示例：**
+
 ```
 🚀 开始导入Excel数据...
 ✅ 数据导入成功
@@ -313,12 +310,12 @@ node import-data.js
 
 ```javascript
 // verify-data.js
-const tcb = require("@cloudbase/node-sdk");
+const tcb = require('@cloudbase/node-sdk');
 
 const app = tcb.init({
   env: process.env.TCB_ENV,
   secretId: process.env.TENCENTCLOUD_SECRETID,
-  secretKey: process.env.TENCENTCLOUD_SECRETKEY
+  secretKey: process.env.TENCENTCLOUD_SECRETKEY,
 });
 
 const db = app.database();
@@ -366,10 +363,9 @@ async function verifyCollection(collectionName) {
       total,
       samples: samples.map(record => ({
         _id: record._id,
-        key: record.patientName || record.key || record._id
-      }))
+        key: record.patientName || record.key || record._id,
+      })),
     };
-
   } catch (error) {
     console.error(`❌ 验证集合 ${collectionName} 失败:`, error.message);
     return { name: collectionName, total: 'error', error: error.message };
@@ -444,6 +440,7 @@ node verify-data.js
 ```
 
 **预期输出示例：**
+
 ```
 🔍 开始验证数据库完整性...
 
@@ -500,8 +497,14 @@ async function clearCache() {
   const cacheCollection = db.collection('excel_cache');
 
   // 删除缓存文档
-  await cacheCollection.doc('default').remove().catch(() => {});
-  await cacheCollection.doc('patients_summary_cache').remove().catch(() => {});
+  await cacheCollection
+    .doc('default')
+    .remove()
+    .catch(() => {});
+  await cacheCollection
+    .doc('patients_summary_cache')
+    .remove()
+    .catch(() => {});
 
   // 强制刷新
   const result = await app.callFunction({
@@ -509,8 +512,8 @@ async function clearCache() {
     data: {
       action: 'list',
       forceRefresh: true,
-      pageSize: 5
-    }
+      pageSize: 5,
+    },
   });
 
   console.log('✅ 缓存清理完成，数据已刷新');
@@ -527,6 +530,7 @@ async function clearCache() {
 **错误信息：** `ESOCKETTIMEDOUT`
 
 **解决方案：**
+
 - 检查网络连接稳定性
 - 增加超时时间设置
 - 分批处理大量数据
@@ -536,6 +540,7 @@ async function clearCache() {
 **错误信息：** `permission denied` 或 `unauthorized`
 
 **解决方案：**
+
 ```bash
 # 检查环境变量设置
 echo $TCB_ENV
@@ -550,6 +555,7 @@ echo $TENCENTCLOUD_SECRETID
 **错误信息：** `INVALID_EXCEL_FILE_ID`
 
 **解决方案：**
+
 ```bash
 # 检查文件ID设置
 echo $EXCEL_FILE_ID
@@ -563,6 +569,7 @@ echo $EXCEL_FILE_ID
 **症状：** 部分字段缺失（如诊断信息）
 
 **解决方案：**
+
 ```bash
 # 重新同步患者数据
 node -e "
@@ -584,14 +591,14 @@ app.callFunction({
 
 ### 数据一致性检查清单
 
-| 检查项 | 预期结果 | 实际结果 | 状态 |
-|--------|----------|----------|------|
-| excel_records记录数 | 200+ | ___ | ⬜ |
-| patients记录数 | 60+ | ___ | ⬜ |
-| patient_intake_records记录数 | 与patients一致 | ___ | ⬜ |
-| excel_cache文档数 | 1-2个 | ___ | ⬜ |
-| 患者首次诊断信息完整性 | >80%有值 | ___ | ⬜ |
-| 最新入院时间完整性 | >90%有值 | ___ | ⬜ |
+| 检查项                       | 预期结果       | 实际结果 | 状态 |
+| ---------------------------- | -------------- | -------- | ---- |
+| excel_records记录数          | 200+           | \_\_\_   | ⬜   |
+| patients记录数               | 60+            | \_\_\_   | ⬜   |
+| patient_intake_records记录数 | 与patients一致 | \_\_\_   | ⬜   |
+| excel_cache文档数            | 1-2个          | \_\_\_   | ⬜   |
+| 患者首次诊断信息完整性       | >80%有值       | \_\_\_   | ⬜   |
+| 最新入院时间完整性           | >90%有值       | \_\_\_   | ⬜   |
 
 ## ✅ 验证清单
 
@@ -673,5 +680,5 @@ _______________
 
 ---
 
-*最后更新: 2025年9月30日*
-*文档版本: v1.0.0*
+_最后更新: 2025年9月30日_
+_文档版本: v1.0.0_

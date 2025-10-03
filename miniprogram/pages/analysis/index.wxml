@@ -2,7 +2,12 @@
   <view wx:if="{{loading}}" class="placeholder">正在生成分析数据…</view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y class="panel-container">
-    <view class="section analysis-panel" wx:for="{{panels}}" wx:key="title" wx:for-index="panelIndex">
+    <view
+      class="section analysis-panel"
+      wx:for="{{panels}}"
+      wx:key="title"
+      wx:for-index="panelIndex"
+    >
       <text class="panel-title">{{item.title}}</text>
       <block wx:if="{{item.stats && item.stats.length}}">
         <scroll-view scroll-x class="stat-scroll" enable-flex="true">
@@ -27,10 +32,9 @@
                 <text class="analysis-stat-card__figure">{{stat.count}}</text>
                 <text class="analysis-stat-card__unit">人</text>
               </view>
-              <text
-                wx:if="{{stat.sampleNames}}"
-                class="analysis-stat-card__samples"
-              >{{stat.sampleNames}}</text>
+              <text wx:if="{{stat.sampleNames}}" class="analysis-stat-card__samples"
+                >{{stat.sampleNames}}</text
+              >
             </view>
           </pm-card>
         </scroll-view>
@@ -39,11 +43,7 @@
     </view>
   </scroll-view>
 
-  <view
-    wx:if="{{selection.visible}}"
-    class="selection-mask"
-    bindtap="onSelectionClose"
-  >
+  <view wx:if="{{selection.visible}}" class="selection-mask" bindtap="onSelectionClose">
     <view class="selection-panel" catchtap="noop">
       <text class="selection-title">{{selection.title}}</text>
       <scroll-view scroll-y class="selection-list">

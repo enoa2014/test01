@@ -16,49 +16,49 @@ const JS_TARGET = path.join(OUTPUT_DIR, 'tokens.js');
 
 const ALIAS_RULES = [
   {
-    match: (pathArr) => pathArr[0] === 'colors',
-    build: (name) => [`colors-${name}`, `color-${name}`]
+    match: pathArr => pathArr[0] === 'colors',
+    build: name => [`colors-${name}`, `color-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'typography' && pathArr[1] === 'fontSizes',
-    build: (name) => [`typography-fontSizes-${name}`, `text-${name}`]
+    match: pathArr => pathArr[0] === 'typography' && pathArr[1] === 'fontSizes',
+    build: name => [`typography-fontSizes-${name}`, `text-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'typography' && pathArr[1] === 'fontWeights',
-    build: (name) => [`typography-fontWeights-${name}`, `font-${name}`]
+    match: pathArr => pathArr[0] === 'typography' && pathArr[1] === 'fontWeights',
+    build: name => [`typography-fontWeights-${name}`, `font-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'spacing',
-    build: (name) => [`spacing-${name}`, `space-${name}`]
+    match: pathArr => pathArr[0] === 'spacing',
+    build: name => [`spacing-${name}`, `space-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'radius',
-    build: (name) => [`radius-${name}`]
+    match: pathArr => pathArr[0] === 'radius',
+    build: name => [`radius-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'shadow',
-    build: (name) => [`shadow-${name}`]
+    match: pathArr => pathArr[0] === 'shadow',
+    build: name => [`shadow-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'overlay',
-    build: (name) => [`overlay-${name}`]
+    match: pathArr => pathArr[0] === 'overlay',
+    build: name => [`overlay-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'background',
-    build: (name) => [`background-${name}`, `bg-${name}`]
+    match: pathArr => pathArr[0] === 'background',
+    build: name => [`background-${name}`, `bg-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'gradient',
-    build: (name) => [`gradient-${name}`]
+    match: pathArr => pathArr[0] === 'gradient',
+    build: name => [`gradient-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'breakpoints',
-    build: (name) => [`breakpoints-${name}`, `breakpoint-${name}`]
+    match: pathArr => pathArr[0] === 'breakpoints',
+    build: name => [`breakpoints-${name}`, `breakpoint-${name}`],
   },
   {
-    match: (pathArr) => pathArr[0] === 'transition',
-    build: (name) => [`transition-${name}`]
-  }
+    match: pathArr => pathArr[0] === 'transition',
+    build: name => [`transition-${name}`],
+  },
 ];
 
 function ensureConfig() {
@@ -80,7 +80,10 @@ function writeFile(target, content) {
 }
 
 function toKebabCase(value) {
-  return String(value).replace(/([A-Z])/g, '-$1').replace(/_{1,}/g, '-').toLowerCase();
+  return String(value)
+    .replace(/([A-Z])/g, '-$1')
+    .replace(/_{1,}/g, '-')
+    .toLowerCase();
 }
 
 function resolveAliases(pathArr, key) {
@@ -106,7 +109,7 @@ function buildCssVariables(tokens) {
         walk(value, nextPath);
       } else {
         const aliases = resolveAliases(pathArr, key);
-        aliases.forEach((alias) => {
+        aliases.forEach(alias => {
           lines.push(`  --${alias}: ${value};`);
         });
       }

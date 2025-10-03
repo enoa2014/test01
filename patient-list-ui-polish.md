@@ -16,12 +16,12 @@
 
 ### 改进前后对比
 
-| 指标 | 改进前 | 改进后 | 提升 |
-|------|--------|--------|------|
-| **卡片操作按钮** | 每卡片1个"更多"按钮 | 无按钮,点击查看详情 | **-100%** |
-| **工具栏按钮尺寸** | 80rpx | 88rpx | **+10%** |
-| **图标按钮交互反馈** | 简单缩放 | 水波纹+缩放 | **+100%** |
-| **长按菜单功能** | 仅进入批量模式 | 显示操作菜单 | **+100%** |
+| 指标                 | 改进前              | 改进后              | 提升      |
+| -------------------- | ------------------- | ------------------- | --------- |
+| **卡片操作按钮**     | 每卡片1个"更多"按钮 | 无按钮,点击查看详情 | **-100%** |
+| **工具栏按钮尺寸**   | 80rpx               | 88rpx               | **+10%**  |
+| **图标按钮交互反馈** | 简单缩放            | 水波纹+缩放         | **+100%** |
+| **长按菜单功能**     | 仅进入批量模式      | 显示操作菜单        | **+100%** |
 
 ---
 
@@ -30,11 +30,13 @@
 ### 1. 移除"更多"按钮 ✅
 
 **问题分析**:
+
 - 真机截图显示每个卡片底部都有"更多"按钮
 - 占用垂直空间,视觉重复
 - 95%的操作是查看详情,不需要额外按钮
 
 **改进方案**:
+
 ```xml
 <!-- 改进前 -->
 <patient-card
@@ -48,11 +50,13 @@
 ```
 
 **交互优化**:
+
 - **点击卡片** → 直接查看详情 (最常用操作)
 - **长按卡片** → 显示操作菜单 (批量提醒、导出档案、录入入住)
 - **批量模式** → 点击卡片选择框
 
 **效果**:
+
 - ✅ 每个卡片节省 ~60rpx 垂直空间
 - ✅ 列表更简洁,减少视觉干扰
 - ✅ 符合移动端操作习惯
@@ -64,6 +68,7 @@
 **视觉增强**:
 
 **尺寸优化**:
+
 ```wxss
 /* 改进前 */
 .icon-button {
@@ -79,6 +84,7 @@
 ```
 
 **水波纹动画**:
+
 ```wxss
 .icon-button {
   position: relative;
@@ -95,7 +101,9 @@
   border-radius: 50%;
   background: var(--color-primary-lighter);
   transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s;
+  transition:
+    width 0.3s,
+    height 0.3s;
 }
 
 .icon-button:active::before {
@@ -105,6 +113,7 @@
 ```
 
 **阴影优化**:
+
 ```wxss
 /* 改进前 */
 box-shadow: var(--shadow-sm);
@@ -114,16 +123,18 @@ box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 ```
 
 **图标样式**:
+
 ```wxss
 .icon-button__icon {
-  font-size: 40rpx;  /* 增大图标尺寸 */
-  font-weight: var(--font-medium);  /* 增加字重 */
+  font-size: 40rpx; /* 增大图标尺寸 */
+  font-weight: var(--font-medium); /* 增加字重 */
   position: relative;
-  z-index: 1;  /* 确保图标在水波纹上方 */
+  z-index: 1; /* 确保图标在水波纹上方 */
 }
 ```
 
 **效果**:
+
 - ✅ 按钮尺寸增大 10%,更易点击
 - ✅ 水波纹动画提供 Material Design 风格反馈
 - ✅ 阴影更精致,立体感更强
@@ -134,16 +145,18 @@ box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 ### 3. 快速筛选器样式优化 ✅
 
 **间距优化**:
+
 ```wxss
 .smart-search__filters {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: var(--space-1) 0;  /* 新增上下间距 */
+  padding: var(--space-1) 0; /* 新增上下间距 */
 }
 ```
 
 **按压反馈**:
+
 ```wxss
 .smart-search__filter {
   display: flex;
@@ -156,6 +169,7 @@ box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 ```
 
 **效果**:
+
 - ✅ 筛选器上下留白,视觉更通透
 - ✅ 按压缩放动画提供即时反馈
 - ✅ 过渡曲线流畅自然
@@ -165,6 +179,7 @@ box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 ### 4. 长按交互改进 ✅
 
 **新增长按菜单** (index.js 第 1483-1500 行):
+
 ```javascript
 onCardLongPress(event) {
   const detailPatient = (event.detail && event.detail.patient) || null;
@@ -187,12 +202,14 @@ onCardLongPress(event) {
 ```
 
 **操作菜单内容**:
+
 - 查看详情
 - 发起提醒
 - 导出档案
 - 录入入住
 
 **效果**:
+
 - ✅ 长按操作更有价值,显示完整菜单
 - ✅ 减少点击步骤,提升操作效率
 - ✅ 符合移动端长按唤起菜单的习惯
@@ -202,11 +219,13 @@ onCardLongPress(event) {
 ## 📈 用户体验提升
 
 ### 视觉优化
+
 - **空间利用**: 每个卡片节省 ~60rpx,列表可见患者数量增加
 - **视觉质感**: 水波纹动画 + 精致阴影 + 更大图标
 - **简洁度**: 移除重复按钮,减少视觉干扰
 
 ### 交互优化
+
 - **点击效率**: 点击卡片直接查看详情,减少 1 步操作
 - **操作发现**: 长按显示完整菜单,功能更易发现
 - **反馈流畅**: Material Design 水波纹动画
@@ -217,23 +236,25 @@ onCardLongPress(event) {
 
 ### 文件修改清单
 
-| 文件 | 变更类型 | 行数变化 | 说明 |
-|------|----------|----------|------|
-| `index.wxml` | 修改 | -1, +1 | 移除"更多"按钮 |
-| `index.wxss` | 重构 | -10, +36 | 图标按钮水波纹动画 |
-| `index.js` | 修改 | -1, +8 | 长按显示操作菜单 |
-| `smart-search-bar/index.wxss` | 优化 | -4, +10 | 筛选器样式优化 |
-| **总计** | - | **-16, +55** | **净增 39 行** |
+| 文件                          | 变更类型 | 行数变化     | 说明               |
+| ----------------------------- | -------- | ------------ | ------------------ |
+| `index.wxml`                  | 修改     | -1, +1       | 移除"更多"按钮     |
+| `index.wxss`                  | 重构     | -10, +36     | 图标按钮水波纹动画 |
+| `index.js`                    | 修改     | -1, +8       | 长按显示操作菜单   |
+| `smart-search-bar/index.wxss` | 优化     | -4, +10      | 筛选器样式优化     |
+| **总计**                      | -        | **-16, +55** | **净增 39 行**     |
 
 ### 关键代码变更
 
 **移除"更多"按钮** (index.wxml 第 113 行):
+
 ```xml
 <!-- 改前: actions="{{batchMode ? [] : cardActionsSimplified}}" -->
 <!-- 改后: actions="{{[]}}" -->
 ```
 
 **长按显示菜单** (index.js 第 1492-1496 行):
+
 ```javascript
 // 如果不在批量模式,显示操作菜单
 if (!this.data.batchMode) {
@@ -243,6 +264,7 @@ if (!this.data.batchMode) {
 ```
 
 **水波纹动画** (index.wxss 第 184-200 行):
+
 ```wxss
 .icon-button::before {
   content: '';
@@ -254,7 +276,9 @@ if (!this.data.batchMode) {
   border-radius: 50%;
   background: var(--color-primary-lighter);
   transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s;
+  transition:
+    width 0.3s,
+    height 0.3s;
 }
 
 .icon-button:active::before {
@@ -291,9 +315,11 @@ if (!this.data.batchMode) {
 ### 🟡 P1 - 短期优化
 
 #### 1. 卡片医疗信息显示
+
 **问题**: 真机截图中未显示医疗信息(诊断、医院、医生)
 **原因**: 测试数据中可能缺少这些字段
 **方案**:
+
 ```javascript
 // 确保数据源包含必要字段
 const latestEvent = latestAdmissionDateFormatted
@@ -306,6 +332,7 @@ if (latestDoctor) tags.push(latestDoctor);
 ```
 
 #### 2. 空状态优化
+
 **目标**: 列表为空时显示更友好的引导
 
 ```xml
@@ -318,6 +345,7 @@ if (latestDoctor) tags.push(latestDoctor);
 ```
 
 #### 3. 骨架屏优化
+
 **目标**: 骨架屏更接近真实卡片布局
 
 ```xml
@@ -336,18 +364,24 @@ if (latestDoctor) tags.push(latestDoctor);
 ### 🟢 P2 - 长期优化
 
 #### 1. 头像颜色语义化
+
 根据患者风险等级使用不同颜色:
+
 - 🔴 高风险: `#FF4D4F` (需复查)
 - 🟠 中风险: `#FF9800` (定期随访)
 - 🟢 低风险: `#52C41A` (已出院)
 
 #### 2. 卡片左滑快捷操作
+
 实现 iOS 风格的左滑快捷操作:
+
 - 左滑 → 显示"提醒"、"导出"快捷按钮
 - 深度左滑 → 直接执行删除操作
 
 #### 3. 列表性能优化
+
 实现虚拟滚动,支持 1000+ 患者流畅滚动:
+
 ```xml
 <recycle-view batch="{{batchSetRecycleData}}" id="recycleId">
   <recycle-item wx:for="{{recycleList}}" wx:key="id">
@@ -361,21 +395,25 @@ if (latestDoctor) tags.push(latestDoctor);
 ## 💡 设计决策记录
 
 ### 为什么移除"更多"按钮?
+
 - **数据**: 95%的卡片点击是查看详情,不需要额外操作
 - **方案**: 点击卡片直接查看详情,长按显示完整菜单
 - **收益**: 节省垂直空间,减少视觉干扰,符合移动端习惯
 
 ### 为什么使用水波纹动画?
+
 - **原因**: Material Design 标准交互反馈,视觉质感更高
 - **方案**: CSS伪元素实现,性能优秀
 - **收益**: 提升交互反馈质量,品牌感更强
 
 ### 为什么图标按钮增大到 88rpx?
+
 - **原因**: iOS 人机界面指南建议最小点击区域 44pt (88rpx)
 - **方案**: 从 80rpx 增大到 88rpx
 - **收益**: 点击成功率提升,减少误触
 
 ### 为什么长按显示操作菜单?
+
 - **原因**: 移除"更多"按钮后需要新的操作入口
 - **方案**: 长按唤起完整菜单,保留所有功能
 - **收益**: 符合移动端长按习惯,功能不缺失

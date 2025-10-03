@@ -1,6 +1,7 @@
 # SmartSearchBar 组件结构规划
 
 ## 目录结构
+
 ```
 miniprogram/components/business/smart-search-bar/
 ├── index.js
@@ -11,6 +12,7 @@ miniprogram/components/business/smart-search-bar/
 ```
 
 ## 属性接口建议
+
 ```javascript
 properties: {
   value: { type: String, value: '' },
@@ -23,6 +25,7 @@ properties: {
 ```
 
 ## 事件约定
+
 - `input`: 输入变化，`detail.value`
 - `search`: 提交搜索，`detail.value`
 - `clear`: 清除输入
@@ -31,5 +34,6 @@ properties: {
 - `toggleadv`: 打开高级筛选入口
 
 ## 状态流
+
 - 内部维护 `searchHistory`（最多 10 条）。
 - 防抖在父页面实现，组件仅抛出输入事件。

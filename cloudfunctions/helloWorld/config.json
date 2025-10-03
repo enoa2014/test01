@@ -1,8 +1,6 @@
 {
   "permissions": {
-    "openapi": [
-      "security.getOpenData"
-    ]
+    "openapi": ["security.getOpenData"]
   },
   "environment": "cloud1-6g2fzr5f7cf51e38",
   "timeout": 20

@@ -1,15 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleCompletion = void 0;
-const constant_1 = require("../constant");
+'use strict'
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.handleCompletion = void 0
+const constant_1 = require('../constant')
 function handleCompletion({ reply, line }) {
-    const cmd = line.replace(/^cloudbase\s|^tcb\s/, '');
-    const commands = constant_1.ALL_COMMANDS.filter(item => item.indexOf(cmd) > -1);
+    const cmd = line.replace(/^cloudbase\s|^tcb\s/, '')
+    const commands = constant_1.ALL_COMMANDS.filter((item) => item.indexOf(cmd) > -1)
     if (commands.length > 0) {
-        reply(commands);
-    }
-    else {
-        reply(['-h', '-v']);
+        reply(commands)
+    } else {
+        reply(['-h', '-v'])
     }
 }
-exports.handleCompletion = handleCompletion;
+exports.handleCompletion = handleCompletion

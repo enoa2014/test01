@@ -14,7 +14,9 @@
     </view>
     <view class="patient-card__title">
       <view class="patient-card__title-row">
-        <text class="patient-card__name patient-name">{{patient.name || patient.patientName || '-'}}</text>
+        <text class="patient-card__name patient-name"
+          >{{patient.name || patient.patientName || '-'}}</text
+        >
         <text wx:if="{{ageText}}" class="patient-card__age">{{ageText}}</text>
         <view wx:if="{{selectable}}" class="patient-card__select" bindtap="handleSelectChange">
           <text class="patient-card__select-icon">{{selected ? '☑' : '☐'}}</text>
@@ -37,12 +39,25 @@
     <view wx:if="{{secondaryLine}}" class="patient-card__secondary">{{secondaryLine}}</view>
 
     <!-- 媒体预览区域 -->
-    <view wx:if="{{mediaPreview && (mediaPreview.photoCount > 0 || mediaPreview.docCount > 0)}}" class="patient-card__media-preview">
-      <view wx:if="{{mediaPreview.photoCount > 0}}" class="media-chip media-chip--photo" catchtap="handleMediaTap" data-type="photo">
+    <view
+      wx:if="{{mediaPreview && (mediaPreview.photoCount > 0 || mediaPreview.docCount > 0)}}"
+      class="patient-card__media-preview"
+    >
+      <view
+        wx:if="{{mediaPreview.photoCount > 0}}"
+        class="media-chip media-chip--photo"
+        catchtap="handleMediaTap"
+        data-type="photo"
+      >
         <text class="media-icon">📷</text>
         <text class="media-count">{{mediaPreview.photoCount}}</text>
       </view>
-      <view wx:if="{{mediaPreview.docCount > 0}}" class="media-chip media-chip--doc" catchtap="handleMediaTap" data-type="doc">
+      <view
+        wx:if="{{mediaPreview.docCount > 0}}"
+        class="media-chip media-chip--doc"
+        catchtap="handleMediaTap"
+        data-type="doc"
+      >
         <text class="media-icon">📄</text>
         <text class="media-count">{{mediaPreview.docCount}}</text>
       </view>
@@ -52,15 +67,10 @@
       <view wx:for="{{tags}}" wx:key="*this" class="patient-card__tag">{{item}}</view>
     </view>
     <view wx:if="{{infoItems && infoItems.length}}" class="patient-card__info">
-      <view
-        wx:for="{{infoItems}}"
-        wx:key="label"
-        class="patient-card__info-item"
-      >
+      <view wx:for="{{infoItems}}" wx:key="label" class="patient-card__info-item">
         <text class="patient-card__info-label">{{item.label}}</text>
         <text class="patient-card__info-value">{{item.value || '—'}} </text>
       </view>
     </view>
   </view>
-
 </pm-card>

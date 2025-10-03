@@ -8,9 +8,9 @@ patientProfile 云函数目前同时依赖 patients 集合与 Excel 导入的 ex
 
 - **列表接口**：patientProfile.list 读取 patients 集合的摘要字段，但仍包含旧的 Excel 聚合逻辑。为防止冷启动超时，会在 excel_cache 集合写入首屏缓存。
 - **详情接口**：patientProfile.detail 直接查询 Excel 记录，再补上一部分 patient_intake_records 数据，与列表逻辑脱节。
-- **同步方式**：通过脚本 (ix-patient-admissions.js、	est-intake-records.js) 与 patientIntake/excel-sync 模块手动刷新 patients 摘要，没有自动化触发机制。
+- **同步方式**：通过脚本 (ix-patient-admissions.js、 est-intake-records.js) 与 patientIntake/excel-sync 模块手动刷新 patients 摘要，没有自动化触发机制。
 - **工具函数**：
-ormalizeTimestamp、safeNumber 等分散在多处，存在重复与缺失（曾出现未定义导致 SyntaxError 的问题）。
+  ormalizeTimestamp、safeNumber 等分散在多处，存在重复与缺失（曾出现未定义导致 SyntaxError 的问题）。
 
 ## 核心问题
 
@@ -28,8 +28,7 @@ ormalizeTimestamp、safeNumber 等分散在多处，存在重复与缺失（曾�
 
 ## 目标架构
 
-`
-Excel 导入 -> patientIntake/excel-sync -> patients + patient_intake_records
+`Excel 导入 -> patientIntake/excel-sync -> patients + patient_intake_records
                                 |                          |
                                 |----> Stats Aggregator ---|
                                             |
@@ -37,14 +36,13 @@ Excel 导入 -> patientIntake/excel-sync -> patients + patient_intake_records
                              patientProfile Service (list/detail)
                                             |
                                             V
-                                   excel_cache (首屏缓存)
-`
+                                   excel_cache (首屏缓存)`
 
 - **Stats Aggregator**：在 patient_intake_records 新增/更新后触发，负责计算入住次数、最新入院时间、摘要信息，并写回 patients 与缓存。
 - **Service 层**：提供 getPatientList、getPatientDetail 方法，云函数入口仅负责校验与返回格式。
-- **Util 库**：集中管理 
-ormalizeValue、
-ormalizeTimestamp、safeNumber、ormatDate 等函数，并覆盖单元测试。
+- **Util 库**：集中管理
+  ormalizeValue、
+  ormalizeTimestamp、safeNumber、ormatDate 等函数，并覆盖单元测试。
 
 ## 接口设计
 
@@ -55,7 +53,7 @@ ormalizeTimestamp、safeNumber、ormatDate 等函数，并覆盖单元测试。
   1. 检查缓存 (patients_summary_cache) 是否在 TTL 内，命中直接返回。
   2. 否则通过 patientsRepo.fetchSummaries({ skip, limit }) 读取分页数据。
   3. 若 page === 0，异步刷新缓存，并返回 hasMore、
-extPage、	otalCount。
+     extPage、 otalCount。
 - **返回字段**：patientKey、patientName、dmissionCount、latestAdmissionDate、summaryCaregivers 等。
 
 ### patientProfile.detail

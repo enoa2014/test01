@@ -56,10 +56,18 @@ describe('patient list actions', () => {
 
     await indexPage.callMethod('showPatientActionSheet', pending);
     const latest = await indexPage.data();
-    expect(latest.testLastActionSheet).toEqual(['入住', '详情', '发送消息', '导出报告', '删除住户']);
+    expect(latest.testLastActionSheet).toEqual([
+      '入住',
+      '详情',
+      '发送消息',
+      '导出报告',
+      '删除住户',
+    ]);
     await indexPage.callMethod('startIntakeForPatient', pending);
     const afterNav = await indexPage.data();
-    expect(afterNav.testLastNavigation).toContain('/pages/patient-intake/wizard/wizard?patientKey=pending-001');
+    expect(afterNav.testLastNavigation).toContain(
+      '/pages/patient-intake/wizard/wizard?patientKey=pending-001'
+    );
   }, 120000);
 
   test('action sheet for in-care patient展示离开与占位提示', async () => {
@@ -73,7 +81,13 @@ describe('patient list actions', () => {
 
     await indexPage.callMethod('showPatientActionSheet', inCare);
     const latest = await indexPage.data();
-    expect(latest.testLastActionSheet).toEqual(['详情', '离开', '发送消息', '导出报告', '删除住户']);
+    expect(latest.testLastActionSheet).toEqual([
+      '详情',
+      '离开',
+      '发送消息',
+      '导出报告',
+      '删除住户',
+    ]);
     await indexPage.callMethod('handlePatientCheckout', inCare);
     const afterToast = await indexPage.data();
     expect(afterToast.testLastToast).toBe('功能开发中');

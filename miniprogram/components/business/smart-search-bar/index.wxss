@@ -1,4 +1,4 @@
-@import "/styles/foundation.wxss";
+@import '/styles/foundation.wxss';
 
 .smart-search {
   display: flex;
@@ -39,7 +39,7 @@
 }
 
 .advanced-filter-btn.active {
-  background: var(--color-primary-light, #E6F4FF);
+  background: var(--color-primary-light, #e6f4ff);
   color: var(--color-primary);
   font-weight: var(--font-semibold);
 }
@@ -75,98 +75,7 @@
   color: var(--color-text-tertiary);
 }
 
-/* 2×2网格布局优化 - 小家业务统计 */
-.smart-search__filters {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-}
-
-.smart-search__filter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-secondary);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 160rpx;
-}
-
-.smart-search__filter:active {
-  transform: scale(0.98);
-  background: var(--color-bg-tertiary);
-}
-
-/* P0-3: 筛选器计数样式 - 超大数字显示 */
-.smart-search__filter-count {
-  font-size: 64rpx;
-  color: var(--color-text-primary);
-  font-weight: var(--font-bold);
-  line-height: 1;
-  margin-bottom: var(--space-1);
-}
-
-.smart-search__filter-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-medium);
-}
-
-/* 激活状态 */
-.smart-search__filter--active {
-  background: var(--color-primary-light, #E6F4FF);
-  border: 2rpx solid var(--color-primary);
-}
-
-.smart-search__filter--active .smart-search__filter-count {
-  color: var(--color-primary);
-}
-
-.smart-search__filter--active .smart-search__filter-label {
-  color: var(--color-primary);
-  font-weight: var(--font-semibold);
-}
-
-/* 状态色差异化 - 小家业务场景 */
-.smart-search__filter--success {
-  background: var(--color-bg-success-soft, rgba(82, 196, 26, 0.10));
-  border: 2rpx solid transparent;
-}
-
-.smart-search__filter--success .smart-search__filter-count {
-  color: var(--color-success);
-}
-
-.smart-search__filter--success .smart-search__filter-label {
-  color: var(--color-success-dark);
-}
-
-.smart-search__filter--success.smart-search__filter--active {
-  border-color: var(--color-success);
-  background: var(--color-bg-success-soft, rgba(82, 196, 26, 0.15));
-}
-
-.smart-search__filter--warning {
-  background: var(--color-bg-warning-soft, rgba(250, 140, 22, 0.10));
-  border: 2rpx solid transparent;
-}
-
-.smart-search__filter--warning .smart-search__filter-count {
-  color: var(--color-warning);
-}
-
-.smart-search__filter--warning .smart-search__filter-label {
-  color: var(--color-warning-dark);
-}
-
-.smart-search__filter--warning.smart-search__filter--active {
-  border-color: var(--color-warning);
-  background: var(--color-bg-warning-soft, rgba(250, 140, 22, 0.15));
-}
+/* 快速筛选器已移除 - 功能已整合至页面统计卡片 */
 
 .smart-search__history {
   display: flex;

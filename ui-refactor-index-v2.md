@@ -2,6 +2,7 @@
 
 > **版本**: 2.0（基于设计令牌、业务组件、设计文档重新评估）
 > **参考文档**:
+>
 > - `docs/design-system/design-tokens-spec.md` - 设计令牌规范
 > - `docs/page-designs/patient-list-redesign.md` - 列表页设计方案
 > - `docs/business-components/patient-card.md` - PatientCard 组件规范
@@ -24,14 +25,14 @@
 
 ### 🔍 原方案 vs 设计系统规范
 
-| 维度 | 原方案 (ui-refactor-index.md) | 设计系统规范 | 对齐情况 |
-|------|-------------------------------|-------------|---------|
-| **设计令牌** | 部分使用 CSS 变量，存在硬编码 | 完整令牌系统 (`design-tokens.json`) | ⚠️ 需调整 |
-| **圆角规范** | 混用 `radius-lg`/`radius-xl` | 明确的圆角使用指南 | ⚠️ 需规范 |
-| **颜色系统** | 自定义渐变 `#667eea` | 品牌色 `#2E86AB`（温暖蓝） | ❌ 不一致 |
-| **组件复用** | 未使用已有组件 | `pm-card`、`pm-badge`、`pm-button` | ❌ 缺失 |
-| **业务组件** | 无规划 | `PatientCard`、`SmartSearchBar` 已定义 | ❌ 未集成 |
-| **页面设计** | 紧凑列表模式 | 支持卡片/列表/表格三种视图 | ✅ 部分对齐 |
+| 维度         | 原方案 (ui-refactor-index.md) | 设计系统规范                           | 对齐情况    |
+| ------------ | ----------------------------- | -------------------------------------- | ----------- |
+| **设计令牌** | 部分使用 CSS 变量，存在硬编码 | 完整令牌系统 (`design-tokens.json`)    | ⚠️ 需调整   |
+| **圆角规范** | 混用 `radius-lg`/`radius-xl`  | 明确的圆角使用指南                     | ⚠️ 需规范   |
+| **颜色系统** | 自定义渐变 `#667eea`          | 品牌色 `#2E86AB`（温暖蓝）             | ❌ 不一致   |
+| **组件复用** | 未使用已有组件                | `pm-card`、`pm-badge`、`pm-button`     | ❌ 缺失     |
+| **业务组件** | 无规划                        | `PatientCard`、`SmartSearchBar` 已定义 | ❌ 未集成   |
+| **页面设计** | 紧凑列表模式                  | 支持卡片/列表/表格三种视图             | ✅ 部分对齐 |
 
 ### 🎯 关键发现
 
@@ -60,6 +61,7 @@
 ### 1. 颜色令牌修正
 
 **原方案问题**:
+
 ```css
 /* ❌ 不符合品牌规范 */
 .admission-badge {
@@ -72,6 +74,7 @@
 ```
 
 **修正方案**:
+
 ```css
 /* ✅ 使用品牌主色 */
 .admission-badge {
@@ -93,6 +96,7 @@
 ```
 
 **品牌色使用场景**:
+
 - **主色** (`--color-primary` #2E86AB): 主要操作按钮、重要徽章、强调元素
 - **辅助色** (`--color-secondary` #F24236): 紧急状态、警示标记
 - **信息色** (`--color-info` #1890FF): 普通提示、次要操作
@@ -104,15 +108,16 @@
 
 根据 [圆角令牌使用指南](docs/design-system/radius-usage-guide.md):
 
-| 组件类型 | 推荐圆角 | 说明 |
-|---------|---------|------|
-| **按钮、输入框** | `--radius-base` (12rpx / 6px) | 日常最常用 ⭐ |
-| **卡片、列表项** | `--radius-md` (16rpx / 8px) | 信息面板 |
-| **弹窗、对话框** | `--radius-xl` (24rpx / 12px) | 模态容器 |
-| **头像、圆形按钮** | `--radius-full` (9999rpx) | 完全圆形 |
-| **徽章、标签** | `--radius-sm` (8rpx / 4px) | 小型装饰元素 |
+| 组件类型           | 推荐圆角                      | 说明          |
+| ------------------ | ----------------------------- | ------------- |
+| **按钮、输入框**   | `--radius-base` (12rpx / 6px) | 日常最常用 ⭐ |
+| **卡片、列表项**   | `--radius-md` (16rpx / 8px)   | 信息面板      |
+| **弹窗、对话框**   | `--radius-xl` (24rpx / 12px)  | 模态容器      |
+| **头像、圆形按钮** | `--radius-full` (9999rpx)     | 完全圆形      |
+| **徽章、标签**     | `--radius-sm` (8rpx / 4px)    | 小型装饰元素  |
 
 **原方案调整**:
+
 ```css
 /* ❌ 原方案 */
 .patient-item-compact {
@@ -140,6 +145,7 @@
 ### 3. 阴影令牌标准化
 
 **原方案问题**:
+
 ```css
 /* ❌ 硬编码阴影值 */
 .patient-item-compact {
@@ -152,6 +158,7 @@
 ```
 
 **修正方案**:
+
 ```css
 /* ✅ 使用令牌 */
 .patient-item-compact {
@@ -177,15 +184,17 @@
 ### 4. 间距系统一致性
 
 **间距令牌**:
+
 ```css
---space-1: 8rpx;   /* 4px */
---space-2: 16rpx;  /* 8px */
---space-3: 24rpx;  /* 12px */
---space-4: 32rpx;  /* 16px */
---space-6: 48rpx;  /* 24px */
+--space-1: 8rpx; /* 4px */
+--space-2: 16rpx; /* 8px */
+--space-3: 24rpx; /* 12px */
+--space-4: 32rpx; /* 16px */
+--space-6: 48rpx; /* 24px */
 ```
 
 **原方案调整**:
+
 ```css
 /* ✅ 统一使用令牌 */
 .patient-item-compact {
@@ -215,11 +224,13 @@
 根据 [PatientCard 规范](docs/business-components/patient-card.md)，组件支持三种模式：
 
 **模式选择**:
+
 - ✅ **`compact` 模式**: 用于患者列表（一屏 4-5 个）
 - `list` 模式: 简化视图（一屏 6-8 个）
 - `detail` 模式: 详情页头部展示
 
 **WXML 代码**:
+
 ```xml
 <!-- 使用 PatientCard 业务组件 -->
 <view class="patient-list">
@@ -240,6 +251,7 @@
 ```
 
 **JS 数据准备**:
+
 ```javascript
 // miniprogram/pages/index/index.js
 
@@ -324,6 +336,7 @@ Page({
 ```
 
 **PatientCard 内部结构**:
+
 ```xml
 <!-- components/business/patient-card/index.wxml -->
 <pm-card
@@ -396,6 +409,7 @@ Page({
 根据 [SmartSearchBar 规范](docs/business-components/smart-search-bar.md):
 
 **WXML**:
+
 ```xml
 <smart-search-bar
   value="{{searchKeyword}}"
@@ -413,6 +427,7 @@ Page({
 ```
 
 **JS 逻辑**:
+
 ```javascript
 Page({
   data: {
@@ -506,6 +521,7 @@ Page({
 ```
 
 **SmartSearchBar 内部实现**:
+
 ```xml
 <!-- components/business/smart-search-bar/index.wxml -->
 <view class="smart-search-bar">
@@ -563,6 +579,7 @@ Page({
 ### 方案 C+: 优化的 FAB 按钮（符合设计令牌）
 
 **WXML**:
+
 ```xml
 <view class="fab-container">
   <view class="fab-button" bindtap="onIntakeTap">
@@ -579,6 +596,7 @@ Page({
 ```
 
 **WXSS**:
+
 ```css
 .fab-container {
   position: fixed;
@@ -602,6 +620,7 @@ Page({
 ```
 
 **如果 pm-button 不支持 elevated 属性，自定义样式**:
+
 ```css
 .fab-button ::v-deep .pm-button {
   width: 100%;
@@ -617,6 +636,7 @@ Page({
 ### 方案 D+: 骨架屏（使用设计令牌）
 
 **WXSS**:
+
 ```css
 .skeleton-item {
   display: flex;
@@ -670,6 +690,7 @@ Page({
 ### 方案 E+: 空状态（使用 pm-card）
 
 **WXML**:
+
 ```xml
 <pm-card
   wx:if="{{!loading && !displayPatients.length}}"
@@ -692,6 +713,7 @@ Page({
 ```
 
 **WXSS**:
+
 ```css
 .empty-state-card {
   margin: var(--space-8) var(--space-4);
@@ -731,27 +753,29 @@ Page({
 
 ### 组件清单
 
-| 组件名 | 类型 | 状态 | 用途 |
-|--------|------|------|------|
-| **PatientCard** | 业务组件 | 📘 已规范 | 患者卡片（三种模式） |
-| **SmartSearchBar** | 业务组件 | 📘 已规范 | 智能搜索栏 |
-| **FilterPanel** | 业务组件 | 📋 规划中 | 高级筛选抽屉 |
-| **pm-card** | 基础组件 | ✅ 已实现 | 通用卡片容器 |
-| **pm-badge** | 基础组件 | ✅ 已实现 | 徽章标签 |
-| **pm-button** | 基础组件 | ✅ 已实现 | 按钮 |
-| **pm-input** | 基础组件 | ✅ 已实现 | 输入框 |
-| **pm-dialog** | 基础组件 | ✅ 已实现 | 对话框 |
+| 组件名             | 类型     | 状态      | 用途                 |
+| ------------------ | -------- | --------- | -------------------- |
+| **PatientCard**    | 业务组件 | 📘 已规范 | 患者卡片（三种模式） |
+| **SmartSearchBar** | 业务组件 | 📘 已规范 | 智能搜索栏           |
+| **FilterPanel**    | 业务组件 | 📋 规划中 | 高级筛选抽屉         |
+| **pm-card**        | 基础组件 | ✅ 已实现 | 通用卡片容器         |
+| **pm-badge**       | 基础组件 | ✅ 已实现 | 徽章标签             |
+| **pm-button**      | 基础组件 | ✅ 已实现 | 按钮                 |
+| **pm-input**       | 基础组件 | ✅ 已实现 | 输入框               |
+| **pm-dialog**      | 基础组件 | ✅ 已实现 | 对话框               |
 
 ### 组件开发优先级
 
 #### 阶段 1: 复用已有组件（0.5 天）
 
 **任务**:
+
 - [ ] 在患者列表页引入 `pm-card`、`pm-badge`、`pm-button`
 - [ ] 验证组件 API 是否满足需求
 - [ ] 调整样式以符合设计令牌
 
 **示例**:
+
 ```json
 // miniprogram/pages/index/index.json
 {
@@ -766,6 +790,7 @@ Page({
 #### 阶段 2: 开发 PatientCard 业务组件（2 天）
 
 **文件结构**:
+
 ```
 miniprogram/components/business/patient-card/
 ├── index.js
@@ -776,6 +801,7 @@ miniprogram/components/business/patient-card/
 ```
 
 **属性接口**:
+
 ```javascript
 // index.js
 Component({
@@ -827,6 +853,7 @@ Component({
 #### 阶段 3: 开发 SmartSearchBar 业务组件（2 天）
 
 **文件结构**:
+
 ```
 miniprogram/components/business/smart-search-bar/
 ├── index.js
@@ -837,6 +864,7 @@ miniprogram/components/business/smart-search-bar/
 ```
 
 **属性接口**:
+
 ```javascript
 // index.js
 Component({
@@ -938,6 +966,7 @@ Component({
 **目标**: 所有硬编码值替换为设计令牌
 
 **任务清单**:
+
 - [ ] **颜色令牌审查** (2 小时)
   - [ ] 扫描 `index.wxss` 中的所有颜色值
   - [ ] 替换为 `var(--color-*)` 或 `var(--gradient-*)`
@@ -963,6 +992,7 @@ Component({
 **目标**: 在患者列表页使用已有 PM 组件
 
 **任务清单**:
+
 - [ ] **pm-card 集成** (4 小时)
   - [ ] 修改 `index.json` 引入组件
   - [ ] 将患者卡片重构为 `<pm-card>` 包裹
@@ -995,6 +1025,7 @@ Component({
 #### 3.1 PatientCard 组件（2 天）
 
 **任务清单**:
+
 - [ ] **组件结构搭建** (4 小时)
   - [ ] 创建组件目录和文件
   - [ ] 定义属性接口（参考规范文档）
@@ -1019,6 +1050,7 @@ Component({
 #### 3.2 SmartSearchBar 组件（2 天）
 
 **任务清单**:
+
 - [ ] **组件结构搭建** (3 小时)
   - [ ] 创建组件目录和文件
   - [ ] 定义属性接口（参考规范文档）
@@ -1049,6 +1081,7 @@ Component({
 **目标**: 在患者列表页集成业务组件
 
 **任务清单**:
+
 - [ ] **PatientCard 集成** (4 小时)
   - [ ] 替换原有患者卡片为 `<patient-card>`
   - [ ] 数据适配（状态、风险、徽章）
@@ -1079,6 +1112,7 @@ Component({
 **目标**: 实现智能化和个性化功能
 
 **任务清单**:
+
 - [ ] **FilterPanel 组件** (1 天)
   - [ ] 抽屉容器实现
   - [ ] 多条件筛选 UI
@@ -1105,23 +1139,23 @@ Component({
 
 ### 原方案 vs 调整方案
 
-| 维度 | 原方案 | 调整方案（v2.0） | 改进 |
-|------|--------|-----------------|------|
-| **设计令牌** | 部分使用 | 100% 使用 | +100% |
-| **品牌色一致** | ❌ 自定义紫色 | ✅ 品牌蓝 #2E86AB | ✅ |
-| **组件复用** | 0% | 80%（pm-card/badge/button） | +80% |
-| **业务组件** | 无 | PatientCard + SmartSearchBar | ✅ |
-| **开发工作量** | 40-60 小时 | 64-80 小时 | +30% |
-| **长期维护性** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | +67% |
+| 维度           | 原方案        | 调整方案（v2.0）             | 改进  |
+| -------------- | ------------- | ---------------------------- | ----- |
+| **设计令牌**   | 部分使用      | 100% 使用                    | +100% |
+| **品牌色一致** | ❌ 自定义紫色 | ✅ 品牌蓝 #2E86AB            | ✅    |
+| **组件复用**   | 0%            | 80%（pm-card/badge/button）  | +80%  |
+| **业务组件**   | 无            | PatientCard + SmartSearchBar | ✅    |
+| **开发工作量** | 40-60 小时    | 64-80 小时                   | +30%  |
+| **长期维护性** | ⭐⭐⭐        | ⭐⭐⭐⭐⭐                   | +67%  |
 
 ### 性能对比
 
-| 场景 | 原方案 | 调整方案 | 说明 |
-|------|--------|---------|------|
-| **100 患者渲染** | ~300ms | ~250ms | 组件优化 |
-| **搜索响应** | 即时 | 300ms防抖 | 减少请求 |
-| **首屏加载** | 0.8s | 0.7s | 骨架屏优化 |
-| **滚动帧率** | 55-60 fps | 58-60 fps | 虚拟滚动 |
+| 场景             | 原方案    | 调整方案  | 说明       |
+| ---------------- | --------- | --------- | ---------- |
+| **100 患者渲染** | ~300ms    | ~250ms    | 组件优化   |
+| **搜索响应**     | 即时      | 300ms防抖 | 减少请求   |
+| **首屏加载**     | 0.8s      | 0.7s      | 骨架屏优化 |
+| **滚动帧率**     | 55-60 fps | 58-60 fps | 虚拟滚动   |
 
 ---
 
@@ -1151,16 +1185,17 @@ Component({
 
 ### 📊 工作量对比
 
-| 阶段 | 原方案 | 调整方案 | 差异 |
-|------|--------|---------|------|
-| 阶段 1 | 8-12h | 8h | -25% |
-| 阶段 2 | 12-16h | 16h | +25% |
-| 阶段 3 | - | 32h | 新增 |
-| 阶段 4 | 16-20h | 16h | -20% |
-| 阶段 5 | 8-10h | 24h | +150% |
-| **总计** | **44-58h** | **96h** | **+65%** |
+| 阶段     | 原方案     | 调整方案 | 差异     |
+| -------- | ---------- | -------- | -------- |
+| 阶段 1   | 8-12h      | 8h       | -25%     |
+| 阶段 2   | 12-16h     | 16h      | +25%     |
+| 阶段 3   | -          | 32h      | 新增     |
+| 阶段 4   | 16-20h     | 16h      | -20%     |
+| 阶段 5   | 8-10h      | 24h      | +150%    |
+| **总计** | **44-58h** | **96h**  | **+65%** |
 
 **说明**: 虽然工作量增加，但长期收益显著：
+
 - 组件可在其他页面复用
 - 设计系统一致性提升
 - 维护成本大幅降低
@@ -1168,12 +1203,14 @@ Component({
 ### 🎯 推荐实施策略
 
 **MVP 方案**（1-2 周）:
+
 - 阶段 1: 设计系统对齐
 - 阶段 2: 基础组件集成
 - 阶段 3.1: PatientCard 组件
 - 阶段 4: 页面集成（基础功能）
 
 **完整方案**（2-3 周）:
+
 - MVP + 阶段 3.2（SmartSearchBar）
 - MVP + 阶段 5（高级特性）
 

@@ -1,32 +1,74 @@
-"use strict";
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DeleteServiceCommand = void 0;
-const enquirer_1 = require("enquirer");
-const common_1 = require("../common");
-const utils_1 = require("../../utils");
-const decorators_1 = require("../../decorators");
-const gateway_1 = require("../../gateway");
+'use strict'
+var __decorate =
+    (this && this.__decorate) ||
+    function (decorators, target, key, desc) {
+        var c = arguments.length,
+            r =
+                c < 3
+                    ? target
+                    : desc === null
+                      ? (desc = Object.getOwnPropertyDescriptor(target, key))
+                      : desc,
+            d
+        if (typeof Reflect === 'object' && typeof Reflect.decorate === 'function')
+            r = Reflect.decorate(decorators, target, key, desc)
+        else
+            for (var i = decorators.length - 1; i >= 0; i--)
+                if ((d = decorators[i]))
+                    r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r
+        return (c > 3 && r && Object.defineProperty(target, key, r), r)
+    }
+var __metadata =
+    (this && this.__metadata) ||
+    function (k, v) {
+        if (typeof Reflect === 'object' && typeof Reflect.metadata === 'function')
+            return Reflect.metadata(k, v)
+    }
+var __param =
+    (this && this.__param) ||
+    function (paramIndex, decorator) {
+        return function (target, key) {
+            decorator(target, key, paramIndex)
+        }
+    }
+var __awaiter =
+    (this && this.__awaiter) ||
+    function (thisArg, _arguments, P, generator) {
+        function adopt(value) {
+            return value instanceof P
+                ? value
+                : new P(function (resolve) {
+                      resolve(value)
+                  })
+        }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) {
+                try {
+                    step(generator.next(value))
+                } catch (e) {
+                    reject(e)
+                }
+            }
+            function rejected(value) {
+                try {
+                    step(generator['throw'](value))
+                } catch (e) {
+                    reject(e)
+                }
+            }
+            function step(result) {
+                result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected)
+            }
+            step((generator = generator.apply(thisArg, _arguments || [])).next())
+        })
+    }
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.DeleteServiceCommand = void 0
+const enquirer_1 = require('enquirer')
+const common_1 = require('../common')
+const utils_1 = require('../../utils')
+const decorators_1 = require('../../decorators')
+const gateway_1 = require('../../gateway')
 let DeleteServiceCommand = class DeleteServiceCommand extends common_1.Command {
     get options() {
         return {
@@ -52,15 +94,15 @@ let DeleteServiceCommand = class DeleteServiceCommand extends common_1.Command {
                 }
             ],
             desc: '删除 HTTP 访问服务'
-        };
+        }
     }
     execute(envId, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            let { servicePath, serviceId, name } = options;
+            let { servicePath, serviceId, name } = options
             if (!servicePath && !serviceId && (!name || typeof name !== 'string')) {
                 const { APISet: allServices } = yield (0, gateway_1.queryGateway)({
                     envId
-                });
+                })
                 const { selected } = yield (0, enquirer_1.prompt)({
                     type: 'select',
                     name: 'selected',
@@ -70,41 +112,43 @@ let DeleteServiceCommand = class DeleteServiceCommand extends common_1.Command {
                         value: item.APIId
                     })),
                     result(choices) {
-                        return Object.values(this.map(choices));
+                        return Object.values(this.map(choices))
                     }
-                });
-                serviceId = selected === null || selected === void 0 ? void 0 : selected[0];
+                })
+                serviceId = selected === null || selected === void 0 ? void 0 : selected[0]
             }
             if (servicePath) {
-                servicePath = servicePath[0] === '/' ? servicePath : `/${servicePath}`;
+                servicePath = servicePath[0] === '/' ? servicePath : `/${servicePath}`
             }
-            const loading = (0, utils_1.loadingFactory)();
-            loading.start('HTTP 访问服务删除中...');
+            const loading = (0, utils_1.loadingFactory)()
+            loading.start('HTTP 访问服务删除中...')
             try {
                 yield (0, gateway_1.deleteGateway)({
                     envId,
                     name,
                     path: servicePath,
                     gatewayId: serviceId
-                });
-                loading.succeed('HTTP 访问服务删除成功！');
+                })
+                loading.succeed('HTTP 访问服务删除成功！')
+            } catch (e) {
+                loading.stop()
+                throw e
             }
-            catch (e) {
-                loading.stop();
-                throw e;
-            }
-        });
+        })
     }
-};
-__decorate([
-    (0, decorators_1.InjectParams)(),
-    __param(0, (0, decorators_1.EnvId)()),
-    __param(1, (0, decorators_1.ArgsOptions)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
-    __metadata("design:returntype", Promise)
-], DeleteServiceCommand.prototype, "execute", null);
-DeleteServiceCommand = __decorate([
-    (0, common_1.ICommand)()
-], DeleteServiceCommand);
-exports.DeleteServiceCommand = DeleteServiceCommand;
+}
+__decorate(
+    [
+        (0, decorators_1.InjectParams)(),
+        __param(0, (0, decorators_1.EnvId)()),
+        __param(1, (0, decorators_1.ArgsOptions)()),
+        __metadata('design:type', Function),
+        __metadata('design:paramtypes', [Object, Object]),
+        __metadata('design:returntype', Promise)
+    ],
+    DeleteServiceCommand.prototype,
+    'execute',
+    null
+)
+DeleteServiceCommand = __decorate([(0, common_1.ICommand)()], DeleteServiceCommand)
+exports.DeleteServiceCommand = DeleteServiceCommand

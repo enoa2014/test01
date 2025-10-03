@@ -1,4 +1,9 @@
-<view wx:if="{{visible}}" class="filter-panel-backdrop" catchtouchmove="noop" bindtap="onMaskTap"></view>
+<view
+  wx:if="{{visible}}"
+  class="filter-panel-backdrop"
+  catchtouchmove="noop"
+  bindtap="onMaskTap"
+></view>
 <view wx:if="{{visible}}" class="filter-panel-drawer" catchtouchmove="noop" catchtap="noop">
   <view class="filter-panel__header">
     <view class="filter-panel__title">高级筛选</view>
@@ -223,13 +228,11 @@
         <view wx:if="{{selectedDiagnosis.length}}" class="filter-diagnosis__selected">
           <view class="filter-diagnosis__label">已选诊断</view>
           <view class="filter-tags">
-            <view
-              wx:for="{{selectedDiagnosis}}"
-              wx:key="id"
-              class="filter-tag"
-            >
+            <view wx:for="{{selectedDiagnosis}}" wx:key="id" class="filter-tag">
               <text class="filter-tag__text">{{item.label}}</text>
-              <view class="filter-tag__remove" data-id="{{item.id}}" bindtap="onDiagnosisTagRemove">×</view>
+              <view class="filter-tag__remove" data-id="{{item.id}}" bindtap="onDiagnosisTagRemove"
+                >×</view
+              >
             </view>
           </view>
         </view>

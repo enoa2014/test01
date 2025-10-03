@@ -4,7 +4,7 @@ const AGE_BUCKETS = [
   { label: '0-5岁', min: 0, max: 5 },
   { label: '6-12岁', min: 6, max: 12 },
   { label: '13-17岁', min: 13, max: 17 },
-  { label: '18岁及以上', min: 18, max: Infinity }
+  { label: '18岁及以上', min: 18, max: Infinity },
 ];
 
 function parseDateValue(value) {
@@ -68,7 +68,7 @@ function getPatientRef(item) {
   return {
     key: item.key,
     patientKey: item.patientKey || item.key,
-    name: item.patientName || '未命名住户'
+    name: item.patientName || '未命名住户',
   };
 }
 
@@ -83,7 +83,7 @@ function decorateStatCards(stats) {
     return stat && typeof stat.count === 'number' && stat.count > acc ? stat.count : acc;
   }, 0);
 
-  return stats.map((stat) => {
+  return stats.map(stat => {
     if (!stat) {
       return stat;
     }
@@ -117,26 +117,29 @@ function toStat(label, patients) {
   if (!patients || !patients.length) {
     return null;
   }
-  const sample = patients.slice(0, 3).map((p) => p.name).join('、');
+  const sample = patients
+    .slice(0, 3)
+    .map(p => p.name)
+    .join('、');
   return {
     label,
     count: patients.length,
     patients,
-    sampleNames: sample
+    sampleNames: sample,
   };
 }
 
 function buildAgePanel(patients) {
-  const buckets = AGE_BUCKETS.map((bucket) => ({ ...bucket, patients: [] }));
+  const buckets = AGE_BUCKETS.map(bucket => ({ ...bucket, patients: [] }));
   const unknown = { label: '未知年龄', patients: [] };
-  patients.forEach((item) => {
+  patients.forEach(item => {
     const age = calculateAge(item.birthDate);
     const ref = getPatientRef(item);
     if (age == null) {
       unknown.patients.push(ref);
       return;
     }
-    const bucket = buckets.find((range) => age >= range.min && age <= range.max);
+    const bucket = buckets.find(range => age >= range.min && age <= range.max);
     if (bucket) {
       bucket.patients.push(ref);
     } else {
@@ -145,7 +148,7 @@ function buildAgePanel(patients) {
   });
 
   const stats = [];
-  buckets.forEach((bucket) => {
+  buckets.forEach(bucket => {
     const stat = toStat(bucket.label, bucket.patients);
     if (stat) {
       stats.push(stat);
@@ -159,12 +162,18 @@ function buildAgePanel(patients) {
   return {
     title: '按年龄段分析',
     stats: decorateStatCards(stats),
-    emptyText: '暂无年龄数据'
+    emptyText: '暂无年龄数据',
   };
 }
 
-function buildGroupPanel(title, groups, { emptyText = '暂无数据', sortByLabel = null, sortByValueDesc = true } = {}) {
-  const stats = Object.keys(groups).map((label) => toStat(label, groups[label])).filter(Boolean);
+function buildGroupPanel(
+  title,
+  groups,
+  { emptyText = '暂无数据', sortByLabel = null, sortByValueDesc = true } = {}
+) {
+  const stats = Object.keys(groups)
+    .map(label => toStat(label, groups[label]))
+    .filter(Boolean);
   if (sortByLabel === 'asc') {
     stats.sort((a, b) => {
       const aUnknown = /未知/.test(a.label);
@@ -212,8 +221,8 @@ Page({
     selection: {
       visible: false,
       title: '',
-      items: []
-    }
+      items: [],
+    },
   },
 
   onLoad() {
@@ -226,12 +235,16 @@ Page({
     try {
       const res = await wx.cloud.callFunction({
         name: 'patientProfile',
-        data: { action: 'list' }
+        data: { action: 'list' },
       });
       const sourcePatients = res?.result?.patients || [];
-      const patients = sourcePatients.map((item) => {
-        const latestAdmissionDateFormatted = formatDate(item.latestAdmissionDate || item.firstAdmissionDate);
-        const firstAdmissionDateFormatted = formatDate(item.firstAdmissionDate || item.latestAdmissionDate);
+      const patients = sourcePatients.map(item => {
+        const latestAdmissionDateFormatted = formatDate(
+          item.latestAdmissionDate || item.firstAdmissionDate
+        );
+        const firstAdmissionDateFormatted = formatDate(
+          item.firstAdmissionDate || item.latestAdmissionDate
+        );
         const firstDiagnosis = item.firstDiagnosis || item.latestDiagnosis || '';
         const latestDiagnosis = item.latestDiagnosis || item.firstDiagnosis || '';
         const firstHospital = item.firstHospital || item.latestHospital || '';
@@ -245,7 +258,7 @@ Page({
           latestDiagnosis,
           firstHospital,
           latestHospital,
-          latestDoctor
+          latestDoctor,
         };
       });
       const panels = this.buildPanels(patients);
@@ -254,7 +267,7 @@ Page({
       logger.error('Failed to load analysis data', error);
       this.setData({
         loading: false,
-        error: (error && error.errMsg) || '加载分析数据失败，请稍后重试'
+        error: (error && error.errMsg) || '加载分析数据失败，请稍后重试',
       });
     }
   },
@@ -263,7 +276,7 @@ Page({
     const agePanel = buildAgePanel(patients);
 
     const placeGroups = {};
-    patients.forEach((item) => {
+    patients.forEach(item => {
       const label = (item.nativePlace || '').trim() || '未知籍贯';
       const ref = getPatientRef(item);
       if (!placeGroups[label]) {
@@ -274,7 +287,7 @@ Page({
     const placePanel = buildGroupPanel('按籍贯分析', placeGroups, { emptyText: '暂无籍贯数据' });
 
     const monthGroups = {};
-    patients.forEach((item) => {
+    patients.forEach(item => {
       const label = getMonthLabel(item);
       const ref = getPatientRef(item);
       if (!monthGroups[label]) {
@@ -282,10 +295,13 @@ Page({
       }
       monthGroups[label].push(ref);
     });
-    const monthPanel = buildGroupPanel('按最近入住月份分析', monthGroups, { emptyText: '暂无入住数据', sortByLabel: true });
+    const monthPanel = buildGroupPanel('按最近入住月份分析', monthGroups, {
+      emptyText: '暂无入住数据',
+      sortByLabel: true,
+    });
 
     const hospitalGroups = {};
-    patients.forEach((item) => {
+    patients.forEach(item => {
       const label = (item.latestHospital || item.firstHospital || '').trim() || '未记录医院';
       const ref = getPatientRef(item);
       if (!hospitalGroups[label]) {
@@ -293,10 +309,12 @@ Page({
       }
       hospitalGroups[label].push(ref);
     });
-    const hospitalPanel = buildGroupPanel('按就诊医院分析', hospitalGroups, { emptyText: '暂无医院数据' });
+    const hospitalPanel = buildGroupPanel('按就诊医院分析', hospitalGroups, {
+      emptyText: '暂无医院数据',
+    });
 
     const doctorGroups = {};
-    patients.forEach((item) => {
+    patients.forEach(item => {
       const label = (item.latestDoctor || '').trim() || '未记录医生';
       const ref = getPatientRef(item);
       if (!doctorGroups[label]) {
@@ -320,8 +338,8 @@ Page({
       selection: {
         visible: true,
         title: `${panel.title} · ${stat.label}`,
-        items: stat.patients
-      }
+        items: stat.patients,
+      },
     });
   },
 
@@ -348,7 +366,5 @@ Page({
     });
   },
 
-  noop() {}
+  noop() {},
 });
-
-

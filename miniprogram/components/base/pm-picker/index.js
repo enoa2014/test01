@@ -196,7 +196,13 @@ Component({
       const cleared = this.data.multiple ? [] : '';
       this.triggerEvent('clear');
       this.triggerEvent('change', { value: cleared, selectedOptions: [] });
-      this.setData({ internalValue: [], hasSelection: false, displayLabel: '', displayTags: [], extraTagCount: 0 });
+      this.setData({
+        internalValue: [],
+        hasSelection: false,
+        displayLabel: '',
+        displayTags: [],
+        extraTagCount: 0,
+      });
     },
     handleSearch(event) {
       const keyword = (event.detail.value || '').trim();
@@ -236,12 +242,11 @@ Component({
       const activeOptions = options.filter(item => normalizedValue.includes(item.value));
       const displayLabel = !multiple && activeOptions.length ? activeOptions[0].label : '';
       const displayTags = multiple ? activeOptions.map(item => item.label) : [];
-      const extraTagCount = multiple && displayTags.length > this.data.maxTagCount
-        ? displayTags.length - this.data.maxTagCount
-        : 0;
-      const trimmedTags = multiple
-        ? displayTags.slice(0, this.data.maxTagCount)
-        : [];
+      const extraTagCount =
+        multiple && displayTags.length > this.data.maxTagCount
+          ? displayTags.length - this.data.maxTagCount
+          : 0;
+      const trimmedTags = multiple ? displayTags.slice(0, this.data.maxTagCount) : [];
       const hasSelection = multiple ? normalizedValue.length > 0 : Boolean(displayLabel);
       this.setData({
         internalValue: normalizedValue,

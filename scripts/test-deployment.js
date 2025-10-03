@@ -26,8 +26,8 @@ async function testDeployment() {
       name: 'patientProfile',
       data: {
         action: 'list',
-        forceRefresh: true
-      }
+        forceRefresh: true,
+      },
     });
 
     if (listResult.result && listResult.result.success) {
@@ -44,8 +44,8 @@ async function testDeployment() {
           name: 'patientProfile',
           data: {
             action: 'detail',
-            key: firstPatient.key
-          }
+            key: firstPatient.key,
+          },
         });
 
         if (detailResult.result && detailResult.result.success) {
@@ -69,8 +69,8 @@ async function testDeployment() {
     const testResult = await miniProgram.callWxMethod('cloud.callFunction', {
       name: 'readExcel',
       data: {
-        action: 'test'
-      }
+        action: 'test',
+      },
     });
 
     if (testResult.result && testResult.result.success) {
@@ -88,8 +88,8 @@ async function testDeployment() {
       const oldCallResult = await miniProgram.callWxMethod('cloud.callFunction', {
         name: 'readExcel',
         data: {
-          action: 'list'
-        }
+          action: 'list',
+        },
       });
 
       if (oldCallResult.result && !oldCallResult.result.success) {
@@ -119,7 +119,6 @@ async function testDeployment() {
     console.log('  • 专用缓存机制提升性能');
     console.log('  • 独立维护降低耦合度');
     console.log('  • 扩展性和可维护性提升');
-
   } catch (error) {
     console.error('❌ 测试过程中出现错误:', error.message);
   } finally {

@@ -40,4 +40,4 @@
 5. When 配置 OpenAI Codex 时，the 系统 shall 处理 `.codex/config.toml` 文件
 6. When 配置 OpenCode 时，the 系统 shall 处理 `.opencode.json` 文件
 7. When 配置 Aider 时，the 系统 shall 处理 `mcp.json` 文件
-8. When 处理 TOML 格式时，the 系统 shall 正确解析和修改配置 
+8. When 处理 TOML 格式时，the 系统 shall 正确解析和修改配置

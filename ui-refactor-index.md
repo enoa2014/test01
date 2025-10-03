@@ -44,6 +44,7 @@
 ### 现有特性
 
 ✅ **优点**:
+
 - 使用 CSS 变量系统（设计令牌）
 - 响应式布局（flex + grid）
 - 卡片式设计（阴影、圆角）
@@ -51,6 +52,7 @@
 - 点击反馈（`:active` 缩放）
 
 ❌ **不足**:
+
 - 信息密度过低（每个卡片占用大量空间）
 - 视觉层次不够清晰
 - 缺少视觉引导元素
@@ -66,6 +68,7 @@
 
 **描述**:
 当前每个患者卡片垂直高度约 **240rpx**，仅展示 6 个信息点：
+
 1. 姓名
 2. 入住次数
 3. 性别
@@ -76,11 +79,13 @@
 在 iPhone 13 (667pt 高度) 上，一屏只能显示 **2.5 个患者**，用户需要频繁滚动。
 
 **数据对比**:
+
 - 微信通讯录：一屏显示 **12 个联系人**
 - 支付宝账单：一屏显示 **6-8 条记录**
 - 本项目：一屏显示 **2.5 个患者**
 
 **影响**:
+
 - 浏览效率低，寻找患者费时
 - 无法快速对比多个患者信息
 - 增加操作步骤（滚动次数）
@@ -91,11 +96,13 @@
 
 **描述**:
 当前所有信息平铺展示，缺少视觉重点：
+
 - 姓名（18px, 600字重）与其他文本区分度不够
 - "首次诊断"标签和内容颜色几乎相同
 - 入住次数徽章样式过于普通
 
 **对比分析**:
+
 ```
 当前实现:
   姓名: 18px, #333      ← 与诊断信息对比不明显
@@ -107,6 +114,7 @@
 ```
 
 **影响**:
+
 - 用户需要花更多时间识别关键信息
 - 扫视式浏览困难
 
@@ -115,6 +123,7 @@
 ### 问题 3: 缺少视觉引导元素 🟡
 
 **描述**:
+
 1. **无状态指示器**:
    - 无法区分"新患者"、"近期就诊"、"需要随访"等状态
 
@@ -125,6 +134,7 @@
    - "最近入住: 2024-09-15" 不如 "15天前" 直观
 
 **对比**:
+
 - 微信消息列表：红点、未读数量、置顶标记
 - 待办事项应用：颜色标签、优先级标记、截止日期倒计时
 - 本项目：无任何视觉标记
@@ -135,11 +145,13 @@
 
 **描述**:
 "查看分析" 和 "患者入住" 按钮位于搜索框下方，视觉权重较低：
+
 - 按钮尺寸偏小（高度约 32px）
 - 渐变色与背景对比度不够
 - 位置在顶部区域，用户向下滚动时消失
 
 **建议参考**:
+
 - 微信"发起群聊"：右上角固定按钮
 - 支付宝"扫一扫"：底部固定 Tab 栏
 - 饿了么"购物车"：右下角悬浮按钮
@@ -149,6 +161,7 @@
 ### 问题 5: 空状态和加载状态简陋 🟡
 
 **当前实现**:
+
 ```xml
 <view wx:if="{{loading}}" class="placeholder">正在加载患者列表…</view>
 <view wx:elif="{{error}}" class="error">{{error}}</view>
@@ -156,6 +169,7 @@
 ```
 
 **问题**:
+
 - 无加载动画（仅文字提示）
 - 无空状态插图
 - 错误提示无操作引导（如"重试"按钮）
@@ -165,6 +179,7 @@
 ### 问题 6: 快速信息区块设计不合理 🟡
 
 **当前实现**:
+
 ```xml
 <view class="quick-info">
   <view class="quick-item">
@@ -176,6 +191,7 @@
 ```
 
 **CSS**:
+
 ```css
 .quick-info {
   display: grid;
@@ -184,6 +200,7 @@
 ```
 
 **问题**:
+
 - Grid 布局在信息数量不确定时会导致列宽不一致
 - 背景色（`var(--color-bg-tertiary)`）与卡片背景对比度低
 - 过度使用卡片中卡片设计，视觉臃肿
@@ -201,6 +218,7 @@
 **卡片高度**: 240rpx → **140rpx**
 
 **信息重组**:
+
 ```
 ┌─────────────────────────────────────┐
 │ 👤 张小明  24岁·女  🔵 3次        │ ← 主信息行
@@ -210,6 +228,7 @@
 ```
 
 **信息层级**:
+
 1. **主信息行**: 姓名（加粗、大字号）+ 年龄/性别（灰色小字）+ 入住次数徽章
 2. **诊断信息行**: 诊断名称 + 医院名称（灰色）
 3. **时间状态行**: 相对时间 + 状态标签（可选）
@@ -217,6 +236,7 @@
 #### 视觉增强
 
 **1. 头像/首字母**:
+
 ```xml
 <view class="avatar">
   <text class="avatar-text">{{item.patientName[0]}}</text>
@@ -224,6 +244,7 @@
 ```
 
 **样式**:
+
 ```css
 .avatar {
   width: 48rpx;
@@ -243,6 +264,7 @@
 ```
 
 **2. 状态标签**:
+
 ```xml
 <view class="status-badge status-{{item.statusType}}">
   {{item.statusLabel}}
@@ -250,11 +272,13 @@
 ```
 
 **类型**:
+
 - `status-urgent`: 紧急（红色）
 - `status-followup`: 需要随访（橙色）
 - `status-stable`: 稳定（绿色）
 
 **3. 入住次数徽章优化**:
+
 ```css
 .admission-badge {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -455,6 +479,7 @@
 #### 主要改进
 
 **1. 添加渐变背景**:
+
 ```css
 .patient-item {
   background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
@@ -463,6 +488,7 @@
 ```
 
 **2. 增强标题区域**:
+
 ```css
 .patient-name {
   font-size: var(--text-xl);
@@ -474,6 +500,7 @@
 ```
 
 **3. 优化快速信息区**:
+
 ```css
 .quick-info {
   display: flex;
@@ -489,6 +516,7 @@
 ```
 
 **4. 添加悬浮态动画**:
+
 ```css
 .patient-item:hover {
   box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.15);
@@ -508,6 +536,7 @@
 **功能**: 快速入住（主要操作）
 
 **WXML**:
+
 ```xml
 <view class="fab-container">
   <view class="fab-button" bindtap="onIntakeTap">
@@ -517,6 +546,7 @@
 ```
 
 **WXSS**:
+
 ```css
 .fab-container {
   position: fixed;
@@ -550,6 +580,7 @@
 ```
 
 **增强版 - 展开菜单**:
+
 ```xml
 <view class="fab-container" bindtap="toggleFab">
   <view class="fab-menu {{fabExpanded ? 'expanded' : ''}}">
@@ -576,6 +607,7 @@
 #### 搜索框增强
 
 **1. 添加搜索建议**:
+
 ```xml
 <view class="search-suggestions" wx:if="{{searchKeyword && suggestions.length}}">
   <view
@@ -592,6 +624,7 @@
 ```
 
 **2. 搜索历史**:
+
 ```javascript
 // 保存搜索历史
 function saveSearchHistory(keyword) {
@@ -604,6 +637,7 @@ function saveSearchHistory(keyword) {
 #### 高级筛选
 
 **WXML**:
+
 ```xml
 <view class="filter-bar">
   <view class="filter-chip {{activeFilter === 'all' ? 'active' : ''}}" bindtap="onFilterTap" data-filter="all">
@@ -619,6 +653,7 @@ function saveSearchHistory(keyword) {
 ```
 
 **WXSS**:
+
 ```css
 .filter-bar {
   display: flex;
@@ -653,6 +688,7 @@ function saveSearchHistory(keyword) {
 #### 骨架屏加载
 
 **WXML**:
+
 ```xml
 <view wx:if="{{loading}}" class="skeleton-list">
   <view class="skeleton-item" wx:for="{{[1,2,3,4]}}" wx:key="*this">
@@ -667,6 +703,7 @@ function saveSearchHistory(keyword) {
 ```
 
 **WXSS**:
+
 ```css
 .skeleton-item {
   display: flex;
@@ -721,6 +758,7 @@ function saveSearchHistory(keyword) {
 #### 空状态插图
 
 **WXML**:
+
 ```xml
 <view wx:if="{{!loading && !displayPatients.length}}" class="empty-state">
   <image class="empty-illustration" src="/assets/images/empty-patients.svg" mode="aspectFit" />
@@ -733,6 +771,7 @@ function saveSearchHistory(keyword) {
 ```
 
 **WXSS**:
+
 ```css
 .empty-state {
   display: flex;
@@ -782,6 +821,7 @@ function saveSearchHistory(keyword) {
 **目标**: 提升信息密度 50%，优化视觉层次
 
 **任务清单**:
+
 - [ ] 实施方案 A - 紧凑列表模式
   - [ ] 修改 WXML 结构
   - [ ] 编写新的 WXSS 样式
@@ -805,6 +845,7 @@ function saveSearchHistory(keyword) {
 **目标**: 提升操作效率和用户反馈
 
 **任务清单**:
+
 - [ ] 实施方案 D - 搜索优化
   - [ ] 搜索建议功能
   - [ ] 搜索历史记录
@@ -830,6 +871,7 @@ function saveSearchHistory(keyword) {
 **目标**: 智能化和个性化
 
 **任务清单**:
+
 - [ ] 状态智能识别
   - [ ] 根据最近入住时间判断"需要随访"
   - [ ] 根据就诊频率判断"高频患者"
@@ -854,6 +896,7 @@ function saveSearchHistory(keyword) {
 **目标**: 流畅度提升到 60fps
 
 **任务清单**:
+
 - [ ] 虚拟列表实现
   - [ ] 使用 `recycle-view` 或自定义虚拟滚动
   - [ ] 优化大列表渲染性能
@@ -874,21 +917,21 @@ function saveSearchHistory(keyword) {
 
 ### 当前实现 vs 方案 A
 
-| 维度 | 当前实现 | 方案 A（紧凑列表） | 改善幅度 |
-|------|----------|-------------------|----------|
-| **一屏患者数** | 2.5 个 | 4-5 个 | +80% |
-| **卡片高度** | 240rpx | 140rpx | -42% |
-| **信息密度** | 6 个字段 | 7 个字段 + 头像 + 状态 | +50% |
-| **视觉层次** | ⭐⭐ | ⭐⭐⭐⭐ | +100% |
-| **操作效率** | 3 次滚动找到患者 | 1 次滚动找到患者 | +67% |
+| 维度           | 当前实现         | 方案 A（紧凑列表）     | 改善幅度 |
+| -------------- | ---------------- | ---------------------- | -------- |
+| **一屏患者数** | 2.5 个           | 4-5 个                 | +80%     |
+| **卡片高度**   | 240rpx           | 140rpx                 | -42%     |
+| **信息密度**   | 6 个字段         | 7 个字段 + 头像 + 状态 | +50%     |
+| **视觉层次**   | ⭐⭐             | ⭐⭐⭐⭐               | +100%    |
+| **操作效率**   | 3 次滚动找到患者 | 1 次滚动找到患者       | +67%     |
 
 ### 加载性能对比
 
-| 场景 | 当前实现 | 优化后 | 改善 |
-|------|----------|--------|------|
-| **100 个患者渲染** | ~800ms | ~300ms | +62% |
-| **滚动帧率** | 45-50 fps | 55-60 fps | +20% |
-| **首屏加载** | 1.2s | 0.8s | +33% |
+| 场景               | 当前实现  | 优化后    | 改善 |
+| ------------------ | --------- | --------- | ---- |
+| **100 个患者渲染** | ~800ms    | ~300ms    | +62% |
+| **滚动帧率**       | 45-50 fps | 55-60 fps | +20% |
+| **首屏加载**       | 1.2s      | 0.8s      | +33% |
 
 ---
 

@@ -4,12 +4,49 @@
     <text class="hero-subtitle">汇总每位住户的入住记录</text>
   </view>
 
+  <!-- 统计卡片区域 -->
+  <view class="stats-section">
+    <view class="stats-grid">
+      <view
+        class="stat-card stat-card--all {{activeStatFilter === 'all' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="all"
+      >
+        <text class="stat-value">{{statsData.total || 0}}</text>
+        <text class="stat-label">全部</text>
+      </view>
+      <view
+        class="stat-card stat-card--in-care {{activeStatFilter === 'in_care' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="in_care"
+      >
+        <text class="stat-value">{{statsData.inCare || 0}}</text>
+        <text class="stat-label">在住</text>
+      </view>
+      <view
+        class="stat-card stat-card--pending {{activeStatFilter === 'pending' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="pending"
+      >
+        <text class="stat-value">{{statsData.pending || 0}}</text>
+        <text class="stat-label">待入住</text>
+      </view>
+      <view
+        class="stat-card stat-card--discharged {{activeStatFilter === 'discharged' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="discharged"
+      >
+        <text class="stat-value">{{statsData.discharged || 0}}</text>
+        <text class="stat-label">已离开</text>
+      </view>
+    </view>
+  </view>
+
   <view class="toolbar stack gap-3">
     <smart-search-bar
       value="{{searchKeyword}}"
       placeholder="搜索住户姓名、档案号或标签"
       suggestions="{{searchSuggestions}}"
-      filters="{{quickFilters}}"
       loading="{{searchLoading}}"
       history-enabled="{{true}}"
       has-active-filters="{{hasActiveFilters}}"
@@ -18,7 +55,6 @@
       bind:suggest="onSearchSuggest"
       bind:search="onSearchSubmit"
       bind:clear="onSearchClear"
-      bind:filtertap="onFilterTap"
       bind:toggleadv="onToggleAdvancedFilter"
     />
 
@@ -82,12 +118,7 @@
     <text class="error-title">加载失败</text>
     <text class="error-message">{{error}}</text>
     <view class="error-actions">
-      <pm-button
-        text="重试"
-        type="primary"
-        icon="🔄"
-        bindtap="onRetry"
-      />
+      <pm-button text="重试" type="primary" icon="🔄" bindtap="onRetry" />
     </view>
   </view>
 
@@ -101,15 +132,24 @@
     <view class="empty-state">
       <view class="empty-illustration-wrapper">
         <text class="empty-icon">
-          {{emptyStateConfig.type === 'search' ? '🔍' : emptyStateConfig.type === 'filter' ? '🔎' : '📋'}}
+          {{emptyStateConfig.type === 'search' ? '🔍' : emptyStateConfig.type === 'filter' ? '🔎' :
+          '📋'}}
         </text>
       </view>
       <text class="empty-description">{{emptyStateConfig.description}}</text>
     </view>
     <view slot="footer" class="empty-actions">
       <pm-button
+        wx:if="{{emptyStateConfig.showCreateButton}}"
         text="{{emptyStateConfig.actionText}}"
-        type="{{emptyStateConfig.showCreateButton ? 'primary' : 'ghost'}}"
+        type="primary"
+        size="medium"
+        bindtap="{{emptyStateConfig.actionHandler}}"
+      />
+      <pm-button
+        wx:else
+        text="{{emptyStateConfig.actionText}}"
+        type="ghost"
         size="medium"
         bindtap="{{emptyStateConfig.actionHandler}}"
       />
@@ -126,7 +166,7 @@
     <patient-card
       wx:for="{{displayPatients}}"
       wx:key="patientKey"
-      class="patient-item"
+      class="patient-item patient-item--{{cardDensityMode}}"
       patient="{{item}}"
       mode="{{cardDensityMode}}"
       status="{{item.cardStatus || 'default'}}"
@@ -145,7 +185,9 @@
   </scroll-view>
 
   <!-- P1-7: FAB标签提示 -->
-  <view class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}} {{fabExpanded ? 'fab-container--expanded' : ''}}">
+  <view
+    class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}} {{fabExpanded ? 'fab-container--expanded' : ''}}"
+  >
     <view wx:if="{{fabExpanded}}" class="fab-label">
       <text>添加住户</text>
     </view>
@@ -209,6 +251,28 @@
         <text class="checkout-dialog__name">{{checkoutPatient.patientName || '该住户'}}</text>
         <text class="checkout-dialog__desc">办理后状态将更新为“已离开”。</text>
       </view>
+      <view class="checkout-dialog__datetime">
+        <text class="checkout-dialog__field-label">离开时间</text>
+        <view class="checkout-dialog__datetime-row">
+          <picker
+            mode="date"
+            value="{{checkoutForm.date}}"
+            disabled="{{checkoutSubmitting}}"
+            bindchange="onCheckoutDateChange"
+          >
+            <view class="checkout-dialog__picker">{{checkoutForm.date || '选择日期'}}</view>
+          </picker>
+          <picker
+            mode="time"
+            value="{{checkoutForm.time}}"
+            disabled="{{checkoutSubmitting}}"
+            bindchange="onCheckoutTimeChange"
+          >
+            <view class="checkout-dialog__picker">{{checkoutForm.time || '选择时间'}}</view>
+          </picker>
+        </view>
+        <text class="checkout-dialog__datetime-hint">默认使用当前时间，可根据实际情况调整。</text>
+      </view>
       <pm-input
         label="离开原因"
         placeholder="例如病情好转、已转院（可选）"
@@ -245,6 +309,80 @@
         loading="{{checkoutSubmitting}}"
         disabled="{{checkoutSubmitting}}"
         bindtap="onCheckoutConfirmTap"
+      />
+    </view>
+  </pm-dialog>
+
+  <pm-dialog
+    visible="{{statusDialogVisible}}"
+    title="调整状态"
+    confirm-type="primary"
+    cancel-text=""
+    confirm-text=""
+    close-on-confirm="{{false}}"
+    close-on-cancel="{{!statusDialogSubmitting}}"
+    show-close="{{!statusDialogSubmitting}}"
+    mask-closable="{{!statusDialogSubmitting}}"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    bind:close="onStatusDialogClose"
+  >
+    <view class="status-dialog__body">
+      <view class="status-dialog__summary" wx:if="{{statusDialogPatient}}">
+        <text class="status-dialog__name">{{statusDialogPatient.patientName || '该住户'}}</text>
+        <text class="status-dialog__desc">选择新的住户状态，便于列表展示一致。</text>
+      </view>
+      <view class="status-dialog__options">
+        <view
+          wx:for="{{statusDialogOptions}}"
+          wx:key="id"
+          class="status-dialog__option {{statusDialogForm.value === item.id ? 'status-dialog__option--active' : ''}}"
+          bindtap="onStatusOptionSelect"
+          data-value="{{item.id}}"
+        >
+          <view class="status-dialog__option-main">
+            <text class="status-dialog__option-radio"
+              >{{statusDialogForm.value === item.id ? '●' : '○'}}</text
+            >
+            <text class="status-dialog__option-label">{{item.label}}</text>
+          </view>
+          <text class="status-dialog__option-tip" wx:if="{{item.id === 'in_care'}}"
+            >用于正在小家入住的住户</text
+          >
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'pending'}}"
+            >待入住房、随访等状态</text
+          >
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'discharged'}}"
+            >已办理离开或转出</text
+          >
+        </view>
+      </view>
+      <pm-input
+        label="备注"
+        type="textarea"
+        placeholder="可选，说明状态调整原因"
+        value="{{statusDialogForm.note}}"
+        maxlength="120"
+        textarea-auto-height="{{true}}"
+        disabled="{{statusDialogSubmitting}}"
+        bind:input="onStatusNoteInput"
+      />
+    </view>
+    <view slot="footer" class="status-dialog__footer">
+      <pm-button
+        text="取消"
+        type="ghost"
+        size="medium"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogCancel"
+      />
+      <pm-button
+        text="{{statusDialogSubmitting ? '处理中...' : '确认调整'}}"
+        type="primary"
+        size="medium"
+        loading="{{statusDialogSubmitting}}"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogConfirm"
       />
     </view>
   </pm-dialog>

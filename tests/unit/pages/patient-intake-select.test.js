@@ -66,8 +66,7 @@ describe('patient intake select page search & pagination', () => {
     const instance = {
       data,
       setData(updates, callback) {
-        const payload =
-          typeof updates === 'function' ? updates(this.data) || {} : updates || {};
+        const payload = typeof updates === 'function' ? updates(this.data) || {} : updates || {};
         Object.assign(this.data, payload);
         if (typeof callback === 'function') {
           callback.call(this);

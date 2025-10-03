@@ -1,4 +1,4 @@
-const normalizeValue = (value) => {
+const normalizeValue = value => {
   if (value === undefined || value === null) {
     return '';
   }
@@ -6,7 +6,7 @@ const normalizeValue = (value) => {
   return str === 'null' || str === 'undefined' ? '' : str;
 };
 
-const normalizeSpacing = (value) => {
+const normalizeSpacing = value => {
   const normalized = normalizeValue(value);
   if (!normalized) {
     return '';
@@ -14,7 +14,7 @@ const normalizeSpacing = (value) => {
   return normalized.replace(/\s+/g, ' ').trim();
 };
 
-const normalizeTimestamp = (value) => {
+const normalizeTimestamp = value => {
   if (value === undefined || value === null || value === '') {
     return null;
   }
@@ -41,7 +41,7 @@ const normalizeTimestamp = (value) => {
 
 const CAREGIVER_DELIMITER_REGEX = /[、，,]/g;
 
-const splitCaregiverList = (value) => {
+const splitCaregiverList = value => {
   const normalized = normalizeSpacing(value);
   if (!normalized) {
     return [];
@@ -53,7 +53,7 @@ const splitCaregiverList = (value) => {
     .filter(Boolean);
 };
 
-const normalizeCaregiverToken = (token) => normalizeSpacing(token).replace(/\s+/g, '').toLowerCase();
+const normalizeCaregiverToken = token => normalizeSpacing(token).replace(/\s+/g, '').toLowerCase();
 
 const mergeCaregivers = (base, candidate) => {
   const existingList = splitCaregiverList(base);
@@ -93,7 +93,7 @@ const parseFamilyContact = (rawValue, role) => {
     raw: normalized,
     name: '',
     phone: '',
-    idNumber: ''
+    idNumber: '',
   };
 
   const phoneMatch = normalized.match(CONTACT_PHONE_REGEX);
@@ -141,7 +141,7 @@ const ensureRecordTimestamp = (record = {}) => {
 const buildPatientGroups = (records = []) => {
   const groups = new Map();
 
-  records.forEach((rawRecord) => {
+  records.forEach(rawRecord => {
     const patientName = normalizeSpacing(rawRecord && rawRecord.patientName);
     const recordKey = normalizeSpacing(
       (rawRecord && (rawRecord.recordKey || rawRecord.key)) || patientName
@@ -204,7 +204,11 @@ const buildPatientGroups = (records = []) => {
     if (!group.idNumber && rawRecord && rawRecord.idNumber) {
       group.idNumber = normalizeSpacing(rawRecord.idNumber);
     }
-    if (rawRecord && rawRecord.patientName && rawRecord.patientName.length > group.patientName.length) {
+    if (
+      rawRecord &&
+      rawRecord.patientName &&
+      rawRecord.patientName.length > group.patientName.length
+    ) {
       group.patientName = normalizeSpacing(rawRecord.patientName) || group.patientName;
     }
 
@@ -225,16 +229,25 @@ const buildPatientGroups = (records = []) => {
         return;
       }
 
-      const segments = role === 'other'
-        ? normalized.replace(CAREGIVER_DELIMITER_REGEX, '、').split('、').map(item => normalizeSpacing(item)).filter(Boolean)
-        : [normalized];
+      const segments =
+        role === 'other'
+          ? normalized
+              .replace(CAREGIVER_DELIMITER_REGEX, '、')
+              .split('、')
+              .map(item => normalizeSpacing(item))
+              .filter(Boolean)
+          : [normalized];
 
       segments.forEach(segment => {
         const contact = parseFamilyContact(segment, role);
         if (!contact) {
           return;
         }
-        const key = [contact.role, normalizeCaregiverToken(contact.name || contact.raw), contact.phone || ''].join('|');
+        const key = [
+          contact.role,
+          normalizeCaregiverToken(contact.name || contact.raw),
+          contact.phone || '',
+        ].join('|');
         if (group._contactKeys && !group._contactKeys.has(key)) {
           group._contactKeys.add(key);
           group.familyContacts.push(contact);
@@ -253,7 +266,10 @@ const buildPatientGroups = (records = []) => {
         }
       } else if (role === 'other') {
         group.otherGuardianRaw = group.otherGuardianRaw || normalized;
-        if (!normalizeSpacing(group.otherGuardian) || normalized.length > group.otherGuardian.length) {
+        if (
+          !normalizeSpacing(group.otherGuardian) ||
+          normalized.length > group.otherGuardian.length
+        ) {
           group.otherGuardian = normalized;
         }
       }
@@ -266,7 +282,10 @@ const buildPatientGroups = (records = []) => {
     const economyValue = normalizeSpacing(rawRecord && rawRecord.familyEconomy);
     if (economyValue) {
       group.familyEconomyRaw = group.familyEconomyRaw || economyValue;
-      if (!normalizeSpacing(group.familyEconomy) || economyValue.length > group.familyEconomy.length) {
+      if (
+        !normalizeSpacing(group.familyEconomy) ||
+        economyValue.length > group.familyEconomy.length
+      ) {
         group.familyEconomy = economyValue;
       }
     }
@@ -285,14 +304,15 @@ const buildPatientGroups = (records = []) => {
       if (!group.latestAdmissionTimestamp || admissionTs > group.latestAdmissionTimestamp) {
         group.latestAdmissionTimestamp = admissionTs;
         group.latestAdmissionDate = rawRecord.admissionDate || null;
-        group.latestDiagnosis = normalizeSpacing(rawRecord.diagnosis) || group.latestDiagnosis || '';
+        group.latestDiagnosis =
+          normalizeSpacing(rawRecord.diagnosis) || group.latestDiagnosis || '';
         group.latestHospital = normalizeSpacing(rawRecord.hospital) || group.latestHospital || '';
         group.latestDoctor = normalizeSpacing(rawRecord.doctor) || group.latestDoctor || '';
       }
     }
   });
 
-  groups.forEach((group) => {
+  groups.forEach(group => {
     const totalRecords = Array.isArray(group.records) ? group.records.length : 0;
     if (totalRecords > group.admissionCount) {
       group.admissionCount = totalRecords;
@@ -301,27 +321,32 @@ const buildPatientGroups = (records = []) => {
     const latestRecord = totalRecords ? group.records[0] : {};
     const earliestRecord = totalRecords ? group.records[totalRecords - 1] : latestRecord;
 
-    const fallbackTimestamp = (record) =>
+    const fallbackTimestamp = record =>
       normalizeTimestamp(
-        (record && (record.admissionTimestamp || record.admissionDate || record.importedAt))
+        record && (record.admissionTimestamp || record.admissionDate || record.importedAt)
       );
 
     if (!group.firstAdmissionDate && earliestRecord) {
-      group.firstAdmissionDate = earliestRecord.admissionDate || fallbackTimestamp(earliestRecord) || 0;
+      group.firstAdmissionDate =
+        earliestRecord.admissionDate || fallbackTimestamp(earliestRecord) || 0;
     }
     if (!group.firstAdmissionTimestamp && earliestRecord) {
       group.firstAdmissionTimestamp =
-        normalizeTimestamp(earliestRecord.admissionTimestamp) || fallbackTimestamp(earliestRecord) || 0;
+        normalizeTimestamp(earliestRecord.admissionTimestamp) ||
+        fallbackTimestamp(earliestRecord) ||
+        0;
     }
     if (!group.latestAdmissionDate && latestRecord) {
-      group.latestAdmissionDate = latestRecord.admissionDate || fallbackTimestamp(latestRecord) || 0;
+      group.latestAdmissionDate =
+        latestRecord.admissionDate || fallbackTimestamp(latestRecord) || 0;
     }
     if (!group.latestAdmissionTimestamp && latestRecord) {
       group.latestAdmissionTimestamp =
         normalizeTimestamp(latestRecord.admissionTimestamp) || fallbackTimestamp(latestRecord) || 0;
     }
     if (!group.latestDiagnosis && latestRecord) {
-      group.latestDiagnosis = normalizeSpacing(latestRecord.diagnosis) || group.latestDiagnosis || '';
+      group.latestDiagnosis =
+        normalizeSpacing(latestRecord.diagnosis) || group.latestDiagnosis || '';
     }
     if (!normalizeSpacing(group.fatherInfo) && latestRecord) {
       group.fatherInfo = normalizeSpacing(latestRecord.fatherInfo) || group.fatherInfo || '';
@@ -330,10 +355,12 @@ const buildPatientGroups = (records = []) => {
       group.motherInfo = normalizeSpacing(latestRecord.motherInfo) || group.motherInfo || '';
     }
     if (!normalizeSpacing(group.otherGuardian) && latestRecord) {
-      group.otherGuardian = normalizeSpacing(latestRecord.otherGuardian) || group.otherGuardian || '';
+      group.otherGuardian =
+        normalizeSpacing(latestRecord.otherGuardian) || group.otherGuardian || '';
     }
     if (!normalizeSpacing(group.familyEconomy) && latestRecord) {
-      group.familyEconomy = normalizeSpacing(latestRecord.familyEconomy) || group.familyEconomy || '';
+      group.familyEconomy =
+        normalizeSpacing(latestRecord.familyEconomy) || group.familyEconomy || '';
     }
     if (!group.latestHospital && latestRecord) {
       group.latestHospital = normalizeSpacing(latestRecord.hospital) || group.latestHospital || '';
@@ -353,7 +380,9 @@ const buildPatientGroups = (records = []) => {
           .filter(contact => contact.role === role)
           .forEach(contact => ordered.push(contact));
       });
-      const unordered = group.familyContacts.filter(contact => !preferredOrder.includes(contact.role));
+      const unordered = group.familyContacts.filter(
+        contact => !preferredOrder.includes(contact.role)
+      );
       group.familyContacts = ordered.concat(unordered);
     }
 
@@ -365,14 +394,15 @@ const buildPatientGroups = (records = []) => {
   return groups;
 };
 
-const buildGroupSummaries = (groups) => {
-  const list = groups instanceof Map
-    ? Array.from(groups.values())
-    : Array.isArray(groups)
-      ? groups
-      : Object.values(groups || {});
+const buildGroupSummaries = groups => {
+  const list =
+    groups instanceof Map
+      ? Array.from(groups.values())
+      : Array.isArray(groups)
+        ? groups
+        : Object.values(groups || {});
 
-  return list.map((group) => ({
+  return list.map(group => ({
     key: group.key,
     recordKey: group.recordKey || group.key,
     patientName: group.patientName,
@@ -419,7 +449,9 @@ const ensureCollectionExists = async (db, name) => {
         await db.createCollection(name);
         return false;
       } catch (createError) {
-        const createCode = createError && (createError.errCode !== undefined ? createError.errCode : createError.code);
+        const createCode =
+          createError &&
+          (createError.errCode !== undefined ? createError.errCode : createError.code);
         const alreadyExists = createCode === -502002;
         if (!alreadyExists) {
           console.warn('createCollection failed', name, createError);

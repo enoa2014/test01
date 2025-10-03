@@ -54,7 +54,6 @@ async function main() {
         )
         process.exit(1)
     }
-    
 
     // 输出版本信息
     console.log(chalk.gray(`CloudBase CLI ${pkg.version}`))
@@ -88,11 +87,7 @@ async function main() {
 
     // -v 时输出的版本信息，设置时避免影响其他命令使用 -v
     if (isCommandEmpty) {
-        program.version(
-            `\nCLI: ${pkg.version}`,
-            '-v, --version',
-            '输出当前 CloudBase CLI 版本'
-        )
+        program.version(`\nCLI: ${pkg.version}`, '-v, --version', '输出当前 CloudBase CLI 版本')
     }
 
     // 处理无效命令

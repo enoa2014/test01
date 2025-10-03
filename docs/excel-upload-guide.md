@@ -35,6 +35,7 @@
 
 - 在 `cloudfunctions/readExcel` 目录中创建云函数：
   - `index.js` 使用 `tcb-admin-node` 和 `xlsx` 下载并解析存储中的 `data/b.xlsx`：
+
     ```javascript
     const cloud = require('wx-server-sdk');
     const XLSX = require('xlsx');
@@ -50,6 +51,7 @@
       return { rows };
     };
     ```
+
   - `package.json` 增加依赖：
     ```json
     {
@@ -59,6 +61,7 @@
       }
     }
     ```
+
 - 在微信开发者工具中部署云函数（选择环境 `cloud1-6g2fzr5f7cf51e38`）。
 
 ## 3. 小程序页面展示
@@ -74,7 +77,7 @@
       } catch (err) {
         this.setData({ error: err.errMsg || '读取失败', loading: false });
       }
-    }
+    },
   });
   ```
 - 对应 `index.wxml` 使用 `wx:for` 渲染行：
@@ -123,4 +126,3 @@
   3. 按列头生成字段名并批量写入所有数据行。
 - 同步完成后界面会提示“已同步 N 条记录”，并刷新前端展示；同步失败则会显示错误信息。
 - 若需核对云端数据，可在云开发控制台打开 `excel_records` 集合查看记录。
-

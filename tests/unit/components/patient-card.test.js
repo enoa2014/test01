@@ -70,10 +70,7 @@ describe('patient-card component', () => {
     expect(ctx.data.cardVariant).toBe('elevated');
     expect(ctx.data.cardPadding).toBe('var(--space-4)');
     expect(ctx.data.primaryLine).toContain('2025-10-01');
-    expect(ctx.data.infoItems).toEqual([
-      { label: '最近入住', value: '2025-10-01' },
-      { label: '责任医生', value: '王主任' },
-    ]);
+    expect(ctx.data.infoItems).toEqual([{ label: '最近入住', value: '2025-10-01', priority: 0 }]);
   });
 
   it('emits cardtap when clickable', () => {

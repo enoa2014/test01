@@ -3,13 +3,10 @@
   waitForElement,
   waitForCondition,
   inputValue,
-  waitForPage
+  waitForPage,
 } = require('./helpers/miniapp');
 const { generateMobile, situationText } = require('./helpers/patient-flow');
-const {
-  registerPatientRequirement,
-  getPatientResource,
-} = require('./helpers/resource-manager');
+const { registerPatientRequirement, getPatientResource } = require('./helpers/resource-manager');
 
 registerPatientRequirement('patient-detail-edit');
 
@@ -28,17 +25,24 @@ describe('patient detail inline edit (mpflow)', () => {
   }, 300000);
 
   test('allows editing contact information', async () => {
-    await miniProgram.reLaunch(`/pages/patient-detail/detail?key=${encodeURIComponent(patientKey)}`);
-    const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', { timeout: 20000 });
+    await miniProgram.reLaunch(
+      `/pages/patient-detail/detail?key=${encodeURIComponent(patientKey)}`
+    );
+    const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', {
+      timeout: 20000,
+    });
     await waitForElement(detailPage, '.patient-detail-name');
 
     const editButton = await waitForElement(detailPage, '.edit-button');
     await editButton.tap();
 
-    await waitForCondition(async () => {
-      const data = await detailPage.data();
-      return data.editMode === true;
-    }, { timeout: 8000, message: 'Edit mode did not activate' });
+    await waitForCondition(
+      async () => {
+        const data = await detailPage.data();
+        return data.editMode === true;
+      },
+      { timeout: 8000, message: 'Edit mode did not activate' }
+    );
 
     await detailPage.setData({
       'editForm.patientName': createdPatient.patientName || '自动化患者',
@@ -107,11 +111,9 @@ describe('patient detail inline edit (mpflow)', () => {
       await miniProgram.reLaunch('/pages/patient-detail/detail');
     }
 
-    const refreshedDetailPage = await waitForPage(
-      miniProgram,
-      'pages/patient-detail/detail',
-      { timeout: 20000 }
-    );
+    const refreshedDetailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', {
+      timeout: 20000,
+    });
 
     await waitForCondition(
       async () => {
@@ -131,7 +133,7 @@ describe('patient detail inline edit (mpflow)', () => {
 
     await miniProgram.reLaunch('/pages/index/index');
     const refreshedIndex = await waitForPage(miniProgram, 'pages/index/index', {
-      timeout: 20000
+      timeout: 20000,
     });
 
     await waitForCondition(
@@ -141,12 +143,14 @@ describe('patient detail inline edit (mpflow)', () => {
           return false;
         }
         const list = Array.isArray(data.displayPatients) ? data.displayPatients : [];
-        const target = list.find((item) => item.patientName === createdPatient.patientName);
+        const target = list.find(item => item.patientName === createdPatient.patientName);
         if (!target) {
-          await miniProgram.callWxMethod('cloud.callFunction', {
-            name: 'patientIntake',
-            data: { action: 'getPatients', forceRefresh: true, pageSize: 10 }
-          }).catch(() => {});
+          await miniProgram
+            .callWxMethod('cloud.callFunction', {
+              name: 'patientIntake',
+              data: { action: 'getPatients', forceRefresh: true, pageSize: 10 },
+            })
+            .catch(() => {});
           return false;
         }
         if (target.phone === newPhone) {
@@ -159,7 +163,7 @@ describe('patient detail inline edit (mpflow)', () => {
       },
       {
         timeout: 20000,
-        message: '患者列表未刷新出更新后的联系方式'
+        message: '患者列表未刷新出更新后的联系方式',
       }
     );
   }, 300000);

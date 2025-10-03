@@ -2,19 +2,20 @@
   openId: '',
   collections: new Map(),
   files: new Map(),
-  nextId: 1
+  nextId: 1,
 };
 
-const clone = (value) => (value === undefined || value === null ? value : JSON.parse(JSON.stringify(value)));
+const clone = value =>
+  value === undefined || value === null ? value : JSON.parse(JSON.stringify(value));
 
 const command = {
   or: (...conditions) => ({ __cmd: 'or', conditions }),
-  exists: (flag) => ({ __cmd: 'exists', flag }),
-  eq: (value) => ({ __cmd: 'eq', value }),
-  inc: (value) => ({ __cmd: 'inc', value })
+  exists: flag => ({ __cmd: 'exists', flag }),
+  eq: value => ({ __cmd: 'eq', value }),
+  inc: value => ({ __cmd: 'inc', value }),
 };
 
-const ensureCollection = (name) => {
+const ensureCollection = name => {
   if (!state.collections.has(name)) {
     state.collections.set(name, new Map());
   }
@@ -40,7 +41,7 @@ const setNestedValue = (target, path, value) => {
   const parts = path.split('.');
   const last = parts.pop();
   let cursor = target;
-  parts.forEach((part) => {
+  parts.forEach(part => {
     if (cursor[part] === undefined || cursor[part] === null || typeof cursor[part] !== 'object') {
       cursor[part] = {};
     }
@@ -51,13 +52,13 @@ const setNestedValue = (target, path, value) => {
 
 const applyUpdate = (existing, patch) => {
   const result = { ...existing };
-  Object.keys(patch).forEach((key) => {
+  Object.keys(patch).forEach(key => {
     let currentValue;
     if (key.includes('.')) {
       const parts = key.split('.');
       const last = parts.pop();
       let cursor = result;
-      parts.forEach((part) => {
+      parts.forEach(part => {
         if (cursor && typeof cursor === 'object') {
           cursor = cursor[part];
         } else {
@@ -78,11 +79,13 @@ const matchesCondition = (docValue, condition) => {
   if (condition && typeof condition === 'object' && condition.__cmd) {
     switch (condition.__cmd) {
       case 'exists':
-        return condition.flag ? docValue !== undefined && docValue !== null : docValue === undefined || docValue === null;
+        return condition.flag
+          ? docValue !== undefined && docValue !== null
+          : docValue === undefined || docValue === null;
       case 'eq':
         return docValue === condition.value;
       case 'or':
-        return condition.conditions.some((item) => matchesCondition(docValue, item));
+        return condition.conditions.some(item => matchesCondition(docValue, item));
       default:
         return false;
     }
@@ -125,7 +128,7 @@ const createDocInterface = (name, id) => ({
   },
   async remove() {
     ensureCollection(name).delete(id);
-  }
+  },
 });
 
 const sortDocs = (docs, order) => {
@@ -156,9 +159,9 @@ const createQueryInterface = (name, filter = null, order = null, limitValue = In
   },
   async get() {
     const collection = ensureCollection(name);
-    let docs = Array.from(collection.values()).map((doc) => clone(doc));
+    let docs = Array.from(collection.values()).map(doc => clone(doc));
     if (filter) {
-      docs = docs.filter((doc) => matchesQuery(doc, filter));
+      docs = docs.filter(doc => matchesQuery(doc, filter));
     }
     docs = sortDocs(docs, order);
     docs = docs.slice(0, limitValue);
@@ -172,15 +175,15 @@ const createQueryInterface = (name, filter = null, order = null, limitValue = In
         targets.push(id);
       }
     }
-    targets.forEach((id) => collection.delete(id));
+    targets.forEach(id => collection.delete(id));
     return { stats: { removed: targets.length } };
-  }
+  },
 });
 
-const collectionInterface = (name) => {
+const collectionInterface = name => {
   const query = createQueryInterface(name);
   return {
-    doc: (id) => createDocInterface(name, id),
+    doc: id => createDocInterface(name, id),
     add: async ({ data }) => {
       const collection = ensureCollection(name);
       const id = `mock-${state.nextId++}`;
@@ -191,7 +194,7 @@ const collectionInterface = (name) => {
     orderBy: query.orderBy,
     limit: query.limit,
     get: query.get,
-    remove: query.remove
+    remove: query.remove,
   };
 };
 
@@ -199,20 +202,20 @@ const transactionInterface = {
   collection(name) {
     return {
       ...collectionInterface(name),
-      doc: (id) => createDocInterface(name, id)
+      doc: id => createDocInterface(name, id),
     };
-  }
+  },
 };
 
 const db = {
   command,
-  collection: (name) => collectionInterface(name),
+  collection: name => collectionInterface(name),
   async runTransaction(handler) {
     return handler(transactionInterface);
   },
   async createCollection(name) {
     ensureCollection(name);
-  }
+  },
 };
 
 const cloud = {
@@ -222,7 +225,7 @@ const cloud = {
   getWXContext: jest.fn(() => ({ OPENID: state.openId })),
   callFunction: jest.fn(async () => ({ result: null })),
   async getTempFileURL({ fileList }) {
-    const list = (fileList || []).map((item) => {
+    const list = (fileList || []).map(item => {
       const fileID = typeof item === 'string' ? item : item.fileID;
       const buffer = state.files.get(fileID);
       if (!buffer) {
@@ -232,7 +235,7 @@ const cloud = {
         fileID,
         status: 0,
         tempFileURL: `https://mock/${encodeURIComponent(fileID)}`,
-        size: buffer.length
+        size: buffer.length,
       };
     });
     return { fileList: list };
@@ -246,13 +249,15 @@ const cloud = {
     return { fileContent: Buffer.from(state.files.get(fileID)) };
   },
   async uploadFile({ cloudPath, fileContent }) {
-    const buffer = Buffer.isBuffer(fileContent) ? Buffer.from(fileContent) : Buffer.from(fileContent || '');
+    const buffer = Buffer.isBuffer(fileContent)
+      ? Buffer.from(fileContent)
+      : Buffer.from(fileContent || '');
     const fileID = `mock://${cloudPath || `file-${state.nextId++}`}`;
     state.files.set(fileID, buffer);
     return { fileID };
   },
   async deleteFile({ fileList }) {
-    (fileList || []).forEach((fileID) => state.files.delete(fileID));
+    (fileList || []).forEach(fileID => state.files.delete(fileID));
   },
   __reset() {
     state.collections = new Map();
@@ -276,7 +281,7 @@ const cloud = {
   },
   __setFile(fileID, buffer) {
     state.files.set(fileID, Buffer.from(buffer));
-  }
+  },
 };
 
 module.exports = cloud;

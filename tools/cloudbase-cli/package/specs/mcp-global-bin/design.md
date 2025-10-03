@@ -14,16 +14,19 @@
 ## 技术选型
 
 ### 1. Bin 文件创建
+
 - 在 `bin/` 目录下创建 `cloudbase-mcp.js` 文件
 - 在 `package.json` 的 `bin` 字段中注册 `cloudbase-mcp` 命令
 - 直接调用内置的 `@cloudbase/cloudbase-mcp` 包
 
 ### 2. 模板配置生成
+
 - 修改 `router.ts` 中的模板下载逻辑
 - 根据 IDE 类型生成对应的 MCP 配置文件
 - 所有配置都指向 `cloudbase-mcp` 命令
 
 ### 3. IDE 配置映射和格式支持
+
 - 参考 CloudBase-AI-ToolKit 的 IDE 到文件映射关系
 - 支持 Cursor、VSCode、Claude Code、OpenAI Codex、OpenCode、Aider 等多种 IDE
 - 支持 JSON 和 TOML 两种配置文件格式
@@ -54,4 +57,4 @@ graph TD
     C --> D[实现 IDE 配置映射]
     D --> E[测试验证]
     E --> F[文档更新]
-``` 
+```

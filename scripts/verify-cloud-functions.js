@@ -75,7 +75,6 @@ async function verifyDeployment() {
     console.log('  3. 确认数据分析功能正常');
     console.log('  4. 测试入住选择功能');
     console.log('  5. 监控性能改进效果');
-
   } catch (error) {
     console.error('❌ 验证过程中出现错误:', error.message);
   }

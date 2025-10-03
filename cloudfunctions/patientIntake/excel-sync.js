@@ -6,8 +6,13 @@ const {
   ensureRecordTimestamp,
 } = require('./utils/patient');
 
-function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInput, normalizeString, collections = {} }) {
-  const ensureCollection = async (name) => {
+function createExcelSync({
+  db,
+  ensureCollectionExists: ensureCollectionExistsInput,
+  normalizeString,
+  collections = {},
+}) {
+  const ensureCollection = async name => {
     if (ensureCollectionExistsInput) {
       return ensureCollectionExistsInput(name);
     }
@@ -33,16 +38,19 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     }
     try {
       await ensureCollection(EXCEL_CACHE_COLLECTION);
-      await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
-        data: {
-          patients: [],
-          totalCount: 0,
-          hasMore: false,
-          limit: 0,
-          updatedAt: 0,
-          invalidatedAt: Date.now(),
-        },
-      });
+      await db
+        .collection(EXCEL_CACHE_COLLECTION)
+        .doc(PATIENT_CACHE_DOC_ID)
+        .set({
+          data: {
+            patients: [],
+            totalCount: 0,
+            hasMore: false,
+            limit: 0,
+            updatedAt: 0,
+            invalidatedAt: Date.now(),
+          },
+        });
     } catch (error) {
       const code = error && (error.errCode !== undefined ? error.errCode : error.code);
       console.warn('invalidatePatientCache failed', PATIENT_CACHE_DOC_ID, code || error);
@@ -51,7 +59,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
 
   const CONTACT_PHONE_REGEX = /1[3-9]\d{9}/;
 
-  const parseGuardianContact = (rawValue) => {
+  const parseGuardianContact = rawValue => {
     if (rawValue === null || rawValue === undefined) {
       return null;
     }
@@ -72,9 +80,9 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         return null;
       }
 
-      const pickValue = (patterns) => {
+      const pickValue = patterns => {
         for (const key of candidateKeys) {
-          if (patterns.some((pattern) => pattern.test(key))) {
+          if (patterns.some(pattern => pattern.test(key))) {
             const value = normalizeExcelSpacing(rawValue[key]);
             if (value) {
               return value;
@@ -99,8 +107,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       }
 
       const flattened = candidateKeys
-        .map((key) => rawValue[key])
-        .filter((value) => typeof value === 'string' || typeof value === 'number')
+        .map(key => rawValue[key])
+        .filter(value => typeof value === 'string' || typeof value === 'number')
         .join(' ');
       if (flattened) {
         return parseGuardianContact(flattened);
@@ -160,11 +168,13 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       }
     };
 
-    records.forEach((record) => {
+    records.forEach(record => {
       if (!record) {
         return;
       }
-      const candidateKey = normalizeExcelSpacing(record.recordKey || record.key || record.patientName);
+      const candidateKey = normalizeExcelSpacing(
+        record.recordKey || record.key || record.patientName
+      );
       if (candidateKey) {
         info.excelKeys.add(candidateKey);
       }
@@ -219,13 +229,13 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
 
   const mergeExcelKeys = (existingKeys = [], incomingKeys = []) => {
     const merged = new Set();
-    (Array.isArray(existingKeys) ? existingKeys : []).forEach((key) => {
+    (Array.isArray(existingKeys) ? existingKeys : []).forEach(key => {
       const normalized = normalizeExcelSpacing(key);
       if (normalized) {
         merged.add(normalized);
       }
     });
-    (Array.isArray(incomingKeys) ? incomingKeys : []).forEach((key) => {
+    (Array.isArray(incomingKeys) ? incomingKeys : []).forEach(key => {
       const normalized = normalizeExcelSpacing(key);
       if (normalized) {
         merged.add(normalized);
@@ -241,7 +251,10 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         return;
       }
       const existing = patientDoc && patientDoc[field];
-      if (!normalizeStringValue(existing) || normalizeStringValue(existing) !== normalizeStringValue(value)) {
+      if (
+        !normalizeStringValue(existing) ||
+        normalizeStringValue(existing) !== normalizeStringValue(value)
+      ) {
         updates[field] = value;
       }
     };
@@ -257,9 +270,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     ensureField('guardianContactPhone', guardianInfo.guardianPhone);
 
     if (Array.isArray(guardianInfo.excelKeys) && guardianInfo.excelKeys.length) {
-      const existingKeys = patientDoc && Array.isArray(patientDoc.excelRecordKeys)
-        ? patientDoc.excelRecordKeys
-        : [];
+      const existingKeys =
+        patientDoc && Array.isArray(patientDoc.excelRecordKeys) ? patientDoc.excelRecordKeys : [];
       const mergedKeys = mergeExcelKeys(existingKeys, guardianInfo.excelKeys);
       const existingSet = new Set(existingKeys);
       const mergedSet = new Set(mergedKeys);
@@ -280,7 +292,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     return updates;
   };
 
-    function sanitizeIdentifier(value, fallbackSeed) {
+  function sanitizeIdentifier(value, fallbackSeed) {
     const base = normalizeExcelValue(value);
     if (base) {
       const sanitized = base.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -399,7 +411,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       idNumber: normalizeExcelSpacing(last.idNumber),
       gender: normalizeExcelSpacing(last.gender),
       birthDate: normalizeExcelSpacing(last.birthDate),
-      nativePlace: normalizeExcelSpacing(last.nativePlace) || normalizeExcelSpacing(first.nativePlace),
+      nativePlace:
+        normalizeExcelSpacing(last.nativePlace) || normalizeExcelSpacing(first.nativePlace),
       ethnicity: normalizeExcelSpacing(last.ethnicity) || normalizeExcelSpacing(first.ethnicity),
       phone: '',
       address: normalizeExcelSpacing(last.address),
@@ -646,6 +659,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       firstHospital: '',
       firstDoctor: '',
       firstNarrative: '',
+      hasActiveRecords: false,
     };
 
     if (!normalizedKey) {
@@ -662,10 +676,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         if (options.ensureOptions && Array.isArray(options.ensureOptions.excelKeys)) {
           fallbackKeys.push(...options.ensureOptions.excelKeys);
         }
-        const excelRecords = await fetchExcelRecordsByKey(
-          normalizedKey,
-          fallbackKeys
-        );
+        const excelRecords = await fetchExcelRecordsByKey(normalizedKey, fallbackKeys);
         if (!Array.isArray(excelRecords) || !excelRecords.length) {
           return;
         }
@@ -678,26 +689,36 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         const earliest = sorted[0];
         const latest = sorted[sorted.length - 1];
 
-        const earliestTs = toTimestampFromExcel(earliest.admissionTimestamp || earliest.admissionDate);
+        const earliestTs = toTimestampFromExcel(
+          earliest.admissionTimestamp || earliest.admissionDate
+        );
         const latestTs = toTimestampFromExcel(latest.admissionTimestamp || latest.admissionDate);
 
         if (earliestTs) {
           summary.earliestTimestamp = earliestTs;
           summary.firstNarrative = normalizeExcelSpacing(
-            earliest.symptoms || earliest.diagnosis || earliest.treatmentProcess || summary.firstNarrative
+            earliest.symptoms ||
+              earliest.diagnosis ||
+              earliest.treatmentProcess ||
+              summary.firstNarrative
           );
           summary.firstHospital = normalizeExcelSpacing(earliest.hospital) || summary.firstHospital;
           summary.firstDoctor = normalizeExcelSpacing(earliest.doctor) || summary.firstDoctor;
-          summary.firstDiagnosis = normalizeExcelSpacing(earliest.diagnosis) || summary.firstDiagnosis;
+          summary.firstDiagnosis =
+            normalizeExcelSpacing(earliest.diagnosis) || summary.firstDiagnosis;
         }
         if (latestTs) {
           summary.latestTimestamp = latestTs;
           summary.latestNarrative = normalizeExcelSpacing(
-            latest.symptoms || latest.diagnosis || latest.treatmentProcess || summary.latestNarrative
+            latest.symptoms ||
+              latest.diagnosis ||
+              latest.treatmentProcess ||
+              summary.latestNarrative
           );
           summary.latestHospital = normalizeExcelSpacing(latest.hospital) || summary.latestHospital;
           summary.latestDoctor = normalizeExcelSpacing(latest.doctor) || summary.latestDoctor;
-          summary.latestDiagnosis = normalizeExcelSpacing(latest.diagnosis) || summary.latestDiagnosis;
+          summary.latestDiagnosis =
+            normalizeExcelSpacing(latest.diagnosis) || summary.latestDiagnosis;
         }
       } catch (error) {
         console.warn('summarizeIntakeHistory excel fallback failed', normalizedKey, error);
@@ -765,7 +786,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
             recordId.startsWith(`${normalizedKey}-excel`);
           const isAggregatedBySubmitter =
             (metadata.submittedBy === 'excel-import' || metadata.importMode === 'excel-import') &&
-            recordId.endsWith('-excel') && !metadata.excelRecordId;
+            recordId.endsWith('-excel') &&
+            !metadata.excelRecordId;
           const isAggregatedByIdSuffix = recordId.endsWith('-excel') && !metadata.excelRecordId;
           return !(isAggregatedBySource || isAggregatedBySubmitter || isAggregatedByIdSuffix);
         });
@@ -792,6 +814,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     }
 
     summary.count = dedupedRecords.length;
+    summary.hasActiveRecords = dedupedRecords.length > 0;
 
     let latestRecord = null;
     let earliestRecord = null;
@@ -866,7 +889,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     summary.firstDoctor = earliestInfo.doctor || summary.latestDoctor;
     summary.firstDiagnosis = earliestInfo.diagnosis || summary.latestDiagnosis;
 
-    if (summary.count <= 1) {
+    if (!summary.hasActiveRecords) {
       await applyExcelFallback();
     }
 
@@ -894,6 +917,7 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     const summary = await summarizeIntakeHistory(normalizedKey, options);
     const patientDoc = options.patientDoc || null;
     const serverDate = options.serverDate || Date.now();
+    const hasActiveRecords = Boolean(summary && summary.hasActiveRecords);
 
     let targetDocId =
       (patientDoc && (patientDoc._id || patientDoc.id || patientDoc.patientKey)) || normalizedKey;
@@ -915,11 +939,11 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     const updates = {
       updatedAt: serverDate,
       'data.updatedAt': serverDate,
-      admissionCount: summary.count,
-      'data.admissionCount': summary.count,
     };
 
-    if (summary.count > 0) {
+    if (hasActiveRecords) {
+      updates.admissionCount = summary.count;
+      updates['data.admissionCount'] = summary.count;
       updates.firstAdmissionDate = summary.earliestTimestamp;
       updates.latestAdmissionDate = summary.latestTimestamp;
       updates.latestAdmissionTimestamp = summary.latestTimestamp;
@@ -951,6 +975,8 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
         updates.firstNarrative = summary.firstNarrative;
       }
     } else {
+      updates.admissionCount = command.remove();
+      updates['data.admissionCount'] = command.remove();
       updates.firstAdmissionDate = command.remove();
       updates.latestAdmissionDate = command.remove();
       updates.latestAdmissionTimestamp = command.remove();
@@ -1079,11 +1105,18 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
       const guardianUpdates = buildGuardianUpdates(patientDoc, guardianInfo);
       if (Object.keys(guardianUpdates).length) {
         try {
-          await db.collection(PATIENTS_COLLECTION).doc(patientDocId).update({ data: guardianUpdates });
+          await db
+            .collection(PATIENTS_COLLECTION)
+            .doc(patientDocId)
+            .update({ data: guardianUpdates });
           patientDoc = { ...(patientDoc || {}), ...guardianUpdates, _id: patientDocId };
           await invalidatePatientCache();
         } catch (guardianError) {
-          console.warn('syncExcelRecordsToIntake guardian update failed', patientDocId, guardianError);
+          console.warn(
+            'syncExcelRecordsToIntake guardian update failed',
+            patientDocId,
+            guardianError
+          );
         }
       }
     }
@@ -1176,14 +1209,17 @@ function createExcelSync({ db, ensureCollectionExists: ensureCollectionExistsInp
     if (shouldSyncAggregates) {
       try {
         const ensureExcelKeys = new Set();
-        const inheritKeys = options.ensureOptions && Array.isArray(options.ensureOptions.excelKeys)
-          ? options.ensureOptions.excelKeys
-          : [];
-        [...inheritKeys, ...(Array.isArray(providedExcelKeys) ? providedExcelKeys : [])].forEach(key => {
-          if (key) {
-            ensureExcelKeys.add(key);
+        const inheritKeys =
+          options.ensureOptions && Array.isArray(options.ensureOptions.excelKeys)
+            ? options.ensureOptions.excelKeys
+            : [];
+        [...inheritKeys, ...(Array.isArray(providedExcelKeys) ? providedExcelKeys : [])].forEach(
+          key => {
+            if (key) {
+              ensureExcelKeys.add(key);
+            }
           }
-        });
+        );
         if (patientDoc && patientDoc.recordKey) {
           ensureExcelKeys.add(patientDoc.recordKey);
         }

@@ -80,7 +80,11 @@ Component({
     'title, useHeaderSlot': function observer(title, useHeaderSlot) {
       this.setData({ showHeader: Boolean(useHeaderSlot || title) });
     },
-    'useFooterSlot, cancelText, confirmText': function observerFooter(useFooterSlot, cancelText, confirmText) {
+    'useFooterSlot, cancelText, confirmText': function observerFooter(
+      useFooterSlot,
+      cancelText,
+      confirmText
+    ) {
       const showCancel = Boolean(cancelText);
       const showConfirm = Boolean(confirmText);
       const hasButtons = showCancel || showConfirm;

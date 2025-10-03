@@ -23,14 +23,14 @@ var GLOBAL_SOCK = -1
 var GLOBAL_STAGE = 0
 
 module.exports = {
-    init: function() {
+    init: function () {
         if (!GLOBAL_IS_QUIET) {
             consoleLog('开始本地执行云函数，受环境影响，执行结果可能与云端存在一定差异！')
             consoleLog('START RequestId: ' + GLOBAL_REQUEST_ID)
         }
         return 0
     },
-    wait_for_invoke: function() {
+    wait_for_invoke: function () {
         var invokeInfo = []
 
         GLOBAL_STAGE += 1
@@ -53,10 +53,10 @@ module.exports = {
 
         return invokeInfo
     },
-    log: function(str) {
+    log: function (str) {
         // consoleLog(formatSystem(str))
     },
-    console_log: function(str, err = false) {
+    console_log: function (str, err = false) {
         if (!GLOBAL_IS_QUIET) {
             if (err === false) {
                 consoleLog(formatConsole(str))
@@ -65,7 +65,7 @@ module.exports = {
             }
         }
     },
-    report_fail: function(stackTrace, errNum, errType = 0) {
+    report_fail: function (stackTrace, errNum, errType = 0) {
         const result = {}
 
         result['errorCode'] = 1
@@ -78,10 +78,10 @@ module.exports = {
         // console.dir(result);
         consoleLogErr(JSON.stringify(result))
     },
-    report_running: function() {
+    report_running: function () {
         GLOBAL_START_TIME = process.hrtime()
     },
-    report_done: function(resultStr, errType = 0) {
+    report_done: function (resultStr, errType = 0) {
         reportDone(resultStr, errType)
     }
 }
@@ -171,10 +171,7 @@ function uuid() {
         '-' +
         crypto.randomBytes(2).toString('hex') +
         '-' +
-        crypto
-            .randomBytes(2)
-            .toString('hex')
-            .replace(/^./, '1') +
+        crypto.randomBytes(2).toString('hex').replace(/^./, '1') +
         '-' +
         crypto.randomBytes(2).toString('hex') +
         '-' +

@@ -39,30 +39,13 @@
     </view>
   </view>
 
-  <view wx:if="{{filters.length}}" class="smart-search__filters">
-    <view
-      wx:for="{{filters}}"
-      wx:key="id"
-      class="smart-search__filter {{item.active ? 'smart-search__filter--active' : ''}} {{item.type ? 'smart-search__filter--' + item.type : ''}}"
-      bindtap="handleFilterTap"
-      data-filter="{{item}}"
-    >
-      <text class="smart-search__filter-count" wx:if="{{item.count !== undefined}}">{{item.count}}</text>
-      <text class="smart-search__filter-label">{{item.label}}</text>
-    </view>
-  </view>
-
   <view wx:if="{{historyEnabled && searchHistory.length}}" class="smart-search__history">
     <view class="smart-search__history-header">
       <text class="smart-search__history-title">搜索历史</text>
       <text class="smart-search__history-clear" bindtap="handleClearHistory">清空</text>
     </view>
     <view class="smart-search__history-list">
-      <view
-        wx:for="{{searchHistory}}"
-        wx:key="*this"
-        class="smart-search__history-item"
-      >
+      <view wx:for="{{searchHistory}}" wx:key="*this" class="smart-search__history-item">
         <text class="smart-search__history-text" bindtap="handleHistoryTap" data-keyword="{{item}}">
           {{item}}
         </text>

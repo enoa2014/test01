@@ -1,6 +1,6 @@
 ﻿const logger = require('../../utils/logger');
 const { formatDate, formatAge, calculateAge } = require('../../utils/date');
-const { callPatientIntake } = require('../../utils/intake');
+const { callPatientIntake, formatDateTime } = require('../../utils/intake');
 const SORT_OPTIONS = [
   { label: '最近入住优先', value: 'latestAdmissionDesc' },
   { label: '入住次数优先', value: 'admissionCountDesc' },
@@ -34,24 +34,30 @@ const FILTER_RISK_OPTIONS = [
   { id: 'low', label: '低风险' },
 ];
 const FILTER_SCHEME_STORAGE_KEY = 'filter_panel_schemes';
-// 小家业务场景快速筛选器
-const QUICK_FILTERS = [
-  { id: 'all', label: '全部', type: 'default' },
-  { id: 'in_care', label: '在住', type: 'success' },
-  { id: 'pending', label: '待入住', type: 'warning' },
-  { id: 'discharged', label: '已离开', type: 'default' },
-];
-function createQuickFilters(activeId = 'all') {
-  return QUICK_FILTERS.map(filter => ({
-    ...filter,
-    active: filter.id === activeId,
-  }));
-}
+// 快速筛选器已移除 - 功能已整合至统计卡片
 function safeString(value) {
   if (value === null || value === undefined) {
     return '';
   }
   return String(value).trim();
+}
+function formatTimeString(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${hour}:${minute}`;
+}
+function buildTimestampFromDateTime(dateStr, timeStr) {
+  const dateText = safeString(dateStr);
+  if (!dateText) {
+    return null;
+  }
+  const timeText = safeString(timeStr) || '00:00';
+  const timestamp = Date.parse(`${dateText}T${timeText}:00`);
+  return Number.isFinite(timestamp) ? timestamp : null;
 }
 function mapGenderLabel(value) {
   const text = safeString(value);
@@ -345,7 +351,12 @@ function generatePatientBadges({ careStatus, riskLevel, admissionCount }) {
   }
   return badges;
 }
-function buildLatestEvent({ latestAdmissionDateFormatted, latestDiagnosis, importOrder, importedAtFormatted }) {
+function buildLatestEvent({
+  latestAdmissionDateFormatted,
+  latestDiagnosis,
+  importOrder,
+  importedAtFormatted,
+}) {
   const diagnosis = safeString(latestDiagnosis) || '暂无诊断';
   if (latestAdmissionDateFormatted) {
     return `${latestAdmissionDateFormatted} · ${diagnosis}`;
@@ -358,7 +369,13 @@ function buildLatestEvent({ latestAdmissionDateFormatted, latestDiagnosis, impor
   }
   return diagnosis;
 }
-function extractPatientTags({ latestHospital, latestDoctor, firstDiagnosis, latestDiagnosis, importOrder }) {
+function extractPatientTags({
+  latestHospital,
+  latestDoctor,
+  firstDiagnosis,
+  latestDiagnosis,
+  importOrder,
+}) {
   const tags = [];
   const append = value => {
     const item = safeString(value);
@@ -455,26 +472,36 @@ function summarizeFiltersForScheme(filters) {
     parts.push(`风险:${normalized.riskLevels.join('/')}`);
   }
   if (normalized.hospitals.length) {
-    parts.push(`医院:${normalized.hospitals.slice(0, 2).join('/')}${normalized.hospitals.length > 2 ? '…' : ''}`);
+    parts.push(
+      `医院:${normalized.hospitals.slice(0, 2).join('/')}${normalized.hospitals.length > 2 ? '…' : ''}`
+    );
   }
   if (normalized.diagnosis.length) {
-    parts.push(`诊断:${normalized.diagnosis.slice(0, 2).join('/')}${normalized.diagnosis.length > 2 ? '…' : ''}`);
+    parts.push(
+      `诊断:${normalized.diagnosis.slice(0, 2).join('/')}${normalized.diagnosis.length > 2 ? '…' : ''}`
+    );
   }
   if (normalized.genders.length) {
     parts.push(`性别:${normalized.genders.join('/')}`);
   }
   if (normalized.ethnicities.length) {
-    parts.push(`民族:${normalized.ethnicities.slice(0, 2).join('/')}${normalized.ethnicities.length > 2 ? '…' : ''}`);
+    parts.push(
+      `民族:${normalized.ethnicities.slice(0, 2).join('/')}${normalized.ethnicities.length > 2 ? '…' : ''}`
+    );
   }
   if (normalized.nativePlaces.length) {
-    parts.push(`籍贯:${normalized.nativePlaces.slice(0, 2).join('/')}${normalized.nativePlaces.length > 2 ? '…' : ''}`);
+    parts.push(
+      `籍贯:${normalized.nativePlaces.slice(0, 2).join('/')}${normalized.nativePlaces.length > 2 ? '…' : ''}`
+    );
   }
   if (normalized.ageRanges.length) {
     const labels = normalized.ageRanges.map(getAgeBucketLabelById);
     parts.push(`年龄:${labels.slice(0, 2).join('/')}${labels.length > 2 ? '…' : ''}`);
   }
   if (normalized.doctors.length) {
-    parts.push(`医生:${normalized.doctors.slice(0, 2).join('/')}${normalized.doctors.length > 2 ? '…' : ''}`);
+    parts.push(
+      `医生:${normalized.doctors.slice(0, 2).join('/')}${normalized.doctors.length > 2 ? '…' : ''}`
+    );
   }
   const { start, end } = normalized.dateRange || {};
   if (start || end) {
@@ -580,7 +607,6 @@ Page({
     searchKeyword: '',
     searchSuggestions: [],
     searchLoading: false,
-    quickFilters: createQuickFilters(),
     sortOptions: SORT_OPTIONS,
     sortIndex: 0,
     skeletonPlaceholders: [0, 1, 2, 3],
@@ -588,9 +614,7 @@ Page({
       { id: 'view', label: '查看详情', type: 'text', icon: '→' },
       { id: 'more', label: '更多操作', type: 'text', icon: '⋯' },
     ],
-    cardActionsSimplified: [
-      { id: 'more', label: '更多操作', type: 'text', icon: '⋯' },
-    ],
+    cardActionsSimplified: [{ id: 'more', label: '更多操作', type: 'text', icon: '⋯' }],
     batchMode: false,
     selectedPatientMap: {},
     selectedCount: 0,
@@ -632,16 +656,40 @@ Page({
     checkoutForm: {
       reason: '',
       note: '',
+      timestamp: null,
+      date: '',
+      time: '',
+      dateTimeDisplay: '',
     },
     checkoutErrors: {},
     checkoutPatient: null,
+    statusDialogVisible: false,
+    statusDialogSubmitting: false,
+    statusDialogOptions: [
+      { id: 'in_care', label: '在住' },
+      { id: 'pending', label: '待入住' },
+      { id: 'discharged', label: '已离开' },
+    ],
+    statusDialogForm: {
+      value: '',
+      note: '',
+    },
+    statusDialogPatient: null,
     // P1-4: 卡片密度模式
     cardDensityMode: 'comfortable', // 'compact' | 'comfortable' | 'spacious'
     densityModeIcons: {
       compact: '☰',
       comfortable: '▭',
-      spacious: '▢'
+      spacious: '▢',
     },
+    // 统计数据
+    statsData: {
+      total: 0,
+      inCare: 0,
+      pending: 0,
+      discharged: 0,
+    },
+    activeStatFilter: 'all', // 当前激活的统计筛选
   },
   onLoad() {
     this.fabRestoreTimer = null;
@@ -779,8 +827,11 @@ Page({
         const latestDoctor = item.latestDoctor || '';
         const firstDoctor = item.firstDoctor || '';
         const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0);
-        const { cardStatus: derivedCardStatus, careStatus: derivedCareStatus, diffDays } =
-          mapPatientStatus(latestAdmissionTimestamp);
+        const {
+          cardStatus: derivedCardStatus,
+          careStatus: derivedCareStatus,
+          diffDays,
+        } = mapPatientStatus(latestAdmissionTimestamp);
         const checkoutAtRaw = item.checkoutAt || (item.metadata && item.metadata.checkoutAt);
         const checkoutAt = Number(checkoutAtRaw);
         const hasCheckout = Number.isFinite(checkoutAt) && checkoutAt > 0;
@@ -827,9 +878,9 @@ Page({
         const latestAdmissionDisplay = latestAdmissionDateFormatted
           ? `最近入住 ${latestAdmissionDateFormatted}`
           : '未入住';
-      return {
-        ...item,
-        name: item.patientName || item.name || '',
+        return {
+          ...item,
+          name: item.patientName || item.name || '',
           ageText: formatAge(item.birthDate),
           ageYears,
           ageBucketId: ageBucket ? ageBucket.id : '',
@@ -855,10 +906,10 @@ Page({
           genderLabel,
           nativePlace,
           ethnicity,
-        checkoutAt: hasCheckout ? checkoutAt : null,
-        selected,
-      };
-    });
+          checkoutAt: hasCheckout ? checkoutAt : null,
+          selected,
+        };
+      });
       let mergedPatients = mappedPatients;
       if (shouldAppend) {
         const existing = Array.isArray(this.data.patients) ? this.data.patients.slice() : [];
@@ -880,10 +931,11 @@ Page({
         });
         mergedPatients = existing;
       }
-      const hasMore = typeof result.hasMore === 'boolean'
-        ? result.hasMore
-        : mappedPatients.length >= resolvedLimit;
-      const nextPage = result.nextPage !== undefined ? result.nextPage : (hasMore ? page + 1 : null);
+      const hasMore =
+        typeof result.hasMore === 'boolean'
+          ? result.hasMore
+          : mappedPatients.length >= resolvedLimit;
+      const nextPage = result.nextPage !== undefined ? result.nextPage : hasMore ? page + 1 : null;
       this.setData(
         {
           patients: mergedPatients,
@@ -898,8 +950,6 @@ Page({
         () => {
           this.applyFilters();
           this.updateFilterOptions(mergedPatients);
-          // P0-3: 更新快速筛选器计数
-          this.updateFilterCounts(this.data.quickFilters);
         }
       );
       if (!shouldAppend && page === 0) {
@@ -965,12 +1015,12 @@ Page({
         if (key === patientKey) {
           const nextItem = { ...item, ...updates };
           const latestTimestamp = Number(nextItem.latestAdmissionTimestamp || 0) || null;
-          const { cardStatus: derivedCardStatus, careStatus: derivedCareStatus, diffDays } =
-            mapPatientStatus(latestTimestamp);
-          const normalizedCareStatus = normalizeCareStatus(
-            nextItem.careStatus,
-            derivedCareStatus
-          );
+          const {
+            cardStatus: derivedCardStatus,
+            careStatus: derivedCareStatus,
+            diffDays,
+          } = mapPatientStatus(latestTimestamp);
+          const normalizedCareStatus = normalizeCareStatus(nextItem.careStatus, derivedCareStatus);
           const cardStatus = deriveCardStatus(normalizedCareStatus, derivedCardStatus);
           const riskLevel = identifyRiskLevel(diffDays);
           const admissionCount = Number(nextItem.admissionCount || 0);
@@ -1003,8 +1053,7 @@ Page({
       ? SORT_OPTIONS[sortIndex].value
       : 'latestAdmissionDesc';
     let list = Array.isArray(source) ? source.slice() : [];
-    const activeFilter = (this.data.quickFilters || []).find(item => item && item.active);
-    const activeFilterId = activeFilter ? activeFilter.id : 'all';
+    const activeFilterId = this.data.activeStatFilter || 'all';
     if (activeFilterId === 'in_care') {
       list = list.filter(item => item && item.careStatus === 'in_care');
     } else if (activeFilterId === 'pending') {
@@ -1042,7 +1091,8 @@ Page({
         );
       });
     }
-    const advancedFilters = options.advancedFilters || this.data.advancedFilters || getDefaultAdvancedFilters();
+    const advancedFilters =
+      options.advancedFilters || this.data.advancedFilters || getDefaultAdvancedFilters();
     list = applyAdvancedFilters(list, advancedFilters);
     if (sortValue === 'admissionCountDesc') {
       list.sort((a, b) => (b.admissionCount || 0) - (a.admissionCount || 0));
@@ -1061,9 +1111,13 @@ Page({
       });
     } else if (sortValue === 'nameAsc') {
       list.sort((a, b) => {
-        const nameA = safeString(a.patientName).localeCompare(safeString(b.patientName), 'zh-Hans-CN', {
-          sensitivity: 'base',
-        });
+        const nameA = safeString(a.patientName).localeCompare(
+          safeString(b.patientName),
+          'zh-Hans-CN',
+          {
+            sensitivity: 'base',
+          }
+        );
         if (nameA !== 0) {
           return nameA;
         }
@@ -1094,15 +1148,50 @@ Page({
       };
     });
   },
+  // 计算统计数据
+  calculateStatsData(patients = []) {
+    const total = patients.length;
+    const inCare = patients.filter(p => p.careStatus === 'in_care').length;
+    const pending = patients.filter(p => p.careStatus === 'pending').length;
+    const discharged = patients.filter(p => p.careStatus === 'discharged').length;
+
+    return {
+      total,
+      inCare,
+      pending,
+      discharged,
+    };
+  },
+
   applyFilters() {
     const filtered = this.buildFilteredPatients(this.data.patients || []);
+    const statsData = this.calculateStatsData(this.data.patients || []);
+
     this.setData({
       displayPatients: filtered,
       filterPreviewCount: filtered.length,
       filterPreviewLoading: false,
+      statsData,
       // P1-9: 更新空状态配置
       emptyStateConfig: this.getEmptyStateConfig(filtered),
     });
+  },
+
+  // 统计卡片点击筛选
+  onStatFilterTap(e) {
+    const filter = e.currentTarget.dataset.filter;
+
+    // 切换激活状态 - 点击同一个卡片则取消筛选
+    const newFilter = this.data.activeStatFilter === filter ? 'all' : filter;
+
+    this.setData(
+      {
+        activeStatFilter: newFilter,
+      },
+      () => {
+        this.applyFilters();
+      }
+    );
   },
 
   // P1-9: 智能判断空状态类型
@@ -1364,8 +1453,12 @@ Page({
     ]);
     schemeFilters.forEach(filters => {
       ensureArrayValue(filters && filters.genders).forEach(value => genderSelectedSet.add(value));
-      ensureArrayValue(filters && filters.ethnicities).forEach(value => ethnicitySelectedSet.add(value));
-      ensureArrayValue(filters && filters.nativePlaces).forEach(value => nativePlaceSelectedSet.add(value));
+      ensureArrayValue(filters && filters.ethnicities).forEach(value =>
+        ethnicitySelectedSet.add(value)
+      );
+      ensureArrayValue(filters && filters.nativePlaces).forEach(value =>
+        nativePlaceSelectedSet.add(value)
+      );
       ensureArrayValue(filters && filters.ageRanges).forEach(value => ageSelectedSet.add(value));
       ensureArrayValue(filters && filters.doctors).forEach(value => doctorSelectedSet.add(value));
     });
@@ -1406,9 +1499,7 @@ Page({
   onFilterSaveScheme() {
     const normalized = canonicalizeSchemeFilters(this.data.pendingAdvancedFilters);
     const fingerprint = schemeFingerprint(normalized);
-    const schemes = Array.isArray(this.data.filterSchemes)
-      ? this.data.filterSchemes.slice()
-      : [];
+    const schemes = Array.isArray(this.data.filterSchemes) ? this.data.filterSchemes.slice() : [];
 
     if (schemes.some(scheme => scheme.fingerprint === fingerprint)) {
       wx.showToast({ icon: 'none', title: '已保存相同方案' });
@@ -1452,9 +1543,7 @@ Page({
   },
   onFilterDeleteScheme(event) {
     const schemeId = event && event.detail ? event.detail.id : '';
-    const schemes = Array.isArray(this.data.filterSchemes)
-      ? this.data.filterSchemes.slice()
-      : [];
+    const schemes = Array.isArray(this.data.filterSchemes) ? this.data.filterSchemes.slice() : [];
     const nextSchemes = schemes.filter(item => item && item.id !== schemeId);
     this.saveFilterSchemes(nextSchemes);
     wx.showToast({ icon: 'none', title: '已删除方案' });
@@ -1466,9 +1555,7 @@ Page({
       wx.showToast({ icon: 'none', title: '方案不存在' });
       return;
     }
-    const schemes = Array.isArray(this.data.filterSchemes)
-      ? this.data.filterSchemes.slice()
-      : [];
+    const schemes = Array.isArray(this.data.filterSchemes) ? this.data.filterSchemes.slice() : [];
     const index = schemes.findIndex(item => item && item.id === schemeId);
     if (index === -1) {
       wx.showToast({ icon: 'none', title: '方案不存在' });
@@ -1517,16 +1604,18 @@ Page({
     this.setData({ filterSchemes: schemes });
   },
   saveFilterSchemes(schemes) {
-    const normalized = (schemes || []).map(item => {
-      const filters = canonicalizeSchemeFilters(item.filters);
-      return {
-        id: item.id,
-        name: item.name || `方案 ${item.id.toString().slice(-4)}`,
-        summary: item.summary || summarizeFiltersForScheme(filters),
-        fingerprint: schemeFingerprint(filters),
-        filters,
-      };
-    }).slice(0, 5);
+    const normalized = (schemes || [])
+      .map(item => {
+        const filters = canonicalizeSchemeFilters(item.filters);
+        return {
+          id: item.id,
+          name: item.name || `方案 ${item.id.toString().slice(-4)}`,
+          summary: item.summary || summarizeFiltersForScheme(filters),
+          fingerprint: schemeFingerprint(filters),
+          filters,
+        };
+      })
+      .slice(0, 5);
     persistSchemesToStorage(normalized);
     this.setData({ filterSchemes: normalized });
   },
@@ -1538,11 +1627,7 @@ Page({
       return patientLike;
     }
     return (
-      patientLike.patientKey ||
-      patientLike.key ||
-      patientLike.recordKey ||
-      patientLike.id ||
-      ''
+      patientLike.patientKey || patientLike.key || patientLike.recordKey || patientLike.id || ''
     );
   },
   onSearchInput(event) {
@@ -1681,48 +1766,7 @@ Page({
       }
     );
   },
-  onFilterTap(event) {
-    const filter = (event.detail && event.detail.filter) || {};
-    const filterId = filter.id || 'all';
-    this.applyQuickFilter(filterId);
-  },
-  applyQuickFilter(filterId = 'all') {
-    const validIds = QUICK_FILTERS.map(filter => filter.id);
-    const resolvedId = validIds.includes(filterId) ? filterId : 'all';
-    const nextFilters = (this.data.quickFilters || createQuickFilters()).map(filter => ({
-      ...filter,
-      active: filter.id === resolvedId,
-    }));
-
-    // P0-3: 更新快速筛选器计数
-    this.updateFilterCounts(nextFilters);
-
-    this.setData({ quickFilters: nextFilters }, () => {
-      this.applyFilters();
-    });
-  },
-
-  // P0-3: 动态计算每个快速筛选器的数量 - 小家业务场景
-  updateFilterCounts(filters) {
-    const allPatients = this.data.patients || [];
-    const filtersWithCount = filters.map(filter => {
-      let count = 0;
-
-      if (filter.id === 'all') {
-        count = allPatients.length;
-      } else if (filter.id === 'in_care') {
-        count = allPatients.filter(p => p && p.careStatus === 'in_care').length;
-      } else if (filter.id === 'pending') {
-        count = allPatients.filter(p => p && p.careStatus === 'pending').length;
-      } else if (filter.id === 'discharged') {
-        count = allPatients.filter(p => p && p.careStatus === 'discharged').length;
-      }
-
-      return { ...filter, count };
-    });
-
-    this.setData({ quickFilters: filtersWithCount });
-  },
+  // 快速筛选器已移除 - 功能已整合至统计卡片(onStatFilterTap)
   onToggleAdvancedFilter() {
     const normalized = normalizeAdvancedFilters(this.data.advancedFilters);
     const count = this.calculatePreviewCount(normalized);
@@ -1841,8 +1885,7 @@ Page({
   navigateToPatient(patientLike) {
     const patient = patientLike || {};
     const profileKey = this.resolvePatientKey(patient);
-    const resolvedPatientKey =
-      patient.patientKey || patient.key || patient.recordKey || '';
+    const resolvedPatientKey = patient.patientKey || patient.key || patient.recordKey || '';
     if (!profileKey) {
       return;
     }
@@ -1880,7 +1923,8 @@ Page({
     if (this.data.batchMode) {
       return;
     }
-    const { key, patientKey, recordKey } = (event.currentTarget && event.currentTarget.dataset) || {};
+    const { key, patientKey, recordKey } =
+      (event.currentTarget && event.currentTarget.dataset) || {};
     this.navigateToPatient({ key, patientKey, recordKey });
   },
   setBatchState(map, batchMode) {
@@ -1889,10 +1933,12 @@ Page({
     const nextMode = batchMode || selectedCount > 0;
     // 计算是否全选
     const all = this.buildFilteredPatients(this.data.patients || []);
-    const allSelected = all.length > 0 && all.every(item => {
-      const key = this.resolvePatientKey(item);
-      return key && nextMap[key];
-    });
+    const allSelected =
+      all.length > 0 &&
+      all.every(item => {
+        const key = this.resolvePatientKey(item);
+        return key && nextMap[key];
+      });
     this.setData(
       {
         batchMode: nextMode,
@@ -1920,10 +1966,12 @@ Page({
   handleBatchSelectAll() {
     const currentMap = this.data.selectedPatientMap || {};
     const all = this.buildFilteredPatients(this.data.patients || []);
-    const allSelected = all.length > 0 && all.every(item => {
-      const key = this.resolvePatientKey(item);
-      return key && currentMap[key];
-    });
+    const allSelected =
+      all.length > 0 &&
+      all.every(item => {
+        const key = this.resolvePatientKey(item);
+        return key && currentMap[key];
+      });
     if (allSelected) {
       // 当前已全选,执行反选
       this.setBatchState({}, false);
@@ -1966,7 +2014,7 @@ Page({
     }
     wx.showActionSheet({
       itemList: ['批量提醒', '导出档案', '清空选择'],
-      success: (res) => {
+      success: res => {
         switch (res.tapIndex) {
           case 0:
             this.handleBatchRemind();
@@ -2014,6 +2062,7 @@ Page({
     if (canCheckout) {
       operations.push({ id: 'checkout', label: '离开' });
     }
+    operations.push({ id: 'status', label: '修改状态' });
     operations.push({ id: 'message', label: '发送消息' });
     operations.push({ id: 'export', label: '导出报告' });
     operations.push({ id: 'delete', label: '删除住户' });
@@ -2029,7 +2078,7 @@ Page({
     try {
       wx.showActionSheet({
         itemList: operations.map(item => item.label),
-        success: (res) => {
+        success: res => {
           const operation = operations[res.tapIndex];
           if (!operation) {
             return;
@@ -2043,6 +2092,9 @@ Page({
               break;
             case 'checkout':
               this.handlePatientCheckout(patient);
+              break;
+            case 'status':
+              this.openStatusDialog(patient);
               break;
             case 'message':
               this.handleSendMessage(patient);
@@ -2063,6 +2115,118 @@ Page({
       releaseActionSheetLock();
       throw error;
     }
+  },
+  openStatusDialog(patient) {
+    if (this.data.statusDialogVisible || this.data.statusDialogSubmitting) {
+      return;
+    }
+    const nextPatient = {
+      patientKey: this.resolvePatientKey(patient),
+      patientName: safeString((patient && (patient.patientName || patient.name)) || ''),
+      careStatus: safeString(patient && patient.careStatus) || 'pending',
+    };
+    if (!nextPatient.patientKey) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    this.setData({
+      statusDialogVisible: true,
+      statusDialogSubmitting: false,
+      statusDialogPatient: nextPatient,
+      statusDialogForm: {
+        value: nextPatient.careStatus,
+        note: '',
+      },
+    });
+  },
+  onStatusDialogClose() {
+    if (this.data.statusDialogSubmitting) {
+      return;
+    }
+    this.resetStatusDialog();
+  },
+  onStatusOptionSelect(event) {
+    if (this.data.statusDialogSubmitting) {
+      return;
+    }
+    const value =
+      (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.value) ||
+      '';
+    if (!value) {
+      return;
+    }
+    this.setData({ 'statusDialogForm.value': value });
+  },
+  onStatusNoteInput(event) {
+    const value = (event.detail && event.detail.value) || '';
+    this.setData({ 'statusDialogForm.note': value });
+  },
+  onStatusDialogCancel() {
+    if (this.data.statusDialogSubmitting) {
+      return;
+    }
+    this.resetStatusDialog();
+  },
+  onStatusDialogConfirm() {
+    if (this.data.statusDialogSubmitting) {
+      return;
+    }
+    const patient = this.data.statusDialogPatient || {};
+    const patientKey = this.resolvePatientKey(patient);
+    if (!patientKey) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      this.resetStatusDialog();
+      return;
+    }
+    const formValue = safeString(this.data.statusDialogForm && this.data.statusDialogForm.value);
+    if (!formValue) {
+      wx.showToast({ icon: 'none', title: '请选择状态' });
+      return;
+    }
+    const note = safeString(this.data.statusDialogForm && this.data.statusDialogForm.note);
+    this.setData({ statusDialogSubmitting: true });
+    wx.showLoading({ title: '处理中', mask: true });
+    callPatientIntake('updateCareStatus', {
+      patientKey,
+      status: formValue,
+      note,
+    })
+      .then(result => {
+        wx.hideLoading();
+        this.setData({ statusDialogSubmitting: false });
+        wx.showToast({ icon: 'success', title: '已更新' });
+        this.resetStatusDialog();
+        this.applyStatusChangeResult(patientKey, {
+          careStatus: formValue,
+          note,
+          checkoutAt: result && Number(result.checkoutAt) ? Number(result.checkoutAt) : null,
+          statusAdjustedAt:
+            result && Number(result.statusAdjustedAt)
+              ? Number(result.statusAdjustedAt)
+              : Date.now(),
+        });
+      })
+      .catch(error => {
+        wx.hideLoading();
+        this.setData({ statusDialogSubmitting: false });
+        logger.error('updateCareStatus failed', error);
+        const message = safeString(
+          (error && (error.message || error.errMsg)) || '更新失败，请稍后重试'
+        );
+        const toastMessage = message.length > 14 ? `${message.slice(0, 13)}...` : message;
+        wx.showToast({ icon: 'none', title: toastMessage || '更新失败' });
+      });
+  },
+  resetStatusDialog() {
+    this.setData({
+      statusDialogVisible: false,
+      statusDialogSubmitting: false,
+      statusDialogForm: {
+        value: '',
+        note: '',
+      },
+      statusDialogPatient: null,
+    });
   },
   startIntakeForPatient(patient) {
     const key = this.resolvePatientKey(patient);
@@ -2101,12 +2265,19 @@ Page({
       latestAdmissionTimestamp: Number((patient && patient.latestAdmissionTimestamp) || 0) || 0,
       careStatus: patient && patient.careStatus,
     };
+    const now = Date.now();
+    const defaultDate = formatDate(now);
+    const defaultTime = formatTimeString(now);
     this.setData({
       checkoutDialogVisible: true,
       checkoutPatient: targetPatient,
       checkoutForm: {
         reason: '',
         note: '',
+        timestamp: now,
+        date: defaultDate,
+        time: defaultTime,
+        dateTimeDisplay: formatDateTime(now),
       },
       checkoutErrors: {},
     });
@@ -2125,6 +2296,38 @@ Page({
   },
   onCheckoutConfirmTap() {
     this.submitCheckout();
+  },
+  updateCheckoutDateTime(changes = {}) {
+    const currentForm = this.data.checkoutForm || {};
+    const nextDate = changes.date !== undefined ? changes.date : currentForm.date;
+    const nextTime = changes.time !== undefined ? changes.time : currentForm.time;
+    const combinedTimestamp = buildTimestampFromDateTime(nextDate, nextTime);
+    const fallbackTimestamp = Number.isFinite(currentForm.timestamp)
+      ? currentForm.timestamp
+      : Date.now();
+    const finalTimestamp = Number.isFinite(combinedTimestamp)
+      ? combinedTimestamp
+      : fallbackTimestamp;
+    this.setData({
+      'checkoutForm.date': nextDate,
+      'checkoutForm.time': nextTime,
+      'checkoutForm.timestamp': finalTimestamp,
+      'checkoutForm.dateTimeDisplay': finalTimestamp ? formatDateTime(finalTimestamp) : '',
+    });
+  },
+  onCheckoutDateChange(event) {
+    if (this.data.checkoutSubmitting) {
+      return;
+    }
+    const value = (event && event.detail && event.detail.value) || '';
+    this.updateCheckoutDateTime({ date: value });
+  },
+  onCheckoutTimeChange(event) {
+    if (this.data.checkoutSubmitting) {
+      return;
+    }
+    const value = (event && event.detail && event.detail.value) || '';
+    this.updateCheckoutDateTime({ time: value });
   },
   onCheckoutReasonInput(event) {
     const value = (event.detail && event.detail.value) || '';
@@ -2150,6 +2353,8 @@ Page({
     }
     const reason = safeString((this.data.checkoutForm && this.data.checkoutForm.reason) || '');
     const note = safeString((this.data.checkoutForm && this.data.checkoutForm.note) || '');
+    const rawTimestamp = Number(this.data.checkoutForm && this.data.checkoutForm.timestamp);
+    const effectiveTimestamp = Number.isFinite(rawTimestamp) ? rawTimestamp : Date.now();
     this.setData({ checkoutSubmitting: true });
     wx.showLoading({ title: '办理中', mask: true });
     let checkoutData = null;
@@ -2159,13 +2364,16 @@ Page({
         checkout: {
           reason,
           note,
+          timestamp: effectiveTimestamp,
         },
       });
     } catch (error) {
       wx.hideLoading();
       this.setData({ checkoutSubmitting: false });
       logger.error('checkoutPatient failed', error);
-      const message = safeString((error && (error.message || error.errMsg)) || '办理失败，请稍后再试');
+      const message = safeString(
+        (error && (error.message || error.errMsg)) || '办理失败，请稍后再试'
+      );
       const toastMessage = message.length > 14 ? `${message.slice(0, 13)}...` : message;
       if (this.data && this.data.testCaptureToast) {
         this.setData({ testLastToast: toastMessage || '办理失败' });
@@ -2180,7 +2388,10 @@ Page({
     }
     wx.showToast({ icon: 'success', title: '已办理' });
     this.resetCheckoutDialog();
-    const checkoutAt = checkoutData && Number(checkoutData.checkoutAt) ? Number(checkoutData.checkoutAt) : Date.now();
+    const checkoutAt =
+      checkoutData && Number(checkoutData.checkoutAt)
+        ? Number(checkoutData.checkoutAt)
+        : Date.now();
     this.applyCheckoutResult(patientKey, {
       reason,
       note,
@@ -2194,6 +2405,10 @@ Page({
       checkoutForm: {
         reason: '',
         note: '',
+        timestamp: null,
+        date: '',
+        time: '',
+        dateTimeDisplay: '',
       },
       checkoutErrors: {},
     });
@@ -2281,6 +2496,98 @@ Page({
     }
     this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
   },
+  applyStatusChangeResult(patientKey, statusResult = {}) {
+    if (!patientKey) {
+      return;
+    }
+    const patients = Array.isArray(this.data.patients) ? this.data.patients.slice() : [];
+    if (!patients.length) {
+      try {
+        wx.removeStorageSync(PATIENT_CACHE_KEY);
+      } catch (error) {
+        // ignore
+      }
+      this.fetchPatients({ silent: false, forceRefresh: true, page: 0 });
+      return;
+    }
+    const nextCareStatusRaw = normalizeCareStatus(statusResult.careStatus, 'pending');
+    const checkoutAt = Number(statusResult.checkoutAt) || null;
+    const statusAdjustedAt = Number(statusResult.statusAdjustedAt) || Date.now();
+    const note = safeString(statusResult.note);
+    const updatedPatients = patients.map(item => {
+      const key = this.resolvePatientKey(item);
+      if (!key || key !== patientKey) {
+        return item;
+      }
+      const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0) || 0;
+      const derivedStatus = mapPatientStatus(latestAdmissionTimestamp);
+      const diffDays = derivedStatus.diffDays;
+      const riskLevel = identifyRiskLevel(diffDays);
+      const careStatus = nextCareStatusRaw;
+      const badges = generatePatientBadges({
+        careStatus,
+        riskLevel,
+        admissionCount: item.admissionCount,
+      });
+      const nextItem = {
+        ...item,
+        careStatus,
+        cardStatus: deriveCardStatus(careStatus, derivedStatus.cardStatus),
+        badges,
+        manualStatusUpdatedAt: statusAdjustedAt,
+      };
+      if (note) {
+        nextItem.manualStatusNote = note;
+      } else if (nextItem.manualStatusNote) {
+        delete nextItem.manualStatusNote;
+      }
+      if (careStatus === 'discharged') {
+        nextItem.checkoutAt = checkoutAt || statusAdjustedAt;
+      } else {
+        delete nextItem.checkoutAt;
+        delete nextItem.checkoutReason;
+        delete nextItem.checkoutNote;
+      }
+      return nextItem;
+    });
+    const selectedMap = { ...(this.data.selectedPatientMap || {}) };
+    if (selectedMap[patientKey]) {
+      delete selectedMap[patientKey];
+    }
+    const selectedCount = Object.keys(selectedMap).length;
+    this.setData(
+      {
+        patients: updatedPatients,
+        selectedPatientMap: selectedMap,
+        selectedCount,
+        allSelected: false,
+      },
+      () => {
+        this.applyFilters();
+        this.updateFilterOptions(updatedPatients);
+      }
+    );
+    try {
+      wx.removeStorageSync(PATIENT_CACHE_KEY);
+    } catch (error) {
+      // ignore
+    }
+    try {
+      wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, {
+        timestamp: Date.now(),
+        patientKey,
+        updates: {
+          careStatus: nextCareStatusRaw,
+          manualStatusNote: note,
+          manualStatusUpdatedAt: statusAdjustedAt,
+          checkoutAt: nextCareStatusRaw === 'discharged' ? checkoutAt || statusAdjustedAt : null,
+        },
+      });
+    } catch (error) {
+      // ignore storage failure
+    }
+    this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+  },
   handleSendMessage() {
     if (this.data && this.data.testCaptureToast) {
       this.setData({ testLastToast: '功能开发中' });
@@ -2304,10 +2611,10 @@ Page({
     wx.vibrateShort({
       type: 'medium', // 中等强度振动
       success: () => {
-        console.log('长按振动反馈成功');
+        logger.debug('长按振动反馈成功');
       },
       fail: () => {
-        console.log('振动反馈失败,设备可能不支持');
+        logger.debug('振动反馈失败,设备可能不支持');
       },
     });
 

@@ -13,22 +13,17 @@
  * --verify-only 仅验证数据，不执行操作
  */
 
-const tcb = require("@cloudbase/node-sdk");
+const tcb = require('@cloudbase/node-sdk');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
 // 配置
 const CONFIG = {
-  collections: [
-    'excel_records',
-    'excel_cache',
-    'patients',
-    'patient_intake_records'
-  ],
+  collections: ['excel_records', 'excel_cache', 'patients', 'patient_intake_records'],
   batchSize: 20,
   backupDir: 'backups',
-  timeout: 120000
+  timeout: 120000,
 };
 
 // 从环境变量获取配置
@@ -46,7 +41,7 @@ if (!tcbEnv || !secretId || !secretKey) {
 const app = tcb.init({
   env: tcbEnv,
   secretId: secretId,
-  secretKey: secretKey
+  secretKey: secretKey,
 });
 
 const db = app.database();
@@ -59,7 +54,7 @@ function parseArgs() {
   return {
     backup: args.includes('--backup'),
     verifyOnly: args.includes('--verify-only'),
-    help: args.includes('--help') || args.includes('-h')
+    help: args.includes('--help') || args.includes('-h'),
   };
 }
 
@@ -135,7 +130,6 @@ async function backupData() {
       } else {
         console.log(`    ℹ️  集合 ${collectionName} 为空，跳过备份`);
       }
-
     } catch (error) {
       console.warn(`    ⚠️  备份集合 ${collectionName} 失败:`, error.message);
     }
@@ -164,7 +158,9 @@ async function clearCollection(collectionName) {
       const deletePromises = docs
         .filter(doc => doc && doc._id)
         .map(doc =>
-          collection.doc(doc._id).remove()
+          collection
+            .doc(doc._id)
+            .remove()
             .catch(error => {
               console.warn(`    删除文档失败 ${doc._id}:`, error.message);
               return null;
@@ -178,10 +174,11 @@ async function clearCollection(collectionName) {
 
     console.log(`    ✅ 集合 ${collectionName} 清空完成，共删除 ${totalDeleted} 条记录`);
     return totalDeleted;
-
   } catch (error) {
-    if (error.errCode === -502005 ||
-        (error.errMsg && error.errMsg.includes('DATABASE_COLLECTION_NOT_EXIST'))) {
+    if (
+      error.errCode === -502005 ||
+      (error.errMsg && error.errMsg.includes('DATABASE_COLLECTION_NOT_EXIST'))
+    ) {
       console.log(`    ℹ️  集合 ${collectionName} 不存在，跳过清空`);
       return 0;
     }
@@ -211,15 +208,17 @@ async function clearAllCollections() {
 async function importData() {
   console.log('📥 开始重新导入数据...');
 
-  const fileId = excelFileId || 'cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx';
+  const fileId =
+    excelFileId ||
+    'cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx';
 
   try {
     const result = await app.callFunction({
       name: 'readExcel',
       data: {
         action: 'import',
-        fileId: fileId
-      }
+        fileId: fileId,
+      },
     });
 
     if (result.result && result.result.success !== false) {
@@ -239,7 +238,6 @@ async function importData() {
     } else {
       throw new Error('数据导入失败: ' + JSON.stringify(result.result?.error));
     }
-
   } catch (error) {
     console.error('❌ 数据导入失败:', error.message);
     throw error;
@@ -277,7 +275,6 @@ async function verifyData() {
           }
         }
       }
-
     } catch (error) {
       console.error(`  ❌ 验证集合 ${collectionName} 失败:`, error.message);
       results[collectionName] = 'error';
@@ -291,7 +288,9 @@ async function verifyData() {
   if (results.patients === results.patient_intake_records) {
     console.log(`  ✅ 患者记录与入住记录数量一致: ${results.patients}`);
   } else {
-    console.log(`  ⚠️  患者记录(${results.patients})与入住记录(${results.patient_intake_records})数量不一致`);
+    console.log(
+      `  ⚠️  患者记录(${results.patients})与入住记录(${results.patient_intake_records})数量不一致`
+    );
     allValid = false;
   }
 
@@ -320,8 +319,14 @@ async function clearCache() {
   try {
     const cacheCollection = db.collection('excel_cache');
 
-    await cacheCollection.doc('default').remove().catch(() => {});
-    await cacheCollection.doc('patients_summary_cache').remove().catch(() => {});
+    await cacheCollection
+      .doc('default')
+      .remove()
+      .catch(() => {});
+    await cacheCollection
+      .doc('patients_summary_cache')
+      .remove()
+      .catch(() => {});
 
     // 强制刷新
     await app.callFunction({
@@ -329,12 +334,11 @@ async function clearCache() {
       data: {
         action: 'list',
         forceRefresh: true,
-        pageSize: 1
-      }
+        pageSize: 1,
+      },
     });
 
     console.log('✅ 缓存清理完成');
-
   } catch (error) {
     console.warn('⚠️  缓存清理失败:', error.message);
   }
@@ -398,7 +402,6 @@ async function main() {
     } else {
       console.log('\n✅ 所有验证通过，初始化成功！');
     }
-
   } catch (error) {
     console.error('\n💥 操作失败:', error.message);
     console.error('\n请检查:');
@@ -420,5 +423,5 @@ module.exports = {
   clearAllCollections,
   importData,
   verifyData,
-  clearCache
+  clearCache,
 };

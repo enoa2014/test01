@@ -174,7 +174,10 @@ describe('患者列表页 - 基础组件集成', () => {
 
       // 验证空状态条件
       const shouldShowEmptyState =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length === 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length === 0;
 
       expect(shouldShowEmptyState).toBe(true);
     });
@@ -216,7 +219,10 @@ describe('患者列表页 - 基础组件集成', () => {
       page.data.displayPatients = [{ key: 'patient-1' }];
 
       const shouldShowEmptyState =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length === 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length === 0;
 
       expect(shouldShowEmptyState).toBe(false);
     });
@@ -327,12 +333,14 @@ describe('患者列表页 - 基础组件集成', () => {
       const skeletonStyles = {
         avatar: {
           borderRadius: 'var(--radius-full)',
-          background: 'linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%)',
+          background:
+            'linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%)',
           animation: 'skeleton-loading 1.4s infinite ease',
         },
         line: {
           borderRadius: 'var(--radius-sm)',
-          background: 'linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%)',
+          background:
+            'linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%)',
           animation: 'skeleton-loading 1.4s infinite ease',
         },
         card: {
@@ -365,11 +373,17 @@ describe('患者列表页 - 基础组件集成', () => {
       page.data.loading = true;
 
       const shouldShowSkeleton = page.data.loading;
-      const shouldShowError = (!page.data.loading && Boolean(page.data.error));
+      const shouldShowError = !page.data.loading && Boolean(page.data.error);
       const shouldShowEmpty =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length === 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length === 0;
       const shouldShowList =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length > 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length > 0;
 
       expect(shouldShowSkeleton).toBe(true);
       expect(shouldShowError).toBe(false);
@@ -381,11 +395,17 @@ describe('患者列表页 - 基础组件集成', () => {
       page.data.error = '加载失败';
 
       const shouldShowSkeleton = page.data.loading;
-      const shouldShowError = (!page.data.loading && Boolean(page.data.error));
+      const shouldShowError = !page.data.loading && Boolean(page.data.error);
       const shouldShowEmpty =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length === 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length === 0;
       const shouldShowList =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length > 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length > 0;
 
       expect(shouldShowSkeleton).toBe(false);
       expect(shouldShowError).toBe(true);
@@ -397,11 +417,17 @@ describe('患者列表页 - 基础组件集成', () => {
       page.data.displayPatients = [];
 
       const shouldShowSkeleton = page.data.loading;
-      const shouldShowError = (!page.data.loading && Boolean(page.data.error));
+      const shouldShowError = !page.data.loading && Boolean(page.data.error);
       const shouldShowEmpty =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length === 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length === 0;
       const shouldShowList =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length > 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length > 0;
 
       expect(shouldShowSkeleton).toBe(false);
       expect(shouldShowError).toBe(false);
@@ -413,11 +439,17 @@ describe('患者列表页 - 基础组件集成', () => {
       page.data.displayPatients = [{ key: 'patient-1' }];
 
       const shouldShowSkeleton = page.data.loading;
-      const shouldShowError = (!page.data.loading && Boolean(page.data.error));
+      const shouldShowError = !page.data.loading && Boolean(page.data.error);
       const shouldShowEmpty =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length === 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length === 0;
       const shouldShowList =
-        (!page.data.loading && !page.data.error && Array.isArray(page.data.displayPatients) && page.data.displayPatients.length > 0);
+        !page.data.loading &&
+        !page.data.error &&
+        Array.isArray(page.data.displayPatients) &&
+        page.data.displayPatients.length > 0;
 
       expect(shouldShowSkeleton).toBe(false);
       expect(shouldShowError).toBe(false);
@@ -434,7 +466,7 @@ describe('患者列表页 - 基础组件集成', () => {
         { name: 'FAB', ariaLabel: '添加患者' },
       ];
 
-      buttons.forEach((button) => {
+      buttons.forEach(button => {
         expect(button.ariaLabel).toBeDefined();
         expect(button.ariaLabel).toBeTruthy();
       });

@@ -1,4 +1,4 @@
-@import "/styles/foundation.wxss";
+@import '/styles/foundation.wxss';
 
 .filter-panel-backdrop {
   position: fixed;
@@ -123,7 +123,10 @@
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   background: var(--color-bg-tertiary);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .filter-chip--active {

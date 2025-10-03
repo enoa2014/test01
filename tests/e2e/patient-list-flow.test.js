@@ -96,21 +96,27 @@ describe('patient list search → filter → detail flow', () => {
 
     await indexPage.callMethod('onSearchInput', { detail: { value: '李四' } });
 
-    await waitForCondition(async () => {
-      const data = await indexPage.data();
-      return (
-        Array.isArray(data.displayPatients) &&
-        data.displayPatients.length === 1 &&
-        data.displayPatients[0].patientName === '李四'
-      );
-    }, { timeout: 5000, message: 'Search filter did not reduce to 李四' });
+    await waitForCondition(
+      async () => {
+        const data = await indexPage.data();
+        return (
+          Array.isArray(data.displayPatients) &&
+          data.displayPatients.length === 1 &&
+          data.displayPatients[0].patientName === '李四'
+        );
+      },
+      { timeout: 5000, message: 'Search filter did not reduce to 李四' }
+    );
 
     await indexPage.callMethod('onSearchClear');
 
-    await waitForCondition(async () => {
-      const data = await indexPage.data();
-      return Array.isArray(data.displayPatients) && data.displayPatients.length === 2;
-    }, { timeout: 5000, message: 'Search clear did not restore full list' });
+    await waitForCondition(
+      async () => {
+        const data = await indexPage.data();
+        return Array.isArray(data.displayPatients) && data.displayPatients.length === 2;
+      },
+      { timeout: 5000, message: 'Search clear did not restore full list' }
+    );
 
     await indexPage.callMethod('onFilterApply', {
       detail: {
@@ -130,14 +136,17 @@ describe('patient list search → filter → detail flow', () => {
       },
     });
 
-    await waitForCondition(async () => {
-      const data = await indexPage.data();
-      return (
-        Array.isArray(data.displayPatients) &&
-        data.displayPatients.length === 1 &&
-        data.displayPatients[0].patientName === '张三'
-      );
-    }, { timeout: 5000, message: 'Advanced filter did not narrow to 张三' });
+    await waitForCondition(
+      async () => {
+        const data = await indexPage.data();
+        return (
+          Array.isArray(data.displayPatients) &&
+          data.displayPatients.length === 1 &&
+          data.displayPatients[0].patientName === '张三'
+        );
+      },
+      { timeout: 5000, message: 'Advanced filter did not narrow to 张三' }
+    );
 
     await indexPage.callMethod('onFilterApply', {
       detail: {
@@ -157,19 +166,24 @@ describe('patient list search → filter → detail flow', () => {
       },
     });
 
-    await waitForCondition(async () => {
-      const data = await indexPage.data();
-      return (
-        Array.isArray(data.displayPatients) &&
-        data.displayPatients.length === 1 &&
-        data.displayPatients[0].patientName === '李四'
-      );
-    }, { timeout: 5000, message: 'Extended advanced filter did not narrow to 李四' });
+    await waitForCondition(
+      async () => {
+        const data = await indexPage.data();
+        return (
+          Array.isArray(data.displayPatients) &&
+          data.displayPatients.length === 1 &&
+          data.displayPatients[0].patientName === '李四'
+        );
+      },
+      { timeout: 5000, message: 'Extended advanced filter did not narrow to 李四' }
+    );
 
     await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 5000 });
 
     await miniProgram.reLaunch('/pages/patient-detail/detail');
-    const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', { timeout: 20000 });
+    const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', {
+      timeout: 20000,
+    });
     await detailPage.setData({
       loading: false,
       error: '',

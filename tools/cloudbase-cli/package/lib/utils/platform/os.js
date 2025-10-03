@@ -1,10 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOSInfo = exports.getPlatformRelease = void 0;
-const os_1 = __importDefault(require("os"));
+'use strict'
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod }
+    }
+Object.defineProperty(exports, '__esModule', { value: true })
+exports.getOSInfo = exports.getPlatformRelease = void 0
+const os_1 = __importDefault(require('os'))
 const macOSMap = new Map([
     [19, 'Catalina'],
     [18, 'Mojave'],
@@ -21,7 +23,7 @@ const macOSMap = new Map([
     [7, 'Panther'],
     [6, 'Jaguar'],
     [5, 'Puma']
-]);
+])
 const winMap = new Map([
     ['10.0', '10'],
     ['6.3', '8.1'],
@@ -34,26 +36,26 @@ const winMap = new Map([
     ['4.9', 'ME'],
     ['4.1', '98'],
     ['4.0', '95']
-]);
+])
 function getPlatformRelease(platform, release) {
     if (platform === 'darwin') {
-        const releaseNum = Number(release.split('.')[0]);
-        const name = macOSMap.get(releaseNum);
-        const version = '10.' + (releaseNum - 4);
-        return `${name} ${version}`;
+        const releaseNum = Number(release.split('.')[0])
+        const name = macOSMap.get(releaseNum)
+        const version = '10.' + (releaseNum - 4)
+        return `${name} ${version}`
     }
     if (platform === 'win32') {
-        const version = (/\d+\.\d/.exec(release) || [])[0];
-        return `Windows ${winMap.get(version)}`;
+        const version = (/\d+\.\d/.exec(release) || [])[0]
+        return `Windows ${winMap.get(version)}`
     }
-    return 'Linux';
+    return 'Linux'
 }
-exports.getPlatformRelease = getPlatformRelease;
+exports.getPlatformRelease = getPlatformRelease
 function getOSInfo() {
-    const hostname = os_1.default.hostname();
-    const platform = os_1.default.platform();
-    const release = os_1.default.release();
-    const platformRelease = getPlatformRelease(platform, release);
-    return [hostname, platformRelease].join('/');
+    const hostname = os_1.default.hostname()
+    const platform = os_1.default.platform()
+    const release = os_1.default.release()
+    const platformRelease = getPlatformRelease(platform, release)
+    return [hostname, platformRelease].join('/')
 }
-exports.getOSInfo = getOSInfo;
+exports.getOSInfo = getOSInfo

@@ -2,12 +2,9 @@
   waitForElement,
   waitForElements,
   waitForPage,
-  waitForCondition
+  waitForCondition,
 } = require('./helpers/miniapp');
-const {
-  registerPatientRequirement,
-  getPatientResource,
-} = require('./helpers/resource-manager');
+const { registerPatientRequirement, getPatientResource } = require('./helpers/resource-manager');
 
 registerPatientRequirement('patient-media-base');
 
@@ -57,7 +54,7 @@ describe('patient media management (mpflow)', () => {
         patients: [fallbackPatient],
         displayPatients: [fallbackPatient],
         loading: false,
-        error: ''
+        error: '',
       });
       patientItems = await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 5000 });
     }
@@ -67,12 +64,17 @@ describe('patient media management (mpflow)', () => {
     const detailTarget = (await indexPage.data()).displayPatients?.[0];
     const targetKey = detailTarget?.patientKey || detailTarget?.key || seededPatient.patientKey;
     await miniProgram.reLaunch(`/pages/patient-detail/detail?key=${encodeURIComponent(targetKey)}`);
-    const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', { timeout: 20000 });
+    const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', {
+      timeout: 20000,
+    });
 
-    await waitForCondition(async () => {
-      const state = await detailPage.data();
-      return state && !state.loading;
-    }, { timeout: 20000, message: 'Detail page did not finish loading' });
+    await waitForCondition(
+      async () => {
+        const state = await detailPage.data();
+        return state && !state.loading;
+      },
+      { timeout: 20000, message: 'Detail page did not finish loading' }
+    );
 
     let mediaState = (await detailPage.data()).media || null;
     if (!mediaState || !mediaState.accessChecked) {
@@ -93,8 +95,8 @@ describe('patient media management (mpflow)', () => {
             uploaderDisplay: '自动化脚本',
             thumbnailUrl: '',
             downloading: false,
-            deleting: false
-          }
+            deleting: false,
+          },
         ],
         documents: [
           {
@@ -106,10 +108,10 @@ describe('patient media management (mpflow)', () => {
             uploaderDisplay: '自动化脚本',
             downloading: false,
             deleting: false,
-            isText: false
-          }
+            isText: false,
+          },
         ],
-        quota: { used: '1.2MB', limit: '512MB', remaining: '510.8MB' }
+        quota: { used: '1.2MB', limit: '512MB', remaining: '510.8MB' },
       };
       await detailPage.setData({ media: mediaState });
       await detailPage.waitFor(200);

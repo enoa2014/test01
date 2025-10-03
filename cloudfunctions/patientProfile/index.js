@@ -1,4 +1,4 @@
-const cloud = require("wx-server-sdk");
+const cloud = require('wx-server-sdk');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -12,11 +12,11 @@ const {
 } = require('./utils/patient');
 
 // Collection names
-const EXCEL_RECORDS_COLLECTION = "excel_records";
-const EXCEL_CACHE_COLLECTION = "excel_cache";
-const PATIENTS_COLLECTION = "patients";
-const PATIENT_INTAKE_COLLECTION = "patient_intake_records";
-const PATIENT_CACHE_DOC_ID = "patients_summary_cache";
+const EXCEL_RECORDS_COLLECTION = 'excel_records';
+const EXCEL_CACHE_COLLECTION = 'excel_cache';
+const PATIENTS_COLLECTION = 'patients';
+const PATIENT_INTAKE_COLLECTION = 'patient_intake_records';
+const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 const PATIENT_LIST_CACHE_TTL = 5 * 60 * 1000;
 const DEFAULT_PATIENT_LIST_LIMIT = 80;
 const MAX_PATIENT_LIST_LIMIT = 200;
@@ -44,15 +44,19 @@ function formatGuardian(name, phone) {
   return normalizedName || normalizedPhone || '';
 }
 
-
-
 // Load patient list from cache
 async function fetchPatientsFromCache(options = {}) {
   const forceRefresh = !!(options && options.forceRefresh);
   const page = Math.max(Number(options && options.page) || 0, 0);
   const includeTotal = !!(options && options.includeTotal);
   const rawLimit = Number(options && options.limit);
-  const limit = Math.max(1, Math.min(Number.isFinite(rawLimit) ? rawLimit : DEFAULT_PATIENT_LIST_LIMIT, MAX_PATIENT_LIST_LIMIT));
+  const limit = Math.max(
+    1,
+    Math.min(
+      Number.isFinite(rawLimit) ? rawLimit : DEFAULT_PATIENT_LIST_LIMIT,
+      MAX_PATIENT_LIST_LIMIT
+    )
+  );
   const eligibleForCache = !forceRefresh && page === 0;
 
   if (eligibleForCache) {
@@ -65,17 +69,17 @@ async function fetchPatientsFromCache(options = {}) {
       if (cached && cacheAge < PATIENT_LIST_CACHE_TTL && Array.isArray(cached.patients)) {
         const slice = cached.patients.slice(0, limit);
         const totalCount = cached.totalCount !== undefined ? cached.totalCount : slice.length;
-        const hasMore = cached.hasMore !== undefined ? cached.hasMore : (totalCount > slice.length);
+        const hasMore = cached.hasMore !== undefined ? cached.hasMore : totalCount > slice.length;
         return {
           patients: slice,
           totalCount,
           hasMore,
           nextPage: hasMore ? 1 : null,
-          limit
+          limit,
         };
       }
     } catch (error) {
-      const code = (error && (error.errCode !== undefined ? error.errCode : error.code));
+      const code = error && (error.errCode !== undefined ? error.errCode : error.code);
       if (code !== -1 && code !== 'DOCUMENT_NOT_FOUND' && code !== 'DATABASE_DOCUMENT_NOT_EXIST') {
         console.warn('Failed to read from cache', error);
       }
@@ -85,21 +89,24 @@ async function fetchPatientsFromCache(options = {}) {
   const fresh = await buildPatientsFromDatabase({
     page,
     limit,
-    includeTotal
+    includeTotal,
   });
 
   if (page === 0) {
     try {
       await ensureCollectionExists(db, EXCEL_CACHE_COLLECTION);
-      await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).set({
-        data: {
-          patients: fresh.patients,
-          totalCount: fresh.totalCount,
-          hasMore: fresh.hasMore,
-          limit,
-          updatedAt: Date.now()
-        }
-      });
+      await db
+        .collection(EXCEL_CACHE_COLLECTION)
+        .doc(PATIENT_CACHE_DOC_ID)
+        .set({
+          data: {
+            patients: fresh.patients,
+            totalCount: fresh.totalCount,
+            hasMore: fresh.hasMore,
+            limit,
+            updatedAt: Date.now(),
+          },
+        });
     } catch (error) {
       console.warn('Failed to write patient cache', error);
     }
@@ -114,12 +121,19 @@ async function buildPatientsFromDatabase(options = {}) {
 
   const page = Math.max(Number(options && options.page) || 0, 0);
   const rawLimit = Number(options && options.limit);
-  const limit = Math.max(1, Math.min(Number.isFinite(rawLimit) ? rawLimit : DEFAULT_PATIENT_LIST_LIMIT, MAX_PATIENT_LIST_LIMIT));
+  const limit = Math.max(
+    1,
+    Math.min(
+      Number.isFinite(rawLimit) ? rawLimit : DEFAULT_PATIENT_LIST_LIMIT,
+      MAX_PATIENT_LIST_LIMIT
+    )
+  );
   const includeTotal = !!(options && options.includeTotal);
 
   const skip = page * limit;
 
-  const res = await db.collection(PATIENTS_COLLECTION)
+  const res = await db
+    .collection(PATIENTS_COLLECTION)
     .orderBy('data.updatedAt', 'desc')
     .skip(skip)
     .limit(limit)
@@ -168,14 +182,14 @@ async function buildPatientsFromDatabase(options = {}) {
       'data.careStatus': 1,
       'data.checkoutAt': 1,
       'data.checkoutReason': 1,
-      'data.checkoutNote': 1
+      'data.checkoutNote': 1,
     })
     .get();
 
   const docs = Array.isArray(res.data) ? res.data : [];
   const summaries = [];
 
-  docs.forEach((doc) => {
+  docs.forEach(doc => {
     const docId = doc._id || doc.key || doc.patientKey;
     const recordKey = doc.recordKey || (doc.metadata && doc.metadata.excelRecordKey);
     const nameKey = recordKey || doc.patientName || doc.key;
@@ -201,10 +215,18 @@ async function buildPatientsFromDatabase(options = {}) {
     const docAdmissionCount = safeNumber(doc.admissionCount);
     const admissionCount = Math.max(dataAdmissionCount, docAdmissionCount);
 
-    const firstSource = pickValue(nestedData.firstAdmissionDate, data.firstAdmissionDate, doc.firstAdmissionDate);
+    const firstSource = pickValue(
+      nestedData.firstAdmissionDate,
+      data.firstAdmissionDate,
+      doc.firstAdmissionDate
+    );
     const firstTs = normalizeTimestamp(firstSource);
 
-    const latestSource = pickValue(nestedData.latestAdmissionDate, data.latestAdmissionDate, doc.latestAdmissionDate);
+    const latestSource = pickValue(
+      nestedData.latestAdmissionDate,
+      data.latestAdmissionDate,
+      doc.latestAdmissionDate
+    );
     const latestTimestampSource = pickValue(
       nestedData.latestAdmissionTimestamp,
       data.latestAdmissionTimestamp,
@@ -213,27 +235,35 @@ async function buildPatientsFromDatabase(options = {}) {
     const latestTs = normalizeTimestamp(latestSource);
     const latestTimestamp = normalizeTimestamp(latestTimestampSource) || latestTs;
 
-    const summaryCaregivers = (
-      pickValue(doc.summaryCaregivers, doc.caregivers, data.summaryCaregivers, nestedData.summaryCaregivers) || ''
-    );
-    const lastNarrative = pickValue(
-      doc.lastIntakeNarrative,
-      data.lastIntakeNarrative,
-      nestedData.lastIntakeNarrative
-    ) || '';
+    const summaryCaregivers =
+      pickValue(
+        doc.summaryCaregivers,
+        doc.caregivers,
+        data.summaryCaregivers,
+        nestedData.summaryCaregivers
+      ) || '';
+    const lastNarrative =
+      pickValue(
+        doc.lastIntakeNarrative,
+        data.lastIntakeNarrative,
+        nestedData.lastIntakeNarrative
+      ) || '';
     let careStatus = pickValue(doc.careStatus, data.careStatus, nestedData.careStatus) || '';
     const checkoutAtSource = pickValue(doc.checkoutAt, data.checkoutAt, nestedData.checkoutAt);
     const checkoutAt = normalizeTimestamp(checkoutAtSource);
-    const checkoutReason = pickValue(
-      doc.checkoutReason,
-      data.checkoutReason,
-      nestedData.checkoutReason
-    ) || '';
-    const checkoutNote = pickValue(doc.checkoutNote, data.checkoutNote, nestedData.checkoutNote) || '';
+    const checkoutReason =
+      pickValue(doc.checkoutReason, data.checkoutReason, nestedData.checkoutReason) || '';
+    const checkoutNote =
+      pickValue(doc.checkoutNote, data.checkoutNote, nestedData.checkoutNote) || '';
 
     if (!careStatus && checkoutAt) {
       careStatus = 'discharged';
-    } else if (careStatus === 'in_care' && checkoutAt && latestTimestamp && checkoutAt >= latestTimestamp) {
+    } else if (
+      careStatus === 'in_care' &&
+      checkoutAt &&
+      latestTimestamp &&
+      checkoutAt >= latestTimestamp
+    ) {
       careStatus = 'discharged';
     }
     const phone = doc.phone || data.phone || '';
@@ -243,17 +273,35 @@ async function buildPatientsFromDatabase(options = {}) {
     const backupContact = doc.backupContact || data.backupContact || '';
     const backupPhone = doc.backupPhone || data.backupPhone || '';
 
-    const nativePlace = normalizeValue(pickValue(doc.nativePlace, data.nativePlace, nestedData.nativePlace));
-    const ethnicity = normalizeValue(pickValue(doc.ethnicity, data.ethnicity, nestedData.ethnicity));
-    const excelImportOrder = pickValue(doc.excelImportOrder, data.excelImportOrder, nestedData.excelImportOrder);
-    const importOrder = pickValue(doc.importOrder, data.importOrder, nestedData.importOrder, excelImportOrder);
+    const nativePlace = normalizeValue(
+      pickValue(doc.nativePlace, data.nativePlace, nestedData.nativePlace)
+    );
+    const ethnicity = normalizeValue(
+      pickValue(doc.ethnicity, data.ethnicity, nestedData.ethnicity)
+    );
+    const excelImportOrder = pickValue(
+      doc.excelImportOrder,
+      data.excelImportOrder,
+      nestedData.excelImportOrder
+    );
+    const importOrder = pickValue(
+      doc.importOrder,
+      data.importOrder,
+      nestedData.importOrder,
+      excelImportOrder
+    );
 
     // 优先从data字段获取诊断和医院信息，如果没有则从doc根级字段获取
-    const firstDiagnosis = pickValue(data.firstDiagnosis, nestedData.firstDiagnosis, doc.firstDiagnosis) || '';
-    const latestDiagnosis = pickValue(data.latestDiagnosis, nestedData.latestDiagnosis, doc.latestDiagnosis) || '';
-    const firstHospital = pickValue(data.firstHospital, nestedData.firstHospital, doc.firstHospital) || '';
-    const latestHospital = pickValue(data.latestHospital, nestedData.latestHospital, doc.latestHospital) || '';
-    const latestDoctor = pickValue(data.latestDoctor, nestedData.latestDoctor, doc.latestDoctor) || '';
+    const firstDiagnosis =
+      pickValue(data.firstDiagnosis, nestedData.firstDiagnosis, doc.firstDiagnosis) || '';
+    const latestDiagnosis =
+      pickValue(data.latestDiagnosis, nestedData.latestDiagnosis, doc.latestDiagnosis) || '';
+    const firstHospital =
+      pickValue(data.firstHospital, nestedData.firstHospital, doc.firstHospital) || '';
+    const latestHospital =
+      pickValue(data.latestHospital, nestedData.latestHospital, doc.latestHospital) || '';
+    const latestDoctor =
+      pickValue(data.latestDoctor, nestedData.latestDoctor, doc.latestDoctor) || '';
 
     summaries.push({
       key: nameKey,
@@ -288,7 +336,7 @@ async function buildPatientsFromDatabase(options = {}) {
       careStatus,
       checkoutAt: checkoutAt || null,
       checkoutReason,
-      checkoutNote
+      checkoutNote,
     });
   });
 
@@ -309,7 +357,7 @@ async function buildPatientsFromDatabase(options = {}) {
 
   let hasMore = docs.length === limit;
   if (includeTotal && typeof totalCount === 'number') {
-    hasMore = (skip + docs.length) < totalCount;
+    hasMore = skip + docs.length < totalCount;
   }
   const nextPage = hasMore ? page + 1 : null;
 
@@ -318,10 +366,9 @@ async function buildPatientsFromDatabase(options = {}) {
     totalCount,
     hasMore,
     nextPage,
-    limit
+    limit,
   };
 }
-
 
 // Fetch patient detail by key
 async function fetchPatientDetailByKey(recordKey) {
@@ -338,7 +385,7 @@ async function fetchPatientDetailByKey(recordKey) {
   await ensureCollectionExists(db, PATIENTS_COLLECTION);
 
   let patientDoc = null;
-  const tryAssignPatientDoc = async (queryPromise) => {
+  const tryAssignPatientDoc = async queryPromise => {
     try {
       const snapshot = await queryPromise;
       if (snapshot && snapshot.data && snapshot.data.length) {
@@ -346,7 +393,7 @@ async function fetchPatientDetailByKey(recordKey) {
         const docId = doc._id || doc.id || doc.patientKey || normalizedKey;
         patientDoc = { _id: docId, ...doc };
         if (Array.isArray(patientDoc.excelRecordKeys)) {
-          patientDoc.excelRecordKeys.forEach((key) => {
+          patientDoc.excelRecordKeys.forEach(key => {
             const normalized = normalizeSpacing(key);
             if (normalized) {
               keysToTry.add(normalized);
@@ -377,22 +424,14 @@ async function fetchPatientDetailByKey(recordKey) {
   if (!patientDoc) {
     // 再尝试 excelRecordKeys 包含当前 key 的文档
     await tryAssignPatientDoc(
-      db
-        .collection(PATIENTS_COLLECTION)
-        .where({ excelRecordKeys: normalizedKey })
-        .limit(1)
-        .get()
+      db.collection(PATIENTS_COLLECTION).where({ excelRecordKeys: normalizedKey }).limit(1).get()
     );
   }
 
   if (!patientDoc) {
     // 最后尝试患者姓名匹配
     await tryAssignPatientDoc(
-      db
-        .collection(PATIENTS_COLLECTION)
-        .where({ patientName: normalizedKey })
-        .limit(1)
-        .get()
+      db.collection(PATIENTS_COLLECTION).where({ patientName: normalizedKey }).limit(1).get()
     );
   }
 
@@ -475,7 +514,7 @@ async function fetchFallbackPatientDetail(patientKey) {
 
     const fallbackContacts = [];
     const contactKeys = new Set();
-    const addContact = (contact) => {
+    const addContact = contact => {
       if (!contact || typeof contact !== 'object') {
         return;
       }
@@ -483,7 +522,9 @@ async function fetchFallbackPatientDetail(patientKey) {
       const name = normalizeSpacing(contact.name || contact.raw || '');
       const phone = normalizeSpacing(contact.phone || '');
       const idNumber = normalizeSpacing(contact.idNumber || '');
-      const raw = normalizeSpacing(contact.raw || [name, phone, idNumber].filter(Boolean).join(' '));
+      const raw = normalizeSpacing(
+        contact.raw || [name, phone, idNumber].filter(Boolean).join(' ')
+      );
       const key = [role, name.replace(/\s+/g, '').toLowerCase(), phone].join('|');
       if (!key.trim()) {
         return;
@@ -499,9 +540,14 @@ async function fetchFallbackPatientDetail(patientKey) {
       if (!normalized) {
         return;
       }
-      const segments = role === 'other'
-        ? normalized.replace(/[、，,]/g, '、').split('、').map(item => normalizeSpacing(item)).filter(Boolean)
-        : [normalized];
+      const segments =
+        role === 'other'
+          ? normalized
+              .replace(/[、，,]/g, '、')
+              .split('、')
+              .map(item => normalizeSpacing(item))
+              .filter(Boolean)
+          : [normalized];
       segments.forEach(segment => {
         const parsed = parseFamilyContact(segment, role);
         if (parsed) {
@@ -510,16 +556,30 @@ async function fetchFallbackPatientDetail(patientKey) {
       });
     };
 
-    addRawContact('father', patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone));
-    addRawContact('mother', patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone));
-    addRawContact('other', patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone));
+    addRawContact(
+      'father',
+      patientDoc.fatherInfo ||
+        formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)
+    );
+    addRawContact(
+      'mother',
+      patientDoc.motherInfo ||
+        formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)
+    );
+    addRawContact(
+      'other',
+      patientDoc.guardianInfo ||
+        formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)
+    );
     (Array.isArray(patientDoc.familyContacts) ? patientDoc.familyContacts : []).forEach(addContact);
 
-    const contactToString = (contact) => {
+    const contactToString = contact => {
       if (!contact) {
         return '';
       }
-      const parts = [contact.name, contact.phone, contact.idNumber].map(part => normalizeSpacing(part)).filter(Boolean);
+      const parts = [contact.name, contact.phone, contact.idNumber]
+        .map(part => normalizeSpacing(part))
+        .filter(Boolean);
       if (parts.length) {
         return parts.join(' ');
       }
@@ -540,7 +600,7 @@ async function fetchFallbackPatientDetail(patientKey) {
       motherInfo: contactToString(fallbackContacts.find(contact => contact.role === 'mother')),
       otherGuardian: contactToString(fallbackContacts.find(contact => contact.role === 'other')),
       familyEconomy: patientDoc.familyEconomy || '',
-      familyContacts: fallbackContacts
+      familyContacts: fallbackContacts,
     };
 
     const basicInfo = buildList([
@@ -549,7 +609,7 @@ async function fetchFallbackPatientDetail(patientKey) {
       ['身份证号', patientDoc.idNumber],
       ['籍贯', patientDoc.nativePlace],
       ['民族', patientDoc.ethnicity],
-      ['联系电话', patientDoc.phone]
+      ['联系电话', patientDoc.phone],
     ]);
 
     const familyInfo = buildList([
@@ -558,14 +618,18 @@ async function fetchFallbackPatientDetail(patientKey) {
       ['紧急联系电话', patientDoc.emergencyPhone],
       ['备用联系人', patientDoc.backupContact],
       ['备用联系电话', patientDoc.backupPhone],
-      ['父亲联系方式', contactToString(fallbackContacts.find(contact => contact.role === 'father'))],
-      ['母亲联系方式', contactToString(fallbackContacts.find(contact => contact.role === 'mother'))],
-      ['其他监护人', contactToString(fallbackContacts.find(contact => contact.role === 'other'))]
+      [
+        '父亲联系方式',
+        contactToString(fallbackContacts.find(contact => contact.role === 'father')),
+      ],
+      [
+        '母亲联系方式',
+        contactToString(fallbackContacts.find(contact => contact.role === 'mother')),
+      ],
+      ['其他监护人', contactToString(fallbackContacts.find(contact => contact.role === 'other'))],
     ]);
 
-  const economicInfo = buildList([
-    ['家庭经济情况', patientDoc.familyEconomy]
-  ]);
+    const economicInfo = buildList([['家庭经济情况', patientDoc.familyEconomy]]);
 
     let records = [];
     try {
@@ -579,11 +643,15 @@ async function fetchFallbackPatientDetail(patientKey) {
       records = Array.isArray(intakeSnapshot.data)
         ? intakeSnapshot.data.map(item => ({
             ...item,
-            intakeId: item.intakeId || item._id || ''
+            intakeId: item.intakeId || item._id || '',
           }))
         : [];
     } catch (intakeError) {
-      console.warn('patientProfile fallback failed to load intake records', patientKey, intakeError);
+      console.warn(
+        'patientProfile fallback failed to load intake records',
+        patientKey,
+        intakeError
+      );
     }
 
     return {
@@ -592,7 +660,7 @@ async function fetchFallbackPatientDetail(patientKey) {
       familyInfo,
       economicInfo,
       familyContacts: fallbackContacts,
-      records
+      records,
     };
   } catch (error) {
     console.warn('patientProfile fallback failed', patientKey, error);
@@ -604,7 +672,7 @@ async function fetchFallbackPatientDetail(patientKey) {
 function formatPatientDetail(group, patientDoc) {
   const latest = group.records[0] || {};
 
-  const pickRecordValue = (getter) => {
+  const pickRecordValue = getter => {
     if (!Array.isArray(group.records)) {
       return '';
     }
@@ -620,11 +688,12 @@ function formatPatientDetail(group, patientDoc) {
   const buildInfoList = (pairs = []) => {
     return pairs
       .map(({ label, value }) => ({ label, value: normalizeValue(value) }))
-      .filter((item) => item.value);
+      .filter(item => item.value);
   };
 
   const contactsFromGroup = Array.isArray(group.familyContacts) ? group.familyContacts : [];
-  const contactsFromPatientDoc = patientDoc && Array.isArray(patientDoc.familyContacts) ? patientDoc.familyContacts : [];
+  const contactsFromPatientDoc =
+    patientDoc && Array.isArray(patientDoc.familyContacts) ? patientDoc.familyContacts : [];
   const contactKeys = new Set();
   const mergedContacts = [];
 
@@ -637,7 +706,9 @@ function formatPatientDetail(group, patientDoc) {
       const name = normalizeSpacing(contact.name || contact.raw || '');
       const phone = normalizeSpacing(contact.phone || '');
       const idNumber = normalizeSpacing(contact.idNumber || '');
-      const raw = normalizeSpacing(contact.raw || [name, phone, idNumber].filter(Boolean).join(' '));
+      const raw = normalizeSpacing(
+        contact.raw || [name, phone, idNumber].filter(Boolean).join(' ')
+      );
       const key = [role, name.replace(/\s+/g, '').toLowerCase(), phone].join('|');
       if (!key.trim()) {
         return;
@@ -652,11 +723,13 @@ function formatPatientDetail(group, patientDoc) {
   addContacts(contactsFromGroup);
   addContacts(contactsFromPatientDoc);
 
-  const contactToString = (contact) => {
+  const contactToString = contact => {
     if (!contact) {
       return '';
     }
-    const parts = [contact.name, contact.phone, contact.idNumber].map(part => normalizeSpacing(part)).filter(Boolean);
+    const parts = [contact.name, contact.phone, contact.idNumber]
+      .map(part => normalizeSpacing(part))
+      .filter(Boolean);
     if (parts.length) {
       return parts.join(' ');
     }
@@ -667,19 +740,29 @@ function formatPatientDetail(group, patientDoc) {
   const motherContact = mergedContacts.find(contact => contact.role === 'mother');
   const guardianContact = mergedContacts.find(contact => contact.role === 'other');
 
-  const fatherInfoValue = contactToString(fatherContact)
-    || pickRecordValue(record => record.fatherInfo)
-    || (patientDoc && (patientDoc.fatherInfo || formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)));
+  const fatherInfoValue =
+    contactToString(fatherContact) ||
+    pickRecordValue(record => record.fatherInfo) ||
+    (patientDoc &&
+      (patientDoc.fatherInfo ||
+        formatGuardian(patientDoc.fatherContactName, patientDoc.fatherContactPhone)));
 
-  const motherInfoValue = contactToString(motherContact)
-    || pickRecordValue(record => record.motherInfo)
-    || (patientDoc && (patientDoc.motherInfo || formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)));
+  const motherInfoValue =
+    contactToString(motherContact) ||
+    pickRecordValue(record => record.motherInfo) ||
+    (patientDoc &&
+      (patientDoc.motherInfo ||
+        formatGuardian(patientDoc.motherContactName, patientDoc.motherContactPhone)));
 
-  const otherGuardianValue = contactToString(guardianContact)
-    || pickRecordValue(record => record.otherGuardian)
-    || (patientDoc && (patientDoc.guardianInfo || formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)));
+  const otherGuardianValue =
+    contactToString(guardianContact) ||
+    pickRecordValue(record => record.otherGuardian) ||
+    (patientDoc &&
+      (patientDoc.guardianInfo ||
+        formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)));
 
-  const economicValue = pickRecordValue(record => record.familyEconomy) || (patientDoc && patientDoc.familyEconomy);
+  const economicValue =
+    pickRecordValue(record => record.familyEconomy) || (patientDoc && patientDoc.familyEconomy);
 
   const basicInfo = buildInfoList([
     { label: '性别', value: group.gender || latest.gender },
@@ -687,99 +770,107 @@ function formatPatientDetail(group, patientDoc) {
     { label: '身份证号', value: group.idNumber || latest.idNumber },
     { label: '籍贯', value: group.nativePlace || latest.nativePlace },
     { label: '民族', value: group.ethnicity || latest.ethnicity },
-    { label: '主要照护人', value: group.summaryCaregivers }
+    { label: '主要照护人', value: group.summaryCaregivers },
   ]);
 
   const familyInfo = buildInfoList([
-    { label: '家庭地址', value: pickRecordValue(record => record.address) || (patientDoc && patientDoc.address) },
+    {
+      label: '家庭地址',
+      value: pickRecordValue(record => record.address) || (patientDoc && patientDoc.address),
+    },
     { label: '父亲联系方式', value: fatherInfoValue },
     { label: '母亲联系方式', value: motherInfoValue },
     { label: '其他监护人', value: otherGuardianValue },
     { label: '紧急联系人', value: patientDoc && patientDoc.emergencyContact },
-    { label: '紧急联系电话', value: patientDoc && patientDoc.emergencyPhone }
+    { label: '紧急联系电话', value: patientDoc && patientDoc.emergencyPhone },
   ]);
 
   // Build economic info
-  const economicInfo = buildInfoList([
-    { label: '家庭经济情况', value: economicValue }
-  ]);
+  const economicInfo = buildInfoList([{ label: '家庭经济情况', value: economicValue }]);
 
   // Build medical records
   const dedupeSet = new Set();
-  const records = (Array.isArray(group.records) ? group.records : []).reduce((acc, record, index) => {
-    if (!record) {
-      return acc;
-    }
-
-    const admissionDateText = normalizeValue(record.admissionDate);
-    const admissionTimestamp = normalizeTimestamp(record.admissionTimestamp || record._importedAt || record.updatedAt);
-    const hospital = normalizeSpacing(record.hospital);
-    const diagnosis = normalizeSpacing(record.diagnosis);
-    const doctor = normalizeSpacing(record.doctor);
-    const symptoms = normalizeSpacing(record.symptoms);
-    const treatmentProcess = normalizeSpacing(record.treatmentProcess);
-    const followUpPlan = normalizeSpacing(record.followUpPlan);
-
-    const dedupeKey = [
-      admissionTimestamp || '',
-      admissionDateText,
-      hospital,
-      diagnosis,
-      doctor,
-      symptoms,
-      treatmentProcess,
-      followUpPlan
-    ].join('|');
-
-    if (dedupeSet.has(dedupeKey)) {
-      return acc;
-    }
-    dedupeSet.add(dedupeKey);
-
-    const situationText = normalizeSpacing(record.situation)
-      || normalizeSpacing(record.symptoms)
-      || normalizeSpacing(record.treatmentProcess)
-      || normalizeSpacing(record.diagnosis);
-
-    const medicalInfo = {
-      hospital,
-      diagnosis,
-      doctor,
-      symptoms,
-      treatmentProcess,
-      followUpPlan
-    };
-
-    Object.keys(medicalInfo).forEach((key) => {
-      if (!medicalInfo[key]) {
-        delete medicalInfo[key];
+  const records = (Array.isArray(group.records) ? group.records : []).reduce(
+    (acc, record, index) => {
+      if (!record) {
+        return acc;
       }
-    });
 
-    acc.push({
-      intakeId: `excel_${group.key || 'patient'}_${index}`,
-      intakeTime: admissionTimestamp || null,
-      admissionDate: admissionDateText,
-      status: 'excel-import',
-      hospital,
-      diagnosis,
-      doctor,
-      symptoms,
-      treatmentProcess,
-      followUpPlan,
-      situation: situationText,
-      medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
-      intakeInfo: situationText || followUpPlan
-        ? {
-            intakeTime: admissionTimestamp || null,
-            situation: situationText,
-            followUpPlan
-          }
-        : undefined
-    });
+      const admissionDateText = normalizeValue(record.admissionDate);
+      const admissionTimestamp = normalizeTimestamp(
+        record.admissionTimestamp || record._importedAt || record.updatedAt
+      );
+      const hospital = normalizeSpacing(record.hospital);
+      const diagnosis = normalizeSpacing(record.diagnosis);
+      const doctor = normalizeSpacing(record.doctor);
+      const symptoms = normalizeSpacing(record.symptoms);
+      const treatmentProcess = normalizeSpacing(record.treatmentProcess);
+      const followUpPlan = normalizeSpacing(record.followUpPlan);
 
-    return acc;
-  }, []);
+      const dedupeKey = [
+        admissionTimestamp || '',
+        admissionDateText,
+        hospital,
+        diagnosis,
+        doctor,
+        symptoms,
+        treatmentProcess,
+        followUpPlan,
+      ].join('|');
+
+      if (dedupeSet.has(dedupeKey)) {
+        return acc;
+      }
+      dedupeSet.add(dedupeKey);
+
+      const situationText =
+        normalizeSpacing(record.situation) ||
+        normalizeSpacing(record.symptoms) ||
+        normalizeSpacing(record.treatmentProcess) ||
+        normalizeSpacing(record.diagnosis);
+
+      const medicalInfo = {
+        hospital,
+        diagnosis,
+        doctor,
+        symptoms,
+        treatmentProcess,
+        followUpPlan,
+      };
+
+      Object.keys(medicalInfo).forEach(key => {
+        if (!medicalInfo[key]) {
+          delete medicalInfo[key];
+        }
+      });
+
+      acc.push({
+        intakeId: `excel_${group.key || 'patient'}_${index}`,
+        intakeTime: admissionTimestamp || null,
+        admissionDate: admissionDateText,
+        status: 'excel-import',
+        hospital,
+        diagnosis,
+        doctor,
+        symptoms,
+        treatmentProcess,
+        followUpPlan,
+        situation: situationText,
+        medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
+        intakeInfo:
+          situationText || followUpPlan
+            ? {
+                intakeTime: admissionTimestamp || null,
+                situation: situationText,
+                followUpPlan,
+              }
+            : undefined,
+      });
+
+      return acc;
+    },
+    []
+  );
 
   return {
     patient: {
@@ -794,13 +885,13 @@ function formatPatientDetail(group, patientDoc) {
       motherInfo: motherInfoValue || '',
       otherGuardian: otherGuardianValue || '',
       familyEconomy: economicValue || '',
-      familyContacts: mergedContacts
+      familyContacts: mergedContacts,
     },
     basicInfo,
     familyInfo,
     economicInfo,
     familyContacts: mergedContacts,
-    records
+    records,
   };
 }
 
@@ -816,7 +907,7 @@ async function handleGetPatientsList(event = {}) {
       forceRefresh,
       page,
       limit: pageSize,
-      includeTotal
+      includeTotal,
     });
 
     return {
@@ -824,7 +915,7 @@ async function handleGetPatientsList(event = {}) {
       patients: result.patients,
       totalCount: result.totalCount !== undefined ? result.totalCount : result.patients.length,
       hasMore: result.hasMore,
-      nextPage: result.nextPage
+      nextPage: result.nextPage,
     };
   } catch (error) {
     console.error('Failed to load patient list', error);
@@ -844,7 +935,7 @@ async function handleGetPatientDetail(event) {
     const patientDetail = await fetchPatientDetailByKey(key);
     return {
       success: true,
-      ...patientDetail
+      ...patientDetail,
     };
   } catch (error) {
     if (error && error.code === 'PATIENT_NOT_FOUND') {
@@ -853,7 +944,7 @@ async function handleGetPatientDetail(event) {
         console.warn('patientProfile detail fallback to patients collection', key);
         return {
           success: true,
-          ...fallbackDetail
+          ...fallbackDetail,
         };
       }
     }
@@ -866,7 +957,7 @@ async function handleGetPatientDetail(event) {
 }
 
 // Main function
-exports.main = async (event) => {
+exports.main = async event => {
   const action = event.action || '';
 
   try {
@@ -885,8 +976,8 @@ exports.main = async (event) => {
       error: {
         code: error.code || 'INTERNAL_ERROR',
         message: error.message || 'Internal service error',
-        details: error.details || null
-      }
+        details: error.details || null,
+      },
     };
   }
 };

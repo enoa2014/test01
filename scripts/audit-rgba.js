@@ -39,6 +39,8 @@ function walk(dir) {
 }
 
 walk(ROOT);
-const summary = results.map(({ file, line, snippet }) => `${path.relative(ROOT, file)}:${line} ${snippet}`);
+const summary = results.map(
+  ({ file, line, snippet }) => `${path.relative(ROOT, file)}:${line} ${snippet}`
+);
 console.log(summary.join('\n'));
 console.log(`\nTOTAL: ${results.length}`);

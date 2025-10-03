@@ -7,6 +7,7 @@
 ## 组件库结构
 
 ### 文件架构
+
 ```
 📁 患者档案管理系统组件库/
 ├── 📄 🎨 Design System Tokens    # 设计令牌定义
@@ -23,9 +24,11 @@
 ### 1. Button 按钮组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/button`
 
 **属性 (Properties)**:
+
 ```yaml
 variant (Variant):
   - primary (默认)
@@ -50,6 +53,7 @@ icon-position (Variant): left, right
 ```
 
 **尺寸规格**:
+
 ```yaml
 Small:
   height: 32px
@@ -71,31 +75,34 @@ Large:
 ```
 
 **设计令牌使用**:
+
 ```yaml
 Primary:
-  fill: {color.primary.base}
-  text: {color.white}
+  fill: { color.primary.base }
+  text: { color.white }
 
 Secondary:
-  fill: {color.secondary.base}
-  text: {color.white}
+  fill: { color.secondary.base }
+  text: { color.white }
 
 Outline:
   fill: transparent
   border: 2px {color.primary.base}
-  text: {color.primary.base}
+  text: { color.primary.base }
 
 Text:
   fill: transparent
-  text: {color.primary.base}
+  text: { color.primary.base }
 ```
 
 ### 2. Input 输入框组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/input`
 
 **属性 (Properties)**:
+
 ```yaml
 type (Variant):
   - text (默认)
@@ -122,6 +129,7 @@ icon-position (Variant): left, right
 ```
 
 **尺寸规格**:
+
 ```yaml
 Medium:
   height: 44px
@@ -137,35 +145,38 @@ Large:
 ```
 
 **状态设计**:
+
 ```yaml
 Default:
-  fill: {color.bg.primary}
+  fill: { color.bg.primary }
   border: 2px {color.border.primary}
-  text: {color.text.primary}
+  text: { color.text.primary }
 
 Focus:
   border: 2px {color.primary.base}
-  shadow: {shadow.primary}
+  shadow: { shadow.primary }
 
 Error:
   border: 2px {color.error}
-  shadow: {shadow.error}
+  shadow: { shadow.error }
 
 Success:
   border: 2px {color.success}
-  shadow: {shadow.success}
+  shadow: { shadow.success }
 
 Disabled:
-  fill: {color.bg.tertiary}
-  text: {color.text.disabled}
+  fill: { color.bg.tertiary }
+  text: { color.text.disabled }
 ```
 
 ### 3. Checkbox 复选框组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/checkbox`
 
 **属性 (Properties)**:
+
 ```yaml
 checked (Boolean): false (默认)
 indeterminate (Boolean): false
@@ -174,6 +185,7 @@ has-label (Boolean): true (默认)
 ```
 
 **尺寸规格**:
+
 ```yaml
 checkbox-size: 16px
 border-radius: 4px
@@ -182,23 +194,24 @@ label-spacing: 8px
 ```
 
 **状态设计**:
+
 ```yaml
 Unchecked:
   fill: transparent
   border: 2px {color.border.primary}
 
 Checked:
-  fill: {color.primary.base}
+  fill: { color.primary.base }
   border: 2px {color.primary.base}
   icon: check (white)
 
 Indeterminate:
-  fill: {color.primary.base}
+  fill: { color.primary.base }
   border: 2px {color.primary.base}
   icon: minus (white)
 
 Disabled:
-  fill: {color.bg.tertiary}
+  fill: { color.bg.tertiary }
   border: 2px {color.border.tertiary}
   opacity: 0.5
 ```
@@ -206,9 +219,11 @@ Disabled:
 ### 4. Radio Button 单选按钮组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/radio`
 
 **属性 (Properties)**:
+
 ```yaml
 selected (Boolean): false (默认)
 disabled (Boolean): false
@@ -216,6 +231,7 @@ has-label (Boolean): true (默认)
 ```
 
 **尺寸规格**:
+
 ```yaml
 radio-size: 16px
 border-radius: 50%
@@ -227,9 +243,11 @@ label-spacing: 8px
 ### 5. Switch 开关组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/switch`
 
 **属性 (Properties)**:
+
 ```yaml
 checked (Boolean): false (默认)
 disabled (Boolean): false
@@ -239,6 +257,7 @@ size (Variant):
 ```
 
 **尺寸规格**:
+
 ```yaml
 Medium:
   width: 44px
@@ -256,9 +275,11 @@ Large:
 ### 6. Badge 徽章组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/badge`
 
 **属性 (Properties)**:
+
 ```yaml
 variant (Variant):
   - primary (默认)
@@ -279,6 +300,7 @@ type (Variant):
 ```
 
 **尺寸规格**:
+
 ```yaml
 Small:
   height: 16px
@@ -306,9 +328,11 @@ Dot:
 ### 7. Icon 图标组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/icon`
 
 **属性 (Properties)**:
+
 ```yaml
 name (Instance Swap): icon-library
 size (Variant):
@@ -326,6 +350,7 @@ color (Variant):
 ```
 
 **图标库分类**:
+
 ```yaml
 System Icons:
   - home, settings, search, refresh, close
@@ -348,9 +373,11 @@ Medical Icons:
 ### 8. Avatar 头像组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/avatar`
 
 **属性 (Properties)**:
+
 ```yaml
 type (Variant):
   - image (默认)
@@ -368,6 +395,7 @@ status (Boolean): false
 ```
 
 **状态指示器**:
+
 ```yaml
 Online: 绿色圆点
 Busy: 红色圆点
@@ -380,9 +408,11 @@ Offline: 灰色圆点
 ### 9. Progress 进度条组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/progress`
 
 **属性 (Properties)**:
+
 ```yaml
 type (Variant):
   - linear (默认)
@@ -399,6 +429,7 @@ indeterminate (Boolean): false
 ```
 
 **尺寸规格**:
+
 ```yaml
 Linear:
   height: 4px
@@ -413,9 +444,11 @@ Circular:
 ### 10. Loading 加载指示器组件
 
 #### Figma组件设置
+
 **组件名称**: `atom/loading`
 
 **属性 (Properties)**:
+
 ```yaml
 type (Variant):
   - spinner (默认)
@@ -436,6 +469,7 @@ color (Variant):
 ### 11-20. 其他原子组件
 
 **11. Divider 分割线**:
+
 ```yaml
 orientation: horizontal, vertical
 variant: solid, dashed, dotted
@@ -443,6 +477,7 @@ color: primary, secondary, tertiary
 ```
 
 **12. Tag 标签**:
+
 ```yaml
 variant: primary, secondary, outline, filled
 size: small, medium
@@ -451,12 +486,14 @@ color: 8种颜色变体
 ```
 
 **13. Skeleton 骨架屏**:
+
 ```yaml
 type: text, circle, rectangle, custom
 animation: wave, pulse, none
 ```
 
 **14. Empty 空状态**:
+
 ```yaml
 type: no-data, no-result, error, offline
 size: small, medium, large
@@ -464,6 +501,7 @@ has-action: Boolean
 ```
 
 **15. Tooltip 工具提示**:
+
 ```yaml
 placement: top, bottom, left, right
 variant: dark, light
@@ -471,6 +509,7 @@ size: small, medium
 ```
 
 **16. Link 链接**:
+
 ```yaml
 variant: primary, secondary, external
 state: default, hover, visited, disabled
@@ -478,6 +517,7 @@ underline: Boolean
 ```
 
 **17. Text 文本**:
+
 ```yaml
 variant: h1, h2, h3, h4, body1, body2, caption
 weight: light, normal, medium, semibold, bold
@@ -485,6 +525,7 @@ color: primary, secondary, tertiary, disabled
 ```
 
 **18. Image 图片**:
+
 ```yaml
 aspect-ratio: 1:1, 4:3, 16:9, custom
 object-fit: cover, contain, fill
@@ -493,6 +534,7 @@ placeholder: Boolean
 ```
 
 **19. Slider 滑块**:
+
 ```yaml
 type: single, range
 orientation: horizontal, vertical
@@ -501,6 +543,7 @@ marks: Boolean
 ```
 
 **20. Rating 评分**:
+
 ```yaml
 max-value: 5 (默认), 10
 allow-half: Boolean
@@ -513,9 +556,11 @@ size: small, medium, large
 ### 1. Form Group 表单组
 
 #### Figma组件设置
+
 **组件名称**: `molecule/form-group`
 
 **属性 (Properties)**:
+
 ```yaml
 input-type (Instance Swap): input components
 has-label (Boolean): true
@@ -526,11 +571,12 @@ required (Boolean): false
 ```
 
 **布局结构**:
+
 ```yaml
 Label:
   font-size: 12px
   font-weight: 500
-  color: {color.text.primary}
+  color: { color.text.primary }
   margin-bottom: 4px
 
 Input:
@@ -539,20 +585,22 @@ Input:
 
 Help Text:
   font-size: 10px
-  color: {color.text.tertiary}
+  color: { color.text.tertiary }
 
 Error Message:
   font-size: 10px
-  color: {color.error}
+  color: { color.error }
   icon: error-icon
 ```
 
 ### 2. Search Bar 搜索栏
 
 #### Figma组件设置
+
 **组件名称**: `molecule/search-bar`
 
 **属性 (Properties)**:
+
 ```yaml
 variant (Variant):
   - default (默认)
@@ -568,6 +616,7 @@ has-filters (Boolean): false
 ```
 
 **功能元素**:
+
 ```yaml
 搜索图标: 左侧 16px
 输入区域: 中间自适应
@@ -597,9 +646,11 @@ has-filters (Boolean): false
 ### 1. Header 页头组件
 
 #### Figma组件设置
+
 **组件名称**: `organism/header`
 
 **属性 (Properties)**:
+
 ```yaml
 type (Variant):
   - main-header
@@ -611,6 +662,7 @@ has-actions (Boolean): true
 ```
 
 **布局结构**:
+
 ```yaml
 Main Header:
   height: 44px + safe-area
@@ -631,6 +683,7 @@ Page Header:
 ### 2. Navigation 导航组件
 
 #### Tab Bar 标签栏
+
 ```yaml
 组件名称: organism/tab-bar
 高度: 50px + safe-area
@@ -640,6 +693,7 @@ Page Header:
 ```
 
 #### Side Menu 侧边菜单
+
 ```yaml
 组件名称: organism/side-menu
 宽度: 280px
@@ -663,30 +717,35 @@ Page Header:
 ## Figma 实施计划
 
 ### Phase 1: 基础设置 (2天)
+
 1. 创建文件结构和页面
 2. 设置 Design Tokens Variables
 3. 建立颜色、字体、间距系统
 4. 配置样式和效果
 
 ### Phase 2: 原子组件 (5天)
+
 1. 创建前10个原子组件 (3天)
 2. 创建后10个原子组件 (2天)
 3. 配置组件属性和变体
 4. 测试组件功能
 
 ### Phase 3: 分子组件 (4天)
+
 1. 基于原子组件创建分子组件
 2. 配置组件交互和状态
 3. 建立组件间的依赖关系
 4. 验证组合效果
 
 ### Phase 4: 有机组件 (5天)
+
 1. 创建页面级组件
 2. 整合所有子组件
 3. 优化布局和交互
 4. 完善响应式设计
 
 ### Phase 5: 验证和文档 (2天)
+
 1. 组件库完整性检查
 2. 使用场景验证
 3. 编写使用文档
@@ -695,24 +754,28 @@ Page Header:
 ## 质量检查清单
 
 ### 组件完整性
+
 - [ ] 所有组件使用 Design Tokens
 - [ ] 所有变体状态完整
 - [ ] 组件命名规范统一
 - [ ] 属性配置正确
 
 ### 视觉一致性
+
 - [ ] 颜色使用符合规范
 - [ ] 间距遵循 8px 网格
 - [ ] 字体层级清晰
 - [ ] 圆角和阴影统一
 
 ### 交互可用性
+
 - [ ] 触摸目标满足最小尺寸
 - [ ] 状态变化清晰明确
 - [ ] 反馈及时准确
 - [ ] 无障碍性合规
 
 ### 技术规范
+
 - [ ] 组件结构合理
 - [ ] 属性类型正确
 - [ ] 实例替换可用

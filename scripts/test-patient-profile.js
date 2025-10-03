@@ -40,7 +40,6 @@ async function testPatientProfile() {
     console.log('   - 高效的患者分组算法\n');
 
     console.log('🎉 patientProfile 云函数测试通过！');
-
   } catch (error) {
     console.error('❌ 测试失败:', error.message);
   }
@@ -70,7 +69,6 @@ async function testReadExcelRefactor() {
     console.log('   - 数据库批量操作\n');
 
     console.log('🎉 readExcel 重构测试通过！');
-
   } catch (error) {
     console.error('❌ 测试失败:', error.message);
   }
@@ -101,7 +99,6 @@ async function testFrontendIntegration() {
     console.log('   - 入住选择患者功能\n');
 
     console.log('🎉 前端集成测试通过！');
-
   } catch (error) {
     console.error('❌ 测试失败:', error.message);
   }

@@ -33,7 +33,7 @@ describe('patient detail edit flow', () => {
       setData(updates, callback) {
         const payload =
           typeof updates === 'function' ? updates({ ...this.data }) || {} : updates || {};
-        Object.keys(payload).forEach((key) => {
+        Object.keys(payload).forEach(key => {
           const value = payload[key];
           if (key.includes('.')) {
             const parts = key.split('.');
@@ -56,7 +56,7 @@ describe('patient detail edit flow', () => {
       },
     };
 
-    Object.keys(config).forEach((key) => {
+    Object.keys(config).forEach(key => {
       if (key === 'data') {
         return;
       }

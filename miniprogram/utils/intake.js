@@ -87,7 +87,7 @@ function validateSituation(text, config = {}) {
   const {
     minLength = 30,
     maxLength = 500,
-    keywords = ['护理', '症状', '康复', '治疗', '病情', '照顾', '功能', '障碍', '需要', '协助']
+    keywords = ['护理', '症状', '康复', '治疗', '病情', '照顾', '功能', '障碍', '需要', '协助'],
   } = config;
 
   if (!text || !text.trim()) {
@@ -110,7 +110,7 @@ function validateSituation(text, config = {}) {
     return {
       valid: false,
       message: '情况说明应包含护理需求或症状相关信息',
-      hint: `建议包含以下关键词：${keywords.slice(0, 5).join('、')}等`
+      hint: `建议包含以下关键词：${keywords.slice(0, 5).join('、')}等`,
     };
   }
 
@@ -126,14 +126,14 @@ function validateField(fieldName, value, rules = {}) {
     pattern,
     minDate,
     maxDate,
-    errorMessages = {}
+    errorMessages = {},
   } = rules;
 
   // 必填检查
   if (required && (!value || !value.toString().trim())) {
     return {
       valid: false,
-      message: errorMessages.required || `${fieldName}不能为空`
+      message: errorMessages.required || `${fieldName}不能为空`,
     };
   }
 
@@ -148,14 +148,14 @@ function validateField(fieldName, value, rules = {}) {
   if (minLength !== undefined && stringValue.length < minLength) {
     return {
       valid: false,
-      message: errorMessages.minLength || `${fieldName}至少需要${minLength}个字符`
+      message: errorMessages.minLength || `${fieldName}至少需要${minLength}个字符`,
     };
   }
 
   if (maxLength !== undefined && stringValue.length > maxLength) {
     return {
       valid: false,
-      message: errorMessages.maxLength || `${fieldName}不能超过${maxLength}个字符`
+      message: errorMessages.maxLength || `${fieldName}不能超过${maxLength}个字符`,
     };
   }
 
@@ -163,7 +163,7 @@ function validateField(fieldName, value, rules = {}) {
   if (pattern && !new RegExp(pattern).test(stringValue)) {
     return {
       valid: false,
-      message: errorMessages.pattern || `${fieldName}格式不正确`
+      message: errorMessages.pattern || `${fieldName}格式不正确`,
     };
   }
 
@@ -179,7 +179,7 @@ function validateField(fieldName, value, rules = {}) {
       if (date < min) {
         return {
           valid: false,
-          message: errorMessages.minDate || `${fieldName}不能早于${formatDate(min)}`
+          message: errorMessages.minDate || `${fieldName}不能早于${formatDate(min)}`,
         };
       }
     }
@@ -189,7 +189,7 @@ function validateField(fieldName, value, rules = {}) {
       if (date > max) {
         return {
           valid: false,
-          message: errorMessages.maxDate || `${fieldName}不能晚于${formatDate(max)}`
+          message: errorMessages.maxDate || `${fieldName}不能晚于${formatDate(max)}`,
         };
       }
     }
@@ -214,7 +214,7 @@ function validateForm(formData, validationRules = {}) {
 
   return {
     valid: Object.keys(errors).length === 0,
-    errors
+    errors,
   };
 }
 
@@ -223,9 +223,7 @@ function validateDate(dateStr, options = {}) {
   const { required = false, maxDate, minDate } = options;
 
   if (!dateStr) {
-    return required
-      ? { valid: false, message: '请选择日期' }
-      : { valid: true };
+    return required ? { valid: false, message: '请选择日期' } : { valid: true };
   }
 
   const date = new Date(dateStr);
@@ -259,7 +257,7 @@ function validateBirthDate(birthDate) {
   return validateDate(birthDate, {
     required: true,
     maxDate,
-    minDate
+    minDate,
   });
 }
 
@@ -271,7 +269,7 @@ function validateIntakeTime(intakeTime) {
 
   return validateDate(intakeTime, {
     required: true,
-    minDate
+    minDate,
   });
 }
 
@@ -346,7 +344,7 @@ function getFileCategory(fileName, mimeType) {
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   ];
 
   const imageExts = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -375,7 +373,7 @@ function getFileExtension(fileName) {
 function validateUploadFile(file, config = {}) {
   const {
     maxSize = 10 * 1024 * 1024, // 10MB
-    allowedTypes = ['image', 'document']
+    allowedTypes = ['image', 'document'],
   } = config;
 
   if (!file) {
@@ -406,7 +404,7 @@ async function callPatientMedia(action, data = {}) {
   try {
     const res = await wx.cloud.callFunction({
       name: 'patientMedia',
-      data: { action, ...data }
+      data: { action, ...data },
     });
 
     if (!res.result) {
@@ -430,7 +428,7 @@ async function callPatientIntake(action, data = {}) {
   try {
     const res = await wx.cloud.callFunction({
       name: 'patientIntake',
-      data: { action, ...data }
+      data: { action, ...data },
     });
 
     if (!res.result) {
@@ -478,5 +476,5 @@ module.exports = {
 
   // 云函数调用
   callPatientMedia,
-  callPatientIntake
+  callPatientIntake,
 };

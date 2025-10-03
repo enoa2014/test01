@@ -1,7 +1,7 @@
-
 # patient_card_use_cases.md
 
 ## 用例 1：compact 模式患者卡片
+
 ```xml
 <patient-card
   patient="{{{
@@ -29,6 +29,7 @@
 ```
 
 ## 用例 2：list 模式摘要卡片
+
 ```xml
 <patient-card
   patient="{{{

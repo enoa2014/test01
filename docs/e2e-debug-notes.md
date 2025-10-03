@@ -34,7 +34,7 @@ ws.on('error', (err) => { console.error('error', err.message); process.exit(1); 
 JS
 ```
 
-   - 或直接运行 `node temp-connect.js`（脚本示例见下文）调用 `automator.connect`，若输出 `connected` 说明端口可用。
+- 或直接运行 `node temp-connect.js`（脚本示例见下文）调用 `automator.connect`，若输出 `connected` 说明端口可用。
 
 5. **执行 E2E 测试**
    - 推荐运行 `npm run test:e2e:patients`：脚本会通过云开发 API 写入带有 `TEST_AUTOMATION_` 前缀的临时患者数据，随后执行 `tests/e2e/specs/home.spec.js`，最后在 `finally` 阶段清理临时数据。

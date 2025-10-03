@@ -13,27 +13,27 @@
 
 - **功能**: 创建了 `tcb pull` 命令，支持多种模板来源
 - **用法**: `tcb pull <source> [options]`
-- **选项**: 
-  - `-o, --output <output>`: 指定输出目录
-  - `-f, --force`: 强制覆盖已存在的目录
+- **选项**:
+    - `-o, --output <output>`: 指定输出目录
+    - `-f, --force`: 强制覆盖已存在的目录
 - **测试结果**: ✅ 正常工作
 
 ### 3. 内置模板支持 ✅
 
 - **支持的模板**:
-  - `miniprogram`: 微信小程序 + CloudBase
-  - `react`: Web 应用 - React + CloudBase
-  - `vue`: Web 应用 - Vue + CloudBase
-  - `uniapp`: 跨端应用 - UniApp + CloudBase
-  - `rules`: AI 规则和配置
+    - `miniprogram`: 微信小程序 + CloudBase
+    - `react`: Web 应用 - React + CloudBase
+    - `vue`: Web 应用 - Vue + CloudBase
+    - `uniapp`: 跨端应用 - UniApp + CloudBase
+    - `rules`: AI 规则和配置
 - **测试结果**: ✅ 正常工作
 
 ### 4. Git 仓库支持 ✅
 
 - **支持的格式**:
-  - GitHub: `https://github.com/user/repo`
-  - Gitee: `https://gitee.com/user/repo`
-  - SSH: `git@github.com:user/repo.git`
+    - GitHub: `https://github.com/user/repo`
+    - Gitee: `https://gitee.com/user/repo`
+    - SSH: `git@github.com:user/repo.git`
 - **测试结果**: ✅ 正常工作
 
 ### 5. Git 子目录支持 ✅
@@ -113,6 +113,7 @@ src/
 ## 验收标准达成情况
 
 ### 需求 1 - AI 命令模板标识支持 ✅
+
 - [x] When 用户执行 `tcb ai --template miniprogram` 时，系统应当直接下载微信小程序模板
 - [x] When 用户执行 `tcb ai --template react` 时，系统应当直接下载 React 模板
 - [x] When 用户执行 `tcb ai --template vue` 时，系统应当直接下载 Vue 模板
@@ -121,6 +122,7 @@ src/
 - [x] When 用户未指定 `--template` 参数时，系统应当保持原有的交互式选择行为
 
 ### 需求 2 - 新增 Pull 命令 ✅
+
 - [x] When 用户执行 `tcb pull miniprogram` 时，系统应当下载微信小程序模板
 - [x] When 用户执行 `tcb pull react` 时，系统应当下载 React 模板
 - [x] When 用户执行 `tcb pull vue` 时，系统应当下载 Vue 模板
@@ -128,21 +130,25 @@ src/
 - [x] When 用户执行 `tcb pull rules` 时，系统应当只下载 AI 规则和配置
 
 ### 需求 3 - Git 仓库支持 ✅
+
 - [x] When 用户执行 `tcb pull https://github.com/user/repo` 时，系统应当克隆整个仓库
 - [x] When 用户执行 `tcb pull https://gitee.com/user/repo` 时，系统应当克隆整个仓库
 - [x] When 用户执行 `tcb pull git@github.com:user/repo.git` 时，系统应当克隆整个仓库
 
 ### 需求 4 - Git 子目录支持 ✅
+
 - [x] When 用户执行 `tcb pull https://github.com/TencentCloudBase/awesome-cloudbase-examples/tree/master/web/overcooked-game` 时，系统应当只下载该子目录的内容
 - [x] When 用户执行 `tcb pull https://github.com/user/repo/tree/main/src/templates` 时，系统应当只下载该子目录的内容
 - [x] When 用户执行 `tcb pull https://gitee.com/user/repo/tree/master/examples` 时，系统应当只下载该子目录的内容
 
 ### 需求 5 - 目标目录指定 ✅
+
 - [x] When 用户执行 `tcb pull miniprogram --output ./my-project` 时，系统应当将模板下载到 `./my-project` 目录
 - [x] When 用户执行 `tcb pull https://github.com/user/repo --output ./custom-template` 时，系统应当将仓库内容下载到 `./custom-template` 目录
 - [x] When 用户未指定 `--output` 参数时，系统应当下载到当前目录
 
 ### 需求 6 - 错误处理 ✅
+
 - [x] When Git 仓库不存在时，系统应当显示清晰的错误信息
 - [x] When 网络连接失败时，系统应当显示网络错误信息
 - [x] When 目标目录已存在且不为空时，系统应当询问用户是否覆盖

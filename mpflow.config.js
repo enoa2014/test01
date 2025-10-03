@@ -10,9 +10,8 @@ module.exports = {
         devtoolsCliPath: 'C:\\Program Files (x86)\\Tencent\\???web?????????\\cli.bat',
         wsEndpoint: 'ws://127.0.0.1:9421',
         reconnectTries: 15,
-        reconnectInterval: 1000
-      }
-    ]
-  ]
+        reconnectInterval: 1000,
+      },
+    ],
+  ],
 };
-
