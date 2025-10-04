@@ -212,6 +212,7 @@ Page({
     allIntakeRecords: [],
     operationLogs: [],
     recordsSortOrder: 'desc',
+    recordsExpanded: {},
     editMode: false,
     saving: false,
     editForm: {},
@@ -782,6 +783,17 @@ Page({
     this.setData({
       recordsSortOrder: nextOrder,
       allIntakeRecords: sorted,
+    });
+  },
+
+  onToggleRecordExpand(event) {
+    const id = event.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    const currentState = this.data.recordsExpanded[id] || false;
+    this.setData({
+      [`recordsExpanded.${id}`]: !currentState,
     });
   },
 

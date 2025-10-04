@@ -23,11 +23,162 @@
   color: var(--color-danger);
 }
 
+/* P0-4: 骨架屏加载状态 - 参考列表页实现 */
+.detail-skeleton {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.skeleton-header,
+.skeleton-section {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-header {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.skeleton-name {
+  width: 240rpx;
+  height: 48rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  margin: 0 auto;
+}
+
+.skeleton-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.skeleton-metric-card {
+  min-height: 120rpx;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.skeleton-icon {
+  width: 48rpx;
+  height: 48rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: 50%;
+}
+
+.skeleton-label {
+  width: 80rpx;
+  height: 24rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-value {
+  width: 100rpx;
+  height: 32rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-section {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.skeleton-section-title {
+  width: 160rpx;
+  height: 36rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.skeleton-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) 0;
+}
+
+.skeleton-info-row .skeleton-label {
+  width: 140rpx;
+  height: 28rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-info-row .skeleton-value {
+  width: 200rpx;
+  height: 28rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.skeleton-media-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-media-image {
+  width: 100%;
+  height: 220rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.skeleton-media-name {
+  width: 60%;
+  height: 28rpx;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
 .patient-header {
   background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   box-shadow: var(--shadow-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.patient-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .patient-detail-name {
@@ -36,113 +187,150 @@
   color: var(--color-text-primary);
 }
 
-.patient-header-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+/* 运营指标卡片网格 - 参考列表页统计卡片 */
+.patient-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160rpx, 1fr));
   gap: var(--space-3);
 }
 
-.patient-name-section {
-  flex: 1;
+.metric-card {
+  min-height: 120rpx;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.patient-metrics {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
-}
-
-.metric-badge {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-  line-height: 1.2;
-}
-
-.metric-badge.status-in-care {
-  background: rgba(82, 196, 26, 0.12);
-  color: var(--color-success);
-  border: 2rpx solid var(--color-success);
-}
-
-.metric-badge.status-followup {
-  background: var(--bg-info-soft);
-  color: var(--color-info);
-  border: 2rpx solid var(--color-info);
-}
-
-.metric-badge.status-pending {
-  background: var(--bg-warning-soft);
-  color: var(--color-warning);
-  border: 2rpx solid var(--color-warning);
-}
-
-.metric-badge.status-checked-out,
-.metric-badge.status-unknown {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  border: 2rpx solid var(--color-border-secondary);
-}
-
-.metric-item {
-  display: flex;
-  align-items: center;
+  justify-content: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-tertiary);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  background: var(--color-border-secondary);
+  transition: var(--transition-base);
+}
+
+.metric-card__icon {
+  font-size: 48rpx;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.metric-card__label {
   font-size: var(--text-xs);
-}
-
-.metric-label {
   color: var(--color-text-secondary);
-}
-
-.metric-value {
-  color: var(--color-text-primary);
   font-weight: var(--font-medium);
 }
 
-.edit-toolbar {
-  display: flex;
-  gap: var(--space-2);
+.metric-card__value {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  text-align: center;
 }
 
-.edit-button {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-info);
-  color: var(--color-bg-primary);
+/* 状态卡片样式 */
+.metric-card--status.status-in-care::before {
+  background: linear-gradient(90deg, var(--color-success) 0%, #52c41a 100%);
+}
+
+.metric-card--status.status-in-care {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.08) 0%, rgba(82, 196, 26, 0.04) 100%);
+}
+
+.metric-card--status.status-in-care .metric-card__value {
+  color: var(--color-success);
+}
+
+.metric-card--status.status-pending::before {
+  background: linear-gradient(90deg, #faad14 0%, #ffc53d 100%);
+}
+
+.metric-card--status.status-pending {
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.08) 0%, rgba(250, 173, 20, 0.04) 100%);
+}
+
+.metric-card--status.status-pending .metric-card__value {
+  color: var(--color-warning);
+}
+
+.metric-card--status.status-checked-out::before {
+  background: linear-gradient(
+    90deg,
+    var(--color-text-secondary) 0%,
+    var(--color-text-tertiary) 100%
+  );
+}
+
+.metric-card--status.status-checked-out {
+  background: var(--color-bg-tertiary);
+}
+
+.metric-card--status.status-checked-out .metric-card__value {
+  color: var(--color-text-secondary);
+}
+
+.metric-card--status.status-followup::before {
+  background: linear-gradient(90deg, var(--color-info) 0%, #40a9ff 100%);
+}
+
+.metric-card--status.status-followup {
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.08) 0%, rgba(24, 144, 255, 0.04) 100%);
+}
+
+.metric-card--status.status-followup .metric-card__value {
+  color: var(--color-info);
+}
+
+/* 入住次数卡片 */
+.metric-card--admissions::before {
+  background: linear-gradient(90deg, var(--color-info) 0%, #40a9ff 100%);
+}
+
+.metric-card--admissions {
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.06) 0%, rgba(24, 144, 255, 0.03) 100%);
+}
+
+.metric-card--admissions .metric-card__value {
+  color: var(--color-info);
+}
+
+/* 最近入住卡片 */
+.metric-card--recent::before {
+  background: linear-gradient(90deg, #722ed1 0%, #9254de 100%);
+}
+
+.metric-card--recent {
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.06) 0%, rgba(114, 46, 209, 0.03) 100%);
+}
+
+.metric-card--recent .metric-card__value {
+  color: #722ed1;
   font-size: var(--text-sm);
 }
 
-.edit-button.primary.disabled {
-  background: var(--color-text-tertiary);
-  color: var(--color-bg-primary);
+/* 编辑工具栏独立一行 - P0-2 触控优化 */
+.edit-toolbar-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 88rpx;
 }
 
-.edit-button.secondary {
-  background: var(--color-bg-tertiary);
-  color: var(--color-info);
-  border: 2rpx solid var(--color-info);
-}
-
-.edit-button.secondary.disabled {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-tertiary);
-  border-color: var(--color-border-secondary);
-}
-
-.edit-button.plain {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+.edit-toolbar-row .pm-button {
+  min-height: 88rpx;
 }
 
 .edit-hint {
@@ -381,13 +569,20 @@
   border-top: none;
 }
 
-.media-card__image image {
+.media-card__image {
   width: 100%;
   height: 220rpx;
-  object-fit: cover;
+  display: block;
   background: var(--color-bg-tertiary);
   border-top-left-radius: var(--radius-md);
   border-top-right-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.media-card__thumbnail {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .media-card__content {
@@ -695,4 +890,218 @@
   line-height: 1;
   transform: translateY(-1rpx);
   transition: transform 0.2s ease;
+}
+
+/* P0: 入住记录可折叠优化 */
+.intake-record-item {
+  margin-bottom: var(--space-3);
+}
+
+.record-header-main {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  transition: var(--transition-base);
+  cursor: pointer;
+}
+
+.record-header-main:active {
+  background: var(--color-bg-tertiary);
+  transform: scale(0.99);
+}
+
+.record-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.record-time {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.record-expand-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.record-status {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-sm);
+}
+
+.record-expand-icon {
+  font-size: var(--text-xs);
+  color: var(--color-info);
+  font-weight: var(--font-semibold);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-info-soft);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-base);
+}
+
+.record-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.preview-hospital {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}
+
+.preview-diagnosis {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.record-details {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  border-left: 4rpx solid var(--color-info);
+  box-shadow: var(--shadow-sm);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000rpx;
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+}
+
+.record-details .record-section {
+  margin-bottom: var(--space-3);
+}
+
+.record-details .record-section:last-child {
+  margin-bottom: 0;
+}
+
+.record-details .record-section-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.record-details .record-section-title::before {
+  content: '';
+  width: 6rpx;
+  height: 6rpx;
+  background: var(--color-info);
+  border-radius: 50%;
+}
+
+.record-details .record-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.record-details .record-field:last-child {
+  border-bottom: none;
+}
+
+.record-details .field-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-medium);
+}
+
+.record-details .field-value {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+
+/* P1: 信息区域卡片化 */
+.info-card-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.info-card {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 2rpx solid var(--color-border-secondary);
+  transition: var(--transition-base);
+}
+
+.info-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-primary);
+}
+
+.info-card-header {
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.info-card-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.info-card-body {
+  padding: var(--space-4);
+}
+
+.info-card-body .info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.info-card-body .info-row:last-child {
+  border-bottom: none;
+}
+
+.info-card-body .label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  min-width: 140rpx;
+}
+
+.info-card-body .value {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+  text-align: right;
+  word-break: break-all;
 }

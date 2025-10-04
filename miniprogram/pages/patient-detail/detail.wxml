@@ -1,53 +1,105 @@
 ﻿<view class="theme-root detail-container">
-  <view wx:if="{{loading}}" class="placeholder">正在加载住户信息…</view>
+  <!-- P0-4: 骨架屏加载状态 -->
+  <view wx:if="{{loading}}" class="detail-skeleton">
+    <!-- 头部骨架 -->
+    <view class="skeleton-header">
+      <view class="skeleton-name"></view>
+      <view class="skeleton-metrics">
+        <view class="skeleton-metric-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+          <view class="skeleton-icon"></view>
+          <view class="skeleton-label"></view>
+          <view class="skeleton-value"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 信息区域骨架 -->
+    <view class="skeleton-section" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="skeleton-section-title"></view>
+      <view class="skeleton-info-row" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+        <view class="skeleton-label"></view>
+        <view class="skeleton-value"></view>
+      </view>
+    </view>
+
+    <!-- 媒体区域骨架 -->
+    <view class="skeleton-section">
+      <view class="skeleton-section-title"></view>
+      <view class="skeleton-media-grid">
+        <view class="skeleton-media-card" wx:for="{{[1,2]}}" wx:key="*this">
+          <view class="skeleton-media-image"></view>
+          <view class="skeleton-media-name"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
     <view class="patient-header">
-      <view class="patient-header-row">
-        <view class="patient-name-section">
-          <text class="patient-detail-name"
-            >{{editMode ? editForm.patientName : (patient.patientName || '')}}</text
+      <view class="patient-name-row">
+        <text class="patient-detail-name"
+          >{{editMode ? editForm.patientName : (patient.patientName || '')}}</text
+        >
+      </view>
+
+      <!-- 运营指标卡片网格 -->
+      <view wx:if="{{!editMode && patient}}" class="patient-metrics-grid">
+        <view
+          wx:if="{{patient.status}}"
+          class="metric-card metric-card--status status-{{patient.statusClass || 'unknown'}}"
+        >
+          <view class="metric-card__icon"
+            >{{patient.statusClass === 'in-care' ? '🏠' : patient.statusClass === 'pending' ? '⏳' :
+            patient.statusClass === 'checked-out' ? '👋' : '📋'}}</view
           >
-          <!-- 运营关键指标 -->
-          <view wx:if="{{!editMode && patient}}" class="patient-metrics">
-            <view
-              wx:if="{{patient.status}}"
-              class="metric-badge status-{{patient.statusClass || 'unknown'}}"
-            >
-              {{patient.statusDisplay || patient.status}}
-            </view>
-            <view wx:if="{{patient.admissionCount}}" class="metric-item">
-              <text class="metric-label">入住</text>
-              <text class="metric-value">{{patient.admissionCount}}次</text>
-            </view>
-            <view wx:if="{{patient.lastAdmissionTime}}" class="metric-item">
-              <text class="metric-label">最近</text>
-              <text class="metric-value">{{patient.lastAdmissionTimeDisplay}}</text>
-            </view>
-          </view>
+          <text class="metric-card__label">状态</text>
+          <text class="metric-card__value">{{patient.statusDisplay || patient.status}}</text>
         </view>
-        <view class="edit-toolbar">
-          <view wx:if="{{!editMode}}" class="edit-button" bindtap="onEditStart">编辑资料</view>
-          <block wx:else>
-            <view class="edit-button plain" bindtap="onEditCancel">取消</view>
-            <view
-              class="edit-button secondary {{!editDirty ? 'disabled' : ''}}"
-              bindtap="onSaveDraft"
-            >
-              暂存
-            </view>
-            <view
-              class="edit-button primary {{(!editCanSave || saving) ? 'disabled' : ''}}"
-              bindtap="onSaveTap"
-            >
-              {{saving ? '保存中…' : '保存'}}
-            </view>
-          </block>
+        <view wx:if="{{patient.admissionCount}}" class="metric-card metric-card--admissions">
+          <view class="metric-card__icon">📊</view>
+          <text class="metric-card__label">入住次数</text>
+          <text class="metric-card__value">{{patient.admissionCount}}次</text>
+        </view>
+        <view wx:if="{{patient.lastAdmissionTime}}" class="metric-card metric-card--recent">
+          <view class="metric-card__icon">📅</view>
+          <text class="metric-card__label">最近入住</text>
+          <text class="metric-card__value">{{patient.lastAdmissionTimeDisplay}}</text>
         </view>
       </view>
+
+      <!-- 编辑工具栏独立一行 -->
+      <view class="edit-toolbar-row">
+        <pm-button
+          wx:if="{{!editMode}}"
+          text="编辑资料"
+          type="primary"
+          size="medium"
+          bindtap="onEditStart"
+        />
+        <block wx:else>
+          <pm-button text="取消" type="ghost" size="medium" bindtap="onEditCancel" />
+          <pm-button
+            text="暂存"
+            type="secondary"
+            size="medium"
+            disabled="{{!editDirty}}"
+            bindtap="onSaveDraft"
+          />
+          <pm-button
+            text="{{saving ? '保存中…' : '保存'}}"
+            type="primary"
+            size="medium"
+            loading="{{saving}}"
+            disabled="{{!editCanSave || saving}}"
+            bindtap="onSaveTap"
+          />
+        </block>
+      </view>
+
       <view wx:if="{{editMode}}" class="edit-mode-banner">
         <text class="edit-mode-icon">✏️</text>
-        <text class="edit-mode-text">编辑模式：修改后请点击"保存"按钮</text>
+        <text class="edit-mode-text">编辑模式:修改后请点击"保存"按钮</text>
       </view>
     </view>
 
@@ -221,27 +273,42 @@
     </view>
 
     <block wx:if="{{!editMode}}">
-      <view wx:if="{{basicInfo.length}}" class="info-section">
-        <text class="section-title">住户基本信息</text>
-        <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
-          <text class="label">{{item.label}}</text>
-          <text class="value">{{item.value}}</text>
+      <!-- P1: 信息区域卡片化 -->
+      <view class="info-card-grid">
+        <view class="info-card" wx:if="{{basicInfo.length}}">
+          <view class="info-card-header">
+            <text class="info-card-title">👤 住户基本信息</text>
+          </view>
+          <view class="info-card-body">
+            <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
+              <text class="label">{{item.label}}</text>
+              <text class="value">{{item.value}}</text>
+            </view>
+          </view>
         </view>
-      </view>
 
-      <view wx:if="{{familyInfo.length}}" class="info-section">
-        <text class="section-title">联系信息</text>
-        <view class="info-row" wx:for="{{familyInfo}}" wx:key="label">
-          <text class="label">{{item.label}}</text>
-          <text class="value">{{item.value}}</text>
+        <view class="info-card" wx:if="{{familyInfo.length}}">
+          <view class="info-card-header">
+            <text class="info-card-title">📞 联系信息</text>
+          </view>
+          <view class="info-card-body">
+            <view class="info-row" wx:for="{{familyInfo}}" wx:key="label">
+              <text class="label">{{item.label}}</text>
+              <text class="value">{{item.value}}</text>
+            </view>
+          </view>
         </view>
-      </view>
 
-      <view wx:if="{{economicInfo.length}}" class="info-section">
-        <text class="section-title">经济情况</text>
-        <view class="info-row" wx:for="{{economicInfo}}" wx:key="label">
-          <text class="label">{{item.label}}</text>
-          <text class="value">{{item.value}}</text>
+        <view class="info-card" wx:if="{{economicInfo.length}}">
+          <view class="info-card-header">
+            <text class="info-card-title">💰 经济情况</text>
+          </view>
+          <view class="info-card-body">
+            <view class="info-row" wx:for="{{economicInfo}}" wx:key="label">
+              <text class="label">{{item.label}}</text>
+              <text class="value">{{item.value}}</text>
+            </view>
+          </view>
         </view>
       </view>
     </block>
@@ -259,52 +326,73 @@
         </view>
       </view>
       <view class="intake-record-item" wx:for="{{allIntakeRecords}}" wx:key="intakeId">
-        <view class="record-header">
-          <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
-          <text
-            class="record-status"
-            wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}"
-            >{{item.statusDisplay}}</text
+        <!-- 记录头部 - 可点击展开/收起 -->
+        <view class="record-header-main" bindtap="onToggleRecordExpand" data-id="{{item.intakeId}}">
+          <view class="record-title-row">
+            <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
+            <view class="record-expand-control">
+              <text
+                class="record-status"
+                wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}"
+                >{{item.statusDisplay}}</text
+              >
+              <text class="record-expand-icon"
+                >{{recordsExpanded[item.intakeId] ? '收起 ▲' : '展开 ▼'}}</text
+              >
+            </view>
+          </view>
+
+          <!-- 关键信息预览 - 始终显示 -->
+          <view class="record-preview">
+            <text wx:if="{{item.hospitalDisplay}}" class="preview-hospital"
+              >🏥 {{item.hospitalDisplay}}</text
+            >
+            <text wx:if="{{item.diagnosisDisplay}}" class="preview-diagnosis"
+              >📋 {{item.diagnosisDisplay}}</text
+            >
+          </view>
+        </view>
+
+        <!-- 详细信息 - 可折叠 -->
+        <view wx:if="{{recordsExpanded[item.intakeId]}}" class="record-details">
+          <!-- 就诊情况 -->
+          <view
+            class="record-section"
+            wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
           >
-        </view>
+            <text class="record-section-title">就诊情况</text>
+            <view class="record-field" wx:if="{{item.hospitalDisplay}}">
+              <text class="field-label">就诊医院：</text>
+              <text class="field-value">{{item.hospitalDisplay}}</text>
+            </view>
+            <view class="record-field" wx:if="{{item.diagnosisDisplay}}">
+              <text class="field-label">医院诊断：</text>
+              <text class="field-value">{{item.diagnosisDisplay}}</text>
+            </view>
+            <view class="record-field" wx:if="{{item.doctorDisplay}}">
+              <text class="field-label">医生姓名：</text>
+              <text class="field-value">{{item.doctorDisplay}}</text>
+            </view>
+          </view>
 
-        <!-- 就诊情况 -->
-        <view
-          class="record-section"
-          wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
-        >
-          <text class="record-section-title">就诊情况</text>
-          <view class="record-field" wx:if="{{item.hospitalDisplay}}">
-            <text class="field-label">就诊医院：</text>
-            <text class="field-value">{{item.hospitalDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.diagnosisDisplay}}">
-            <text class="field-label">医院诊断：</text>
-            <text class="field-value">{{item.diagnosisDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.doctorDisplay}}">
-            <text class="field-label">医生姓名：</text>
-            <text class="field-value">{{item.doctorDisplay}}</text>
-          </view>
-        </view>
-
-        <!-- 医疗情况 -->
-        <view
-          class="record-section"
-          wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}"
-        >
-          <text class="record-section-title">医疗情况</text>
-          <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
-            <text class="field-label">症状详情：</text>
-            <text class="field-value">{{item.symptomDetailDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.treatmentProcessDisplay}}">
-            <text class="field-label">医治过程：</text>
-            <text class="field-value">{{item.treatmentProcessDisplay}}</text>
-          </view>
-          <view class="record-field" wx:if="{{item.followUpPlanDisplay}}">
-            <text class="field-label">后续治疗安排：</text>
-            <text class="field-value">{{item.followUpPlanDisplay}}</text>
+          <!-- 医疗情况 -->
+          <view
+            class="record-section"
+            wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}"
+          >
+            <text class="record-section-title">医疗情况</text>
+            <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
+              <text class="field-label">症状详情：</text>
+              <text class="field-value">{{item.symptomDetailDisplay}}</text>
+            </view>
+            <view class="record-field" wx:if="{{item.treatmentProcessDisplay}}">
+              <text class="field-label">医治过程：</text>
+              <text class="field-value">{{item.treatmentProcessDisplay}}</text>
+            </view>
+            <view class="record-field" wx:if="{{item.followUpPlanDisplay}}">
+              <text class="field-label">后续治疗安排：</text>
+              <text class="field-value">{{item.followUpPlanDisplay}}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -415,7 +503,7 @@
                 data-index="{{index}}"
               >
                 <view slot="header" class="media-card__image">
-                  <image src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
+                  <image class="media-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
                 </view>
                 <view class="media-card__content">
                   <text class="media-card__name">{{item.displayName}}</text>
