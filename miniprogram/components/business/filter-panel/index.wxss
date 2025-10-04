@@ -58,6 +58,10 @@
 .filter-panel__body {
   flex: 1;
   padding: 0 var(--space-6) var(--space-6);
+  /* 明确设置高度以确保滚动功能正常工作 */
+  /* 100vh - header约120rpx - footer约140rpx = 约calc(100vh - 260rpx) */
+  height: calc(100vh - 260rpx);
+  overflow-y: auto;
 }
 
 .filter-section {

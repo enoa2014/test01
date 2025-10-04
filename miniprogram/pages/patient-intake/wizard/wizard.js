@@ -712,25 +712,9 @@ Page({
       // 提取联系信息
       const address = findValue(familyInfoList, '家庭地址');
 
-      // 从最新的入住记录中提取医疗情况作为情况说明
-      let situationText = '';
-      if (records.length > 0) {
-        // 取最新的一条记录
-        const latestRecord = records[0];
-        const medicalInfo = latestRecord.medicalInfo || {};
-
-        const parts = [];
-        if (medicalInfo.diagnosis) parts.push(`诊断: ${medicalInfo.diagnosis}`);
-        if (medicalInfo.symptoms) parts.push(`症状: ${medicalInfo.symptoms}`);
-        if (medicalInfo.treatmentProcess) parts.push(`治疗过程: ${medicalInfo.treatmentProcess}`);
-        if (medicalInfo.followUpPlan) parts.push(`康复计划: ${medicalInfo.followUpPlan}`);
-
-        if (parts.length > 0) {
-          situationText = parts.join('。');
-        } else if (latestRecord.situation) {
-          situationText = this.normalizeExcelSpacing(latestRecord.situation);
-        }
-      }
+      // 情况说明不再自动填充历史记录
+      // 每次入住都应该填写新的情况说明，反映当前入住时的实际情况
+      // 已移除从历史记录中提取医疗情况的逻辑
 
       // 解析父母联系方式作为紧急联系人
       const { emergencyContact, emergencyPhone } =
@@ -802,11 +786,8 @@ Page({
         patientFromIntake.backupPhone,
         this.data.formData.backupPhone
       );
-      const resolvedSituation = preferString(
-        situationText,
-        patientFromIntake.lastIntakeNarrative,
-        this.data.formData.situation
-      );
+      // 情况说明不自动填充，保持为空，让用户填写本次入住的具体情况
+      const resolvedSituation = '';
 
       const nextFormData = {
         ...this.data.formData,
