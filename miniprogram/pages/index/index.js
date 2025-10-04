@@ -650,6 +650,7 @@ Page({
     // P1-7: FAB标签提示状态
     fabExpanded: false,
     batchOperationLoading: false,
+    deletingPatientKey: '',
     filterSchemes: [],
     checkoutDialogVisible: false,
     checkoutSubmitting: false,
@@ -1001,14 +1002,50 @@ Page({
     } catch (error) {
       // ignore removal errors
     }
-    const { patientKey, updates } = flag || {};
-    if (!patientKey || !updates) {
+
+    const patientKey = this.resolvePatientKey(flag && flag.patientKey);
+    if (!patientKey) {
+      this.fetchPatients({ silent: false });
+      return;
+    }
+
+    if (flag.deleted) {
+      const nextPatients = (Array.isArray(this.data.patients) ? this.data.patients : []).filter(
+        item => this.resolvePatientKey(item) !== patientKey
+      );
+      const selectedMap = { ...(this.data.selectedPatientMap || {}) };
+      if (selectedMap[patientKey]) {
+        delete selectedMap[patientKey];
+      }
+      const selectedCount = Object.keys(selectedMap).length;
+      this.setData(
+        {
+          patients: nextPatients,
+          selectedPatientMap: selectedMap,
+          selectedCount,
+          allSelected: false,
+          deletingPatientKey:
+            this.data.deletingPatientKey && this.data.deletingPatientKey === patientKey
+              ? ''
+              : this.data.deletingPatientKey,
+        },
+        () => {
+          this.applyFilters();
+          this.updateFilterOptions(nextPatients);
+        }
+      );
+      this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+      return;
+    }
+
+    const updates = flag && flag.updates;
+    if (!updates) {
       this.fetchPatients({ silent: false });
       return;
     }
     const mergeUpdates = (list = []) =>
       list.map(item => {
-        const key = item.patientKey || item.key || item.id || item.recordKey;
+        const key = this.resolvePatientKey(item);
         if (!key) {
           return item;
         }
@@ -1630,6 +1667,27 @@ Page({
       patientLike.patientKey || patientLike.key || patientLike.recordKey || patientLike.id || ''
     );
   },
+  markPatientDeletedFlag(patientKey) {
+    const key = this.resolvePatientKey(patientKey);
+    if (!key) {
+      return;
+    }
+    try {
+      wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, {
+        timestamp: Date.now(),
+        patientKey: key,
+        deleted: true,
+      });
+    } catch (error) {
+      // ignore storage failure
+    }
+
+    try {
+      wx.removeStorageSync(PATIENT_CACHE_KEY);
+    } catch (error) {
+      // ignore cache removal failure
+    }
+  },
   onSearchInput(event) {
     const value = (event.detail && event.detail.value) || '';
     this.setData({ searchKeyword: value }, () => {
@@ -2045,6 +2103,10 @@ Page({
     this.showPatientActionSheet(patient);
   },
   showPatientActionSheet(patient) {
+    if (this.data.deletingPatientKey) {
+      wx.showToast({ icon: 'none', title: '操作进行中，请稍候' });
+      return;
+    }
     if (this._patientActionSheetVisible) {
       return;
     }
@@ -2600,11 +2662,97 @@ Page({
     }
     wx.showToast({ icon: 'none', title: '功能开发中' });
   },
-  handleDeletePatient() {
-    if (this.data && this.data.testCaptureToast) {
-      this.setData({ testLastToast: '功能开发中' });
+  async handleDeletePatient(patient) {
+    const patientKey = this.resolvePatientKey(patient);
+    if (!patientKey) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
     }
-    wx.showToast({ icon: 'none', title: '功能开发中' });
+
+    if (this.data.deletingPatientKey && this.data.deletingPatientKey === patientKey) {
+      return;
+    }
+
+    const patientName = safeString((patient && (patient.patientName || patient.name)) || '');
+    const recordKey = safeString((patient && (patient.recordKey || patient.key)) || '');
+
+    try {
+      const confirmRes = await wx.showModal({
+        title: '确认删除',
+        content: patientName
+          ? `删除住户「${patientName}」后将移除其档案、入住记录及附件，且不可恢复。继续操作吗？`
+          : '删除后将移除该住户的档案、入住记录及附件，且不可恢复。确定继续吗？',
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmColor: '#e64340',
+      });
+      if (!confirmRes.confirm) {
+        return;
+      }
+    } catch (error) {
+      wx.showToast({ icon: 'none', title: '操作已取消' });
+      return;
+    }
+
+    wx.showLoading({ title: '删除中…', mask: true });
+    this.setData({ deletingPatientKey: patientKey });
+
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'patientProfile',
+        data: {
+          action: 'delete',
+          patientKey,
+          recordKey,
+        },
+      });
+
+      const result = (res && res.result) || {};
+      if (result.success === false || result.error) {
+        const err =
+          (result.error && (result.error.message || result.error.errMsg)) || '删除失败，请稍后重试';
+        throw new Error(err);
+      }
+
+      this.markPatientDeletedFlag(patientKey);
+
+      const filterByKey = list =>
+        (Array.isArray(list) ? list : []).filter(
+          item => this.resolvePatientKey(item) !== patientKey
+        );
+      const nextPatients = filterByKey(this.data.patients);
+
+      const selectedMap = { ...(this.data.selectedPatientMap || {}) };
+      if (selectedMap[patientKey]) {
+        delete selectedMap[patientKey];
+      }
+      const selectedCount = Object.keys(selectedMap).length;
+
+      this.setData(
+        {
+          patients: nextPatients,
+          selectedPatientMap: selectedMap,
+          selectedCount,
+          allSelected: false,
+        },
+        () => {
+          this.applyFilters();
+          this.updateFilterOptions(nextPatients);
+        }
+      );
+
+      wx.hideLoading();
+      wx.showToast({ icon: 'success', title: '已删除' });
+
+      this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+    } catch (error) {
+      wx.hideLoading();
+      logger.error('删除住户失败', error);
+      const message = safeString(error && error.message) || '删除失败，请稍后重试';
+      wx.showToast({ icon: 'none', title: message.slice(0, 20) });
+    } finally {
+      this.setData({ deletingPatientKey: '' });
+    }
   },
   onCardLongPress(event) {
     // P1-5: 长按视觉反馈 - 振动反馈

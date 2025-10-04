@@ -192,64 +192,85 @@
         ></pm-input>
       </view>
 
-      <view class="form-group">
-        <pm-input
-          label="紧急联系人"
-          required="{{true}}"
-          value="{{formData.emergencyContact}}"
-          placeholder="请输入紧急联系人姓名"
-          data-field="emergencyContact"
-          bindinput="onInputChange"
-          error="{{errors.emergencyContact || ''}}"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
-      </view>
+      <view class="contacts-section">
+        <view class="contacts-header">
+          <text class="contacts-title">联系人信息</text>
+          <text class="contacts-subtitle">至少 1 位，最多 5 位</text>
+        </view>
 
-      <view class="form-group">
-        <pm-input
-          label="紧急联系人电话"
-          required="{{true}}"
-          value="{{formData.emergencyPhone}}"
-          placeholder="请输入11位手机号码"
-          type="number"
-          data-field="emergencyPhone"
-          bindinput="onInputChange"
-          error="{{errors.emergencyPhone || ''}}"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
-      </view>
+        <view
+          class="contact-item"
+          wx:for="{{formData.contacts}}"
+          wx:key="index"
+        >
+          <view class="contact-item__header">
+            <text class="contact-item__title">联系人{{index + 1}}</text>
+            <text
+              wx:if="{{formData.contacts.length > 1}}"
+              class="contact-item__remove"
+              data-index="{{index}}"
+              bindtap="removeContact"
+            >移除</text>
+          </view>
 
-      <view class="form-group">
-        <pm-input
-          label="备用联系人"
-          value="{{formData.backupContact}}"
-          placeholder="请输入备用联系人姓名（选填）"
-          data-field="backupContact"
-          bindinput="onInputChange"
-          error="{{errors.backupContact || ''}}"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
-      </view>
+          <view class="contact-grid">
+            <pm-input
+              label="关系"
+              required="{{true}}"
+              value="{{item.relationship}}"
+              placeholder="如：父亲、母亲、照护人"
+              data-index="{{index}}"
+              data-field="relationship"
+              bindinput="onContactFieldInput"
+              error="{{contactErrors[index] ? contactErrors[index].relationship || '' : ''}}"
+              clearable="{{true}}"
+              label-position="top"
+              block="{{true}}"
+            ></pm-input>
 
-      <view class="form-group">
-        <pm-input
-          label="备用联系人电话"
-          value="{{formData.backupPhone}}"
-          placeholder="请输入11位手机号码（选填）"
-          type="number"
-          data-field="backupPhone"
-          bindinput="onInputChange"
-          error="{{errors.backupPhone || ''}}"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
+            <pm-input
+              label="姓名"
+              required="{{true}}"
+              value="{{item.name}}"
+              placeholder="请输入姓名"
+              data-index="{{index}}"
+              data-field="name"
+              bindinput="onContactFieldInput"
+              error="{{contactErrors[index] ? contactErrors[index].name || '' : ''}}"
+              clearable="{{true}}"
+              label-position="top"
+              block="{{true}}"
+            ></pm-input>
+
+            <pm-input
+              label="联系电话"
+              required="{{true}}"
+              value="{{item.phone}}"
+              placeholder="请输入11位手机号码"
+              type="number"
+              data-index="{{index}}"
+              data-field="phone"
+              bindinput="onContactFieldInput"
+              error="{{contactErrors[index] ? contactErrors[index].phone || '' : ''}}"
+              clearable="{{true}}"
+              label-position="top"
+              block="{{true}}"
+            ></pm-input>
+          </view>
+        </view>
+
+        <view
+          class="contacts-add"
+          wx:if="{{formData.contacts.length < 5}}"
+        >
+          <pm-button
+            type="ghost"
+            size="small"
+            icon="＋"
+            text="添加联系人"
+            bindtap="addContact"
+          ></pm-button>
+        </view>
       </view>
     </view>
 
@@ -357,15 +378,15 @@
             <text class="item-label">常住地址：</text>
             <text class="item-value">{{formData.address}}</text>
           </view>
-          <view class="review-item">
-            <text class="item-label">紧急联系人：</text>
+          <view
+            class="review-item"
+            wx:for="{{formData.contacts}}"
+            wx:key="index"
+          >
+            <text class="item-label">联系人{{index + 1}}：</text>
             <text class="item-value"
-              >{{formData.emergencyContact}} {{formData.emergencyPhone}}</text
+              >{{item.relationship}} {{item.name}} {{item.phone}}</text
             >
-          </view>
-          <view class="review-item" wx:if="{{formData.backupContact}}">
-            <text class="item-label">备用联系人：</text>
-            <text class="item-value">{{formData.backupContact}} {{formData.backupPhone}}</text>
           </view>
         </view>
 

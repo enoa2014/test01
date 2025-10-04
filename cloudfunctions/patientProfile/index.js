@@ -3,6 +3,7 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
+const _ = db.command;
 const {
   normalizeValue,
   normalizeSpacing,
@@ -16,6 +17,9 @@ const EXCEL_RECORDS_COLLECTION = 'excel_records';
 const EXCEL_CACHE_COLLECTION = 'excel_cache';
 const PATIENTS_COLLECTION = 'patients';
 const PATIENT_INTAKE_COLLECTION = 'patient_intake_records';
+const PATIENT_MEDIA_COLLECTION = 'patient_media';
+const PATIENT_MEDIA_QUOTA_COLLECTION = 'patient_media_quota';
+const PATIENT_OPERATION_LOGS_COLLECTION = 'patient_operation_logs';
 const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 const PATIENT_LIST_CACHE_TTL = 5 * 60 * 1000;
 const DEFAULT_PATIENT_LIST_LIMIT = 80;
@@ -66,7 +70,18 @@ async function fetchPatientsFromCache(options = {}) {
       const cached = res && res.data ? res.data : null;
       const cacheAge = cached ? Date.now() - (cached.updatedAt || 0) : Number.MAX_SAFE_INTEGER;
 
-      if (cached && cacheAge < PATIENT_LIST_CACHE_TTL && Array.isArray(cached.patients)) {
+      const cacheHasNativePlace =
+        Array.isArray(cached && cached.patients) &&
+        cached.patients.every(item =>
+          item && Object.prototype.hasOwnProperty.call(item, 'nativePlace')
+        );
+
+      if (
+        cached &&
+        cacheAge < PATIENT_LIST_CACHE_TTL &&
+        Array.isArray(cached.patients) &&
+        cacheHasNativePlace
+      ) {
         const slice = cached.patients.slice(0, limit);
         const totalCount = cached.totalCount !== undefined ? cached.totalCount : slice.length;
         const hasMore = cached.hasMore !== undefined ? cached.hasMore : totalCount > slice.length;
@@ -151,6 +166,8 @@ async function buildPatientsFromDatabase(options = {}) {
       emergencyPhone: 1,
       backupContact: 1,
       backupPhone: 1,
+      nativePlace: 1,
+      ethnicity: 1,
       recordKey: 1,
       careStatus: 1,
       checkoutAt: 1,
@@ -183,6 +200,10 @@ async function buildPatientsFromDatabase(options = {}) {
       'data.checkoutAt': 1,
       'data.checkoutReason': 1,
       'data.checkoutNote': 1,
+      'data.nativePlace': 1,
+      'data.ethnicity': 1,
+      'data.data.nativePlace': 1,
+      'data.data.ethnicity': 1,
     })
     .get();
 
@@ -368,6 +389,353 @@ async function buildPatientsFromDatabase(options = {}) {
     nextPage,
     limit,
   };
+}
+
+function normalizeKeyCandidate(value) {
+  return normalizeSpacing(value || '');
+}
+
+async function findPatientDocForDeletion(options = {}) {
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
+
+  const candidateKeys = new Set();
+  const addCandidate = value => {
+    const normalized = normalizeKeyCandidate(value);
+    if (normalized) {
+      candidateKeys.add(normalized);
+    }
+  };
+
+  addCandidate(options && options.patientKey);
+  addCandidate(options && options.recordKey);
+
+  let patientDoc = null;
+
+  const assignFromSnapshot = snapshot => {
+    if (!snapshot || !snapshot.data) {
+      return false;
+    }
+    const data = snapshot.data;
+    if (Array.isArray(data) && data.length) {
+      const doc = data[0];
+      const docId = doc._id || doc.id || doc.patientKey || doc.recordKey;
+      if (docId) {
+        patientDoc = { _id: docId, ...doc };
+        return true;
+      }
+    }
+    if (snapshot._id && !patientDoc) {
+      patientDoc = { _id: snapshot._id, ...snapshot };
+      return true;
+    }
+    return false;
+  };
+
+  for (const key of candidateKeys) {
+    try {
+      const res = await db.collection(PATIENTS_COLLECTION).doc(key).get();
+      if (res && res.data) {
+        patientDoc = { _id: key, ...res.data };
+        break;
+      }
+    } catch (error) {
+      const code = error && (error.errCode !== undefined ? error.errCode : error.code);
+      if (
+        code !== -1 &&
+        code !== 'DOCUMENT_NOT_FOUND' &&
+        code !== 'DATABASE_DOCUMENT_NOT_EXIST'
+      ) {
+        console.warn('findPatientDoc direct lookup failed', key, error);
+      }
+    }
+  }
+
+  if (!patientDoc) {
+    for (const key of candidateKeys) {
+      try {
+        const res = await db
+          .collection(PATIENTS_COLLECTION)
+          .where({ recordKey: key })
+          .limit(1)
+          .get();
+        if (assignFromSnapshot(res)) {
+          break;
+        }
+      } catch (error) {
+        console.warn('findPatientDoc by recordKey failed', key, error);
+      }
+    }
+  }
+
+  if (!patientDoc) {
+    for (const key of candidateKeys) {
+      try {
+        const res = await db
+          .collection(PATIENTS_COLLECTION)
+          .where({ excelRecordKeys: key })
+          .limit(1)
+          .get();
+        if (assignFromSnapshot(res)) {
+          break;
+        }
+      } catch (error) {
+        console.warn('findPatientDoc by excelRecordKeys failed', key, error);
+      }
+    }
+  }
+
+  if (!patientDoc) {
+    for (const key of candidateKeys) {
+      try {
+        const res = await db
+          .collection(PATIENTS_COLLECTION)
+          .where({ patientName: key })
+          .limit(1)
+          .get();
+        if (assignFromSnapshot(res)) {
+          break;
+        }
+      } catch (error) {
+        console.warn('findPatientDoc by patientName failed', key, error);
+      }
+    }
+  }
+
+  if (!patientDoc) {
+    throw makeError('PATIENT_NOT_FOUND', '未找到对应的住户档案');
+  }
+
+  const recordKeys = new Set();
+  const patientKeys = new Set();
+
+  const pushRecordKey = value => {
+    const normalized = normalizeKeyCandidate(value);
+    if (normalized) {
+      recordKeys.add(normalized);
+    }
+  };
+
+  const pushPatientKey = value => {
+    const normalized = normalizeKeyCandidate(value);
+    if (normalized) {
+      patientKeys.add(normalized);
+    }
+  };
+
+  pushRecordKey(options && options.recordKey);
+  pushRecordKey(patientDoc.recordKey);
+  pushRecordKey(patientDoc.key);
+  pushRecordKey(patientDoc.patientName);
+  if (Array.isArray(patientDoc.excelRecordKeys)) {
+    patientDoc.excelRecordKeys.forEach(pushRecordKey);
+  }
+
+  pushPatientKey(options && options.patientKey);
+  pushPatientKey(patientDoc._id);
+  pushPatientKey(patientDoc.patientKey);
+  pushPatientKey(patientDoc.key);
+
+  return {
+    patientDoc,
+    recordKeys,
+    patientKeys,
+  };
+}
+
+async function deleteExcelRecordsByKeys(recordKeys) {
+  const keys = Array.isArray(recordKeys) ? recordKeys.slice() : [];
+  const uniqueKeys = keys
+    .map(item => normalizeKeyCandidate(item))
+    .filter(item => !!item);
+  if (!uniqueKeys.length) {
+    return 0;
+  }
+
+  await ensureCollectionExists(db, EXCEL_RECORDS_COLLECTION);
+
+  let removed = 0;
+  const chunkSize = 10;
+  for (let i = 0; i < uniqueKeys.length; i += chunkSize) {
+    const chunk = uniqueKeys.slice(i, i + chunkSize);
+    const condition = { key: _.in(chunk) };
+    try {
+      const res = await db
+        .collection(EXCEL_RECORDS_COLLECTION)
+        .where(condition)
+        .remove();
+      removed += (res && res.stats && res.stats.removed) || 0;
+    } catch (error) {
+      throw makeError('DELETE_EXCEL_FAILED', '删除Excel导入记录失败', {
+        error: error && error.message,
+      });
+    }
+  }
+
+  return removed;
+}
+
+async function deleteIntakeRecordsByPatientKeys(patientKeys) {
+  const keys = Array.isArray(patientKeys) ? patientKeys.slice() : [];
+  const uniqueKeys = keys
+    .map(item => normalizeKeyCandidate(item))
+    .filter(item => !!item);
+  if (!uniqueKeys.length) {
+    return 0;
+  }
+
+  await ensureCollectionExists(db, PATIENT_INTAKE_COLLECTION);
+
+  try {
+    const res = await db
+      .collection(PATIENT_INTAKE_COLLECTION)
+      .where({ patientKey: _.in(uniqueKeys) })
+      .remove();
+    return (res && res.stats && res.stats.removed) || 0;
+  } catch (error) {
+    throw makeError('DELETE_INTAKE_FAILED', '删除入住记录失败', {
+      error: error && error.message,
+    });
+  }
+}
+
+async function deletePatientMediaAssets(patientKeysSet) {
+  const keys = Array.isArray(patientKeysSet)
+    ? patientKeysSet
+    : patientKeysSet instanceof Set
+      ? Array.from(patientKeysSet)
+      : [];
+  const uniqueKeys = keys
+    .map(item => normalizeKeyCandidate(item))
+    .filter(item => !!item);
+  if (!uniqueKeys.length) {
+    return { mediaRemoved: 0, filesRemoved: 0, quotaRemoved: 0 };
+  }
+
+  await ensureCollectionExists(db, PATIENT_MEDIA_COLLECTION);
+
+  const processedKeys = new Set();
+  const fileIds = new Set();
+  let mediaRemoved = 0;
+  let quotaRemoved = 0;
+
+  for (const key of uniqueKeys) {
+    if (processedKeys.has(key)) {
+      continue;
+    }
+    processedKeys.add(key);
+
+    let skip = 0;
+    const batchSize = 50;
+    while (true) {
+      let res;
+      try {
+        res = await db
+          .collection(PATIENT_MEDIA_COLLECTION)
+          .where({ patientKey: key })
+          .skip(skip)
+          .limit(batchSize)
+          .get();
+      } catch (error) {
+        console.warn('加载附件以删除失败', key, error);
+        break;
+      }
+
+      const docs = (res && res.data) || [];
+      if (!docs.length) {
+        break;
+      }
+
+      for (const doc of docs) {
+        if (!doc || !doc._id) {
+          continue;
+        }
+        if (doc.storageFileId) {
+          fileIds.add(doc.storageFileId);
+        }
+        if (doc.thumbFileId) {
+          fileIds.add(doc.thumbFileId);
+        }
+        try {
+          const removeRes = await db.collection(PATIENT_MEDIA_COLLECTION).doc(doc._id).remove();
+          mediaRemoved += (removeRes && removeRes.stats && removeRes.stats.removed) || 0;
+        } catch (error) {
+          console.warn('删除附件记录失败', doc._id, error);
+        }
+      }
+
+      if (docs.length < batchSize) {
+        break;
+      }
+      skip += docs.length;
+    }
+
+    try {
+      await ensureCollectionExists(db, PATIENT_MEDIA_QUOTA_COLLECTION);
+      const quotaRes = await db
+        .collection(PATIENT_MEDIA_QUOTA_COLLECTION)
+        .where({ patientKey: key })
+        .remove();
+      quotaRemoved += (quotaRes && quotaRes.stats && quotaRes.stats.removed) || 0;
+    } catch (error) {
+      console.warn('删除附件配额失败', key, error);
+    }
+  }
+
+  const files = Array.from(fileIds).filter(item => !!item);
+  if (files.length) {
+    const chunkSize = 50;
+    for (let i = 0; i < files.length; i += chunkSize) {
+      const chunk = files.slice(i, i + chunkSize);
+      try {
+        await cloud.deleteFile({ fileList: chunk });
+      } catch (error) {
+        console.warn('删除云存储文件失败', chunk, error);
+      }
+    }
+  }
+
+  return {
+    mediaRemoved,
+    filesRemoved: files.length,
+    quotaRemoved,
+  };
+}
+
+async function invalidatePatientListCache() {
+  try {
+    await ensureCollectionExists(db, EXCEL_CACHE_COLLECTION);
+    await db.collection(EXCEL_CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).remove();
+  } catch (error) {
+    const code = error && (error.errCode !== undefined ? error.errCode : error.code);
+    if (
+      code !== -1 &&
+      code !== 'DOCUMENT_NOT_FOUND' &&
+      code !== 'DATABASE_DOCUMENT_NOT_EXIST'
+    ) {
+      console.warn('清理患者列表缓存失败', error);
+    }
+  }
+}
+
+async function writeDeletionLog(patientDoc, summary, operator) {
+  try {
+    await ensureCollectionExists(db, PATIENT_OPERATION_LOGS_COLLECTION);
+    await db.collection(PATIENT_OPERATION_LOGS_COLLECTION).add({
+      data: {
+        patientKey: patientDoc && patientDoc._id,
+        type: 'delete',
+        createdAt: Date.now(),
+        createdBy: operator || '',
+        metadata: {
+          patientName: patientDoc && patientDoc.patientName,
+          recordKey: patientDoc && patientDoc.recordKey,
+          removed: summary,
+        },
+      },
+    });
+  } catch (error) {
+    console.warn('记录住户删除日志失败', patientDoc && patientDoc._id, error);
+  }
 }
 
 // Fetch patient detail by key
@@ -956,6 +1324,59 @@ async function handleGetPatientDetail(event) {
   }
 }
 
+async function handleDeletePatient(event = {}) {
+  const patientKeyInput = event.patientKey;
+  const recordKeyInput = event.recordKey;
+
+  if (!patientKeyInput && !recordKeyInput) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少住户标识');
+  }
+
+  const context = cloud.getWXContext();
+  const operator = event.operator || context.OPENID || context.UNIONID || 'mini-program';
+
+  const lookup = await findPatientDocForDeletion({
+    patientKey: patientKeyInput,
+    recordKey: recordKeyInput,
+  });
+  const patientDoc = lookup.patientDoc;
+  const recordKeys = Array.from(lookup.recordKeys);
+  const patientKeys = Array.from(lookup.patientKeys);
+
+  const mediaSummary = await deletePatientMediaAssets(patientKeys);
+  const excelRemoved = await deleteExcelRecordsByKeys(recordKeys);
+  const intakeRemoved = await deleteIntakeRecordsByPatientKeys(patientKeys);
+
+  let patientRemoved = 0;
+  try {
+    const res = await db.collection(PATIENTS_COLLECTION).doc(patientDoc._id).remove();
+    patientRemoved = (res && res.stats && res.stats.removed) || 0;
+  } catch (error) {
+    throw makeError('DELETE_PATIENT_FAILED', '删除住户档案失败', {
+      error: error && error.message,
+    });
+  }
+
+  await invalidatePatientListCache();
+
+  const removalSummary = {
+    patient: patientRemoved,
+    intakeRecords: intakeRemoved,
+    excelRecords: excelRemoved,
+    mediaRecords: mediaSummary.mediaRemoved,
+    mediaFiles: mediaSummary.filesRemoved,
+    mediaQuota: mediaSummary.quotaRemoved,
+  };
+
+  await writeDeletionLog(patientDoc, removalSummary, operator);
+
+  return {
+    success: true,
+    patientKey: patientDoc._id,
+    removed: removalSummary,
+  };
+}
+
 // Main function
 exports.main = async event => {
   const action = event.action || '';
@@ -966,6 +1387,8 @@ exports.main = async event => {
         return await handleGetPatientsList(event);
       case 'detail':
         return await handleGetPatientDetail(event);
+      case 'delete':
+        return await handleDeletePatient(event);
       default:
         throw makeError('UNSUPPORTED_ACTION', `Unsupported action: ${action || 'unknown'}`);
     }

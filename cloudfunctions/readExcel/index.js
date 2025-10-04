@@ -1,5 +1,6 @@
 const cloud = require('wx-server-sdk');
 const XLSX = require('xlsx');
+const crypto = require('crypto');
 const {
   normalizeValue,
   normalizeSpacing,
@@ -75,6 +76,10 @@ function makeError(code, message, details) {
   return error;
 }
 
+function toStableHash(value) {
+  return crypto.createHash('md5').update(value, 'utf8').digest('hex');
+}
+
 function sanitizeIdentifier(value, fallbackSeed) {
   const base = normalizeSpacing(value);
   if (base) {
@@ -83,6 +88,7 @@ function sanitizeIdentifier(value, fallbackSeed) {
     if (sanitized && meaningful) {
       return sanitized;
     }
+    return `h_${toStableHash(base).slice(0, 24)}`;
   }
   const seed = normalizeSpacing(fallbackSeed);
   if (seed) {
@@ -91,6 +97,7 @@ function sanitizeIdentifier(value, fallbackSeed) {
     if (sanitizedSeed && meaningfulSeed) {
       return sanitizedSeed;
     }
+    return `h_${toStableHash(seed).slice(0, 24)}`;
   }
   return `excel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }

@@ -303,6 +303,10 @@ async function handleCreatePatient(event) {
     backupPhone: normalizedForm.backupPhone,
     lastIntakeNarrative: normalizedForm.situation,
     admissionCount: 0,
+    careStatus: 'pending',
+    checkoutReason: '',
+    checkoutNote: '',
+    checkoutAt: null,
     createdAt: now,
     updatedAt: now,
     data: {
@@ -321,6 +325,10 @@ async function handleCreatePatient(event) {
       latestAdmissionDate: null,
       latestAdmissionTimestamp: null,
       firstAdmissionDate: null,
+      careStatus: 'pending',
+      checkoutAt: null,
+      checkoutReason: '',
+      checkoutNote: '',
       updatedAt: now,
     },
     metadata: {

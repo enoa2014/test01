@@ -53,7 +53,7 @@ Page({
     // 表单数据
     formData: {
       patientName: '',
-      idType: '',
+      idType: '身份证',
       idNumber: '',
       gender: '',
       birthDate: '',
@@ -64,6 +64,9 @@ Page({
       backupContact: '',
       backupPhone: '',
       situation: '',
+      contacts: [
+        { relationship: '', name: '', phone: '' },
+      ],
     },
 
     // 证件类型选项
@@ -71,7 +74,10 @@ Page({
     idTypeIndex: 0,
 
     // 校验错误
-    errors: {},
+    errors: {
+      contacts: [{}],
+    },
+    contactErrors: [{}],
 
     // 配置
     situationConfig: {
@@ -457,14 +463,18 @@ Page({
     try {
       const draft = wx.getStorageSync(DRAFT_STORAGE_KEY);
       if (draft && draft.data) {
-        this.setData({
-          formData: { ...this.data.formData, ...draft.data.formData },
-          currentStep: draft.data.currentStep || 0,
-          uploadedFiles: draft.data.uploadedFiles || [],
-          showDraftModal: false,
-        });
-        this.ensureCurrentStepVisible();
-        this.updateRequiredFields();
+        this.updateFormData(draft.data.formData || {});
+        this.setData(
+          {
+            currentStep: draft.data.currentStep || 0,
+            uploadedFiles: draft.data.uploadedFiles || [],
+            showDraftModal: false,
+          },
+          () => {
+            this.ensureCurrentStepVisible();
+            this.updateRequiredFields();
+          }
+        );
         wx.showToast({
           title: '草稿已恢复',
           icon: 'success',
@@ -789,6 +799,27 @@ Page({
       // 情况说明不自动填充，保持为空，让用户填写本次入住的具体情况
       const resolvedSituation = '';
 
+      const additionalContacts = [];
+      if (Array.isArray(patientFromIntake.familyContacts)) {
+        additionalContacts.push(...patientFromIntake.familyContacts);
+      }
+      if (patientForEdit && Array.isArray(patientForEdit.familyContacts)) {
+        additionalContacts.push(...patientForEdit.familyContacts);
+      }
+      if (patientDisplay && Array.isArray(patientDisplay.familyContacts)) {
+        additionalContacts.push(...patientDisplay.familyContacts);
+      }
+
+      const contacts = this.buildContactsFromFields({
+        emergencyContact: resolvedEmergencyContact,
+        emergencyPhone: resolvedEmergencyPhone,
+        backupContact: resolvedBackupContact,
+        backupPhone: resolvedBackupPhone,
+        additionalContacts,
+        existingContacts: this.data.formData.contacts,
+        additionalText: [patientFromIntake.guardianInfo, patientDisplay.guardianInfo],
+      });
+
       const nextFormData = {
         ...this.data.formData,
         patientName: resolvedPatientName,
@@ -798,19 +829,13 @@ Page({
         birthDate: resolvedBirthDate,
         phone: resolvedPhone,
         address: resolvedAddress,
-        emergencyContact: resolvedEmergencyContact,
-        emergencyPhone: resolvedEmergencyPhone,
-        backupContact: resolvedBackupContact,
-        backupPhone: resolvedBackupPhone,
         situation: resolvedSituation,
+        contacts,
       };
 
-      const idTypeIndex = this.data.idTypes.indexOf(nextFormData.idType || '身份证');
-
-      this.setData({
-        formData: nextFormData,
-        idTypeIndex: idTypeIndex >= 0 ? idTypeIndex : 0,
-      });
+      const syncedForm = this.updateFormData(nextFormData);
+      const idTypeIndex = this.data.idTypes.indexOf(syncedForm.idType || '身份证');
+      this.setData({ idTypeIndex: idTypeIndex >= 0 ? idTypeIndex : 0 });
       hasPrefilled = true;
 
       this.updateRequiredFields();
@@ -850,6 +875,279 @@ Page({
     return '';
   },
 
+  ensureContactsArray(rawContacts = []) {
+    const list = Array.isArray(rawContacts) ? rawContacts : [];
+    const normalized = list
+      .filter(item => item && typeof item === 'object')
+      .map(item => ({
+        relationship: this.normalizeExcelSpacing(item.relationship) || '',
+        name: this.normalizeExcelSpacing(item.name) || '',
+        phone: this.normalizeExcelSpacing(item.phone) || '',
+      }))
+      .slice(0, 5);
+    if (!normalized.length) {
+      normalized.push({ relationship: '', name: '', phone: '' });
+    }
+    return normalized;
+  },
+
+  buildContactErrorPlaceholders(length) {
+    const size = Math.max(1, Number(length) || 0);
+    return Array.from({ length: size }, () => ({}));
+  },
+
+  parseContactText(value) {
+    const text = this.normalizeExcelSpacing(value);
+    if (!text) {
+      return { relationship: '', name: '' };
+    }
+
+    const colonMatch = text.match(/^([^:：]{1,6})[:：](.+)$/);
+    if (colonMatch) {
+      const relation = this.normalizeExcelSpacing(colonMatch[1]);
+      const name = this.normalizeExcelSpacing(colonMatch[2]);
+      if (relation && name) {
+        return { relationship: relation, name };
+      }
+    }
+
+    const relationKeywords = /^(父亲|母亲|爷爷|奶奶|姥爷|姥姥|外公|外婆|叔叔|阿姨|哥哥|姐姐|弟弟|妹妹|监护人|照护人|联系人)/;
+    const blankIndex = text.indexOf(' ');
+    if (relationKeywords.test(text) && blankIndex > 0) {
+      const relation = text.slice(0, blankIndex);
+      const name = text.slice(blankIndex + 1).trim();
+      if (name) {
+        return { relationship: relation, name };
+      }
+    }
+
+    const parts = text.split(/\s+/);
+    if (parts.length >= 2 && parts[0].length <= 4 && relationKeywords.test(parts[0])) {
+      const relation = parts[0];
+      const name = parts.slice(1).join(' ').trim();
+      if (name) {
+        return { relationship: relation, name };
+      }
+    }
+
+    return { relationship: '', name: text };
+  },
+
+  formatContactDisplay(contact = {}) {
+    const relation = this.normalizeExcelSpacing(contact.relationship);
+    const name = this.normalizeExcelSpacing(contact.name);
+    return [relation, name].filter(Boolean).join(' ').trim();
+  },
+
+  buildContactsFromFields(source = {}) {
+    const contacts = [];
+
+    const pushContact = (displayName, phone) => {
+      const normalizedDisplay = this.normalizeExcelSpacing(displayName);
+      const normalizedPhone = this.normalizeExcelSpacing(phone);
+      if (!normalizedDisplay && !normalizedPhone) {
+        return;
+      }
+      const { relationship, name } = this.parseContactText(normalizedDisplay || '');
+      contacts.push({
+        relationship,
+        name: name || normalizedDisplay || '',
+        phone: normalizedPhone || '',
+      });
+    };
+
+    pushContact(source.emergencyContact, source.emergencyPhone);
+    pushContact(source.backupContact, source.backupPhone);
+
+    const extraArrays = [];
+    if (Array.isArray(source.additionalContacts)) {
+      extraArrays.push(source.additionalContacts);
+    }
+    if (Array.isArray(source.existingContacts)) {
+      extraArrays.push(source.existingContacts);
+    }
+    extraArrays.forEach(list => {
+      list.forEach(item => {
+        if (!item || typeof item !== 'object') {
+          return;
+        }
+        const name = item.name || item.raw || '';
+        const phone = item.phone || '';
+        const relation = item.role || '';
+        pushContact(this.normalizeExcelSpacing(name) || relation, phone);
+      });
+    });
+
+    if (Array.isArray(source.additionalText)) {
+      source.additionalText.forEach(text => {
+        if (!text) {
+          return;
+        }
+        const segments = String(text)
+          .split(/[；;\n]/)
+          .map(item => item.trim())
+          .filter(Boolean);
+        segments.forEach(segment => pushContact(segment, ''));
+      });
+    }
+
+    return this.ensureContactsArray(contacts);
+  },
+
+  syncContactsToFields(formData) {
+    const next = { ...formData };
+    const contacts = this.ensureContactsArray(next.contacts || []);
+    next.contacts = contacts;
+    const primary = contacts[0] || { relationship: '', name: '', phone: '' };
+    next.emergencyContact = this.formatContactDisplay(primary);
+    next.emergencyPhone = primary.phone || '';
+    const secondary = contacts[1] || { relationship: '', name: '', phone: '' };
+    next.backupContact = contacts.length > 1 ? this.formatContactDisplay(secondary) : '';
+    next.backupPhone = contacts.length > 1 ? secondary.phone || '' : '';
+    next.guardianInfo = next.guardianInfo || '';
+    if (contacts.length > 2) {
+      const extras = contacts.slice(2).map(item => {
+        const display = this.formatContactDisplay(item);
+        return [display, item.phone || ''].filter(Boolean).join(' ');
+      });
+      next.extraContacts = extras;
+    } else {
+      next.extraContacts = [];
+    }
+    return next;
+  },
+
+  updateFormData(partialFormData = {}) {
+    const merged = { ...this.data.formData, ...partialFormData };
+    const synced = this.syncContactsToFields(merged);
+    const existingContactErrors = Array.isArray(this.data.contactErrors)
+      ? this.data.contactErrors
+      : [];
+    const contactErrors = existingContactErrors.length === synced.contacts.length
+      ? existingContactErrors
+      : this.buildContactErrorPlaceholders(synced.contacts.length);
+    this.setData({
+      formData: synced,
+      'errors.contacts': contactErrors,
+      contactErrors,
+    });
+    return synced;
+  },
+
+  validateContacts(options = {}) {
+    const { updateState = true, showToast = false } = options;
+    const contacts = this.ensureContactsArray(this.data.formData.contacts);
+    const errors = contacts.map(() => ({}));
+    let valid = contacts.length > 0;
+    let firstMessage = '';
+
+    if (!contacts.length) {
+      valid = false;
+      errors[0] = {
+        relationship: '请添加至少一位联系人',
+        name: '请添加至少一位联系人',
+        phone: '请添加至少一位联系人',
+      };
+      firstMessage = '请添加至少一位联系人';
+    }
+
+    contacts.forEach((contact, index) => {
+      const entryErrors = {};
+      const relationship = this.normalizeExcelSpacing(contact.relationship);
+      const name = this.normalizeExcelSpacing(contact.name);
+      const phone = this.normalizeExcelSpacing(contact.phone);
+
+      if (!relationship) {
+        entryErrors.relationship = '请输入关系';
+        if (!firstMessage) {
+          firstMessage = entryErrors.relationship;
+        }
+      }
+      if (!name) {
+        entryErrors.name = '请输入姓名';
+        if (!firstMessage) {
+          firstMessage = entryErrors.name;
+        }
+      }
+      if (!phone) {
+        entryErrors.phone = '请输入联系电话';
+        if (!firstMessage) {
+          firstMessage = entryErrors.phone;
+        }
+      } else if (!/^1[3-9]\d{9}$/.test(phone)) {
+        entryErrors.phone = '手机号码格式不正确';
+        if (!firstMessage) {
+          firstMessage = entryErrors.phone;
+        }
+      }
+
+      if (Object.keys(entryErrors).length) {
+        valid = false;
+      }
+      errors[index] = entryErrors;
+    });
+
+    if (updateState) {
+      this.setData({
+        'errors.contacts': errors,
+        contactErrors: errors,
+      });
+    }
+
+    if (!valid && showToast && firstMessage) {
+      wx.showToast({ icon: 'none', title: firstMessage, duration: 3000 });
+    }
+
+    return { valid, message: firstMessage, errors };
+  },
+
+  onContactFieldInput(event) {
+    const { index, field } = event.currentTarget.dataset;
+    const value = event.detail.value;
+    const contacts = this.ensureContactsArray(this.data.formData.contacts);
+    const contactIndex = Number(index);
+    if (!Number.isInteger(contactIndex) || contactIndex < 0 || contactIndex >= contacts.length) {
+      return;
+    }
+    const sanitizedValue = field === 'phone' ? value.replace(/\s+/g, '') : value;
+    contacts[contactIndex] = {
+      ...contacts[contactIndex],
+      [field]: sanitizedValue,
+    };
+    const synced = this.updateFormData({ contacts });
+    this.validateContacts({ updateState: true, showToast: false });
+    this.updateRequiredFields();
+    return synced;
+  },
+
+  addContact() {
+    const contacts = this.ensureContactsArray(this.data.formData.contacts);
+    if (contacts.length >= 5) {
+      wx.showToast({ icon: 'none', title: '最多添加5位联系人' });
+      return;
+    }
+    contacts.push({ relationship: '', name: '', phone: '' });
+    this.updateFormData({ contacts });
+    this.validateContacts({ updateState: true, showToast: false });
+    this.updateRequiredFields();
+  },
+
+  removeContact(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    const contacts = this.ensureContactsArray(this.data.formData.contacts);
+    if (!Number.isInteger(index) || index < 0 || index >= contacts.length) {
+      return;
+    }
+    if (contacts.length <= 1) {
+      wx.showToast({ icon: 'none', title: '至少保留一位联系人' });
+      return;
+    }
+    contacts.splice(index, 1);
+    this.updateFormData({ contacts });
+    this.validateContacts({ updateState: true, showToast: false });
+    this.updateRequiredFields();
+  },
+
   // 更新必填项状态
   updateRequiredFields() {
     const { currentStep, formData } = this.data;
@@ -878,12 +1176,21 @@ Page({
       }
       case 2: {
         // 步骤3：联系人
-        const contactRequired = [
-          { key: 'address', label: '常住地址' },
-          { key: 'emergencyContact', label: '紧急联系人' },
-          { key: 'emergencyPhone', label: '紧急联系人电话' },
-        ];
-        requiredFields = contactRequired.filter(field => !formData[field.key]);
+        if (!formData.address || !formData.address.trim()) {
+          requiredFields.push({ key: 'address', label: '常住地址' });
+        }
+        const contacts = this.ensureContactsArray(formData.contacts);
+        const hasValidContacts =
+          contacts.length > 0 &&
+          contacts.every(contact =>
+            contact &&
+            contact.relationship &&
+            contact.name &&
+            contact.phone
+          );
+        if (!hasValidContacts) {
+          requiredFields.push({ key: 'contacts', label: '联系人信息' });
+        }
         break;
       }
       case 3:
@@ -942,6 +1249,19 @@ Page({
       });
     }
 
+    const contacts = this.ensureContactsArray(formData.contacts);
+    const hasValidContacts =
+      contacts.length > 0 &&
+      contacts.every(contact =>
+        contact &&
+        contact.relationship &&
+        contact.name &&
+        contact.phone
+      );
+    if (!hasValidContacts) {
+      missing.push({ key: 'contacts', label: '联系人信息' });
+    }
+
     return missing;
   },
 
@@ -949,18 +1269,13 @@ Page({
   onInputChange(e) {
     const { field } = e.currentTarget.dataset;
     const value = e.detail.value;
+    const synced = this.updateFormData({ [field]: value });
+    this.setData({ [`errors.${field}`]: '' });
 
-    this.setData({
-      [`formData.${field}`]: value,
-      [`errors.${field}`]: '', // 清除错误
-    });
-
-    // 身份证号自动解析
-    if (field === 'idNumber' && this.data.formData.idType === '身份证') {
+    if (field === 'idNumber' && synced.idType === '身份证') {
       this.parseIDNumber(value);
     }
 
-    // 实时校验
     this.validateField(field, value);
     this.updateRequiredFields();
   },
@@ -968,18 +1283,15 @@ Page({
   // 选择器变化
   onPickerChange(e) {
     const { field } = e.currentTarget.dataset;
-    const value = e.detail.value;
+    const value = Number(e.detail.value);
 
     if (field === 'idType') {
-      this.setData({
-        idTypeIndex: value,
-        [`formData.${field}`]: this.data.idTypes[value],
-        [`errors.${field}`]: '',
-      });
+      const idType = this.data.idTypes[value] || '身份证';
+      this.setData({ idTypeIndex: value, [`errors.${field}`]: '' });
+      const synced = this.updateFormData({ idType });
 
-      // 如果切换到身份证，尝试解析证件号码
-      if (this.data.idTypes[value] === '身份证' && this.data.formData.idNumber) {
-        this.parseIDNumber(this.data.formData.idNumber);
+      if (idType === '身份证' && synced.idNumber) {
+        this.parseIDNumber(synced.idNumber);
       } else {
         // 切换到其他证件类型，解锁字段
         this.setData({
@@ -988,6 +1300,9 @@ Page({
           birthDateLocked: false,
         });
       }
+    } else {
+      this.updateFormData({ [field]: value });
+      this.setData({ [`errors.${field}`]: '' });
     }
 
     this.updateRequiredFields();
@@ -998,10 +1313,8 @@ Page({
     const { field } = e.currentTarget.dataset;
     const value = e.detail.value;
 
-    this.setData({
-      [`formData.${field}`]: value,
-      [`errors.${field}`]: '',
-    });
+    this.updateFormData({ [field]: value });
+    this.setData({ [`errors.${field}`]: '' });
 
     this.updateRequiredFields();
   },
@@ -1011,10 +1324,8 @@ Page({
     const { field } = e.currentTarget.dataset;
     const value = e.detail.value;
 
-    this.setData({
-      [`formData.${field}`]: value,
-      [`errors.${field}`]: '',
-    });
+    this.updateFormData({ [field]: value });
+    this.setData({ [`errors.${field}`]: '' });
 
     this.updateRequiredFields();
   },
@@ -1106,6 +1417,7 @@ Page({
     const { currentStep, formData } = this.data;
     let isValid = true;
     const errors = {};
+    let firstErrorMessage = '';
 
     switch (currentStep) {
       case 0: {
@@ -1113,12 +1425,21 @@ Page({
         if (!formData.patientName || !formData.patientName.trim()) {
           errors.patientName = '请输入住户姓名';
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = errors.patientName;
+          }
         }
         if (!formData.idNumber || !formData.idNumber.trim()) {
           errors.idNumber = '请输入证件号码';
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = errors.idNumber;
+          }
         } else if (!this.validateField('idNumber', formData.idNumber)) {
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = '证件号码格式不正确';
+          }
         }
         break;
       }
@@ -1127,13 +1448,22 @@ Page({
         if (!formData.gender) {
           errors.gender = '请选择性别';
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = errors.gender;
+          }
         }
         if (!formData.birthDate) {
           errors.birthDate = '请选择出生日期';
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = errors.birthDate;
+          }
         }
         if (formData.phone && !this.validateField('phone', formData.phone)) {
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = '手机号码格式不正确';
+          }
         }
         break;
       }
@@ -1142,19 +1472,17 @@ Page({
         if (!formData.address || !formData.address.trim()) {
           errors.address = '请输入常住地址';
           isValid = false;
+          if (!firstErrorMessage) {
+            firstErrorMessage = errors.address;
+          }
         }
-        if (!formData.emergencyContact || !formData.emergencyContact.trim()) {
-          errors.emergencyContact = '请输入紧急联系人';
+        const contactValidation = this.validateContacts({ updateState: true, showToast: false });
+        if (!contactValidation.valid) {
           isValid = false;
-        }
-        if (!formData.emergencyPhone || !formData.emergencyPhone.trim()) {
-          errors.emergencyPhone = '请输入紧急联系人电话';
-          isValid = false;
-        } else if (!this.validateField('emergencyPhone', formData.emergencyPhone)) {
-          isValid = false;
-        }
-        if (formData.backupPhone && !this.validateField('backupPhone', formData.backupPhone)) {
-          isValid = false;
+          errors.contacts = contactValidation.errors;
+          if (!firstErrorMessage) {
+            firstErrorMessage = contactValidation.message || '请完善联系人信息';
+          }
         }
         break;
       }
@@ -1163,17 +1491,33 @@ Page({
         break;
     }
 
-    if (!isValid) {
-      this.setData({ errors });
-      // 聚焦到第一个错误字段
-      const firstError = Object.keys(errors)[0];
-      if (firstError) {
-        wx.showToast({
-          title: errors[firstError],
-          icon: 'none',
-          duration: 3000,
-        });
+    const errorUpdates = {};
+    if (currentStep === 0) {
+      errorUpdates['errors.patientName'] = errors.patientName || '';
+      errorUpdates['errors.idNumber'] = errors.idNumber || '';
+    }
+    if (currentStep === 1) {
+      errorUpdates['errors.gender'] = errors.gender || '';
+      errorUpdates['errors.birthDate'] = errors.birthDate || '';
+      errorUpdates['errors.phone'] = errors.phone || '';
+    }
+    if (currentStep === 2) {
+      errorUpdates['errors.address'] = errors.address || '';
+      if (errors.contacts) {
+        errorUpdates['errors.contacts'] = errors.contacts;
+        errorUpdates['contactErrors'] = errors.contacts;
       }
+    }
+    if (Object.keys(errorUpdates).length) {
+      this.setData(errorUpdates);
+    }
+
+    if (!isValid && firstErrorMessage) {
+      wx.showToast({
+        title: firstErrorMessage,
+        icon: 'none',
+        duration: 3000,
+      });
     }
 
     return isValid;
@@ -1316,6 +1660,7 @@ Page({
               birthDate: latestForm.birthDate,
               emergencyContact: latestForm.emergencyContact,
               emergencyPhone: latestForm.emergencyPhone,
+              careStatus: 'pending',
             },
           });
         } catch (storageError) {
@@ -1362,16 +1707,15 @@ Page({
       const autoFilledContact = await this._autoFillEmergencyContactFromParents(patientKey);
 
       if (autoFilledContact.emergencyContact && autoFilledContact.emergencyPhone) {
-        finalFormData = {
-          ...finalFormData,
-          emergencyContact: autoFilledContact.emergencyContact,
-          emergencyPhone: autoFilledContact.emergencyPhone,
+        const contacts = this.ensureContactsArray(finalFormData.contacts);
+        contacts[0] = {
+          relationship: contacts[0]?.relationship || '',
+          name: autoFilledContact.emergencyContact,
+          phone: autoFilledContact.emergencyPhone,
         };
-        // 同时更新界面显示
-        this.setData({
-          'formData.emergencyContact': autoFilledContact.emergencyContact,
-          'formData.emergencyPhone': autoFilledContact.emergencyPhone,
-        });
+        finalFormData = this.syncContactsToFields({ ...finalFormData, contacts });
+        this.updateFormData(finalFormData);
+        this.validateContacts({ updateState: true, showToast: false });
       } else {
         // 如果自动填充失败,给出明确提示
         logger.error('无法自动填充紧急联系人,住户档案中未找到父母联系方式');
@@ -1387,12 +1731,20 @@ Page({
       }
     }
 
+    finalFormData = this.syncContactsToFields(finalFormData);
+    if (Array.isArray(finalFormData.extraContacts) && finalFormData.extraContacts.length) {
+      finalFormData.guardianInfo = finalFormData.extraContacts.join('；');
+    }
+
     // 构建提交数据
+    const cleanedFormData = { ...finalFormData };
+    delete cleanedFormData.extraContacts;
+
     const submitData = {
       action: mode === 'create' ? 'createPatient' : 'submit',
       patientKey: isEditingExisting ? patientKey : null,
       isEditingExisting, // 传递标志给服务端
-      formData: finalFormData,
+      formData: cleanedFormData,
       uploadedFiles: mode === 'create' ? [] : uploadedFiles,
       timestamp: Date.now(),
     };

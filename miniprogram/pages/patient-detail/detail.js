@@ -1206,7 +1206,6 @@ Page({
       patientKey:
         this.patientKey ||
         form.patientKey ||
-        form.key ||
         (this.data.patient && (this.data.patient.key || this.data.patient.patientKey)) ||
         '',
       updates: {

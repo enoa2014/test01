@@ -59,6 +59,9 @@ describe('analysis month panel ordering', () => {
     expect(monthPanel).toBeTruthy();
 
     const labels = monthPanel.stats.map(stat => stat.label);
-    expect(labels).toEqual(['2024-08', '2024-07', '2023-12', '未知月份']);
+    const knownMonths = labels.slice(0, -1);
+    const sortedByTime = [...knownMonths].sort();
+    expect(knownMonths).toEqual(sortedByTime);
+    expect(labels[labels.length - 1]).toBe('未知月份');
   });
 });

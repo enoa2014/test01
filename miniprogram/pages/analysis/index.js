@@ -297,7 +297,7 @@ Page({
     });
     const monthPanel = buildGroupPanel('按最近入住月份分析', monthGroups, {
       emptyText: '暂无入住数据',
-      sortByLabel: true,
+      sortByLabel: 'asc',
     });
 
     const hospitalGroups = {};

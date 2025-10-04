@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 const {
   normalizeValue,
   normalizeSpacing,
@@ -292,6 +294,8 @@ function createExcelSync({
     return updates;
   };
 
+  const toStableHash = value => crypto.createHash('md5').update(value, 'utf8').digest('hex');
+
   function sanitizeIdentifier(value, fallbackSeed) {
     const base = normalizeExcelValue(value);
     if (base) {
@@ -299,6 +303,7 @@ function createExcelSync({
       if (sanitized) {
         return sanitized;
       }
+      return `h_${toStableHash(base).slice(0, 24)}`;
     }
     const seed = normalizeExcelValue(fallbackSeed);
     if (seed) {
@@ -306,6 +311,7 @@ function createExcelSync({
       if (sanitizedSeed) {
         return sanitizedSeed;
       }
+      return `h_${toStableHash(seed).slice(0, 24)}`;
     }
     return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   }
