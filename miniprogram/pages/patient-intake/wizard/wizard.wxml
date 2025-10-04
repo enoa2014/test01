@@ -33,8 +33,13 @@
 
   <!-- 步骤内容 -->
   <scroll-view class="step-content" scroll-y>
-    <!-- 第1步：住户基础信息 -->
+    <!-- 第1步：基础身份 -->
     <view wx:if="{{currentStep === 0}}" class="form-section">
+      <view class="step-intro">
+        <text class="intro-icon">📝</text>
+        <text class="intro-text">请填写住户基本身份信息</text>
+      </view>
+
       <view class="form-group">
         <pm-input
           label="姓名"
@@ -79,19 +84,64 @@
           block="{{true}}"
         ></pm-input>
       </view>
+    </view>
+
+    <!-- 第2步：补充信息 -->
+    <view wx:if="{{currentStep === 1}}" class="form-section">
+      <view class="step-intro">
+        <text class="intro-icon">✨</text>
+        <text class="intro-text">系统已自动识别以下信息，请确认</text>
+      </view>
 
       <view class="form-group">
         <label class="form-label required">性别</label>
-        <radio-group class="radio-group" data-field="gender" bindchange="onRadioChange">
+
+        <!-- 自动识别后显示只读状态 -->
+        <view wx:if="{{genderLocked}}" class="field-locked">
+          <view class="locked-value">
+            <text class="value-text">{{formData.gender}}</text>
+            <view class="auto-fill-badge">从身份证自动识别</view>
+          </view>
+          <button
+            class="unlock-btn"
+            data-field="gender"
+            bindtap="unlockField"
+          >手动修正</button>
+        </view>
+
+        <!-- 未锁定时正常输入 -->
+        <radio-group
+          wx:else
+          class="radio-group"
+          data-field="gender"
+          bindchange="onRadioChange"
+        >
           <radio class="radio-item" value="男" checked="{{formData.gender === '男'}}">男</radio>
           <radio class="radio-item" value="女" checked="{{formData.gender === '女'}}">女</radio>
         </radio-group>
+
         <text class="error-text" wx:if="{{errors.gender}}">{{errors.gender}}</text>
       </view>
 
       <view class="form-group">
         <label class="form-label required">出生日期</label>
+
+        <!-- 自动识别后显示只读状态 -->
+        <view wx:if="{{birthDateLocked}}" class="field-locked">
+          <view class="locked-value">
+            <text class="value-text">{{formData.birthDate}}</text>
+            <view class="auto-fill-badge">从身份证自动识别</view>
+          </view>
+          <button
+            class="unlock-btn"
+            data-field="birthDate"
+            bindtap="unlockField"
+          >手动修正</button>
+        </view>
+
+        <!-- 未锁定时正常输入 -->
         <picker
+          wx:else
           mode="date"
           class="form-picker {{errors.birthDate ? 'error' : ''}}"
           value="{{formData.birthDate}}"
@@ -101,6 +151,7 @@
         >
           <view class="picker-display">{{formData.birthDate || '请选择出生日期'}}</view>
         </picker>
+
         <text class="error-text" wx:if="{{errors.birthDate}}">{{errors.birthDate}}</text>
       </view>
 
@@ -108,7 +159,7 @@
         <pm-input
           label="联系电话"
           value="{{formData.phone}}"
-          placeholder="请输入11位手机号码"
+          placeholder="请输入11位手机号码（选填）"
           type="number"
           data-field="phone"
           bindinput="onInputChange"
@@ -121,8 +172,8 @@
       </view>
     </view>
 
-    <!-- 第2步：家庭与联系人 -->
-    <view wx:if="{{currentStep === 1}}" class="form-section">
+    <!-- 第3步：家庭与联系人 -->
+    <view wx:if="{{currentStep === 2}}" class="form-section">
       <view class="form-group">
         <pm-input
           label="常住地址"
@@ -202,8 +253,8 @@
       </view>
     </view>
 
-    <!-- 第3步：情况说明 -->
-    <view wx:if="{{currentStep === 2}}" class="form-section">
+    <!-- 第4步：情况说明 -->
+    <view wx:if="{{currentStep === 3}}" class="form-section">
       <view class="form-group">
         <view class="textarea-container">
           <pm-input
@@ -237,8 +288,8 @@
       </view>
     </view>
 
-    <!-- 第4步：附件上传 -->
-    <view wx:if="{{currentStep === 3}}" class="form-section">
+    <!-- 第5步：附件上传 -->
+    <view wx:if="{{currentStep === 4}}" class="form-section">
       <view class="upload-section">
         <view class="upload-header">
           <view class="upload-title">附件上传（选填）</view>
@@ -271,8 +322,8 @@
       </view>
     </view>
 
-    <!-- 第5步：核对与提交 -->
-    <view wx:if="{{currentStep === 4}}" class="form-section">
+    <!-- 第6步：核对与提交 -->
+    <view wx:if="{{currentStep === 5}}" class="form-section">
       <view class="review-section">
         <view class="review-title">请核对以下信息</view>
 
@@ -379,6 +430,12 @@
     <view class="draft-info" wx:if="{{draftSaved}}">
       <text class="draft-text">✅ 草稿已保存</text>
     </view>
+  </view>
+
+  <!-- 自动填充成功提示 Toast -->
+  <view class="auto-fill-toast" wx:if="{{showAutoFillTip}}">
+    <icon type="success_no_circle" size="20" color="#52c41a"/>
+    <text>已自动识别性别和出生日期</text>
   </view>
 </view>
 

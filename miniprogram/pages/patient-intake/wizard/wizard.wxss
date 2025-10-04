@@ -523,3 +523,97 @@
   flex: 1;
   min-height: 80rpx;
 }
+
+/* 步骤介绍样式 */
+.step-intro {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--bg-info-soft);
+  border-radius: var(--radius-md);
+  border-left: 4rpx solid var(--color-info);
+  margin-bottom: var(--space-5);
+}
+
+.intro-icon {
+  font-size: 40rpx;
+}
+
+.intro-text {
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+/* 锁定字段样式 */
+.field-locked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 2rpx solid var(--color-border-secondary);
+}
+
+.locked-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.value-text {
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}
+
+.auto-fill-badge {
+  font-size: var(--text-xs);
+  color: var(--color-success);
+  background-color: var(--bg-success-soft);
+  padding: 2rpx var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1rpx solid var(--color-success);
+}
+
+.unlock-btn {
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  padding: var(--space-1) var(--space-3);
+  border: 1rpx solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  line-height: 1.2;
+}
+
+/* 自动填充提示 Toast */
+.auto-fill-toast {
+  position: fixed;
+  top: 200rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-bg-primary);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 999;
+  animation: fadeInOut 3s ease-in-out;
+}
+
+.auto-fill-toast text {
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20rpx); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20rpx); }
+}

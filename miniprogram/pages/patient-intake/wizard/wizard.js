@@ -2,7 +2,8 @@
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
 
 const STEP_DEFINITIONS = [
-  { title: '基础信息', key: 'basic' },
+  { title: '基础身份', key: 'identity' },
+  { title: '补充信息', key: 'additional' },
   { title: '联系人', key: 'contact' },
   { title: '情况说明', key: 'situation' },
   { title: '附件上传', key: 'upload' },
@@ -12,7 +13,7 @@ const STEP_DEFINITIONS = [
 function buildSteps(isEditingExisting = false, mode = 'intake') {
   return STEP_DEFINITIONS.map((step, index) => {
     let hidden = false;
-    if (isEditingExisting && (step.key === 'basic' || step.key === 'contact')) {
+    if (isEditingExisting && (step.key === 'identity' || step.key === 'additional' || step.key === 'contact')) {
       hidden = true;
     }
     if (mode === 'create' && (step.key === 'situation' || step.key === 'upload')) {
@@ -94,6 +95,12 @@ Page({
     draftSaved: false,
     showDraftModal: false,
     today: '',
+
+    // 智能识别相关
+    autoFilledFromID: false,
+    genderLocked: false,
+    birthDateLocked: false,
+    showAutoFillTip: false,
 
     // 住户选择相关（如果是从住户选择页面进入）
     patientKey: '',
@@ -870,19 +877,26 @@ Page({
 
     switch (currentStep) {
       case 0: {
-        // 基础信息
-        const basicRequired = [
+        // 步骤1：基础身份
+        const identityRequired = [
           { key: 'patientName', label: '姓名' },
           { key: 'idType', label: '证件类型' },
           { key: 'idNumber', label: '证件号码' },
-          { key: 'gender', label: '性别' },
-          { key: 'birthDate', label: '出生日期' },
         ];
-        requiredFields = basicRequired.filter(field => !formData[field.key]);
+        requiredFields = identityRequired.filter(field => !formData[field.key]);
         break;
       }
       case 1: {
-        // 联系人
+        // 步骤2：补充信息
+        const additionalRequired = [
+          { key: 'gender', label: '性别' },
+          { key: 'birthDate', label: '出生日期' },
+        ];
+        requiredFields = additionalRequired.filter(field => !formData[field.key]);
+        break;
+      }
+      case 2: {
+        // 步骤3：联系人
         const contactRequired = [
           { key: 'address', label: '常住地址' },
           { key: 'emergencyContact', label: '紧急联系人' },
@@ -891,15 +905,15 @@ Page({
         requiredFields = contactRequired.filter(field => !formData[field.key]);
         break;
       }
-      case 2:
-        // 情况说明改为选填
+      case 3:
+        // 步骤4：情况说明 - 选填
         break;
-      case 3: {
-        // 附件上传 - 选填
+      case 4: {
+        // 步骤5：附件上传 - 选填
         break;
       }
-      case 4: {
-        // 核对提交
+      case 5: {
+        // 步骤6：核对提交
         requiredFields = this.getAllMissingRequiredFields();
         break;
       }
@@ -960,6 +974,11 @@ Page({
       [`errors.${field}`]: '', // 清除错误
     });
 
+    // 身份证号自动解析
+    if (field === 'idNumber' && this.data.formData.idType === '身份证') {
+      this.parseIDNumber(value);
+    }
+
     // 实时校验
     this.validateField(field, value);
     this.updateRequiredFields();
@@ -976,6 +995,18 @@ Page({
         [`formData.${field}`]: this.data.idTypes[value],
         [`errors.${field}`]: '',
       });
+
+      // 如果切换到身份证，尝试解析证件号码
+      if (this.data.idTypes[value] === '身份证' && this.data.formData.idNumber) {
+        this.parseIDNumber(this.data.formData.idNumber);
+      } else {
+        // 切换到其他证件类型，解锁字段
+        this.setData({
+          autoFilledFromID: false,
+          genderLocked: false,
+          birthDateLocked: false,
+        });
+      }
     }
 
     this.updateRequiredFields();
@@ -1097,7 +1128,7 @@ Page({
 
     switch (currentStep) {
       case 0: {
-        // 基础信息
+        // 步骤1：基础身份
         if (!formData.patientName || !formData.patientName.trim()) {
           errors.patientName = '请输入住户姓名';
           isValid = false;
@@ -1108,6 +1139,10 @@ Page({
         } else if (!this.validateField('idNumber', formData.idNumber)) {
           isValid = false;
         }
+        break;
+      }
+      case 1: {
+        // 步骤2：补充信息
         if (!formData.gender) {
           errors.gender = '请选择性别';
           isValid = false;
@@ -1121,8 +1156,8 @@ Page({
         }
         break;
       }
-      case 1: {
-        // 联系人
+      case 2: {
+        // 步骤3：联系人
         if (!formData.address || !formData.address.trim()) {
           errors.address = '请输入常住地址';
           isValid = false;
@@ -1142,7 +1177,8 @@ Page({
         }
         break;
       }
-      case 2:
+      case 3:
+      case 4:
         break;
     }
 
@@ -1493,6 +1529,67 @@ Page({
     }
 
     return { emergencyContact: '', emergencyPhone: '' };
+  },
+
+  // 新增：身份证号解析方法
+  parseIDNumber(idNumber) {
+    const trimmed = String(idNumber).trim();
+
+    // 验证18位身份证号格式
+    const regex18 = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/;
+
+    if (!regex18.test(trimmed)) {
+      // 格式不正确，清除自动填充标记
+      this.setData({
+        autoFilledFromID: false,
+        genderLocked: false,
+        birthDateLocked: false,
+      });
+      return;
+    }
+
+    // 提取性别（倒数第二位，奇数为男，偶数为女）
+    const genderCode = parseInt(trimmed.charAt(16));
+    const gender = genderCode % 2 === 0 ? '女' : '男';
+
+    // 提取出生日期
+    const year = trimmed.substring(6, 10);
+    const month = trimmed.substring(10, 12);
+    const day = trimmed.substring(12, 14);
+    const birthDate = `${year}-${month}-${day}`;
+
+    // 自动填充并锁定字段
+    this.setData({
+      'formData.gender': gender,
+      'formData.birthDate': birthDate,
+      autoFilledFromID: true,
+      genderLocked: true,
+      birthDateLocked: true,
+      showAutoFillTip: true,
+    });
+
+    // 3秒后自动隐藏提示
+    setTimeout(() => {
+      this.setData({ showAutoFillTip: false });
+    }, 3000);
+  },
+
+  // 新增：手动解锁编辑
+  unlockField(e) {
+    const { field } = e.currentTarget.dataset;
+
+    wx.showModal({
+      title: '确认手动修改',
+      content: '系统已从身份证号自动识别该信息，确定要手动修改吗？',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({
+            [`${field}Locked`]: false,
+            autoFilledFromID: false,
+          });
+        }
+      }
+    });
   },
 
   // 从父母信息自动填充紧急联系人(提交前最后检查)
