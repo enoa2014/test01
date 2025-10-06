@@ -65,6 +65,12 @@ Page({
       backupContact: '',
       backupPhone: '',
       situation: '',
+      visitHospital: '',
+      hospitalDiagnosis: '',
+      attendingDoctor: '',
+      symptomDetail: '',
+      treatmentProcess: '',
+      followUpPlan: '',
       contacts: [
         { relationship: '', name: '', phone: '' },
       ],
@@ -675,11 +681,13 @@ Page({
       // 使用 patientProfile 获取完整的住户信息,包括父母联系方式
       let excelRecordKey = this.normalizeExcelSpacing(patientKey) || '';
       let profilePayload = null;
+      let intakePatientDoc = null;
+      let latestIntakeDetail = null;
       try {
         const res = await wx.cloud.callFunction({
           name: 'patientProfile',
           data: {
-            action: 'fullDetail',
+            action: 'detail',
             key: excelRecordKey || patientKey,
             patientKey,
           },
@@ -692,9 +700,65 @@ Page({
         // ignore profile preload errors, fallback to existing form data
       }
 
+      try {
+        const formPatientName = this.data && this.data.formData ? this.data.formData.patientName : '';
+        const intakeRes = await wx.cloud.callFunction({
+          name: 'patientIntake',
+          data: {
+            action: 'getPatientDetail',
+            patientKey,
+            recordKey: excelRecordKey || patientKey,
+            patientName: this.normalizeExcelSpacing(formPatientName),
+          },
+        });
+
+        if (intakeRes.result && intakeRes.result.success !== false) {
+          const detailData = intakeRes.result.data || intakeRes.result || {};
+          if (detailData && detailData.patient && typeof detailData.patient === 'object') {
+            intakePatientDoc = detailData.patient;
+          }
+          if (detailData && detailData.latestIntake && typeof detailData.latestIntake === 'object') {
+            latestIntakeDetail = detailData.latestIntake;
+          }
+        }
+      } catch (intakeError) {
+        // ignore intake detail preload errors
+      }
+
       const payload = profilePayload || {};
       const overviewPayload = payload.overview || {};
-      const patientDocForEdit = overviewPayload.patientDoc || payload.patient || {};
+      const patientDocForEdit = (() => {
+        const sources = [overviewPayload.patientDoc, payload.patient, intakePatientDoc];
+        const merged = {};
+        sources.forEach(source => {
+          if (!source || typeof source !== 'object') {
+            return;
+          }
+          Object.keys(source).forEach(key => {
+            const value = source[key];
+            if (value !== undefined && value !== null && merged[key] === undefined) {
+              merged[key] = value;
+            }
+          });
+        });
+        return merged;
+      })();
+      const overviewDisplay = (() => {
+        const sources = [overviewPayload.patientDisplay, payload.patient, intakePatientDoc];
+        const merged = {};
+        sources.forEach(source => {
+          if (!source || typeof source !== 'object') {
+            return;
+          }
+          Object.keys(source).forEach(key => {
+            const value = source[key];
+            if (value !== undefined && value !== null && merged[key] === undefined) {
+              merged[key] = value;
+            }
+          });
+        });
+        return merged;
+      })();
       const basicInfoList = Array.isArray(payload.basicInfo) ? payload.basicInfo : [];
       const familyInfoList = Array.isArray(payload.family) ? payload.family : [];
       const records = Array.isArray(payload.excelRecords)
@@ -706,6 +770,7 @@ Page({
       const resolvedExcelKey =
         this.normalizeExcelSpacing(overviewPayload.recordKey) ||
         this.normalizeExcelSpacing(patientDocForEdit.recordKey) ||
+        this.normalizeExcelSpacing(intakePatientDoc && intakePatientDoc.recordKey) ||
         excelRecordKey;
 
       this.setData({
@@ -742,7 +807,9 @@ Page({
         this._extractEmergencyContactFromProfile(familyInfoList);
 
       const patientDocSource = patientDocForEdit || {};
-      const overviewDisplay = overviewPayload.patientDisplay || {};
+      const latestIntakeRecord = latestIntakeDetail || {};
+      const latestIntakeInfo = (latestIntakeRecord && latestIntakeRecord.intakeInfo) || {};
+      const latestMedicalInfo = (latestIntakeRecord && latestIntakeRecord.medicalInfo) || {};
       const preferString = (...candidates) => {
         for (const candidate of candidates) {
           const normalized = this.normalizeExcelSpacing(candidate);
@@ -766,6 +833,7 @@ Page({
         patientDocSource.patientName,
         patientName,
         overviewDisplay.patientName,
+        intakePatientDoc && intakePatientDoc.patientName,
         this.data.formData.patientName
       );
       const resolvedIdType =
@@ -773,58 +841,113 @@ Page({
           patientDocSource.idType,
           this.data.formData.idType,
           overviewDisplay.idType,
+          intakePatientDoc && intakePatientDoc.idType,
           '身份证'
         ) || '身份证';
       const resolvedIdNumber = preferString(
         patientDocSource.idNumber,
         idNumber,
         overviewDisplay.idNumber,
+        intakePatientDoc && intakePatientDoc.idNumber,
         this.data.formData.idNumber
       );
       const resolvedGender = preferString(
         patientDocSource.gender,
         gender,
         overviewDisplay.gender,
+        intakePatientDoc && intakePatientDoc.gender,
         this.data.formData.gender
       );
       const resolvedBirthDate = preferDate(
         patientDocSource.birthDate,
         birthDate,
         overviewDisplay.birthDate,
+        intakePatientDoc && intakePatientDoc.birthDate,
         this.data.formData.birthDate
       );
       const resolvedPhone = preferString(
         patientDocSource.phone,
         overviewDisplay.phone,
+        intakePatientDoc && intakePatientDoc.phone,
         this.data.formData.phone
       );
       const resolvedAddress = preferString(
         patientDocSource.address,
         address,
         overviewDisplay.address,
+        intakePatientDoc && intakePatientDoc.address,
         this.data.formData.address
       );
       const resolvedEmergencyContact = preferString(
         patientDocSource.emergencyContact,
         overviewDisplay.emergencyContact,
         emergencyContact,
+        intakePatientDoc && intakePatientDoc.emergencyContact,
         this.data.formData.emergencyContact
       );
       const resolvedEmergencyPhone = preferString(
         patientDocSource.emergencyPhone,
         overviewDisplay.emergencyPhone,
         emergencyPhone,
+        intakePatientDoc && intakePatientDoc.emergencyPhone,
         this.data.formData.emergencyPhone
       );
       const resolvedBackupContact = preferString(
         patientDocSource.backupContact,
         overviewDisplay.backupContact,
+        intakePatientDoc && intakePatientDoc.backupContact,
         this.data.formData.backupContact
       );
       const resolvedBackupPhone = preferString(
         patientDocSource.backupPhone,
         overviewDisplay.backupPhone,
+        intakePatientDoc && intakePatientDoc.backupPhone,
         this.data.formData.backupPhone
+      );
+      const resolvedVisitHospital = preferString(
+        this.data.formData.visitHospital,
+        patientDocSource.latestHospital,
+        overviewDisplay.latestHospital,
+        intakePatientDoc && intakePatientDoc.latestHospital,
+        latestIntakeRecord.hospital,
+        latestIntakeInfo.hospital,
+        latestMedicalInfo.hospital
+      );
+      const resolvedHospitalDiagnosis = preferString(
+        this.data.formData.hospitalDiagnosis,
+        patientDocSource.latestDiagnosis,
+        overviewDisplay.latestDiagnosis,
+        intakePatientDoc && intakePatientDoc.latestDiagnosis,
+        latestIntakeRecord.diagnosis,
+        latestIntakeInfo.diagnosis,
+        latestMedicalInfo.diagnosis
+      );
+      const resolvedAttendingDoctor = preferString(
+        this.data.formData.attendingDoctor,
+        patientDocSource.latestDoctor,
+        overviewDisplay.latestDoctor,
+        intakePatientDoc && intakePatientDoc.latestDoctor,
+        latestIntakeRecord.doctor,
+        latestIntakeInfo.doctor,
+        latestMedicalInfo.doctor
+      );
+      const resolvedSymptomDetail = preferString(
+        this.data.formData.symptomDetail,
+        latestIntakeRecord.symptoms,
+        latestMedicalInfo.symptoms,
+        latestIntakeInfo.symptoms
+      );
+      const resolvedTreatmentProcess = preferString(
+        this.data.formData.treatmentProcess,
+        latestIntakeRecord.treatmentProcess,
+        latestMedicalInfo.treatmentProcess,
+        latestIntakeInfo.treatmentProcess
+      );
+      const resolvedFollowUpPlan = preferString(
+        this.data.formData.followUpPlan,
+        latestIntakeRecord.followUpPlan,
+        latestMedicalInfo.followUpPlan,
+        latestIntakeInfo.followUpPlan
       );
       // 情况说明不自动填充，保持为空，让用户填写本次入住的具体情况
       const resolvedSituation = '';
@@ -835,6 +958,9 @@ Page({
       }
       if (overviewDisplay && Array.isArray(overviewDisplay.familyContacts)) {
         additionalContacts.push(...overviewDisplay.familyContacts);
+      }
+      if (intakePatientDoc && Array.isArray(intakePatientDoc.familyContacts)) {
+        additionalContacts.push(...intakePatientDoc.familyContacts);
       }
 
       const contactTextSources = [];
@@ -848,12 +974,16 @@ Page({
 
       appendContactText(patientDocSource.guardianInfo, '监护人');
       appendContactText(overviewDisplay.guardianInfo, '监护人');
+      appendContactText(intakePatientDoc && intakePatientDoc.guardianInfo, '监护人');
       appendContactText(patientDocSource.motherInfo, '母亲');
       appendContactText(overviewDisplay.motherInfo, '母亲');
+      appendContactText(intakePatientDoc && intakePatientDoc.motherInfo, '母亲');
       appendContactText(patientDocSource.fatherInfo, '父亲');
       appendContactText(overviewDisplay.fatherInfo, '父亲');
+      appendContactText(intakePatientDoc && intakePatientDoc.fatherInfo, '父亲');
       appendContactText(patientDocSource.otherGuardian, '监护人');
       appendContactText(overviewDisplay.otherGuardian, '监护人');
+      appendContactText(intakePatientDoc && intakePatientDoc.otherGuardian, '监护人');
 
       const contacts = this.buildContactsFromFields({
         emergencyContact: resolvedEmergencyContact,
@@ -875,6 +1005,12 @@ Page({
         phone: resolvedPhone,
         address: resolvedAddress,
         situation: resolvedSituation,
+        visitHospital: resolvedVisitHospital,
+        hospitalDiagnosis: resolvedHospitalDiagnosis,
+        attendingDoctor: resolvedAttendingDoctor,
+        symptomDetail: resolvedSymptomDetail,
+        treatmentProcess: resolvedTreatmentProcess,
+        followUpPlan: resolvedFollowUpPlan,
         contacts,
       };
 
@@ -2451,7 +2587,7 @@ Page({
           const res = await wx.cloud.callFunction({
             name: 'patientProfile',
             data: {
-              action: 'fullDetail',
+              action: 'detail',
               key,
               patientKey,
             },
@@ -2495,6 +2631,43 @@ Page({
           }
         } catch (innerError) {
           // 忽略单次查询失败，尝试下一个候选 key
+        }
+      }
+
+      if (patientKey) {
+        try {
+          const intakeRes = await wx.cloud.callFunction({
+            name: 'patientIntake',
+            data: {
+              action: 'getPatientDetail',
+              patientKey,
+              recordKey: excelKey || patientKey,
+            },
+          });
+
+          if (intakeRes.result && intakeRes.result.success !== false) {
+            const detailData = intakeRes.result.data || intakeRes.result || {};
+            const intakePatient = detailData && detailData.patient ? detailData.patient : {};
+            const contactFromIntakeDoc = this._extractContactFromPatientDoc(intakePatient);
+            if (
+              contactFromIntakeDoc &&
+              contactFromIntakeDoc.emergencyContact &&
+              contactFromIntakeDoc.emergencyPhone
+            ) {
+              return contactFromIntakeDoc;
+            }
+
+            const latestIntakeRecord =
+              detailData && detailData.latestIntake ? [detailData.latestIntake] : [];
+            if (latestIntakeRecord.length) {
+              const fallbackContact = this._extractContactFromRecords(latestIntakeRecord);
+              if (fallbackContact) {
+                return fallbackContact;
+              }
+            }
+          }
+        } catch (intakeDetailError) {
+          // 忽略 patientIntake 回退失败
         }
       }
 

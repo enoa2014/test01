@@ -208,15 +208,21 @@ function mapIntakeRecordForDisplay(record) {
   const diagnosisDisplay = coalesceValue(
     record.diagnosis,
     medicalInfo.diagnosis,
+    intakeInfo.diagnosis,
     intakeInfo.visitReason
   );
   const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor, intakeInfo.doctor);
   const symptomDetailDisplay = coalesceValue(
     medicalInfo.symptoms,
     record.symptoms,
+    intakeInfo.symptoms,
     intakeInfo.situation
   );
-  const treatmentProcessDisplay = coalesceValue(medicalInfo.treatmentProcess, record.treatmentProcess);
+  const treatmentProcessDisplay = coalesceValue(
+    medicalInfo.treatmentProcess,
+    record.treatmentProcess,
+    intakeInfo.treatmentProcess
+  );
   const followUpPlanDisplay = coalesceValue(
     record.followUpPlan,
     medicalInfo.followUpPlan,
@@ -261,6 +267,7 @@ function mapProfileRecordForDisplay(record, index) {
   const diagnosisDisplay = coalesceValue(
     record.diagnosis,
     medicalInfo.diagnosis,
+    intakeInfo.diagnosis,
     intakeInfo.visitReason
   );
   const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor, intakeInfo.doctor);
@@ -273,9 +280,14 @@ function mapProfileRecordForDisplay(record, index) {
   const symptomDetailDisplay = coalesceValue(
     medicalInfo.symptoms,
     record.symptoms,
+    intakeInfo.symptoms,
     situationDisplay
   );
-  const treatmentProcessDisplay = coalesceValue(medicalInfo.treatmentProcess, record.treatmentProcess);
+  const treatmentProcessDisplay = coalesceValue(
+    medicalInfo.treatmentProcess,
+    record.treatmentProcess,
+    intakeInfo.treatmentProcess
+  );
   const followUpPlanDisplay = coalesceValue(
     medicalInfo.followUpPlan,
     record.followUpPlan,

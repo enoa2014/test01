@@ -141,6 +141,19 @@
   margin-bottom: var(--space-5);
 }
 
+.medical-group .group-title {
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.medical-group pm-input {
+  margin-bottom: var(--space-3);
+}
+
+.medical-group pm-input:last-child {
+  margin-bottom: 0;
+}
+
 .contacts-section {
   display: flex;
   flex-direction: column;

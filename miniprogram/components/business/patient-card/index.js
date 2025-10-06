@@ -274,12 +274,20 @@ Component({
       });
     },
     handleLongPress() {
-      this.setData({ isLongPressing: true });
+      const applyState = updates => {
+        if (typeof this.setData === 'function') {
+          this.setData(updates);
+        } else if (this.data && typeof this.data === 'object') {
+          this.data = { ...this.data, ...updates };
+        }
+      };
+
+      applyState({ isLongPressing: true });
       this.triggerEvent('longpress', { patient: this.data.patient });
 
       // 长按结束后重置状态
       setTimeout(() => {
-        this.setData({ isLongPressing: false });
+        applyState({ isLongPressing: false });
       }, 300);
     },
     handleMediaTap(event) {

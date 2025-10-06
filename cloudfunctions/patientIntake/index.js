@@ -252,6 +252,20 @@ function validateFormData(formData) {
     errors.situation = `情况说明不能超过${SITUATION_MAX_LENGTH}字`;
   }
 
+  const longTextFields = [
+    { key: 'hospitalDiagnosis', label: '医院诊断' },
+    { key: 'symptomDetail', label: '症状详情' },
+    { key: 'treatmentProcess', label: '医治过程' },
+    { key: 'followUpPlan', label: '后续治疗安排' },
+  ];
+
+  longTextFields.forEach(field => {
+    const value = normalizeString(formData[field.key]);
+    if (value && value.length > SITUATION_MAX_LENGTH) {
+      errors[field.key] = `${field.label}不能超过${SITUATION_MAX_LENGTH}字`;
+    }
+  });
+
   // 日期校验
   if (formData.birthDate) {
     const birthDate = new Date(formData.birthDate);
@@ -328,6 +342,12 @@ async function handleCreatePatient(event) {
     backupContact: normalizeString(payload.backupContact),
     backupPhone: normalizeString(payload.backupPhone),
     situation: normalizeString(payload.situation),
+    visitHospital: normalizeString(payload.visitHospital),
+    hospitalDiagnosis: normalizeString(payload.hospitalDiagnosis),
+    attendingDoctor: normalizeString(payload.attendingDoctor),
+    symptomDetail: normalizeString(payload.symptomDetail),
+    treatmentProcess: normalizeString(payload.treatmentProcess),
+    followUpPlan: normalizeString(payload.followUpPlan),
     fatherInfo: normalizeString(payload.fatherInfo),
     fatherContactName: normalizeString(payload.fatherContactName),
     fatherContactPhone: normalizeString(payload.fatherContactPhone),
@@ -367,6 +387,9 @@ async function handleCreatePatient(event) {
     backupContact: normalizedForm.backupContact,
     backupPhone: normalizedForm.backupPhone,
     lastIntakeNarrative: normalizedForm.situation,
+    latestHospital: normalizedForm.visitHospital || '',
+    latestDiagnosis: normalizedForm.hospitalDiagnosis || '',
+    latestDoctor: normalizedForm.attendingDoctor || '',
     admissionCount: 0,
     careStatus: 'pending',
     checkoutReason: '',
@@ -390,6 +413,9 @@ async function handleCreatePatient(event) {
       latestAdmissionDate: null,
       latestAdmissionTimestamp: null,
       firstAdmissionDate: null,
+      latestHospital: normalizedForm.visitHospital || '',
+      latestDiagnosis: normalizedForm.hospitalDiagnosis || '',
+      latestDoctor: normalizedForm.attendingDoctor || '',
       careStatus: 'pending',
       checkoutAt: null,
       checkoutReason: '',
@@ -1023,6 +1049,12 @@ async function handleSubmitIntake(event) {
   const now = Date.now();
   const intakeId = generateIntakeId();
   let finalPatientKey = patientKey;
+  const normalizedVisitHospital = normalizeString(formData.visitHospital);
+  const normalizedHospitalDiagnosis = normalizeString(formData.hospitalDiagnosis);
+  const normalizedAttendingDoctor = normalizeString(formData.attendingDoctor);
+  const normalizedSymptomDetail = normalizeString(formData.symptomDetail);
+  const normalizedTreatmentProcess = normalizeString(formData.treatmentProcess);
+  const normalizedFollowUpPlan = normalizeString(formData.followUpPlan);
 
   // 开始事务
   const result = await db.runTransaction(async transaction => {
@@ -1057,33 +1089,48 @@ async function handleSubmitIntake(event) {
         baseFirstDate !== null ? baseFirstDate : toNumber(patientRecord.firstAdmissionDate);
       const normalizedFirstAdmissionDate = fallbackFirstDate !== null ? fallbackFirstDate : now;
 
+      const patientUpdateData = {
+        patientName: formData.patientName,
+        idType: formData.idType || '身份证',
+        idNumber: formData.idNumber,
+        gender: formData.gender,
+        birthDate: formData.birthDate,
+        phone: formData.phone || '',
+        address: formData.address,
+        emergencyContact: formData.emergencyContact,
+        emergencyPhone: formData.emergencyPhone,
+        backupContact: formData.backupContact || '',
+        backupPhone: formData.backupPhone || '',
+        lastIntakeNarrative: formData.situation,
+        admissionCount: newAdmissionCount,
+        latestAdmissionDate: now,
+        updatedAt: now,
+        careStatus: 'in_care',
+        checkoutAt: _.remove(),
+        checkoutReason: _.remove(),
+        checkoutNote: _.remove(),
+        'data.admissionCount': newAdmissionCount,
+        'data.latestAdmissionDate': now,
+        'data.latestAdmissionTimestamp': now,
+        'data.firstAdmissionDate': normalizedFirstAdmissionDate,
+        'data.updatedAt': now,
+      };
+
+      if (normalizedVisitHospital) {
+        patientUpdateData.latestHospital = normalizedVisitHospital;
+        patientUpdateData['data.latestHospital'] = normalizedVisitHospital;
+      }
+      if (normalizedHospitalDiagnosis) {
+        patientUpdateData.latestDiagnosis = normalizedHospitalDiagnosis;
+        patientUpdateData['data.latestDiagnosis'] = normalizedHospitalDiagnosis;
+      }
+      if (normalizedAttendingDoctor) {
+        patientUpdateData.latestDoctor = normalizedAttendingDoctor;
+        patientUpdateData['data.latestDoctor'] = normalizedAttendingDoctor;
+      }
+
       await patientRef.update({
-        data: {
-          patientName: formData.patientName,
-          idType: formData.idType || '����֤',
-          idNumber: formData.idNumber,
-          gender: formData.gender,
-          birthDate: formData.birthDate,
-          phone: formData.phone || '',
-          address: formData.address,
-          emergencyContact: formData.emergencyContact,
-          emergencyPhone: formData.emergencyPhone,
-          backupContact: formData.backupContact || '',
-          backupPhone: formData.backupPhone || '',
-          lastIntakeNarrative: formData.situation,
-          admissionCount: newAdmissionCount,
-          latestAdmissionDate: now,
-          updatedAt: now,
-          careStatus: 'in_care',
-          checkoutAt: _.remove(),
-          checkoutReason: _.remove(),
-          checkoutNote: _.remove(),
-          'data.admissionCount': newAdmissionCount,
-          'data.latestAdmissionDate': now,
-          'data.latestAdmissionTimestamp': now,
-          'data.firstAdmissionDate': normalizedFirstAdmissionDate,
-          'data.updatedAt': now,
-        },
+        data: patientUpdateData,
       });
     } else {
       // 创建新患者
@@ -1102,6 +1149,9 @@ async function handleSubmitIntake(event) {
         backupContact: formData.backupContact || '',
         backupPhone: formData.backupPhone || '',
         lastIntakeNarrative: formData.situation,
+        latestHospital: normalizedVisitHospital || '',
+        latestDiagnosis: normalizedHospitalDiagnosis || '',
+        latestDoctor: normalizedAttendingDoctor || '',
         admissionCount: 1,
         firstAdmissionDate: now,
         latestAdmissionDate: now,
@@ -1113,6 +1163,9 @@ async function handleSubmitIntake(event) {
           latestAdmissionDate: now,
           latestAdmissionTimestamp: now,
           updatedAt: now,
+          latestHospital: normalizedVisitHospital || '',
+          latestDiagnosis: normalizedHospitalDiagnosis || '',
+          latestDoctor: normalizedAttendingDoctor || '',
         },
         careStatus: 'in_care',
       };
@@ -1153,7 +1206,7 @@ async function handleSubmitIntake(event) {
       intakeInfo: {
         intakeTime: normalizedIntakeTime,
         situation: formData.situation,
-        followUpPlan: formData.followUpPlan || '',
+        followUpPlan: normalizedFollowUpPlan,
         medicalHistory: formData.medicalHistory || [],
         attachments: uploadedFiles.map(file => ({
           id: file.id,
@@ -1171,6 +1224,42 @@ async function handleSubmitIntake(event) {
       createdAt: now,
       updatedAt: now,
     };
+
+    const medicalInfoPayload = {};
+
+    if (normalizedVisitHospital) {
+      intakeRecord.intakeInfo.hospital = normalizedVisitHospital;
+      intakeRecord.hospital = normalizedVisitHospital;
+      medicalInfoPayload.hospital = normalizedVisitHospital;
+    }
+    if (normalizedHospitalDiagnosis) {
+      intakeRecord.intakeInfo.diagnosis = normalizedHospitalDiagnosis;
+      intakeRecord.diagnosis = normalizedHospitalDiagnosis;
+      medicalInfoPayload.diagnosis = normalizedHospitalDiagnosis;
+    }
+    if (normalizedAttendingDoctor) {
+      intakeRecord.intakeInfo.doctor = normalizedAttendingDoctor;
+      intakeRecord.doctor = normalizedAttendingDoctor;
+      medicalInfoPayload.doctor = normalizedAttendingDoctor;
+    }
+    if (normalizedSymptomDetail) {
+      intakeRecord.intakeInfo.symptoms = normalizedSymptomDetail;
+      intakeRecord.symptoms = normalizedSymptomDetail;
+      medicalInfoPayload.symptoms = normalizedSymptomDetail;
+    }
+    if (normalizedTreatmentProcess) {
+      intakeRecord.intakeInfo.treatmentProcess = normalizedTreatmentProcess;
+      intakeRecord.treatmentProcess = normalizedTreatmentProcess;
+      medicalInfoPayload.treatmentProcess = normalizedTreatmentProcess;
+    }
+    if (normalizedFollowUpPlan) {
+      intakeRecord.followUpPlan = normalizedFollowUpPlan;
+      medicalInfoPayload.followUpPlan = normalizedFollowUpPlan;
+    }
+
+    if (Object.keys(medicalInfoPayload).length) {
+      intakeRecord.medicalInfo = medicalInfoPayload;
+    }
 
     await transaction.collection(PATIENT_INTAKE_COLLECTION).add({
       data: intakeRecord,

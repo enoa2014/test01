@@ -328,6 +328,86 @@
           <view class="example-text">{{situationConfig.example}}</view>
         </view>
       </view>
+
+      <view class="form-group medical-group">
+        <view class="group-title">就诊情况（选填）</view>
+        <pm-input
+          label="就诊医院"
+          value="{{formData.visitHospital}}"
+          placeholder="请输入本次就诊的医院名称"
+          data-field="visitHospital"
+          bindinput="onInputChange"
+          clearable="{{true}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+        <pm-input
+          label="医院诊断"
+          type="textarea"
+          value="{{formData.hospitalDiagnosis}}"
+          placeholder="请输入医院给出的诊断信息"
+          data-field="hospitalDiagnosis"
+          bindinput="onInputChange"
+          textarea-auto-height="{{true}}"
+          show-confirm-bar="{{false}}"
+          clearable="{{false}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+        <pm-input
+          label="医生姓名"
+          value="{{formData.attendingDoctor}}"
+          placeholder="请输入负责诊疗的医生姓名"
+          data-field="attendingDoctor"
+          bindinput="onInputChange"
+          clearable="{{true}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+      </view>
+
+      <view class="form-group medical-group">
+        <view class="group-title">医疗情况（选填）</view>
+        <pm-input
+          label="症状详情"
+          type="textarea"
+          value="{{formData.symptomDetail}}"
+          placeholder="请描述住户当前症状或表现"
+          data-field="symptomDetail"
+          bindinput="onInputChange"
+          textarea-auto-height="{{true}}"
+          show-confirm-bar="{{false}}"
+          clearable="{{false}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+        <pm-input
+          label="医治过程"
+          type="textarea"
+          value="{{formData.treatmentProcess}}"
+          placeholder="请记录主要治疗过程或措施"
+          data-field="treatmentProcess"
+          bindinput="onInputChange"
+          textarea-auto-height="{{true}}"
+          show-confirm-bar="{{false}}"
+          clearable="{{false}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+        <pm-input
+          label="后续治疗安排"
+          type="textarea"
+          value="{{formData.followUpPlan}}"
+          placeholder="请描述后续随访或治疗计划"
+          data-field="followUpPlan"
+          bindinput="onInputChange"
+          textarea-auto-height="{{true}}"
+          show-confirm-bar="{{false}}"
+          clearable="{{false}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+      </view>
     </view>
 
     <!-- 第4步：附件上传 -->
@@ -415,6 +495,44 @@
           <view class="group-title">情况说明</view>
           <view class="review-item">
             <text class="item-value situation">{{formData.situation}}</text>
+          </view>
+        </view>
+
+        <view
+          class="review-group"
+          wx:if="{{formData.visitHospital || formData.hospitalDiagnosis || formData.attendingDoctor}}"
+        >
+          <view class="group-title">就诊情况</view>
+          <view class="review-item" wx:if="{{formData.visitHospital}}">
+            <text class="item-label">就诊医院：</text>
+            <text class="item-value">{{formData.visitHospital}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.hospitalDiagnosis}}">
+            <text class="item-label">医院诊断：</text>
+            <text class="item-value">{{formData.hospitalDiagnosis}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.attendingDoctor}}">
+            <text class="item-label">医生姓名：</text>
+            <text class="item-value">{{formData.attendingDoctor}}</text>
+          </view>
+        </view>
+
+        <view
+          class="review-group"
+          wx:if="{{formData.symptomDetail || formData.treatmentProcess || formData.followUpPlan}}"
+        >
+          <view class="group-title">医疗情况</view>
+          <view class="review-item" wx:if="{{formData.symptomDetail}}">
+            <text class="item-label">症状详情：</text>
+            <text class="item-value">{{formData.symptomDetail}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.treatmentProcess}}">
+            <text class="item-label">医治过程：</text>
+            <text class="item-value">{{formData.treatmentProcess}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.followUpPlan}}">
+            <text class="item-label">后续治疗安排：</text>
+            <text class="item-value">{{formData.followUpPlan}}</text>
           </view>
         </view>
 
