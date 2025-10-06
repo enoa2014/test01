@@ -8,9 +8,29 @@
   bind:tap="handleCardTap"
   bind:longpress="handleLongPress"
 >
+  <!-- 状态指示色条 -->
+  <view wx:if="{{statusIndicator}}" class="patient-card__status-indicator patient-card__status-indicator--{{statusIndicator.type}}"></view>
+
+  <!-- 滑动操作区域 -->
+  <view wx:if="{{swipeActions && swipeActions.length}}" class="patient-card__swipe-actions">
+    <view
+      wx:for="{{swipeActions}}"
+      wx:key="id"
+      class="patient-card__swipe-action patient-card__swipe-action--{{item.type || 'default'}}"
+      catchtap="handleSwipeActionTap"
+      data-action="{{item.id}}"
+    >
+      <text class="patient-card__swipe-action-icon">{{item.icon}}</text>
+    </view>
+  </view>
   <view slot="header" class="patient-card__header">
-    <view class="patient-card__avatar" style="background-color: {{avatarBackground}};">
-      <text class="patient-card__avatar-text">{{avatarText}}</text>
+    <view class="patient-card__avatar-wrapper">
+      <view class="patient-card__avatar" style="background-color: {{avatarBackground}};">
+        <text class="patient-card__avatar-text">{{avatarText}}</text>
+      </view>
+      <view wx:if="{{statusIcon}}" class="patient-card__status-icon patient-card__status-icon--{{statusIcon.type}}">
+        <text class="patient-card__status-icon-text">{{statusIcon.icon}}</text>
+      </view>
     </view>
     <view class="patient-card__title">
       <view class="patient-card__title-row">
@@ -36,41 +56,74 @@
   </view>
 
   <view class="patient-card__body">
-    <view wx:if="{{primaryLine}}" class="patient-card__primary">{{primaryLine}}</view>
-    <view wx:if="{{secondaryLine}}" class="patient-card__secondary">{{secondaryLine}}</view>
+    <!-- 主要信息区域 -->
+    <view wx:if="{{primaryLine || secondaryLine}}" class="patient-card__main-info">
+      <view wx:if="{{primaryLine}}" class="patient-card__primary">{{primaryLine}}</view>
+      <view wx:if="{{secondaryLine}}" class="patient-card__secondary">{{secondaryLine}}</view>
+    </view>
 
     <!-- 媒体预览区域 -->
     <view
-      wx:if="{{mediaPreview && (mediaPreview.photoCount > 0 || mediaPreview.docCount > 0)}}"
+      wx:if="{{mediaPreview && (mediaPreview.photoCount > 0 || mediaPreview.docCount > 0 || mediaPreview.thumbnails)}}"
       class="patient-card__media-preview"
     >
-      <view
-        wx:if="{{mediaPreview.photoCount > 0}}"
-        class="media-chip media-chip--photo"
-        catchtap="handleMediaTap"
-        data-type="photo"
-      >
-        <text class="media-icon">📷</text>
-        <text class="media-count">{{mediaPreview.photoCount}}</text>
+      <!-- 照片缩略图 -->
+      <view wx:if="{{mediaPreview.thumbnails && mediaPreview.thumbnails.length}}" class="media-thumbnails">
+        <view
+          wx:for="{{mediaPreview.thumbnails}}"
+          wx:for-item="thumbnail"
+          wx:key="url"
+          class="media-thumbnail"
+          catchtap="handleThumbnailTap"
+          data-index="{{index}}"
+        >
+          <image
+            class="media-thumbnail-image"
+            src="{{thumbnail.url}}"
+            mode="aspectFill"
+            lazy-load="{{true}}"
+          />
+          <view wx:if="{{index === 2 && mediaPreview.photoCount > 3}}" class="media-thumbnail-overlay">
+            <text class="media-thumbnail-count">+{{mediaPreview.photoCount - 3}}</text>
+          </view>
+        </view>
       </view>
-      <view
-        wx:if="{{mediaPreview.docCount > 0}}"
-        class="media-chip media-chip--doc"
-        catchtap="handleMediaTap"
-        data-type="doc"
-      >
-        <text class="media-icon">📄</text>
-        <text class="media-count">{{mediaPreview.docCount}}</text>
+
+      <!-- 媒体统计 -->
+      <view wx:if="{{!mediaPreview.thumbnails || mediaPreview.thumbnails.length === 0}}" class="media-stats">
+        <view
+          wx:if="{{mediaPreview.photoCount > 0}}"
+          class="media-chip media-chip--photo"
+          catchtap="handleMediaTap"
+          data-type="photo"
+        >
+          <text class="media-icon">📷</text>
+          <text class="media-count">{{mediaPreview.photoCount}}</text>
+        </view>
+        <view
+          wx:if="{{mediaPreview.docCount > 0}}"
+          class="media-chip media-chip--doc"
+          catchtap="handleMediaTap"
+          data-type="doc"
+        >
+          <text class="media-icon">📄</text>
+          <text class="media-count">{{mediaPreview.docCount}}</text>
+        </view>
       </view>
     </view>
 
+    <!-- 标签区域 -->
     <view wx:if="{{tags && tags.length}}" class="patient-card__tags">
       <view wx:for="{{tags}}" wx:key="*this" class="patient-card__tag">{{item}}</view>
     </view>
-    <view wx:if="{{infoItems && infoItems.length}}" class="patient-card__info">
-      <view wx:for="{{infoItems}}" wx:key="label" class="patient-card__info-item">
-        <text class="patient-card__info-label">{{item.label}}</text>
-        <text class="patient-card__info-value">{{item.value || '—'}} </text>
+
+    <!-- 元数据信息区域 - 添加分组分隔线 -->
+    <view wx:if="{{infoItems && infoItems.length}}" class="patient-card__info-group">
+      <view class="patient-card__info">
+        <view wx:for="{{infoItems}}" wx:key="label" class="patient-card__info-item">
+          <text class="patient-card__info-label">{{item.label}}</text>
+          <text class="patient-card__info-value">{{item.value || '—'}} </text>
+        </view>
       </view>
     </view>
   </view>

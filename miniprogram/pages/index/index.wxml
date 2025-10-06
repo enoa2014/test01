@@ -177,7 +177,6 @@
       data-key="{{item.key || item.patientKey || item.recordKey || ''}}"
       data-patient-key="{{item.patientKey || item.key || item.recordKey || ''}}"
       data-record-key="{{item.recordKey || item.key || item.patientKey || ''}}"
-      bindtap="onPatientTap"
       bind:cardtap="onPatientTap"
       bind:selectchange="onCardSelectChange"
       bind:longpress="onCardLongPress"

@@ -1,5 +1,47 @@
 <view class="theme-root analysis-container stack gap-4">
-  <view wx:if="{{loading}}" class="placeholder">正在生成分析数据…</view>
+  <view wx:if="{{loading}}" class="panel-container">
+    <!-- 摘要卡片骨架屏 -->
+    <view class="analysis-header stack gap-4">
+      <view class="skeleton-summary-grid">
+        <view class="skeleton-panel skeleton-summary-card"></view>
+        <view class="skeleton-panel skeleton-summary-card"></view>
+        <view class="skeleton-panel skeleton-summary-card"></view>
+        <view class="skeleton-panel skeleton-summary-card"></view>
+      </view>
+      <view class="summary-actions">
+        <view class="skeleton-panel" style="width: 120rpx; height: 60rpx; border-radius: var(--radius-full)"></view>
+      </view>
+      <pm-card class="legend-card" variant="outlined" padding="var(--space-4)">
+        <view class="skeleton-panel skeleton-panel-header"></view>
+        <view class="legend-items">
+          <view class="legend-item" wx:for="{{[1,2,3]}}" wx:key="*this">
+            <view class="skeleton-panel" style="width: 20rpx; height: 20rpx; border-radius: 50%"></view>
+            <view class="legend-copy">
+              <view class="skeleton-panel" style="width: 120rpx; height: 20rpx; margin-bottom: 4rpx"></view>
+              <view class="skeleton-panel" style="width: 180rpx; height: 16rpx"></view>
+            </view>
+          </view>
+        </view>
+      </pm-card>
+    </view>
+
+    <!-- 分析面板骨架屏 -->
+    <view class="analysis-panel" wx:for="{{[1,2,3,4,5,6]}}" wx:key="*this">
+      <view class="panel-header">
+        <view class="panel-title-group">
+          <view class="skeleton-panel skeleton-panel-header"></view>
+        </view>
+        <view class="panel-mode-switch">
+          <view class="skeleton-panel" style="width: 80rpx; height: 40rpx; border-radius: var(--radius-full)"></view>
+          <view class="skeleton-panel" style="width: 80rpx; height: 40rpx; border-radius: var(--radius-full)"></view>
+          <view class="skeleton-panel" style="width: 80rpx; height: 40rpx; border-radius: var(--radius-full)"></view>
+        </view>
+      </view>
+      <scroll-view scroll-x enable-flex="true" enhanced="true" class="skeleton-stat-scroll">
+        <view class="skeleton-panel skeleton-stat-card" wx:for="{{[1,2,3,4]}}" wx:key="*this"></view>
+      </scroll-view>
+    </view>
+  </view>
   <view wx:elif="{{error}}" class="error">{{error}}</view>
   <scroll-view wx:else scroll-y enable-flex="true" enhanced="true" class="panel-container">
     <view class="analysis-header stack gap-4">
@@ -120,6 +162,7 @@
                 <view
                   class="analysis-bar__fill"
                   style="width: {{stat.percentage}}%; background-color: {{stat.color}}"
+                  data-percentage="{{stat.percentageLabel}}"
                 ></view>
               </view>
               <text class="analysis-bar__percent">{{stat.percentageLabel}}</text>

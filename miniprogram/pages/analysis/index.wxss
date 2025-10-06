@@ -9,6 +9,47 @@
   color: var(--color-text-secondary);
 }
 
+.skeleton-panel {
+  background: linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary) 50%, var(--color-bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.skeleton-summary-card {
+  height: 120rpx;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-panel-header {
+  height: 40rpx;
+  width: 60%;
+  margin-bottom: var(--space-3);
+}
+
+.skeleton-stat-scroll {
+  display: flex;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+.skeleton-stat-card {
+  flex: 0 0 260rpx;
+  height: 120rpx;
+  border-radius: var(--radius-lg);
+}
+
 .error {
   color: var(--color-danger);
 }
@@ -34,6 +75,13 @@
   gap: var(--space-3);
 }
 
+@media (max-width: 375px) {
+  .summary-card-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}
+
 .summary-card {
   background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
@@ -44,6 +92,27 @@
   gap: var(--space-2);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   border: 2rpx solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4rpx;
+  background: var(--color-border-secondary);
+  transition: background 0.3s ease;
+}
+
+.summary-card--highlight::before {
+  background: var(--color-success);
+}
+
+.summary-card--active::before {
+  background: var(--color-primary);
 }
 
 .summary-card--hover {
@@ -61,20 +130,22 @@
 }
 
 .summary-card__value {
-  font-size: var(--text-xl);
-  font-weight: var(--font-semibold);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
   color: var(--color-text-primary);
+  line-height: 1.2;
 }
 
 .summary-card__label {
   font-size: var(--text-md);
-  font-weight: var(--font-medium);
+  font-weight: var(--font-semibold);
   color: var(--color-text-primary);
 }
 
 .summary-card__desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--color-text-tertiary);
+  line-height: 1.4;
 }
 
 .summary-actions {
@@ -201,7 +272,12 @@
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
   border-radius: var(--radius-full);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.panel-mode-option:active {
+  transform: scale(0.95);
 }
 
 .panel-mode-option--active {
@@ -228,7 +304,11 @@
 .analysis-stat-card {
   flex: 0 0 260rpx;
   scroll-snap-align: start;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analysis-stat-card:active {
+  transform: scale(0.98);
 }
 
 .analysis-stat-card__content {
@@ -250,8 +330,9 @@
 }
 
 .analysis-stat-card__figure {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  line-height: 1.2;
 }
 
 .analysis-stat-card__unit {
@@ -281,6 +362,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.analysis-bar:active {
+  background: var(--color-bg-tertiary);
+  transform: scale(0.99);
 }
 
 .analysis-bar__header {
@@ -313,6 +400,20 @@
   height: 100%;
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
+  position: relative;
+}
+
+.analysis-bar__fill::after {
+  content: attr(data-percentage);
+  position: absolute;
+  right: 8rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-xs);
+  color: #ffffff;
+  font-weight: var(--font-medium);
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
 }
 
 .analysis-bar__percent {
@@ -400,6 +501,18 @@
   flex-direction: column;
   gap: var(--space-3);
   box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .selection-handle {

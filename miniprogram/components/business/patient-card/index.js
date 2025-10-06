@@ -99,6 +99,14 @@ Component({
       type: Object,
       value: null,
     },
+    swipeActions: {
+      type: Array,
+      value: [
+        { id: 'edit', icon: '✏️', type: 'default' },
+        { id: 'call', icon: '📞', type: 'primary' },
+        { id: 'delete', icon: '🗑️', type: 'danger' }
+      ],
+    },
   },
   data: {
     avatarText: '—',
@@ -111,6 +119,11 @@ Component({
     cardPadding: 'var(--space-4)',
     infoItems: [],
     hasActions: false,
+    statusIndicator: null,
+    statusIcon: null,
+    swipeActions: [],
+    isSwiping: false,
+    isLongPressing: false,
   },
   lifetimes: {
     attached() {
@@ -146,6 +159,22 @@ Component({
       const tags = Array.isArray(patient.tags) ? patient.tags : [];
       const infoItems = [];
 
+      // 状态指示处理
+      const status = patient.status || patient.cardStatus || 'default';
+      let statusIndicator = null;
+      let statusIcon = null;
+
+      if (status === 'in_care') {
+        statusIndicator = { type: 'in_care' };
+        statusIcon = { type: 'in_care', icon: '🏠' };
+      } else if (status === 'pending') {
+        statusIndicator = { type: 'pending' };
+        statusIcon = { type: 'pending', icon: '⏳' };
+      } else if (status === 'discharged') {
+        statusIndicator = { type: 'discharged' };
+        statusIcon = { type: 'discharged', icon: '✅' };
+      }
+
       // P0: 最近入住时间 - 小家入住周期管理核心
       if (patient.latestAdmissionDateFormatted) {
         infoItems.push({
@@ -162,19 +191,43 @@ Component({
         infoItems.push({ label: '入住次数', value: `${patient.admissionCount}次`, priority: 1 });
       }
 
+      // 智能信息展示策略
+      const mode = this.data.mode;
+
       // P2: 就医医院 - 背景信息 (comfortable模式及以上显示)
-      if (safeString(patient.latestHospital) && this.data.mode !== 'compact') {
+      if (safeString(patient.latestHospital) && mode !== 'compact') {
         infoItems.push({ label: '就医医院', value: patient.latestHospital, priority: 2 });
       }
 
-      // P3: 年龄段 - 次要信息 (spacious模式显示)
-      if (safeString(patient.ageBucketLabel) && this.data.mode === 'spacious') {
+      // P3: 年龄段 - 次要信息 (comfortable模式及以上显示)
+      if (safeString(patient.ageBucketLabel) && (mode === 'comfortable' || mode === 'spacious' || mode === 'detail')) {
         infoItems.push({ label: '年龄段', value: patient.ageBucketLabel, priority: 3 });
       }
 
-      // P4: 籍贯 - 次要信息 (spacious模式显示)
-      if (safeString(patient.nativePlace) && this.data.mode === 'spacious') {
+      // P4: 籍贯 - 次要信息 (spacious模式及以上显示)
+      if (safeString(patient.nativePlace) && (mode === 'spacious' || mode === 'detail')) {
         infoItems.push({ label: '籍贯', value: patient.nativePlace, priority: 4 });
+      }
+
+      // P5: 主要诊断 - 关键信息 (所有模式显示)
+      if (safeString(patient.firstDiagnosis) && mode !== 'compact') {
+        infoItems.push({ label: '主要诊断', value: patient.firstDiagnosis, priority: 1 });
+      }
+
+      // 根据模式限制信息数量
+      const maxInfoItems = {
+        compact: 2,
+        list: 3,
+        comfortable: 4,
+        spacious: 5,
+        detail: 6
+      };
+
+      // 按优先级排序并限制数量
+      infoItems.sort((a, b) => a.priority - b.priority);
+      const maxItems = maxInfoItems[mode] || 3;
+      if (infoItems.length > maxItems) {
+        infoItems.splice(maxItems);
       }
 
       const hasActions = Array.isArray(this.data.actions) && this.data.actions.length > 0;
@@ -190,6 +243,8 @@ Component({
         cardPadding: modePreset.padding,
         infoItems,
         hasActions,
+        statusIndicator,
+        statusIcon,
       });
     },
     handleCardTap() {
@@ -219,13 +274,40 @@ Component({
       });
     },
     handleLongPress() {
+      this.setData({ isLongPressing: true });
       this.triggerEvent('longpress', { patient: this.data.patient });
+
+      // 长按结束后重置状态
+      setTimeout(() => {
+        this.setData({ isLongPressing: false });
+      }, 300);
     },
     handleMediaTap(event) {
       const { type } = event.currentTarget.dataset;
       this.triggerEvent('mediatap', {
         patient: this.data.patient,
         mediaType: type,
+      });
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
+    },
+    handleSwipeActionTap(event) {
+      const { action } = event.currentTarget.dataset;
+      this.triggerEvent('swipeactiontap', {
+        action,
+        patient: this.data.patient,
+      });
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
+    },
+    handleThumbnailTap(event) {
+      const { index } = event.currentTarget.dataset;
+      this.triggerEvent('thumbnailtap', {
+        index: parseInt(index, 10),
+        patient: this.data.patient,
+        thumbnails: this.data.mediaPreview?.thumbnails || [],
       });
       if (event && typeof event.stopPropagation === 'function') {
         event.stopPropagation();
