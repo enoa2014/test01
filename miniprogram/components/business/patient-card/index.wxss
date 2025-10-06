@@ -94,15 +94,15 @@
 }
 
 /* 标签分组优化 */
-.patient-card__badges pm-badge {
+.patient-card__badge {
   opacity: 0.9;
   transition: opacity 0.2s ease;
 }
 
 /* 状态标签高亮 */
-.patient-card__badges pm-badge[type='success'],
-.patient-card__badges pm-badge[type='warning'],
-.patient-card__badges pm-badge[type='danger'] {
+.patient-card__badge--success,
+.patient-card__badge--warning,
+.patient-card__badge--danger {
   opacity: 1;
   font-weight: var(--font-semibold);
 }

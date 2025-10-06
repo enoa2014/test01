@@ -44,10 +44,18 @@ def decode_stream(data: bytes) -> str:
 
 
 class CommandHTTPServer(ThreadingHTTPServer):
-    def __init__(self, server_address, RequestHandlerClass, auth_token: Optional[str], verbose: bool):
+    def __init__(
+        self,
+        server_address,
+        RequestHandlerClass,
+        auth_token: Optional[str],
+        verbose: bool,
+        default_timeout: Optional[float],
+    ):
         super().__init__(server_address, RequestHandlerClass)
         self.auth_token = auth_token
         self.verbose = verbose
+        self.default_timeout = default_timeout
 
 
 class CommandRequestHandler(BaseHTTPRequestHandler):
@@ -120,6 +128,10 @@ class CommandRequestHandler(BaseHTTPRequestHandler):
             if timeout <= 0:
                 self._json_response(400, {"error": "'timeout' must be greater than zero"})
                 return
+        else:
+            timeout = self.server.default_timeout
+            if timeout is not None and timeout <= 0:
+                timeout = None
         stdin_data = payload.get("stdin")
         if stdin_data is not None and not isinstance(stdin_data, str):
             self._json_response(400, {"error": "'stdin' must be a string"})
@@ -197,12 +209,24 @@ def parse_args():
     parser.add_argument("--port", type=int, default=8765, help="Port to listen on (default: 8765)")
     parser.add_argument("--token", help="Optional shared secret required in X-Auth-Token header")
     parser.add_argument("--verbose", action="store_true", help="Enable request logging")
+    parser.add_argument(
+        "--command-timeout",
+        type=float,
+        help="Default timeout (seconds) for executed commands; omit for no limit",
+    )
     return parser.parse_args()
 
 
 def run_server():
     args = parse_args()
-    server = CommandHTTPServer((args.host, args.port), CommandRequestHandler, args.token, args.verbose)
+    default_timeout = args.command_timeout if args.command_timeout and args.command_timeout > 0 else None
+    server = CommandHTTPServer(
+        (args.host, args.port),
+        CommandRequestHandler,
+        args.token,
+        args.verbose,
+        default_timeout,
+    )
     banner = f"Command bridge server listening on http://{args.host}:{args.port}"
     if args.token:
         banner += " (token required)"

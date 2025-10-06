@@ -1,7 +1,14 @@
 const cloud = require('wx-server-sdk');
 const { v4: uuidv4 } = require('uuid');
 
-const { normalizeSpacing, ensureCollectionExists } = require('./utils/patient');
+const {
+  normalizeSpacing,
+  ensureCollectionExists,
+  shouldCountIntakeRecord,
+  dedupeIntakeRecords,
+  extractRecordTimestampForKey,
+  resolveRecordValue,
+} = require('./utils/patient');
 
 const createExcelSync = require('./excel-sync');
 
@@ -26,6 +33,64 @@ const SITUATION_MIN_LENGTH = 0;
 const SITUATION_MAX_LENGTH = 500;
 const SITUATION_KEYWORDS = [];
 const MAX_INTAKE_QUERY_LIMIT = 100; // fetch limit for intake history queries
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const normalizeCareStatusValue = value => {
+  const text = normalizeString(value);
+  if (!text) {
+    return '';
+  }
+  const lower = text.toLowerCase();
+  if (['in_care', 'incare', 'in-care', 'active', '入住', '在住'].includes(lower)) {
+    return 'in_care';
+  }
+  if (['pending', 'followup', 'follow_up', '待入住', '待随访', '随访'].includes(lower)) {
+    return 'pending';
+  }
+  if (['discharged', 'left', 'checkout', 'checkedout', 'checked-out', '已离开', '已出院', '离开'].includes(lower)) {
+    return 'discharged';
+  }
+  return '';
+};
+
+const deriveCareStatus = (patientDoc = {}, summary = null) => {
+  const checkoutAtRaw =
+    patientDoc.checkoutAt ||
+    (patientDoc.data && patientDoc.data.checkoutAt) ||
+    (patientDoc.metadata && patientDoc.metadata.checkoutAt);
+  const checkoutAt = Number(checkoutAtRaw);
+  if (Number.isFinite(checkoutAt) && checkoutAt > 0) {
+    return 'discharged';
+  }
+
+  const baseStatus = normalizeCareStatusValue(
+    patientDoc.careStatus || (patientDoc.data && patientDoc.data.careStatus)
+  );
+  if (baseStatus) {
+    return baseStatus;
+  }
+
+  const latestTimestamp = Number(
+    (summary && summary.latestTimestamp) ||
+      patientDoc.latestAdmissionTimestamp ||
+      (patientDoc.data && patientDoc.data.latestAdmissionTimestamp)
+  );
+  if (Number.isFinite(latestTimestamp) && latestTimestamp > 0) {
+    const now = Date.now();
+    if (latestTimestamp > now) {
+      return 'pending';
+    }
+    const diffDays = Math.floor((now - latestTimestamp) / DAY_IN_MS);
+    if (diffDays <= 30) {
+      return 'in_care';
+    }
+    if (diffDays <= 90) {
+      return 'pending';
+    }
+  }
+
+  return 'discharged';
+};
 
 async function invalidatePatientSummaryCache() {
   try {
@@ -402,11 +467,34 @@ async function handleGetAllIntakeRecords(event) {
     syncExcelKeys.push(patientDoc.patientName);
   }
 
-  await syncExcelRecordsToIntake(resolvedPatientKey, {
+  let summaryVersion = Date.now();
+  let summaryCount = null;
+  let summaryRecords = [];
+
+  const syncResult = await syncExcelRecordsToIntake(resolvedPatientKey, {
     patientDoc,
     excelKeys: syncExcelKeys,
     forceSummary: true,
   });
+
+  if (syncResult && syncResult.summary) {
+    const { summary } = syncResult;
+    if (summary && summary.count !== undefined) {
+      summaryCount = Number(summary.count);
+      if (!Number.isFinite(summaryCount)) {
+        summaryCount = null;
+      }
+    }
+    if (summary && Array.isArray(summary.records)) {
+      summaryRecords = summary.records;
+    }
+    const versionCandidate = Number(
+      summary.latestTimestamp || summary.updatedAt || summary.earliestTimestamp
+    );
+    if (Number.isFinite(versionCandidate) && versionCandidate > 0) {
+      summaryVersion = versionCandidate;
+    }
+  }
 
   await ensureCollection(PATIENT_INTAKE_COLLECTION);
 
@@ -418,11 +506,14 @@ async function handleGetAllIntakeRecords(event) {
     const total = (countRes && countRes.total) || 0;
 
     if (!total) {
+      const zeroCount = summaryCount !== null ? summaryCount : 0;
       return {
         success: true,
         data: {
           patientKey: resolvedPatientKey,
-          totalCount: 0,
+          totalCount: zeroCount,
+          count: zeroCount,
+          summaryVersion,
           records: [],
         },
       };
@@ -454,17 +545,6 @@ async function handleGetAllIntakeRecords(event) {
       }
     });
 
-    rawIntakeRecords.sort((a, b) => {
-      const timeOf = record => {
-        if (!record) {
-          return 0;
-        }
-        const meta = record.metadata || {};
-        return record.updatedAt || meta.lastModifiedAt || meta.submittedAt || record.createdAt || 0;
-      };
-      return timeOf(b) - timeOf(a);
-    });
-
     const filteredRawRecords = rawIntakeRecords.filter(rawIntake => {
       if (!rawIntake) {
         return false;
@@ -483,22 +563,53 @@ async function handleGetAllIntakeRecords(event) {
       if (isAggregatedBySource || isAggregatedBySubmitter || isAggregatedByIdSuffix) {
         return false;
       }
-      return true;
+      return shouldCountIntakeRecord(rawIntake);
     });
 
-    const intakeRecords = filteredRawRecords.map(rawIntake => {
+    let dedupedRecords = [];
+    if (summaryRecords && summaryRecords.length) {
+      dedupedRecords = dedupeIntakeRecords(summaryRecords);
+    } else {
+      dedupedRecords = dedupeIntakeRecords(filteredRawRecords);
+    }
+
+    const sortedRecords = dedupedRecords.sort(
+      (a, b) => extractRecordTimestampForKey(b) - extractRecordTimestampForKey(a)
+    );
+
+    const intakeRecords = sortedRecords.map(rawIntake => {
       const metadata = rawIntake.metadata || {};
       const intakeInfo = rawIntake.intakeInfo || {};
       const basicInfo = rawIntake.basicInfo || {};
       const medicalInfo = rawIntake.medicalInfo || {};
       const contactInfo = rawIntake.contactInfo || {};
 
-      const hospital = medicalInfo.hospital || rawIntake.hospital || intakeInfo.hospital || '';
+      const hospital =
+        resolveRecordValue(rawIntake, [
+          ['medicalInfo', 'hospital'],
+          'hospital',
+          'hospitalDisplay',
+          ['intakeInfo', 'hospital'],
+        ]) || '';
       const diagnosis =
-        medicalInfo.diagnosis || intakeInfo.visitReason || rawIntake.diagnosis || '';
-      const doctor = medicalInfo.doctor || rawIntake.doctor || intakeInfo.doctor || '';
+        resolveRecordValue(rawIntake, [
+          ['medicalInfo', 'diagnosis'],
+          'diagnosis',
+          'diagnosisDisplay',
+          ['intakeInfo', 'visitReason'],
+        ]) || '';
+      const doctor =
+        resolveRecordValue(rawIntake, [
+          ['medicalInfo', 'doctor'],
+          'doctor',
+          ['intakeInfo', 'doctor'],
+        ]) || '';
       const followUpPlan =
-        intakeInfo.followUpPlan || medicalInfo.followUpPlan || rawIntake.followUpPlan || '';
+        resolveRecordValue(rawIntake, [
+          ['medicalInfo', 'followUpPlan'],
+          'followUpPlan',
+          ['intakeInfo', 'followUpPlan'],
+        ]) || '';
 
       const medicalInfoPayload = {};
       ['hospital', 'diagnosis', 'doctor', 'symptoms', 'treatmentProcess', 'followUpPlan'].forEach(
@@ -571,11 +682,16 @@ async function handleGetAllIntakeRecords(event) {
       return filteredRecord;
     });
 
+    const dedupedCount = intakeRecords.length;
+    const resolvedCount = summaryCount !== null ? summaryCount : dedupedCount;
+
     return {
       success: true,
       data: {
         patientKey: resolvedPatientKey,
-        totalCount: intakeRecords.length,
+        totalCount: resolvedCount,
+        count: resolvedCount,
+        summaryVersion,
         records: intakeRecords,
       },
     };
@@ -586,6 +702,8 @@ async function handleGetAllIntakeRecords(event) {
       data: {
         patientKey: resolvedPatientKey,
         totalCount: 0,
+        count: 0,
+        summaryVersion,
         records: [],
       },
     };
@@ -660,6 +778,21 @@ async function handleGetPatientDetail(event) {
     }
   }
 
+  let resolvedCareStatus = null;
+  let storedCareStatus = '';
+  if (patient) {
+    resolvedCareStatus = deriveCareStatus(patient, syncSummary);
+    storedCareStatus = normalizeCareStatusValue(
+      patient.careStatus || (patient.data && patient.data.careStatus)
+    );
+    if (resolvedCareStatus) {
+      patient.careStatus = resolvedCareStatus;
+      if (patient.data && typeof patient.data === 'object') {
+        patient.data.careStatus = resolvedCareStatus;
+      }
+    }
+  }
+
   let latestIntake = null;
   try {
     await ensureCollection(PATIENT_INTAKE_COLLECTION);
@@ -696,13 +829,26 @@ async function handleGetPatientDetail(event) {
       .orderBy('createdAt', 'desc')
       .limit(20)
       .get();
-    operationLogs = Array.isArray(logsRes.data)
-      ? logsRes.data.map(log => ({
-          ...log,
-        }))
-      : [];
+      operationLogs = Array.isArray(logsRes.data)
+        ? logsRes.data.map(log => ({
+            ...log,
+          }))
+        : [];
   } catch (error) {
     console.warn('加载患者操作日志失败', resolvedPatientKey, error);
+  }
+
+  if (resolvedCareStatus && resolvedCareStatus !== storedCareStatus && resolvedPatientKey) {
+    try {
+      await db.collection(PATIENTS_COLLECTION).doc(resolvedPatientKey).update({
+        data: {
+          careStatus: resolvedCareStatus,
+          'data.careStatus': resolvedCareStatus,
+        },
+      });
+    } catch (error) {
+      console.warn('sync patient careStatus failed', resolvedPatientKey, error);
+    }
   }
 
   return {
@@ -746,6 +892,45 @@ async function handleGetPatientDetail(event) {
     },
   };
 }
+
+
+async function handleListIntakeRecords(event = {}) {
+  const patientKey = normalizeSpacing(event.patientKey);
+  const limit = Math.min(Number(event.limit) || MAX_INTAKE_QUERY_LIMIT, MAX_INTAKE_QUERY_LIMIT);
+
+  if (!patientKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少住户标识');
+  }
+
+  await ensureCollectionExists(PATIENT_INTAKE_COLLECTION);
+
+  try {
+    const res = await db
+      .collection(PATIENT_INTAKE_COLLECTION)
+      .where({ patientKey })
+      .orderBy('updatedAt', 'desc')
+      .orderBy('metadata.lastModifiedAt', 'desc')
+      .limit(limit)
+      .get();
+
+    const items = Array.isArray(res.data) ? res.data : [];
+
+    return {
+      success: true,
+      data: { items },
+    };
+  } catch (error) {
+    console.error('list intake records failed', patientKey, error);
+    return {
+      success: false,
+      error: {
+        code: 'LIST_INTAKE_FAILED',
+        message: '获取入住记录失败',
+      },
+    };
+  }
+}
+
 
 // 保存草稿
 async function handleSaveDraft(event) {
@@ -1640,6 +1825,8 @@ exports.main = async event => {
         return await handleGetPatients(event);
       case 'getPatientDetail':
         return await handleGetPatientDetail(event);
+      case 'listIntakeRecords':
+        return await handleListIntakeRecords(event);
       case 'createPatient':
         return await handleCreatePatient(event);
       case 'getAllIntakeRecords':

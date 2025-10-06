@@ -257,4 +257,102 @@ describe('patient intake wizard validations', () => {
     expect(wxmlContent).toMatch(/data-field="idNumber"[\s\S]*?hint="示例：身份证格式为18位数字"/);
     expect(wxmlContent).toMatch(/data-field="phone"[\s\S]*?hint="示例：13812345678"/);
   });
+
+  test('emergency contact display ignores relationship-only input', () => {
+    const page = createWizardInstance();
+    page.setData({ currentStep: 1 });
+
+    page.updateFormData({
+      contacts: [{ relationship: '父亲', name: '', phone: '13800000000' }],
+    });
+    page.updateRequiredFields();
+
+    expect(page.data.formData.contacts[0]).toEqual({
+      relationship: '父亲',
+      name: '',
+      phone: '13800000000',
+    });
+    expect(page.data.formData.emergencyContact).toBe('');
+  });
+
+  test('emergency contact display keeps relationship when name present', () => {
+    const page = createWizardInstance();
+    page.setData({ currentStep: 1 });
+
+    page.updateFormData({
+      contacts: [{ relationship: '母亲', name: '张翠花', phone: '13800000001' }],
+    });
+    page.updateRequiredFields();
+
+    expect(page.data.formData.contacts[0]).toEqual({
+      relationship: '母亲',
+      name: '张翠花',
+      phone: '13800000001',
+    });
+    expect(page.data.formData.emergencyContact).toBe('母亲 张翠花');
+  });
+
+  test('existing intake allows relaxed contact validation with formatted phone', () => {
+    const page = createWizardInstance();
+    page.setData({
+      isEditingExisting: true,
+    });
+
+    page.updateFormData({
+      contacts: [{ relationship: '', name: '李四', phone: '138-0000-0001' }],
+      emergencyContact: '李四',
+      emergencyPhone: '138-0000-0001',
+    });
+
+    expect(page.data.formData.contacts[0].name).toBe('李四');
+    expect(page.data.formData.contacts[0].phone).toBe('13800000001');
+    expect(page.data.formData.emergencyPhone).toBe('13800000001');
+
+    const missing = page.getAllMissingRequiredFields();
+    const contactsMissing = missing.find(item => item.key === 'contacts');
+    expect(contactsMissing).toBeUndefined();
+  });
+
+  test('_extractEmergencyContactFromProfile combines separate name and phone fields', () => {
+    const page = createWizardInstance();
+
+    const result = page._extractEmergencyContactFromProfile([
+      { label: '紧急联系人', value: '王大锤' },
+      { label: '紧急联系电话', value: '138 0000 1234' },
+      { label: '家庭地址', value: '广州市白云区' },
+    ]);
+
+    expect(result).toEqual({ emergencyContact: '王大锤', emergencyPhone: '13800001234' });
+  });
+
+  test('_extractEmergencyContactFromProfile handles structured value objects', () => {
+    const page = createWizardInstance();
+
+    const result = page._extractEmergencyContactFromProfile([
+      {
+        label: '备用联系人',
+        value: { name: '李小花', mobilePhone: '139-8888-7777' },
+      },
+    ]);
+
+    expect(result).toEqual({ emergencyContact: '李小花', emergencyPhone: '13988887777' });
+  });
+
+  test('buildContactsFromFields parses guardian text fields', () => {
+    const page = createWizardInstance();
+
+    const contacts = page.buildContactsFromFields({
+      additionalText: [
+        { text: '黄华珍 18677071490', relation: '母亲' },
+        { text: '黄华珍 18677071490', relation: '母亲' },
+      ],
+    });
+
+    expect(contacts).toHaveLength(1);
+    expect(contacts[0]).toEqual({
+      relationship: '母亲',
+      name: '黄华珍',
+      phone: '18677071490',
+    });
+  });
 });

@@ -34,7 +34,7 @@
   <!-- 步骤内容 -->
   <scroll-view class="step-content" scroll-y>
     <!-- 第1步：基础身份 -->
-    <view wx:if="{{currentStep === 0}}" class="form-section">
+    <view wx:if="{{currentStepData && currentStepData.key === 'identity'}}" class="form-section">
       <view class="step-intro">
         <text class="intro-icon">📝</text>
         <text class="intro-text">请填写住户基本身份信息</text>
@@ -84,11 +84,24 @@
           block="{{true}}"
         ></pm-input>
       </view>
-    </view>
 
-    <!-- 第2步：补充信息 -->
-    <view wx:if="{{currentStep === 1}}" class="form-section">
-      <view class="step-intro">
+      <view class="form-group">
+        <pm-input
+          label="联系电话"
+          value="{{formData.phone}}"
+          placeholder="请输入11位手机号码（选填）"
+          type="number"
+          data-field="phone"
+          bindinput="onInputChange"
+          error="{{errors.phone || ''}}"
+          hint="示例：13812345678"
+          clearable="{{true}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+      </view>
+
+      <view class="step-intro step-intro--secondary">
         <text class="intro-icon">✨</text>
         <text class="intro-text">系统已自动识别以下信息，请确认</text>
       </view>
@@ -154,26 +167,10 @@
 
         <text class="error-text" wx:if="{{errors.birthDate}}">{{errors.birthDate}}</text>
       </view>
-
-      <view class="form-group">
-        <pm-input
-          label="联系电话"
-          value="{{formData.phone}}"
-          placeholder="请输入11位手机号码（选填）"
-          type="number"
-          data-field="phone"
-          bindinput="onInputChange"
-          error="{{errors.phone || ''}}"
-          hint="示例：13812345678"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
-      </view>
     </view>
 
-    <!-- 第3步：家庭与联系人 -->
-    <view wx:if="{{currentStep === 2}}" class="form-section">
+    <!-- 第2步：家庭与联系人 -->
+    <view wx:if="{{currentStepData && currentStepData.key === 'contact'}}" class="form-section">
       <view class="form-group">
         <pm-input
           label="常住地址"
@@ -272,10 +269,34 @@
           ></pm-button>
         </view>
       </view>
+
+      <view class="legacy-emergency-inputs">
+        <pm-input
+          label="紧急联系人"
+          value="{{formData.emergencyContact}}"
+          placeholder="请输入紧急联系人姓名"
+          data-field="emergencyContact"
+          bindinput="onInputChange"
+          clearable="{{true}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+        <pm-input
+          label="紧急联系人电话"
+          value="{{formData.emergencyPhone}}"
+          placeholder="请输入紧急联系人电话"
+          data-field="emergencyPhone"
+          type="number"
+          bindinput="onInputChange"
+          clearable="{{true}}"
+          label-position="top"
+          block="{{true}}"
+        ></pm-input>
+      </view>
     </view>
 
-    <!-- 第4步：情况说明 -->
-    <view wx:if="{{currentStep === 3}}" class="form-section">
+    <!-- 第3步：情况说明 -->
+    <view wx:if="{{currentStepData && currentStepData.key === 'situation'}}" class="form-section">
       <view class="form-group">
         <view class="textarea-container">
           <pm-input
@@ -309,8 +330,8 @@
       </view>
     </view>
 
-    <!-- 第5步：附件上传 -->
-    <view wx:if="{{currentStep === 4}}" class="form-section">
+    <!-- 第4步：附件上传 -->
+    <view wx:if="{{currentStepData && currentStepData.key === 'upload'}}" class="form-section">
       <view class="upload-section">
         <view class="upload-header">
           <view class="upload-title">附件上传（选填）</view>
@@ -343,8 +364,8 @@
       </view>
     </view>
 
-    <!-- 第6步：核对与提交 -->
-    <view wx:if="{{currentStep === 5}}" class="form-section">
+    <!-- 第5步：核对与提交 -->
+    <view wx:if="{{currentStepData && currentStepData.key === 'review'}}" class="form-section">
       <view class="review-section">
         <view class="review-title">请核对以下信息</view>
 

@@ -26,6 +26,7 @@
         <pm-badge
           wx:for="{{badges}}"
           wx:key="text"
+          class="patient-card__badge patient-card__badge--{{item.type || 'default'}}"
           text="{{item.text}}"
           type="{{item.type || 'default'}}"
           size="small"

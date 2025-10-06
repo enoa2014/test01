@@ -37,6 +37,10 @@ Component({
       type: Array,
       value: [],
     },
+    filters: {
+      type: Array,
+      value: [],
+    },
     loading: {
       type: Boolean,
       value: false,
@@ -157,6 +161,15 @@ Component({
       this.setData({ internalValue: keyword });
       this.triggerEvent('search', { value: keyword, source: 'suggestion' });
       this.saveHistory(keyword);
+    },
+
+    handleFilterTap(event) {
+      const filter =
+        (event.currentTarget &&
+          event.currentTarget.dataset &&
+          event.currentTarget.dataset.filter) ||
+        null;
+      this.triggerEvent('filtertap', { filter });
     },
 
     handleToggleAdvanced() {

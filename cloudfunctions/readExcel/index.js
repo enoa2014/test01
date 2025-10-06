@@ -409,6 +409,139 @@ async function clearCollection(collection) {
   }
 }
 
+// 清理患者相关集合，确保后续导入不会留下旧数据
+async function resetPatientDataCollections() {
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
+  await ensureCollectionExists(db, PATIENT_INTAKE_COLLECTION);
+  await ensureCollectionExists(db, CACHE_COLLECTION);
+
+  await clearCollection(db.collection(PATIENTS_COLLECTION));
+  await clearCollection(db.collection(PATIENT_INTAKE_COLLECTION));
+
+  try {
+    await db.collection(CACHE_COLLECTION).doc(PATIENT_CACHE_DOC_ID).remove();
+  } catch (error) {
+    const errorCode = error && (error.errCode || error.code);
+    if (errorCode && ['RESOURCE_NOT_FOUND', 'ResourceNotFound'].includes(errorCode)) {
+      return;
+    }
+    console.warn(
+      'resetPatientDataCollections remove cache failed',
+      PATIENT_CACHE_DOC_ID,
+      error
+    );
+  }
+}
+
+// 移除集合中不在保留列表内的文档
+async function removeRecordsOutsideSet(collectionName, keepSet) {
+  await ensureCollectionExists(db, collectionName);
+  const collection = db.collection(collectionName);
+  const BATCH_SIZE = 100;
+  let skip = 0;
+  let removed = 0;
+
+  while (true) {
+    const res = await collection.skip(skip).limit(BATCH_SIZE).get();
+    const docs = res && Array.isArray(res.data) ? res.data : [];
+    if (!docs.length) {
+      break;
+    }
+
+    const staleDocs = docs.filter(doc => {
+      const docId = doc && doc._id ? String(doc._id) : '';
+      return docId && !keepSet.has(docId);
+    });
+
+    if (staleDocs.length) {
+      await Promise.all(
+        staleDocs.map(doc =>
+          collection
+            .doc(doc._id)
+            .remove()
+            .catch(error => {
+              console.warn(
+                'removeRecordsOutsideSet remove failed',
+                collectionName,
+                doc && doc._id,
+                error
+              );
+              return null;
+            })
+        )
+      );
+      removed += staleDocs.length;
+      continue;
+    }
+
+    if (docs.length < BATCH_SIZE) {
+      break;
+    }
+
+    skip += docs.length;
+  }
+
+  return removed;
+}
+
+// 调用 patientIntake 云函数刷新患者聚合信息，避免前端首次加载与详情不一致
+async function refreshPatientAggregates(patients = []) {
+  if (!Array.isArray(patients) || patients.length === 0) {
+    return { attempted: 0, successes: 0, failures: [] };
+  }
+
+  const failures = [];
+  let successes = 0;
+  const BATCH_SIZE = 5;
+
+  for (let index = 0; index < patients.length; index += BATCH_SIZE) {
+    const batch = patients.slice(index, index + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async item => {
+        const payload = {
+          action: 'getPatientDetail',
+          patientKey: item.patientKey,
+        };
+        if (item.recordKey) {
+          payload.recordKey = item.recordKey;
+        }
+        if (item.patientName) {
+          payload.patientName = item.patientName;
+        }
+
+        try {
+          await cloud.callFunction({
+            name: 'patientIntake',
+            data: payload,
+          });
+          return { success: true, key: item.patientKey };
+        } catch (error) {
+          console.warn('refreshPatientAggregates call failed', item.patientKey, error);
+          return {
+            success: false,
+            key: item.patientKey,
+            error: error && (error.message || error.code || String(error)),
+          };
+        }
+      })
+    );
+
+    results.forEach(result => {
+      if (result.success) {
+        successes += 1;
+      } else {
+        failures.push(result);
+      }
+    });
+  }
+
+  return {
+    attempted: patients.length,
+    successes,
+    failures,
+  };
+}
+
 // 导入到数据库
 async function importToDatabase(records) {
   await ensureCollectionExists(db, COLLECTION);
@@ -539,6 +672,7 @@ function buildPatientPayload(group, latestRecord) {
   const normalizedRecordKey = normalizeSpacing(
     group.recordKey || group.key || group.patientName || ''
   );
+  const now = Date.now();
 
   const emergencyContactCandidates = [];
   if (group.summaryCaregivers) {
@@ -571,6 +705,22 @@ function buildPatientPayload(group, latestRecord) {
   const fatherContact = contacts.find(contact => contact.role === 'father');
   const motherContact = contacts.find(contact => contact.role === 'mother');
   const guardianContact = contacts.find(contact => contact.role === 'other');
+
+  const defaultCareStatus = 'discharged';
+
+  const dataPayload = {
+    patientName: group.patientName,
+    idNumber: group.idNumber || latestRecord.idNumber || '',
+    gender: group.gender || latestRecord.gender || '',
+    birthDate: group.birthDate || latestRecord.birthDate || '',
+    address: latestRecord.address || '',
+    emergencyContact: normalizeSpacing(normalizedEmergencyContact || ''),
+    admissionCount: group.admissionCount || 0,
+    firstAdmissionDate: group.firstAdmissionTimestamp,
+    latestAdmissionDate: group.latestAdmissionTimestamp,
+    latestAdmissionTimestamp: group.latestAdmissionTimestamp,
+    careStatus: defaultCareStatus,
+  };
 
   return {
     patientName: group.patientName,
@@ -605,8 +755,10 @@ function buildPatientPayload(group, latestRecord) {
       ? group.familyContacts.map(contact => ({ ...contact }))
       : [],
     recordKey: normalizedRecordKey,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
+    careStatus: defaultCareStatus,
+    data: dataPayload,
   };
 }
 
@@ -689,7 +841,41 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
     emergencyContactParts.find(value => normalizeSpacing(value)) || ''
   );
 
-  return {
+  const pickTimestamp = (...candidates) => {
+    for (const candidate of candidates) {
+      const ts = normalizeTimestamp(candidate);
+      if (ts !== null && Number.isFinite(ts) && ts > 0) {
+        return ts;
+      }
+    }
+    return null;
+  };
+
+  const latestTimestamp = pickTimestamp(
+    group.latestAdmissionTimestamp,
+    latestRecord.admissionTimestamp,
+    latestRecord.intakeTime,
+    latestRecord.admissionDate,
+    latestRecord.importedAt,
+    latestRecord._importedAt
+  );
+
+  const intakeTimeValue = Number.isFinite(latestTimestamp) ? latestTimestamp : undefined;
+
+  const metadata = {
+    submittedBy: 'excel-import',
+    syncBatchId,
+  };
+
+  if (intakeTimeValue !== undefined) {
+    metadata.intakeTime = intakeTimeValue;
+    metadata.submittedAt = intakeTimeValue;
+    metadata.lastModifiedAt = intakeTimeValue;
+  } else {
+    metadata.submittedAt = serverDate;
+  }
+
+  const intakePayload = {
     patientKey,
     patientName: group.patientName,
     intakeId: `${patientKey}-excel`,
@@ -712,22 +898,28 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
         : [],
     },
     intakeInfo: {
-      intakeTime: group.latestAdmissionTimestamp || Date.now(),
       situation: situationText,
       followUpPlan: normalize(latestRecord.followUpPlan),
       medicalHistory: [],
       attachments: [],
     },
     medicalInfo: Object.keys(medicalInfo).length ? medicalInfo : undefined,
-    metadata: {
-      submittedAt: serverDate,
-      lastModifiedAt: serverDate,
-      submittedBy: 'excel-import',
-      syncBatchId,
-    },
+    metadata,
     createdAt: serverDate,
     updatedAt: serverDate,
   };
+
+  if (intakeTimeValue !== undefined) {
+    intakePayload.intakeInfo.intakeTime = intakeTimeValue;
+    intakePayload.admissionTimestamp = intakeTimeValue;
+    intakePayload.intakeTime = intakeTimeValue;
+    intakePayload.importedAt = intakeTimeValue;
+    intakePayload._importedAt = intakeTimeValue;
+    intakePayload.createdAt = intakeTimeValue;
+    intakePayload.updatedAt = intakeTimeValue;
+  }
+
+  return intakePayload;
 }
 
 // 更新或插入入住记录
@@ -774,6 +966,9 @@ async function syncPatientsFromGroups(groups, options = {}) {
   let patientCount = 0;
   let intakeCount = 0;
   const errors = [];
+  const insertedPatientIds = new Set();
+  const insertedIntakeIds = new Set();
+  const processedPatients = [];
 
   for (const group of groupList) {
     if (!group || !group.patientName) {
@@ -792,10 +987,17 @@ async function syncPatientsFromGroups(groups, options = {}) {
         serverDate,
       });
       patientCount += 1;
+      insertedPatientIds.add(String(patientDocId));
+      processedPatients.push({
+        patientKey: String(patientDocId),
+        recordKey: normalizeSpacing(patientPayload.recordKey || patientDocId),
+        patientName: normalizeSpacing(patientPayload.patientName || group.patientName || ''),
+      });
 
       const intakePayload = buildIntakePayload(group, patientDocId, syncBatchId, serverDate);
       const intakeDocId = await upsertIntakeRecord(patientDocId, intakePayload, { serverDate });
       intakeCount += 1;
+      insertedIntakeIds.add(String(intakeDocId));
     } catch (error) {
       console.error('syncPatientsFromGroups item failed', group.patientName, error);
       errors.push({
@@ -805,11 +1007,29 @@ async function syncPatientsFromGroups(groups, options = {}) {
     }
   }
 
+  let cleanupStats = null;
+  if (options.removeExtraneousRecords) {
+    const removedPatients = await removeRecordsOutsideSet(
+      PATIENTS_COLLECTION,
+      insertedPatientIds
+    );
+    const removedIntakeRecords = await removeRecordsOutsideSet(
+      PATIENT_INTAKE_COLLECTION,
+      insertedIntakeIds
+    );
+    cleanupStats = {
+      removedPatients,
+      removedIntakeRecords,
+    };
+  }
+
   return {
     syncBatchId,
     patients: patientCount,
     intakeRecords: intakeCount,
     errors,
+    cleanup: cleanupStats,
+    patientsSynced: processedPatients,
   };
 }
 
@@ -976,6 +1196,7 @@ exports.main = async (event = {}) => {
         throw makeError('NORMALIZED_EMPTY', '未生成任何可导入的记录');
       }
 
+      await resetPatientDataCollections();
       const stats = await importToDatabase(normalized);
       const groups = buildPatientGroups(normalized);
       const summaries = buildGroupSummaries(groups);
@@ -984,13 +1205,23 @@ exports.main = async (event = {}) => {
       await saveSummariesToCache(summaries);
 
       const syncBatchId = event.syncBatchId || 'raw-' + Date.now();
-      const sync = await syncPatientsFromGroups(groups, { syncBatchId });
+      const sync = await syncPatientsFromGroups(groups, {
+        syncBatchId,
+        removeExtraneousRecords: true,
+      });
+      let aggregateRefresh = null;
+      try {
+        aggregateRefresh = await refreshPatientAggregates(sync.patientsSynced || []);
+      } catch (error) {
+        console.warn('refreshPatientAggregates failed', error);
+      }
 
       return {
         action: 'normalizeFromRaw',
         imported: stats,
         totalPatients: summaries.length,
         sync,
+        aggregateRefresh,
       };
     }
 

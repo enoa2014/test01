@@ -121,11 +121,12 @@ function toIntakeRecordKey(record = {}) {
   // 因为同一条记录可能有多个不同的intakeId (imported状态 vs excel后缀)
   const metadata = record.metadata || {};
   const source = safeTrim(metadata.source).toLowerCase();
+  const excelRecordId = safeTrim(metadata.excelRecordId);
   const excelFlags = [
     record.status === 'imported',
     (record.intakeId || '').includes('-excel'),
     source === 'excel-import',
-    Boolean(metadata.excelRecordId),
+    Boolean(excelRecordId),
   ];
   const isExcelImportedRecord = excelFlags.some(Boolean);
 
@@ -134,9 +135,10 @@ function toIntakeRecordKey(record = {}) {
     if (time) {
       const normalizedTime = Math.round(time / 60000);
       const identifier =
+        excelRecordId ||
+        safeTrim(record.intakeId) ||
         safeTrim(record.patientKey) ||
         safeTrim(record.patientName) ||
-        safeTrim(metadata.excelRecordId) ||
         '';
       const hospital =
         safeTrim(record.hospital) ||
@@ -148,7 +150,25 @@ function toIntakeRecordKey(record = {}) {
         safeTrim(record.diagnosisDisplay) ||
         safeTrim(record.intakeInfo && record.intakeInfo.visitReason) ||
         '';
-      return `excel:${normalizedTime}-${identifier}-${hospital}-${diagnosis}`;
+      const baseKey = `excel:${normalizedTime}-${identifier}-${hospital}-${diagnosis}`;
+      if (excelRecordId || hospital || diagnosis) {
+        return baseKey;
+      }
+      const docId = safeTrim(record._id);
+      if (docId) {
+        return `${baseKey}-${docId}`;
+      }
+      return baseKey;
+    }
+    if (excelRecordId) {
+      return `excel-record:${excelRecordId}`;
+    }
+    if (record.intakeId) {
+      return `excel-intake:${safeTrim(record.intakeId)}`;
+    }
+    const docId = safeTrim(record._id);
+    if (docId) {
+      return `excel-doc:${docId}`;
     }
   }
 
@@ -173,8 +193,14 @@ function toIntakeRecordKey(record = {}) {
   const admissionDate = safeTrim(record.displayTime) || safeTrim(record.admissionDate) || '';
   const diagnosis = safeTrim(record.diagnosis) || safeTrim(record.diagnosisDisplay) || '';
   const hospital = safeTrim(record.hospital) || safeTrim(record.hospitalDisplay) || '';
-
-  return `fallback:${admissionDate}-${diagnosis}-${hospital}`;
+  const fallbackKey = `fallback:${admissionDate}-${diagnosis}-${hospital}`;
+  if (!admissionDate && !diagnosis && !hospital) {
+    const docId = safeTrim(record._id) || safeTrim(record.intakeId) || excelRecordId;
+    if (docId) {
+      return `${fallbackKey}-${docId}`;
+    }
+  }
+  return fallbackKey;
 }
 
 function isActiveStatus(status) {

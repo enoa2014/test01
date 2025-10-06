@@ -119,9 +119,19 @@ const parseFamilyContact = (rawValue, role) => {
 };
 
 const ensureRecordTimestamp = (record = {}) => {
+  const metadata = (record && record.metadata) || {};
+  const source = normalizeSpacing(metadata.source).toLowerCase();
+  const isExcelImport = source === 'excel-import';
   const direct = normalizeTimestamp(record.admissionTimestamp);
   if (direct !== null) {
     return direct;
+  }
+  const intakeTimeTs = normalizeTimestamp(
+    record.intakeTime ||
+      (record.metadata && (record.metadata.intakeTime || record.metadata.lastModifiedAt))
+  );
+  if (intakeTimeTs !== null) {
+    return intakeTimeTs;
   }
   const parsedDate = normalizeTimestamp(record.admissionDate);
   if (parsedDate !== null) {
@@ -132,10 +142,217 @@ const ensureRecordTimestamp = (record = {}) => {
     return imported;
   }
   const updated = normalizeTimestamp(record.updatedAt || record.createdAt);
-  if (updated !== null) {
+  if (updated !== null && !isExcelImport) {
     return updated;
   }
   return 0;
+};
+
+const shouldCountIntakeRecord = record => {
+  if (!record) {
+    return false;
+  }
+  const status = normalizeSpacing(record.status).toLowerCase();
+  if (status === 'draft') {
+    return false;
+  }
+  return true;
+};
+
+const safeTrim = value => {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  return String(value).trim();
+};
+
+const extractRecordTimestampForKey = (record = {}) => {
+  const ts = ensureRecordTimestamp(record);
+  return Number.isFinite(ts) ? ts : 0;
+};
+
+const resolveRecordValue = (record, paths = []) => {
+  for (const pathCandidate of paths) {
+    if (!pathCandidate) {
+      continue;
+    }
+    if (Array.isArray(pathCandidate)) {
+      let current = record;
+      let valid = true;
+      for (const segment of pathCandidate) {
+        if (!current || typeof current !== 'object') {
+          valid = false;
+          break;
+        }
+        current = current[segment];
+      }
+      if (valid) {
+        const normalized = normalizeSpacing(current);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    } else if (typeof record === 'object' && record !== null) {
+      const value = record[pathCandidate];
+      const normalized = normalizeSpacing(value);
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+  return '';
+};
+
+const isActiveStatus = status => {
+  const normalized = normalizeSpacing(status);
+  if (!normalized) {
+    return false;
+  }
+  return normalized.toLowerCase() === 'active';
+};
+
+const toIntakeRecordKey = (record = {}) => {
+  if (!record || typeof record !== 'object') {
+    return `empty-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  const metadata = record.metadata || {};
+  const source = safeTrim(metadata.source).toLowerCase();
+  const intakeId = safeTrim(record.intakeId);
+  const excelRecordId = safeTrim(metadata.excelRecordId);
+
+  const excelFlags = [
+    normalizeSpacing(record.status).toLowerCase() === 'imported',
+    (intakeId || '').includes('-excel'),
+    source === 'excel-import',
+    Boolean(excelRecordId),
+  ];
+  const isExcelImportedRecord = excelFlags.some(Boolean);
+
+  if (isExcelImportedRecord) {
+    const time = extractRecordTimestampForKey(record);
+    if (time) {
+      const normalizedTime = Math.round(time / 60000);
+      const identifier =
+        excelRecordId ||
+        intakeId ||
+        safeTrim(record.patientKey) ||
+        safeTrim(record.patientName) ||
+        '';
+      const hospital = resolveRecordValue(record, [
+        ['medicalInfo', 'hospital'],
+        'hospital',
+        'hospitalDisplay',
+        ['intakeInfo', 'hospital'],
+      ]);
+      const diagnosis = resolveRecordValue(record, [
+        ['medicalInfo', 'diagnosis'],
+        'diagnosis',
+        'diagnosisDisplay',
+        ['intakeInfo', 'visitReason'],
+      ]);
+      const baseKey = `excel:${normalizedTime}-${identifier}-${hospital}-${diagnosis}`;
+      if (excelRecordId || hospital || diagnosis) {
+        return baseKey;
+      }
+      const docId = safeTrim(record._id);
+      if (docId) {
+        return `${baseKey}-${docId}`;
+      }
+      return baseKey;
+    }
+    if (excelRecordId) {
+      return `excel-record:${excelRecordId}`;
+    }
+    if (intakeId) {
+      return `excel-intake:${intakeId}`;
+    }
+    const docId = safeTrim(record._id);
+    if (docId) {
+      return `excel-doc:${docId}`;
+    }
+  }
+
+  const candidates = [record.intakeId, record._id, record.id, metadata.intakeId].filter(Boolean);
+  if (candidates.length) {
+    return candidates[0];
+  }
+
+  const time = extractRecordTimestampForKey(record);
+  if (time) {
+    const normalizedTime = Math.round(time / 60000);
+    const identifier = safeTrim(record.patientKey) || safeTrim(record.patientName) || '';
+    return `time:${normalizedTime}-${identifier}`;
+  }
+
+  const admissionDate = safeTrim(record.displayTime) || safeTrim(record.admissionDate) || '';
+  const diagnosis = resolveRecordValue(record, [
+    ['medicalInfo', 'diagnosis'],
+    'diagnosis',
+    'diagnosisDisplay',
+    ['intakeInfo', 'visitReason'],
+  ]);
+  const hospital = resolveRecordValue(record, [
+    ['medicalInfo', 'hospital'],
+    'hospital',
+    'hospitalDisplay',
+    ['intakeInfo', 'hospital'],
+  ]);
+  const fallbackKey = `fallback:${admissionDate}-${diagnosis}-${hospital}`;
+  if (!admissionDate && !diagnosis && !hospital) {
+    const docId = safeTrim(record._id) || intakeId || safeTrim(metadata.intakeId);
+    if (docId) {
+      return `${fallbackKey}-${docId}`;
+    }
+  }
+  return fallbackKey;
+};
+
+const dedupeIntakeRecords = (records = []) => {
+  if (!Array.isArray(records) || records.length <= 1) {
+    return Array.isArray(records) ? records.slice() : [];
+  }
+
+  const map = new Map();
+
+  records.forEach(record => {
+    if (!record) {
+      return;
+    }
+    const key = toIntakeRecordKey(record);
+    if (!map.has(key)) {
+      map.set(key, record);
+      return;
+    }
+
+    const existing = map.get(key);
+    const existingIsActive = isActiveStatus(existing && existing.status);
+    const candidateIsActive = isActiveStatus(record.status);
+
+    if (existingIsActive !== candidateIsActive) {
+      if (candidateIsActive) {
+        map.set(key, record);
+      }
+      return;
+    }
+
+    const existingTime = extractRecordTimestampForKey(existing);
+    const candidateTime = extractRecordTimestampForKey(record);
+    if (candidateTime > existingTime) {
+      map.set(key, record);
+      return;
+    }
+
+    if (candidateTime === existingTime) {
+      const existingUpdated = Number(existing && existing.updatedAt ? existing.updatedAt : 0);
+      const candidateUpdated = Number(record && record.updatedAt ? record.updatedAt : 0);
+      if (candidateUpdated > existingUpdated) {
+        map.set(key, record);
+      }
+    }
+  });
+
+  return Array.from(map.values());
 };
 
 
@@ -464,6 +681,7 @@ const buildPatientGroups = (records = []) => {
         latestDiagnosis: '',
         firstHospital: '',
         latestHospital: '',
+        firstDoctor: '',
         latestDoctor: '',
         summaryCaregivers: '',
         fatherInfo: '',
@@ -601,43 +819,127 @@ const buildPatientGroups = (records = []) => {
     }
 
     group.records.push(rawRecord);
-
-    const admissionTs = ensureRecordTimestamp(rawRecord);
-    if (admissionTs !== null) {
-      group.admissionCount += 1;
-      if (!group.firstAdmissionTimestamp || admissionTs < group.firstAdmissionTimestamp) {
-        group.firstAdmissionTimestamp = admissionTs;
-        group.firstAdmissionDate = rawRecord.admissionDate || null;
-        group.firstDiagnosis =
-          normalizeSpacing(rawRecord.diagnosis) || group.firstDiagnosis || '';
-        group.firstHospital = normalizeSpacing(rawRecord.hospital) || group.firstHospital || '';
-      }
-      if (!group.latestAdmissionTimestamp || admissionTs > group.latestAdmissionTimestamp) {
-        group.latestAdmissionTimestamp = admissionTs;
-        group.latestAdmissionDate = rawRecord.admissionDate || null;
-        group.latestDiagnosis =
-          normalizeSpacing(rawRecord.diagnosis) || group.latestDiagnosis || '';
-        group.latestHospital = normalizeSpacing(rawRecord.hospital) || group.latestHospital || '';
-        group.latestDoctor = normalizeSpacing(rawRecord.doctor) || group.latestDoctor || '';
-      }
-    }
   });
 
   groups.forEach(group => {
-    const totalRecords = Array.isArray(group.records) ? group.records.length : 0;
-    if (totalRecords > group.admissionCount) {
-      group.admissionCount = totalRecords;
-    }
+    const rawRecords = Array.isArray(group.records) ? group.records.filter(Boolean) : [];
 
-    if (group.records && group.records.length) {
-      group.records.sort((a, b) => {
-        const tsA = ensureRecordTimestamp(a);
-        const tsB = ensureRecordTimestamp(b);
+    if (rawRecords.length) {
+      rawRecords.sort((a, b) => {
+        const tsA = extractRecordTimestampForKey(a);
+        const tsB = extractRecordTimestampForKey(b);
         if (tsA === tsB) {
           return (Number(b.importOrder) || 0) - (Number(a.importOrder) || 0);
         }
         return tsB - tsA;
       });
+    }
+
+    group.records = rawRecords;
+
+    const countableRecords = rawRecords.filter(shouldCountIntakeRecord);
+    const dedupedRecords = dedupeIntakeRecords(countableRecords);
+
+    group.admissionCount = dedupedRecords.length;
+
+    if (dedupedRecords.length) {
+      const sortedByTimeDesc = [...dedupedRecords].sort(
+        (a, b) => extractRecordTimestampForKey(b) - extractRecordTimestampForKey(a)
+      );
+      const latestRecord = sortedByTimeDesc[0];
+      const earliestRecord = sortedByTimeDesc[sortedByTimeDesc.length - 1];
+
+      const latestTimestamp = extractRecordTimestampForKey(latestRecord) || null;
+      const earliestTimestamp = extractRecordTimestampForKey(earliestRecord) || null;
+
+      group.latestAdmissionTimestamp = latestTimestamp;
+      group.firstAdmissionTimestamp = earliestTimestamp;
+
+      const latestDateSource =
+        latestRecord.admissionDate ||
+        latestRecord.latestAdmissionDate ||
+        latestRecord.intakeTime ||
+        (latestRecord.metadata && latestRecord.metadata.intakeTime) ||
+        null;
+
+      const earliestDateSource =
+        earliestRecord.admissionDate ||
+        earliestRecord.firstAdmissionDate ||
+        earliestRecord.intakeTime ||
+        (earliestRecord.metadata && earliestRecord.metadata.intakeTime) ||
+        null;
+
+      group.latestAdmissionDate = latestDateSource || null;
+      group.firstAdmissionDate = earliestDateSource || null;
+
+      const latestDiagnosis = resolveRecordValue(latestRecord, [
+        ['medicalInfo', 'diagnosis'],
+        'diagnosis',
+        'diagnosisDisplay',
+        ['intakeInfo', 'visitReason'],
+      ]);
+      const firstDiagnosis = resolveRecordValue(earliestRecord, [
+        ['medicalInfo', 'diagnosis'],
+        'diagnosis',
+        'diagnosisDisplay',
+        ['intakeInfo', 'visitReason'],
+      ]);
+
+      if (latestDiagnosis) {
+        group.latestDiagnosis = latestDiagnosis;
+      }
+      if (firstDiagnosis) {
+        group.firstDiagnosis = firstDiagnosis;
+      }
+
+      const latestHospital = resolveRecordValue(latestRecord, [
+        ['medicalInfo', 'hospital'],
+        'hospital',
+        'hospitalDisplay',
+        ['intakeInfo', 'hospital'],
+      ]);
+      const firstHospital = resolveRecordValue(earliestRecord, [
+        ['medicalInfo', 'hospital'],
+        'hospital',
+        'hospitalDisplay',
+        ['intakeInfo', 'hospital'],
+      ]);
+
+      if (latestHospital) {
+        group.latestHospital = latestHospital;
+      }
+      if (firstHospital) {
+        group.firstHospital = firstHospital;
+      }
+
+      const latestDoctor = resolveRecordValue(latestRecord, [
+        ['medicalInfo', 'doctor'],
+        'doctor',
+        ['intakeInfo', 'doctor'],
+      ]);
+      const firstDoctor = resolveRecordValue(earliestRecord, [
+        ['medicalInfo', 'doctor'],
+        'doctor',
+        ['intakeInfo', 'doctor'],
+      ]);
+
+      if (latestDoctor) {
+        group.latestDoctor = latestDoctor;
+      }
+      if (firstDoctor) {
+        group.firstDoctor = firstDoctor;
+      }
+    } else {
+      group.latestAdmissionTimestamp = null;
+      group.firstAdmissionTimestamp = null;
+      group.latestAdmissionDate = null;
+      group.firstAdmissionDate = null;
+      group.latestDiagnosis = group.latestDiagnosis || '';
+      group.firstDiagnosis = group.firstDiagnosis || '';
+      group.latestHospital = group.latestHospital || '';
+      group.firstHospital = group.firstHospital || '';
+      group.latestDoctor = group.latestDoctor || '';
+      group.firstDoctor = group.firstDoctor || '';
     }
 
     delete group._contactKeys;
@@ -730,5 +1032,12 @@ module.exports = {
   mergeCaregivers,
   parseFamilyContact,
   ensureRecordTimestamp,
+  shouldCountIntakeRecord,
+  safeTrim,
+  extractRecordTimestampForKey,
+  resolveRecordValue,
+  isActiveStatus,
+  toIntakeRecordKey,
+  dedupeIntakeRecords,
   buildGroupSummaries,
 };

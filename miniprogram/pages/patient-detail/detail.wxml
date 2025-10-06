@@ -313,10 +313,13 @@
       </view>
     </block>
 
-    <!-- 所有入住记录 -->
-    <view class="intake-records-section" wx:if="{{allIntakeRecords.length}}">
-      <view class="section-header">
-        <text class="section-title">入住记录历史（{{allIntakeRecords.length}}条）</text>
+    <!-- 入住记录 -->
+    <view
+      class="intake-records-section"
+      wx:if="{{intakeRecordCount || visibleIntakeRecords.length}}"
+    >
+      <view class="section-header section-header--sub">
+        <text class="section-title">入住记录历史（{{intakeRecordCount}}条）</text>
         <view
           class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}"
           bindtap="onToggleRecordsSort"
@@ -325,77 +328,85 @@
           <text class="sort-text">{{recordsSortOrder === 'desc' ? '最新在前' : '最早在前'}}</text>
         </view>
       </view>
-      <view class="intake-record-item" wx:for="{{allIntakeRecords}}" wx:key="intakeId">
-        <!-- 记录头部 - 可点击展开/收起 -->
-        <view class="record-header-main" bindtap="onToggleRecordExpand" data-id="{{item.intakeId}}">
-          <view class="record-title-row">
-            <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
-            <view class="record-expand-control">
-              <text
-                class="record-status"
-                wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}"
-                >{{item.statusDisplay}}</text
-              >
-              <text class="record-expand-icon"
-                >{{recordsExpanded[item.intakeId] ? '收起 ▲' : '展开 ▼'}}</text
-              >
-            </view>
-          </view>
+      <view wx:if="{{visibleIntakeRecords.length}}">
+        <block wx:for="{{visibleIntakeRecords}}" wx:key="intakeId">
+          <view class="intake-record-item">
+            <view class="record-header-main" bindtap="onToggleRecordExpand" data-id="{{item.intakeId}}">
+              <view class="record-title-row">
+                <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
+                <view class="record-expand-control">
+                  <text
+                      class="record-status"
+                      wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}"
+                      >{{item.statusDisplay}}</text
+                    >
+                    <text class="record-expand-icon"
+                      >{{recordsExpanded[item.intakeId] ? '收起 ▲' : '展开 ▼'}}</text
+                    >
+                  </view>
+                </view>
 
-          <!-- 关键信息预览 - 始终显示 -->
-          <view class="record-preview">
-            <text wx:if="{{item.hospitalDisplay}}" class="preview-hospital"
-              >🏥 {{item.hospitalDisplay}}</text
-            >
-            <text wx:if="{{item.diagnosisDisplay}}" class="preview-diagnosis"
-              >📋 {{item.diagnosisDisplay}}</text
-            >
-          </view>
-        </view>
+                <view class="record-preview">
+                  <text wx:if="{{item.hospitalDisplay}}" class="preview-hospital"
+                    >🏥 {{item.hospitalDisplay}}</text
+                  >
+                  <text wx:if="{{item.diagnosisDisplay}}" class="preview-diagnosis"
+                    >📋 {{item.diagnosisDisplay}}</text
+                  >
+                </view>
+              </view>
 
-        <!-- 详细信息 - 可折叠 -->
-        <view wx:if="{{recordsExpanded[item.intakeId]}}" class="record-details">
-          <!-- 就诊情况 -->
-          <view
-            class="record-section"
-            wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
-          >
-            <text class="record-section-title">就诊情况</text>
-            <view class="record-field" wx:if="{{item.hospitalDisplay}}">
-              <text class="field-label">就诊医院：</text>
-              <text class="field-value">{{item.hospitalDisplay}}</text>
-            </view>
-            <view class="record-field" wx:if="{{item.diagnosisDisplay}}">
-              <text class="field-label">医院诊断：</text>
-              <text class="field-value">{{item.diagnosisDisplay}}</text>
-            </view>
-            <view class="record-field" wx:if="{{item.doctorDisplay}}">
-              <text class="field-label">医生姓名：</text>
-              <text class="field-value">{{item.doctorDisplay}}</text>
-            </view>
-          </view>
+              <view wx:if="{{recordsExpanded[item.intakeId]}}" class="record-details">
+                <view
+                  class="record-section"
+                  wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
+                >
+                  <text class="record-section-title">就诊情况</text>
+                  <view class="record-field" wx:if="{{item.hospitalDisplay}}">
+                    <text class="field-label">就诊医院：</text>
+                    <text class="field-value">{{item.hospitalDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.diagnosisDisplay}}">
+                    <text class="field-label">医院诊断：</text>
+                    <text class="field-value">{{item.diagnosisDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.doctorDisplay}}">
+                    <text class="field-label">医生姓名：</text>
+                    <text class="field-value">{{item.doctorDisplay}}</text>
+                  </view>
+                </view>
 
-          <!-- 医疗情况 -->
-          <view
-            class="record-section"
-            wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}"
-          >
-            <text class="record-section-title">医疗情况</text>
-            <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
-              <text class="field-label">症状详情：</text>
-              <text class="field-value">{{item.symptomDetailDisplay}}</text>
+                <view
+                  class="record-section"
+                  wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}"
+                >
+                  <text class="record-section-title">医疗情况</text>
+                  <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
+                    <text class="field-label">症状详情：</text>
+                    <text class="field-value">{{item.symptomDetailDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.treatmentProcessDisplay}}">
+                    <text class="field-label">医治过程：</text>
+                    <text class="field-value">{{item.treatmentProcessDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.followUpPlanDisplay}}">
+                    <text class="field-label">后续治疗安排：</text>
+                    <text class="field-value">{{item.followUpPlanDisplay}}</text>
+                  </view>
+                </view>
+
+                <view class="record-section" wx:if="{{item.situation}}">
+                  <text class="record-section-title">情况说明</text>
+                  <view class="record-field">
+                    <text class="field-label">描述：</text>
+                    <text class="field-value">{{item.situation}}</text>
+                  </view>
+                </view>
+              </view>
             </view>
-            <view class="record-field" wx:if="{{item.treatmentProcessDisplay}}">
-              <text class="field-label">医治过程：</text>
-              <text class="field-value">{{item.treatmentProcessDisplay}}</text>
-            </view>
-            <view class="record-field" wx:if="{{item.followUpPlanDisplay}}">
-              <text class="field-label">后续治疗安排：</text>
-              <text class="field-value">{{item.followUpPlanDisplay}}</text>
-            </view>
-          </view>
-        </view>
+          </block>
       </view>
+      <view wx:else class="records-placeholder">暂无入住记录</view>
     </view>
 
     <view class="operation-log-section" wx:if="{{operationLogs.length}}">

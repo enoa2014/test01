@@ -6,6 +6,7 @@ const {
   buildGroupSummaries,
   mergeCaregivers,
   parseFamilyContact,
+  dedupeIntakeRecords,
 } = require('../../../cloudfunctions/utils/patient');
 
 describe('patient utils', () => {
@@ -90,5 +91,65 @@ describe('patient utils', () => {
       admissionCount: 2,
     });
     expect(Array.isArray(summaries[0].familyContacts)).toBe(true);
+  });
+
+  test('buildPatientGroups ignores drafts and deduplicates excel imports', () => {
+    const intakeTs = Date.parse('2024-03-01T10:00:00Z');
+    const records = [
+      {
+        patientName: '林日燊',
+        recordKey: 'lin',
+        status: 'submitted',
+        intakeTime: intakeTs,
+        diagnosis: '初诊',
+        hospital: '协和医院',
+        metadata: { excelRecordId: 'excel-row-1' },
+      },
+      {
+        patientName: '林日燊',
+        recordKey: 'lin',
+        status: 'submitted',
+        intakeTime: intakeTs,
+        diagnosis: '初诊',
+        hospital: '协和医院',
+        metadata: { excelRecordId: 'excel-row-1' },
+        updatedAt: intakeTs + 5000,
+      },
+      {
+        patientName: '林日燊',
+        recordKey: 'lin',
+        status: 'draft',
+        intakeTime: intakeTs + 86400000,
+        diagnosis: '复诊',
+        hospital: '协和医院',
+      },
+    ];
+
+    const groups = buildPatientGroups(records);
+    const group = groups.get('lin');
+    expect(group).toBeDefined();
+    expect(group.admissionCount).toBe(1);
+    expect(group.latestAdmissionTimestamp).toBe(intakeTs);
+    expect(group.firstAdmissionTimestamp).toBe(intakeTs);
+    expect(group.latestDiagnosis).toBe('初诊');
+  });
+
+  test('dedupeIntakeRecords keeps historical excel rows distinct when identifiers differ', () => {
+    const baseTs = Date.parse('2022-09-01T08:00:00Z');
+    const records = Array.from({ length: 4 }).map((_, index) => ({
+      _id: `excel-doc-${index}`,
+      patientKey: 'wang_zhaohong',
+      patientName: '王朝弘',
+      status: 'imported',
+      intakeTime: baseTs,
+      updatedAt: baseTs + index,
+      metadata: {
+        source: 'excel-import',
+        excelRecordId: `excel-row-${index}`,
+      },
+    }));
+
+    const deduped = dedupeIntakeRecords(records);
+    expect(deduped).toHaveLength(4);
   });
 });

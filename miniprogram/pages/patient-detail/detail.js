@@ -29,7 +29,6 @@ const {
 const {
   findValueByLabels,
   coalesceValue,
-  dedupeIntakeRecords,
   sortIntakeRecords,
   pushDisplayItem,
 } = require('./data-mappers.js');
@@ -188,6 +187,120 @@ function formatRecordStatus(status) {
   return status;
 }
 
+function mapIntakeRecordForDisplay(record) {
+  if (!record) {
+    return null;
+  }
+
+  const medicalInfo = record.medicalInfo || {};
+  const intakeInfo = record.intakeInfo || {};
+  const metadata = record.metadata || {};
+  const intakeTime = Number(
+    record.intakeTime || intakeInfo.intakeTime || metadata.intakeTime || metadata.lastModifiedAt
+  );
+  const resolvedIntakeTime = Number.isFinite(intakeTime) ? intakeTime : Date.now();
+
+  const hospitalDisplay = coalesceValue(
+    record.hospital,
+    medicalInfo.hospital,
+    intakeInfo.hospital
+  );
+  const diagnosisDisplay = coalesceValue(
+    record.diagnosis,
+    medicalInfo.diagnosis,
+    intakeInfo.visitReason
+  );
+  const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor, intakeInfo.doctor);
+  const symptomDetailDisplay = coalesceValue(
+    medicalInfo.symptoms,
+    record.symptoms,
+    intakeInfo.situation
+  );
+  const treatmentProcessDisplay = coalesceValue(medicalInfo.treatmentProcess, record.treatmentProcess);
+  const followUpPlanDisplay = coalesceValue(
+    record.followUpPlan,
+    medicalInfo.followUpPlan,
+    intakeInfo.followUpPlan
+  );
+
+  const normalized = {
+    ...record,
+  };
+
+  normalized.intakeId = record.intakeId || record._id || `${resolvedIntakeTime}_${Math.random()}`;
+  normalized.intakeTime = resolvedIntakeTime;
+  normalized.displayTime = formatDateTime(resolvedIntakeTime);
+  normalized.updatedTime = formatDateTime(
+    record.updatedAt || metadata.lastModifiedAt || metadata.submittedAt || resolvedIntakeTime
+  );
+  normalized.hospitalDisplay = hospitalDisplay;
+  normalized.diagnosisDisplay = diagnosisDisplay;
+  normalized.doctorDisplay = doctorDisplay;
+  normalized.symptomDetailDisplay = symptomDetailDisplay;
+  normalized.treatmentProcessDisplay = treatmentProcessDisplay;
+  normalized.followUpPlanDisplay = followUpPlanDisplay;
+  normalized.statusDisplay = formatRecordStatus(record.status);
+  normalized.followUpPlan = followUpPlanDisplay;
+
+  return normalized;
+}
+
+function mapProfileRecordForDisplay(record, index) {
+  if (!record) {
+    return null;
+  }
+  const medicalInfo = record.medicalInfo || {};
+  const intakeInfo = record.intakeInfo || {};
+
+  const rawIntakeTime = Number(
+    record.intakeTime || record.admissionTimestamp || intakeInfo.intakeTime
+  );
+  const resolvedIntakeTime = Number.isFinite(rawIntakeTime) && rawIntakeTime > 0 ? rawIntakeTime : Date.now();
+
+  const hospitalDisplay = coalesceValue(record.hospital, medicalInfo.hospital, intakeInfo.hospital);
+  const diagnosisDisplay = coalesceValue(
+    record.diagnosis,
+    medicalInfo.diagnosis,
+    intakeInfo.visitReason
+  );
+  const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor, intakeInfo.doctor);
+  const situationDisplay = coalesceValue(
+    record.situation,
+    intakeInfo.situation,
+    medicalInfo.symptoms,
+    record.symptoms
+  );
+  const symptomDetailDisplay = coalesceValue(
+    medicalInfo.symptoms,
+    record.symptoms,
+    situationDisplay
+  );
+  const treatmentProcessDisplay = coalesceValue(medicalInfo.treatmentProcess, record.treatmentProcess);
+  const followUpPlanDisplay = coalesceValue(
+    medicalInfo.followUpPlan,
+    record.followUpPlan,
+    intakeInfo.followUpPlan
+  );
+
+  return {
+    ...record,
+    intakeId: record.intakeId || record._id || `profile_${index}`,
+    intakeTime: resolvedIntakeTime,
+    displayTime: formatDateTime(resolvedIntakeTime),
+    updatedAt: record.updatedAt || resolvedIntakeTime,
+    updatedTime: formatDateTime(record.updatedAt || resolvedIntakeTime),
+    hospitalDisplay,
+    diagnosisDisplay,
+    doctorDisplay,
+    symptomDetailDisplay,
+    treatmentProcessDisplay,
+    followUpPlanDisplay,
+    status: record.status || 'submitted',
+    statusDisplay: formatRecordStatus(record.status || 'submitted'),
+    followUpPlan: followUpPlanDisplay,
+  };
+}
+
 function shouldDisplayIntakeRecord(record) {
   if (!record) {
     return false;
@@ -211,6 +324,9 @@ Page({
     records: [],
     allIntakeRecords: [],
     operationLogs: [],
+    visibleIntakeRecords: [],
+    intakeRecordCount: 0,
+    intakeSummaryVersion: null,
     recordsSortOrder: 'desc',
     recordsExpanded: {},
     editMode: false,
@@ -410,6 +526,26 @@ Page({
       if (patientForEdit.lastIntakeNarrative) {
         patientDisplay.lastIntakeNarrative = patientForEdit.lastIntakeNarrative;
       }
+      const resolvedCareStatus =
+        [
+          patientForEdit.careStatus,
+          patientForEdit.data && patientForEdit.data.careStatus,
+          patientDisplay.careStatus,
+          profileResult && profileResult.careStatus,
+        ].find(item => Boolean(normalizeString(item))) || '';
+      if (resolvedCareStatus) {
+        patientDisplay.careStatus = resolvedCareStatus;
+        patientForEdit.careStatus = resolvedCareStatus;
+      }
+      if (patientForEdit.checkoutAt !== undefined) {
+        patientDisplay.checkoutAt = patientForEdit.checkoutAt;
+      }
+      if (patientForEdit.checkoutReason) {
+        patientDisplay.checkoutReason = patientForEdit.checkoutReason;
+      }
+      if (patientForEdit.checkoutNote) {
+        patientDisplay.checkoutNote = patientForEdit.checkoutNote;
+      }
 
       const latestIntakeRaw = detailData.latestIntake || null;
       const operationLogs = (detailData.operationLogs || []).map(log => ({
@@ -417,123 +553,46 @@ Page({
         timeText: formatDateTime(log.createdAt),
       }));
 
+      const currentOrder = this.data.recordsSortOrder || 'desc';
+
       const intakeRecordsData =
         (intakeRecordsRes && intakeRecordsRes.result && intakeRecordsRes.result.data) || {};
-      let allIntakeRecords = (intakeRecordsData.records || []).map(record => {
-        const medicalInfo = record.medicalInfo || {};
-        const intakeInfo = record.intakeInfo || {};
+      const serverRecords = (intakeRecordsData.records || [])
+        .map(mapIntakeRecordForDisplay)
+        .filter(Boolean);
+      const filteredServerRecords = serverRecords.filter(shouldDisplayIntakeRecord);
 
-        const hospitalDisplay = coalesceValue(
-          record.hospital,
-          medicalInfo.hospital,
-          intakeInfo.hospital
-        );
-        const diagnosisDisplay = coalesceValue(
-          record.diagnosis,
-          medicalInfo.diagnosis,
-          intakeInfo.visitReason
-        );
-        const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor, intakeInfo.doctor);
-        const symptomDetailDisplay = coalesceValue(
-          medicalInfo.symptoms,
-          record.symptoms,
-          intakeInfo.situation
-        );
-        const treatmentProcessDisplay = coalesceValue(
-          medicalInfo.treatmentProcess,
-          record.treatmentProcess
-        );
-        const followUpPlanDisplay = coalesceValue(
-          record.followUpPlan,
-          medicalInfo.followUpPlan,
-          intakeInfo.followUpPlan
-        );
+      const profileRecordsForDisplay = Array.isArray(profileResult.records)
+        ? profileResult.records
+            .map((record, index) => mapProfileRecordForDisplay(record, index))
+            .filter(Boolean)
+        : [];
 
-        return {
-          ...record,
-          displayTime: formatDateTime(record.intakeTime),
-          updatedTime: formatDateTime(record.updatedAt),
-          hospitalDisplay,
-          diagnosisDisplay,
-          doctorDisplay,
-          symptomDetailDisplay,
-          treatmentProcessDisplay,
-          followUpPlanDisplay,
-          statusDisplay: formatRecordStatus(record.status),
-          followUpPlan: followUpPlanDisplay,
-        };
-      });
-
-      allIntakeRecords = allIntakeRecords.filter(shouldDisplayIntakeRecord);
-      allIntakeRecords = dedupeIntakeRecords(allIntakeRecords);
-
-      if (
-        !allIntakeRecords.length &&
-        Array.isArray(profileResult.records) &&
-        profileResult.records.length
-      ) {
-        allIntakeRecords = profileResult.records.map((record, index) => {
-          const medicalInfo = record.medicalInfo || {};
-          const intakeInfo = record.intakeInfo || {};
-          const intakeTime =
-            Number(record.intakeTime || record.admissionTimestamp || intakeInfo.intakeTime) ||
-            Date.now();
-          const hospitalDisplay = coalesceValue(record.hospital, medicalInfo.hospital);
-          const diagnosisDisplay = coalesceValue(
-            record.diagnosis,
-            medicalInfo.diagnosis,
-            intakeInfo.visitReason
-          );
-          const doctorDisplay = coalesceValue(record.doctor, medicalInfo.doctor);
-          const situationDisplay = coalesceValue(
-            record.situation,
-            intakeInfo.situation,
-            medicalInfo.symptoms,
-            record.symptoms
-          );
-          const symptomDetailDisplay = coalesceValue(
-            medicalInfo.symptoms,
-            record.symptoms,
-            situationDisplay
-          );
-          const treatmentProcessDisplay = coalesceValue(
-            medicalInfo.treatmentProcess,
-            record.treatmentProcess
-          );
-          const followUpPlanDisplay = coalesceValue(
-            medicalInfo.followUpPlan,
-            record.followUpPlan,
-            intakeInfo.followUpPlan
-          );
-
-          return {
-            ...record,
-            intakeId: record.intakeId || `excel_${record.patientKey || 'record'}_${index}`,
-            status: 'submitted',
-            intakeTime,
-            displayTime: formatDateTime(intakeTime),
-            updatedAt: record.updatedAt || intakeTime,
-            updatedTime: formatDateTime(record.updatedAt || intakeTime),
-            hospitalDisplay,
-            diagnosisDisplay,
-            doctorDisplay,
-            situation: situationDisplay,
-            followUpPlan: followUpPlanDisplay,
-            symptomDetailDisplay,
-            treatmentProcessDisplay,
-            followUpPlanDisplay,
-            statusDisplay: formatRecordStatus('submitted'),
-          };
-        });
+      let aggregatedRecords = filteredServerRecords;
+      if (!aggregatedRecords.length && profileRecordsForDisplay.length) {
+        aggregatedRecords = profileRecordsForDisplay.filter(shouldDisplayIntakeRecord);
       }
+      const aggregatedSortedRecords = sortIntakeRecords(aggregatedRecords, currentOrder);
 
-      allIntakeRecords = allIntakeRecords.filter(shouldDisplayIntakeRecord);
+      const rawSortedRecords = sortIntakeRecords(serverRecords, currentOrder);
 
-      allIntakeRecords = dedupeIntakeRecords(allIntakeRecords);
+      this.allIntakeRecordsSource = aggregatedRecords;
 
-      this.allIntakeRecordsSource = allIntakeRecords;
-      const currentOrder = this.data.recordsSortOrder || 'desc';
-      const sortedIntakeRecords = sortIntakeRecords(allIntakeRecords, currentOrder);
+      const serverCountRaw =
+        intakeRecordsData.count !== undefined
+          ? intakeRecordsData.count
+          : intakeRecordsData.totalCount !== undefined
+            ? intakeRecordsData.totalCount
+            : aggregatedSortedRecords.length;
+      const serverCount = Number(serverCountRaw);
+
+      if (Number.isFinite(serverCount)) {
+        patientDisplay.admissionCount = serverCount;
+        patientForEdit.admissionCount = serverCount;
+      } else {
+        patientDisplay.admissionCount = aggregatedSortedRecords.length;
+        patientForEdit.admissionCount = aggregatedSortedRecords.length;
+      }
 
       let editForm = buildEditForm(patientForEdit, latestIntakeRaw || {}, patientDisplay);
 
@@ -719,6 +778,9 @@ Page({
             profileResult && profileResult.careStatus,
             patientDisplay.statusDisplay,
           ].find(item => Boolean(normalizeString(item))) || '';
+        if (statusValue) {
+          patientDisplay.status = statusValue;
+        }
         const statusDisplay =
           formatCareStatusLabel(statusValue) || formatCareStatusLabel(patientDisplay.statusDisplay);
         if (statusDisplay) {
@@ -729,6 +791,10 @@ Page({
 
       const patientInfoForDisplay = Object.keys(patientDisplay).length ? patientDisplay : null;
 
+      const resolvedCount = Number.isFinite(serverCount)
+        ? serverCount
+        : aggregatedSortedRecords.length;
+
       this.setData(
         {
           loading: false,
@@ -737,7 +803,13 @@ Page({
           familyInfo: familyInfoDisplay,
           economicInfo: economicInfoDisplay,
           records: profileResult.records || [],
-          allIntakeRecords: sortedIntakeRecords,
+          allIntakeRecords: aggregatedSortedRecords,
+          visibleIntakeRecords: aggregatedSortedRecords,
+          intakeRecordCount: resolvedCount,
+          intakeSummaryVersion:
+            typeof intakeRecordsData.summaryVersion === 'number'
+              ? intakeRecordsData.summaryVersion
+              : this.data.intakeSummaryVersion,
           operationLogs,
           editForm,
           editErrors: {},
@@ -771,18 +843,20 @@ Page({
   },
 
   onToggleRecordsSort() {
-    const source = Array.isArray(this.allIntakeRecordsSource) ? this.allIntakeRecordsSource : [];
-    if (!source.length) {
-      const nextOrder = this.data.recordsSortOrder === 'desc' ? 'asc' : 'desc';
+    const nextOrder = this.data.recordsSortOrder === 'desc' ? 'asc' : 'desc';
+    const source = this.allIntakeRecordsSource;
+    const list = Array.isArray(source) ? source : [];
+
+    if (!list.length) {
       this.setData({ recordsSortOrder: nextOrder });
       return;
     }
 
-    const nextOrder = this.data.recordsSortOrder === 'desc' ? 'asc' : 'desc';
-    const sorted = sortIntakeRecords(source, nextOrder);
+    const sorted = sortIntakeRecords(list, nextOrder);
     this.setData({
       recordsSortOrder: nextOrder,
       allIntakeRecords: sorted,
+      visibleIntakeRecords: sorted,
     });
   },
 

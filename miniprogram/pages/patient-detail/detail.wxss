@@ -401,6 +401,25 @@
   border-bottom: 2rpx solid var(--color-border-secondary);
 }
 
+.section-header--sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.records-placeholder {
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.records-error {
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-danger);
+}
+
 .info-row:last-child,
 .record-field:last-child {
   border-bottom: none;

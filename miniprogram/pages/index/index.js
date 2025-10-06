@@ -1956,7 +1956,72 @@ Page({
   onAnalysisTap() {
     wx.navigateTo({
       url: '/pages/analysis/index',
+      events: {
+        'analysis:applyFilter': shortcut => {
+          this.applyAnalysisShortcut(shortcut);
+        },
+      },
     });
+  },
+  applyAnalysisShortcut(shortcut) {
+    if (!shortcut || typeof shortcut !== 'object') {
+      return;
+    }
+    if (shortcut.type === 'statFilter') {
+      const filterId = shortcut.value || 'all';
+      const statusLabels = {
+        all: '全部住户',
+        in_care: '在住住户',
+        pending: '待入住 / 随访住户',
+        discharged: '已离开住户',
+      };
+      this.setData(
+        {
+          activeStatFilter: filterId,
+        },
+        () => {
+          this.applyFilters();
+          const message = filterId === 'all' ? '已显示全部住户' : `已应用${statusLabels[filterId] || '状态筛选'}`;
+          wx.showToast({ title: message, icon: 'none' });
+        }
+      );
+      return;
+    }
+    if (shortcut.type === 'advancedFilter') {
+      const payload = shortcut.value || {};
+      const fields = payload.fields;
+      if (!fields || typeof fields !== 'object') {
+        return;
+      }
+      const nextFilters = getDefaultAdvancedFilters();
+      Object.keys(fields).forEach(key => {
+        const value = fields[key];
+        if (Array.isArray(value)) {
+          nextFilters[key] = value.slice();
+        } else if (value && typeof value === 'object') {
+          nextFilters[key] = { ...value };
+        } else {
+          nextFilters[key] = value;
+        }
+      });
+      const keepStatFilter = Boolean(payload.keepStatFilter);
+      this.updateFilterActiveState(nextFilters);
+      this.setData(
+        {
+          activeStatFilter: keepStatFilter ? this.data.activeStatFilter : 'all',
+          advancedFilters: nextFilters,
+          pendingAdvancedFilters: nextFilters,
+        },
+        () => {
+          this.applyFilters();
+          this.updateFilterOptions(this.data.patients || []);
+          const summary = payload.summary;
+          if (summary) {
+            wx.showToast({ title: `已应用 ${summary}`, icon: 'none' });
+          }
+        }
+      );
+    }
   },
   onCreatePatientTap() {
     const url = '/pages/patient-intake/wizard/wizard?mode=create';
