@@ -98,7 +98,7 @@ function deriveCardStatus(careStatus, fallback = 'info') {
     case 'in_care':
       return 'success';
     case 'pending':
-      return 'info';
+      return 'warning';
     case 'discharged':
       return 'default';
     default:
@@ -312,14 +312,14 @@ function mapPatientStatus(latestAdmissionTimestamp) {
   }
   const now = Date.now();
   if (timestamp > now) {
-    return { cardStatus: 'info', careStatus: 'pending', diffDays: 0 };
+    return { cardStatus: 'warning', careStatus: 'pending', diffDays: 0 };
   }
   const diffDays = Math.floor((now - timestamp) / (24 * 60 * 60 * 1000));
   if (diffDays <= 30) {
     return { cardStatus: 'success', careStatus: 'in_care', diffDays };
   }
   if (diffDays <= 90) {
-    return { cardStatus: 'info', careStatus: 'pending', diffDays };
+    return { cardStatus: 'warning', careStatus: 'pending', diffDays };
   }
   return { cardStatus: 'default', careStatus: 'discharged', diffDays };
 }
@@ -340,7 +340,7 @@ function generatePatientBadges({ careStatus, riskLevel, admissionCount }) {
   if (careStatus === 'in_care') {
     badges.push({ text: '在住', type: 'success' });
   } else if (careStatus === 'pending') {
-    badges.push({ text: '随访', type: 'info' });
+    badges.push({ text: '随访', type: 'warning' });
   } else if (careStatus === 'discharged') {
     badges.push({ text: '已离开', type: 'default' });
   }
