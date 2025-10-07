@@ -1,4 +1,8 @@
 // 住户录入向导页面
+const themeManager = require('../../../utils/theme');
+const INITIAL_THEME_KEY = themeManager.getTheme();
+const INITIAL_THEME_INDEX = themeManager.getThemeIndex(INITIAL_THEME_KEY);
+const INITIAL_THEME_LABEL = themeManager.getThemeLabel(INITIAL_THEME_KEY);
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
 
 const STEP_DEFINITIONS = [
@@ -42,6 +46,11 @@ const DRAFT_EXPIRE_DAYS = 7;
 
 Page({
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
+    themeOptions: themeManager.getThemeOptions(),
+    themePickerIndex: INITIAL_THEME_INDEX < 0 ? 0 : INITIAL_THEME_INDEX,
+    themePickerLabel: INITIAL_THEME_LABEL,
     // 步骤配置
     steps: INITIAL_STEPS,
     visibleSteps: INITIAL_VISIBLE_STEPS,
@@ -130,6 +139,11 @@ Page({
 
     this.configureSteps(isEditingExisting, mode);
 
+    const app = getApp();
+    this.themeUnsubscribe = app && typeof app.watchTheme === 'function'
+      ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+      : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
+
     this.setData({
       today: this.formatDate(new Date()),
       patientKey: options.patientKey || '',
@@ -166,6 +180,10 @@ Page({
 
   onUnload() {
     this.stopDraftAutoSave();
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
   },
 
   // 格式化日期
@@ -198,6 +216,41 @@ Page({
       .map(segment => segment.trim())
       .filter(segment => segment.length > 0)
       .join('\n');
+  },
+
+  handleThemeChange(theme) {
+    const index = themeManager.getThemeIndex(theme);
+    const options = this.data.themeOptions || [];
+    const normalizedIndex = index < 0 ? 0 : index;
+    const label = options[normalizedIndex]?.label || themeManager.getThemeLabel(theme);
+    this.setData({
+      theme,
+      themeClass: themeManager.resolveThemeClass(theme),
+      themePickerIndex: normalizedIndex,
+      themePickerLabel: label,
+    });
+  },
+
+  onThemePick(event) {
+    const rawIndex = Number(event?.detail?.value);
+    const index = Number.isNaN(rawIndex) ? 0 : rawIndex;
+    const options = this.data.themeOptions || [];
+    const meta = options[index] || options[0];
+    if (!meta) {
+      return;
+    }
+
+    const app = getApp();
+    if (app && typeof app.setTheme === 'function') {
+      app.setTheme(meta.key);
+    } else {
+      themeManager.setTheme(meta.key);
+    }
+
+    this.setData({
+      themePickerIndex: index,
+      themePickerLabel: meta.label,
+    });
   },
 
   normalizePhoneDigits(value) {

@@ -1,4 +1,4 @@
-﻿<view class="theme-root detail-container">
+﻿<view class="theme-root detail-container {{themeClass}}">
   <!-- P0-4: 骨架屏加载状态 -->
   <view wx:if="{{loading}}" class="detail-skeleton">
     <!-- 头部骨架 -->

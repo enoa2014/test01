@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .theme-default {
+    --bg-default: 246 247 246;
+    --surface: 255 255 255;
+    --divider: 230 232 234;
+    --divider-cool: 220 226 231;
+
+    --text-primary: 18 18 18;
+    --text-secondary: 99 98 98;
+    --text-tertiary: 161 161 161;
+
+    --brand-blue: 50 123 225;
+    --brand-blue-hover: 61 130 225;
+    --brand-blue-aa: 47 109 210;
+    --brand-blue-soft: 118 165 229;
+
+    --ink: 15 15 16;
+    --ink-on: 255 255 255;
+
+    --accent-warm-1: 209 148 42;
+    --accent-warm-2: 216 114 80;
+
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f6f7f6;
+    --color-bg-tertiary: #e6e8ea;
+    --color-text-primary: #121212;
+    --color-text-secondary: #636262;
+    --color-text-tertiary: #a1a1a1;
+    --color-border-primary: #dce2e7;
+    --color-border-secondary: #e6e8ea;
+    --color-border-tertiary: #f6f7f6;
+    --color-primary: #327be1;
+    --color-primary-light: #76a5e5;
+    --color-primary-dark: #2f6dd2;
+    --color-secondary: #d87250;
+    --color-secondary-light: #d1942a;
+    --color-secondary-dark: #ad5e37;
+    --shadow-sm: 0 2rpx 12rpx rgba(17, 24, 39, 0.06);
+  }
+
+  .theme-dark {
+    --bg-default: 16 17 18;
+    --surface: 21 23 25;
+    --divider: 44 48 54;
+    --divider-cool: 48 54 60;
+
+    --text-primary: 244 244 244;
+    --text-secondary: 188 188 192;
+    --text-tertiary: 129 133 139;
+
+    --brand-blue: 50 123 225;
+    --brand-blue-hover: 76 149 240;
+    --brand-blue-aa: 50 123 225;
+    --brand-blue-soft: 118 165 229;
+
+    --ink: 255 255 255;
+    --ink-on: 15 15 16;
+
+    --accent-warm-1: 209 148 42;
+    --accent-warm-2: 216 114 80;
+
+    --color-bg-primary: #151719;
+    --color-bg-secondary: #101112;
+    --color-bg-tertiary: #2c3036;
+    --color-text-primary: #f4f4f4;
+    --color-text-secondary: #bcbcc0;
+    --color-text-tertiary: #81858b;
+    --color-border-primary: #30363c;
+    --color-border-secondary: #2c3036;
+    --color-border-tertiary: #1a1d21;
+    --color-primary: #76a5e5;
+    --color-primary-light: #9fc2f0;
+    --color-primary-dark: #4d80c8;
+    --color-secondary: #d87250;
+    --color-secondary-light: #d1942a;
+    --color-secondary-dark: #b55c39;
+    --shadow-sm: 0 2rpx 12rpx rgba(0, 0, 0, 0.45);
+  }
+
+  .theme-root {
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-secondary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer components {
+  .bg-app {
+    background-color: rgb(var(--bg-default) / 1);
+  }
+
+  .bg-surface {
+    background-color: rgb(var(--surface) / 1);
+  }
+
+  .border-divider {
+    border-color: rgb(var(--divider) / 1);
+  }
+
+  .border-divider-cool {
+    border-color: rgb(var(--divider-cool) / 1);
+  }
+}

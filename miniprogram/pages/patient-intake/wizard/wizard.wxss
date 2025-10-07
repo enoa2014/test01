@@ -97,6 +97,39 @@
   color: var(--color-danger);
 }
 
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.theme-picker {
+  min-width: 200rpx;
+  display: inline-block;
+}
+
+.theme-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 2rpx solid var(--color-border-secondary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-3);
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: var(--text-sm);
+}
+
+.theme-select__label {
+  white-space: nowrap;
+}
+
+.theme-select__icon {
+  font-size: var(--text-sm);
+}
+
 /* 步骤标题 */
 .step-header {
   background-color: var(--color-bg-primary);

@@ -28,6 +28,8 @@
     "@commitlint/config-conventional": "^18.4.3",
     "@mpflow/cli": "^0.0.35",
     "@mpflow/plugin-e2e-test": "^0.0.34",
+    "@parcel/watcher-linux-x64-glibc": "^2.5.1",
+    "@tailwindcss/cli": "^4.1.14",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/jest": "^27.5.2",
     "babel-jest": "^27.5.1",
@@ -38,10 +40,13 @@
     "jest-environment-jsdom": "^27.5.1",
     "lint-staged": "^15.2.0",
     "miniprogram-automator": "^0.12.1",
+    "postcss": "^8.5.6",
     "prettier": "^3.1.1",
     "stylelint": "^16.6.1",
     "stylelint-config-standard": "^35.0.0",
-    "stylelint-declaration-strict-value": "^1.10.2"
+    "stylelint-declaration-strict-value": "^1.10.2",
+    "tailwindcss": "^3.4.13",
+    "weapp-tailwindcss": "^4.3.3"
   },
   "lint-staged": {
     "*.js": [
@@ -68,7 +73,7 @@
     "test:unit:watch": "jest --config tests/unit/jest.config.js --watch",
     "lint": "eslint --no-error-on-unmatched-pattern miniprogram/ cloudfunctions/ scripts/ --ext .js",
     "lint:style": "stylelint \"miniprogram/**/*.{wxss,css}\"",
-    "build:dev": "echo 'Development build'",
+    "build:dev": "npm run tailwind:build && echo 'Development build'",
     "lint-staged": "lint-staged",
     "lint:fix": "eslint --no-error-on-unmatched-pattern miniprogram/ cloudfunctions/ scripts/ --ext .js --fix",
     "test:unit": "jest --config tests/unit/jest.config.js",
@@ -77,7 +82,8 @@
     "docs:serve": "node scripts/serve-docs.js",
     "test:e2e:mpflow": "cross-env CI=1 mpflow-service test:e2e -- --runInBand",
     "test:e2e": "npm run test:e2e:mpflow && npm run test:cleanup",
-    "build:prod": "echo 'Production build'",
+    "build:prod": "npm run tailwind:build && echo 'Production build'",
+    "tailwind:build": "node scripts/build-tailwind-wxss.js",
     "tokens:generate": "node scripts/generate-tokens.js",
     "database:reinit": "node scripts/database-reinit.js",
     "database:backup": "node scripts/database-reinit.js --backup",

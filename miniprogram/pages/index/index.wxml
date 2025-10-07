@@ -1,6 +1,21 @@
-﻿<view class="theme-root container stack gap-4">
+﻿<view class="theme-root container stack gap-4 {{themeClass}}">
   <view class="hero">
-    <text class="title">住户档案</text>
+    <view class="hero-header">
+      <text class="title">住户档案</text>
+      <picker
+        class="theme-picker"
+        mode="selector"
+        range="{{themeOptions}}"
+        range-key="label"
+        value="{{themePickerIndex}}"
+        bindchange="onThemePick"
+      >
+        <view class="theme-select">
+          <text class="theme-select__label">{{themePickerLabel}}</text>
+          <text class="theme-select__icon">▾</text>
+        </view>
+      </picker>
+    </view>
     <text class="hero-subtitle">汇总每位住户的入住记录</text>
   </view>
 

@@ -1,4 +1,5 @@
 ﻿const logger = require('../../utils/logger');
+const themeManager = require('../../utils/theme');
 
 const {
   MAX_UPLOAD_BATCH,
@@ -37,6 +38,7 @@ const { getDefaultQuota, makeQuotaPayload, createMediaService } = require('./med
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
+const INITIAL_THEME_KEY = themeManager.getTheme();
 
 const STATUS_ALIAS_CONFIG = [
   {
@@ -327,6 +329,8 @@ function shouldDisplayIntakeRecord(record) {
 
 Page({
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
     loading: true,
     error: '',
     patient: null,
@@ -374,6 +378,13 @@ Page({
     lastSaveError: null,
   },
 
+  handleThemeChange(theme) {
+    this.setData({
+      theme,
+      themeClass: themeManager.resolveThemeClass(theme),
+    });
+  },
+
   onLoad(options) {
     const rawKey = options && options.key ? decodeURIComponent(options.key) : '';
     const rawPatientId = options && options.patientId ? decodeURIComponent(options.patientId) : '';
@@ -387,6 +398,11 @@ Page({
     this.originalEditForm = null;
     this.allIntakeRecordsSource = [];
     this.mediaService = createMediaService(this);
+
+    const app = getApp();
+    this.themeUnsubscribe = app && typeof app.watchTheme === 'function'
+      ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+      : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
 
     if (!this.profileKey && !this.patientKey) {
       this.setData({ loading: false, error: '缺少住户标识' });
@@ -415,6 +431,10 @@ Page({
     this.mediaInitialized = false;
     if (wx.disableAlertBeforeUnload) {
       wx.disableAlertBeforeUnload();
+    }
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
     }
   },
 

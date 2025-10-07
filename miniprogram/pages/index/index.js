@@ -1,4 +1,5 @@
 ﻿const logger = require('../../utils/logger');
+const themeManager = require('../../utils/theme');
 const { formatDate, formatAge, calculateAge } = require('../../utils/date');
 const { callPatientIntake, formatDateTime } = require('../../utils/intake');
 const SORT_OPTIONS = [
@@ -34,6 +35,9 @@ const FILTER_RISK_OPTIONS = [
   { id: 'low', label: '低风险' },
 ];
 const FILTER_SCHEME_STORAGE_KEY = 'filter_panel_schemes';
+const INITIAL_THEME_KEY = themeManager.getTheme();
+const INITIAL_THEME_INDEX = themeManager.getThemeIndex(INITIAL_THEME_KEY);
+const INITIAL_THEME_LABEL = themeManager.getThemeLabel(INITIAL_THEME_KEY);
 // 快速筛选器已移除 - 功能已整合至统计卡片
 function safeString(value) {
   if (value === null || value === undefined) {
@@ -600,6 +604,11 @@ Page({
   filterPreviewTimer: null,
 
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
+    themeOptions: themeManager.getThemeOptions(),
+    themePickerIndex: INITIAL_THEME_INDEX < 0 ? 0 : INITIAL_THEME_INDEX,
+    themePickerLabel: INITIAL_THEME_LABEL,
     patients: [],
     displayPatients: [],
     loading: true,
@@ -696,6 +705,11 @@ Page({
     this.fabRestoreTimer = null;
     this.pageEnterTimer = null;
 
+    const app = getApp();
+    this.themeUnsubscribe = app && typeof app.watchTheme === 'function'
+      ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+      : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
+
     // P1-4: 加载用户偏好的卡片密度模式
     try {
       const savedDensityMode = wx.getStorageSync('card_density_mode');
@@ -752,6 +766,10 @@ Page({
   onUnload() {
     clearFabTimer(this);
     clearPageEnterTimer(this);
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
   },
   onShow() {
     this.applyPendingUpdates();
@@ -782,6 +800,41 @@ Page({
         pageTransitionClass: 'page-transition-enter page-transition-enter-active',
       });
     }, 20);
+  },
+
+  handleThemeChange(themeKey) {
+    const index = themeManager.getThemeIndex(themeKey);
+    const options = this.data.themeOptions || [];
+    const normalizedIndex = index < 0 ? 0 : index;
+    const label = options[normalizedIndex]?.label || themeManager.getThemeLabel(themeKey);
+    this.setData({
+      theme: themeKey,
+      themeClass: themeManager.resolveThemeClass(themeKey),
+      themePickerIndex: normalizedIndex,
+      themePickerLabel: label,
+    });
+  },
+
+  onThemePick(event) {
+    const rawIndex = Number(event?.detail?.value);
+    const index = Number.isNaN(rawIndex) ? 0 : rawIndex;
+    const options = this.data.themeOptions || [];
+    const meta = options[index] || options[0];
+    if (!meta) {
+      return;
+    }
+
+    const app = getApp();
+    if (app && typeof app.setTheme === 'function') {
+      app.setTheme(meta.key);
+    } else {
+      themeManager.setTheme(meta.key);
+    }
+
+    this.setData({
+      themePickerIndex: index,
+      themePickerLabel: meta.label,
+    });
   },
   async fetchPatients(options = {}) {
     const silent = !!(options && options.silent);

@@ -10,6 +10,14 @@
   background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
 }
 
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .title {
   font-size: var(--text-xl);
   font-weight: var(--font-semibold);
@@ -29,6 +37,33 @@
   margin-top: var(--space-1);
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+}
+
+.theme-picker {
+  min-width: 200rpx;
+  display: inline-block;
+}
+
+.theme-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 2rpx solid var(--color-border-secondary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-3);
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: var(--text-sm);
+}
+
+.theme-select__label {
+  white-space: nowrap;
+}
+
+.theme-select__icon {
+  font-size: var(--text-sm);
 }
 
 .placeholder,
