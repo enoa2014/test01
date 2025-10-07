@@ -55,9 +55,14 @@ Component({
       type: String,
       value: '',
     },
+    hoverClass: {
+      type: String,
+      value: 'pm-button--hover-active',
+    },
   },
   data: {
     rippleActive: false,
+    computedHoverClass: '',
   },
   lifetimes: {
     detached() {
@@ -66,8 +71,28 @@ Component({
         this.rippleTimer = null;
       }
     },
+    attached() {
+      this.updateHoverClass();
+    },
+  },
+  observers: {
+    'hoverClass,disabled'(hoverClass, disabled) {
+      this.updateHoverClass(hoverClass, disabled);
+    },
   },
   methods: {
+    updateHoverClass(hoverClass = this.data.hoverClass, disabled = this.data.disabled) {
+      if (disabled) {
+        if (this.data.computedHoverClass) {
+          this.setData({ computedHoverClass: '' });
+        }
+        return;
+      }
+      const nextClass = typeof hoverClass === 'string' ? hoverClass.trim() : '';
+      if (nextClass !== this.data.computedHoverClass) {
+        this.setData({ computedHoverClass: nextClass });
+      }
+    },
     handleTouchStart() {
       if (this.data.disabled || this.data.loading) {
         return;

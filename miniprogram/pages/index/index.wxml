@@ -88,15 +88,16 @@
         </view>
       </picker>
       <view class="toolbar-actions">
-        <!-- P1-4: 卡片密度模式切换 -->
+        <!-- 多选模式开关 -->
         <pm-button
-          class="toolbar-action density-toggle"
-          icon="{{densityModeIcons[cardDensityMode]}}"
-          icon-only="{{true}}"
+          class="toolbar-action batch-toggle"
+          text="{{batchMode ? '完成' : '多选'}}"
+          icon="{{batchMode ? '✓' : '☑'}}"
           size="small"
-          type="ghost"
-          aria-label="切换卡片密度"
-          bindtap="onToggleDensityMode"
+          type="primary"
+          ghost="{{!batchMode}}"
+          aria-label="{{batchMode ? '退出多选模式' : '开启多选模式'}}"
+          bindtap="onToggleBatchMode"
         />
         <pm-button
           class="toolbar-action"
@@ -200,19 +201,24 @@
 
   <!-- P1-7: FAB标签提示 -->
   <view
-    class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}} {{fabExpanded ? 'fab-container--expanded' : ''}}"
+    wx:if="{{!batchMode}}"
+    class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}} {{fabExpanded ? 'fab-container--expanded' : ''}} {{canCreatePatient ? '' : 'fab-container--disabled'}}"
   >
-    <view wx:if="{{fabExpanded}}" class="fab-label">
-      <text>添加住户</text>
+    <view
+      wx:if="{{(fabExpanded && canCreatePatient) || !canCreatePatient}}"
+      class="fab-label {{canCreatePatient ? '' : 'fab-label--hint'}}"
+    >
+      <text>{{canCreatePatient ? '添加住户' : '暂无新增权限'}}</text>
     </view>
-    <view class="fab-button">
+    <view class="fab-button {{canCreatePatient ? '' : 'fab-button--disabled'}}">
       <pm-button
         icon="＋"
         type="primary"
         size="large"
         icon-only="{{true}}"
         elevated="{{true}}"
-        aria-label="添加住户"
+        aria-label="{{canCreatePatient ? '添加住户' : '暂无新增权限'}}"
+        hover-class="{{canCreatePatient ? 'fab-button--hover' : ''}}"
         bindtap="onCreatePatientTap"
       />
     </view>

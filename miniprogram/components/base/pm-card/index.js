@@ -66,9 +66,12 @@ Component({
     },
   },
   methods: {
-    handleTap() {
+    handleTap(event) {
       if (!this.data.clickable) {
         return;
+      }
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
       }
       this.triggerEvent('tap');
     },

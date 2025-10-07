@@ -343,6 +343,21 @@ function deriveMonthRange(label) {
   return { start, end };
 }
 
+function deriveYearRange(label) {
+  const match = /^([0-9]{4})$/.exec(label || '');
+  if (!match) {
+    return null;
+  }
+  const year = Number(match[1]);
+  if (!Number.isFinite(year)) {
+    return null;
+  }
+  return {
+    start: `${match[1]}-01-01`,
+    end: `${match[1]}-12-31`,
+  };
+}
+
 function buildSelectionHint({ panelKey, stat, truncated }) {
   const hints = [];
   if (stat && stat.hint) {
@@ -784,7 +799,7 @@ Page({
       }
       monthGroups[label].push(ref);
     });
-    const monthPanel = buildGroupPanel('按最近入住月份分析', monthGroups, {
+    const monthPanel = buildGroupPanel('按入住月份分析', monthGroups, {
       emptyText: '暂无入住数据',
       sortByLabel: 'asc',
       panelKey: 'month',
@@ -794,6 +809,47 @@ Page({
           return null;
         }
         return createAdvancedFilterPayload({ dateRange: range }, `${label} 入住`, {
+          keepStatFilter: false,
+        });
+      },
+    });
+
+    const resolveAdmissionYear = patient => {
+      const timestamp = Number(patient.latestAdmissionTimestamp || 0);
+      if (Number.isFinite(timestamp) && timestamp > 0) {
+        const date = new Date(timestamp);
+        if (!Number.isNaN(date.getTime())) {
+          return `${date.getFullYear()}`;
+        }
+      }
+      const formatted =
+        patient.latestAdmissionDateFormatted || formatDate(patient.latestAdmissionDate || '');
+      const parsed = parseDateValue(formatted);
+      if (parsed) {
+        return `${parsed.getFullYear()}`;
+      }
+      return '未知年份';
+    };
+
+    const yearGroups = {};
+    patients.forEach(item => {
+      const label = resolveAdmissionYear(item);
+      const ref = getPatientRef(item);
+      if (!yearGroups[label]) {
+        yearGroups[label] = [];
+      }
+      yearGroups[label].push(ref);
+    });
+    const yearPanel = buildGroupPanel('按入住年份分析', yearGroups, {
+      emptyText: '暂无入住年份数据',
+      sortByLabel: 'asc',
+      panelKey: 'year',
+      buildFilter: label => {
+        const range = deriveYearRange(label);
+        if (!range) {
+          return null;
+        }
+        return createAdvancedFilterPayload({ dateRange: range }, `${label} 年入住`, {
           keepStatFilter: false,
         });
       },
@@ -845,7 +901,7 @@ Page({
     if (dataQualityPanel) {
       panels.push(dataQualityPanel);
     }
-    panels.push(agePanel, genderPanel, placePanel, monthPanel, hospitalPanel, doctorPanel);
+    panels.push(agePanel, genderPanel, placePanel, monthPanel, yearPanel, hospitalPanel, doctorPanel);
     return panels;
   },
 

@@ -151,6 +151,11 @@
   width: 100%;
 }
 
+.pm-button--hover-active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-sm);
+}
+
 .pm-button__ripple {
   position: absolute;
   left: 0;

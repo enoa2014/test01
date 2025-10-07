@@ -105,6 +105,31 @@ function deriveCardStatus(careStatus, fallback = 'info') {
       return fallback;
   }
 }
+
+function resolveCreatePermission(payload, fallback = true) {
+  if (!payload || typeof payload !== 'object') {
+    return fallback;
+  }
+  const permissions = payload.permissions || payload.capabilities || {};
+  const patientPerm = permissions.patient || permissions.patients || {};
+  const candidates = [
+    permissions.canCreatePatient,
+    permissions.canCreate,
+    permissions.create,
+    permissions.add,
+    patientPerm.canCreate,
+    patientPerm.create,
+    payload.canCreatePatient,
+    payload.canCreate,
+  ];
+  for (let i = 0; i < candidates.length; i += 1) {
+    const value = candidates[i];
+    if (typeof value === 'boolean') {
+      return value;
+    }
+  }
+  return fallback;
+}
 function resolveAgeBucket(age) {
   const numericAge = Number(age);
   if (!Number.isFinite(numericAge) || numericAge < 0) {
@@ -687,11 +712,7 @@ Page({
     statusDialogPatient: null,
     // P1-4: 卡片密度模式
     cardDensityMode: 'comfortable', // 'compact' | 'comfortable' | 'spacious'
-    densityModeIcons: {
-      compact: '☰',
-      comfortable: '▭',
-      spacious: '▢',
-    },
+    canCreatePatient: true,
     // 统计数据
     statsData: {
       total: 0,
@@ -777,7 +798,7 @@ Page({
 
     // P1-7: FAB标签提示 - 首次访问时自动展开
     const hasSeenFabTooltip = wx.getStorageSync('fab_tooltip_seen');
-    if (!hasSeenFabTooltip) {
+    if (!hasSeenFabTooltip && this.data.canCreatePatient) {
       setTimeout(() => {
         this.setData({ fabExpanded: true });
         // 3秒后自动收起并标记已查看
@@ -990,22 +1011,27 @@ Page({
           ? result.hasMore
           : mappedPatients.length >= resolvedLimit;
       const nextPage = result.nextPage !== undefined ? result.nextPage : hasMore ? page + 1 : null;
-      this.setData(
-        {
-          patients: mergedPatients,
-          loading: false,
-          error: '',
-          page,
-          nextPage,
-          pageSize: resolvedLimit,
-          hasMore,
-          loadingMore: false,
-        },
-        () => {
-          this.applyFilters();
-          this.updateFilterOptions(mergedPatients);
-        }
-      );
+      const canCreatePatient = resolveCreatePermission(result, this.data.canCreatePatient);
+      const nextState = {
+        patients: mergedPatients,
+        loading: false,
+        error: '',
+        page,
+        nextPage,
+        pageSize: resolvedLimit,
+        hasMore,
+        loadingMore: false,
+      };
+      if (this.data.canCreatePatient !== canCreatePatient) {
+        nextState.canCreatePatient = canCreatePatient;
+      }
+      if (!canCreatePatient && this.data.fabExpanded) {
+        nextState.fabExpanded = false;
+      }
+      this.setData(nextState, () => {
+        this.applyFilters();
+        this.updateFilterOptions(mergedPatients);
+      });
       if (!shouldAppend && page === 0) {
         writePatientsCache({
           patients: mappedPatients,
@@ -1894,23 +1920,16 @@ Page({
       this.applyFilters();
     });
   },
-  // P1-4: 切换卡片密度模式
-  onToggleDensityMode() {
-    const modes = ['compact', 'comfortable', 'spacious'];
-    const currentIndex = modes.indexOf(this.data.cardDensityMode);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    const nextMode = modes[nextIndex];
-
-    this.setData({ cardDensityMode: nextMode });
-
-    // 保存用户偏好
-    try {
-      wx.setStorageSync('card_density_mode', nextMode);
-    } catch (error) {
-      logger.warn('Failed to save density mode preference', error);
+  // 多选模式开关
+  onToggleBatchMode() {
+    if (this.data.batchMode) {
+      this.exitBatchMode();
+    } else {
+      this.setData({ batchMode: true, fabExpanded: false }, () => {
+        this.applyFilters();
+      });
     }
 
-    // 触觉反馈
     if (typeof wx.vibrateShort === 'function') {
       wx.vibrateShort({ type: 'light' });
     }
@@ -2077,6 +2096,14 @@ Page({
     }
   },
   onCreatePatientTap() {
+    if (!this.data.canCreatePatient) {
+      wx.showToast({ icon: 'none', title: '暂无新增权限' });
+      return;
+    }
+    if (this.data.batchMode) {
+      wx.showToast({ icon: 'none', title: '请先退出多选模式' });
+      return;
+    }
     const url = '/pages/patient-intake/wizard/wizard?mode=create';
     if (this.data && this.data.testCaptureNavigation) {
       this.setData({ testLastNavigation: url });
@@ -2118,6 +2145,7 @@ Page({
         selectedPatientMap: nextMap,
         selectedCount,
         allSelected,
+        fabExpanded: nextMode ? false : this.data.fabExpanded,
       },
       () => {
         this.applyFilters();
@@ -2240,7 +2268,6 @@ Page({
       operations.push({ id: 'checkout', label: '离开' });
     }
     operations.push({ id: 'status', label: '修改状态' });
-    operations.push({ id: 'message', label: '发送消息' });
     operations.push({ id: 'export', label: '导出报告' });
     operations.push({ id: 'delete', label: '删除住户' });
     if (!operations.length) {
@@ -2272,9 +2299,6 @@ Page({
               break;
             case 'status':
               this.openStatusDialog(patient);
-              break;
-            case 'message':
-              this.handleSendMessage(patient);
               break;
             case 'export':
               this.handleExportReport(patient);
@@ -2765,12 +2789,6 @@ Page({
     }
     this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
   },
-  handleSendMessage() {
-    if (this.data && this.data.testCaptureToast) {
-      this.setData({ testLastToast: '功能开发中' });
-    }
-    wx.showToast({ icon: 'none', title: '功能开发中' });
-  },
   handleExportReport() {
     if (this.data && this.data.testCaptureToast) {
       this.setData({ testLastToast: '功能开发中' });
@@ -2910,15 +2928,6 @@ Page({
       delete map[key];
     }
     this.setBatchState(map, this.data.batchMode || detail.selected);
-  },
-  toggleBatchMode() {
-    if (this.data.batchMode) {
-      this.exitBatchMode();
-    } else {
-      this.setData({ batchMode: true }, () => {
-        this.applyFilters();
-      });
-    }
   },
 });
 if (typeof module !== 'undefined' && module.exports) {

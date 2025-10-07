@@ -2,6 +2,8 @@
   class="pm-button pm-button--{{type}} pm-button--{{size}} {{block ? 'pm-button--block' : ''}} {{ghost ? 'pm-button--ghost' : ''}} {{disabled || loading ? 'pm-button--disabled' : ''}} {{elevated ? 'pm-button--elevated' : ''}} {{iconOnly ? 'pm-button--icon-only' : ''}}"
   catchtap="handleTap"
   bindtouchstart="handleTouchStart"
+  hover-class="{{computedHoverClass}}"
+  hover-stay-time="80"
   role="button"
   aria-label="{{ariaLabel || text}}"
 >

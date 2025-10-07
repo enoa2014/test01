@@ -2,7 +2,7 @@
   class="pm-card {{cardClass}}"
   style="{{cardStyle}}"
   hover-class="{{hoverClass}}"
-  bindtap="handleTap"
+  catchtap="handleTap"
 >
   <view
     wx:if="{{hasStatusAccent}}"
