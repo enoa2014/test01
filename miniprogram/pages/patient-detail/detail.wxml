@@ -422,62 +422,68 @@
 
     <view class="media-section">
       <text class="section-title">资料管理</text>
-      <view wx:if="{{media.loading && !media.accessChecked}}" class="placeholder"
-        >正在检查权限…</view
-      >
-      <view wx:elif="{{media.loading}}" class="placeholder">正在加载附件…</view>
-      <view wx:elif="{{media.error}}" class="error">
-        {{media.error}}
-        <view class="media-retry" bindtap="onMediaRetry">重新加载</view>
-      </view>
-      <view wx:elif="{{media.accessChecked && !media.allowed}}" class="placeholder"
-        >当前账号暂无权限查看附件。</view
-      >
-      <view wx:else>
-        <view class="media-header">
-          <view class="media-quota">
-            <view class="quota-item">
-              <view class="quota-header">
-                <text class="quota-label">文件数量</text>
-                <text class="quota-value"
-                  >{{media.quota.totalCount}} / {{media.quota.maxCount}}</text
-                >
+      <block wx:if="{{!mediaInitialized}}">
+        <view class="placeholder">附件尚未加载</view>
+        <view class="media-retry" bindtap="onMediaLoadTap">点击加载附件</view>
+      </block>
+      <block wx:else>
+        <view wx:if="{{media.loading && !media.accessChecked}}" class="placeholder"
+          >正在检查权限…</view
+        >
+        <view wx:elif="{{media.loading}}" class="placeholder">正在加载附件…</view>
+        <view wx:elif="{{media.error}}" class="error">
+          {{media.error}}
+          <view class="media-retry" bindtap="onMediaRetry">重新加载</view>
+        </view>
+        <view wx:elif="{{media.accessChecked && !media.allowed}}" class="placeholder"
+          >当前账号暂无权限查看附件。</view
+        >
+        <view wx:else>
+          <view class="media-header">
+            <view class="media-quota">
+              <view class="quota-item">
+                <view class="quota-header">
+                  <text class="quota-label">文件数量</text>
+                  <text class="quota-value"
+                    >{{media.quota.totalCount}} / {{media.quota.maxCount}}</text
+                  >
+                </view>
+                <view class="quota-progress">
+                  <view
+                    class="quota-progress-bar {{media.quota.countPercent >= 90 ? 'danger' : (media.quota.countPercent >= 70 ? 'warning' : 'success')}}"
+                    style="width: {{media.quota.countPercent}}%"
+                  ></view>
+                </view>
               </view>
-              <view class="quota-progress">
-                <view
-                  class="quota-progress-bar {{media.quota.countPercent >= 90 ? 'danger' : (media.quota.countPercent >= 70 ? 'warning' : 'success')}}"
-                  style="width: {{media.quota.countPercent}}%"
-                ></view>
+              <view class="quota-item">
+                <view class="quota-header">
+                  <text class="quota-label">存储容量</text>
+                  <text class="quota-value"
+                    >{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}</text
+                  >
+                </view>
+                <view class="quota-progress">
+                  <view
+                    class="quota-progress-bar {{media.quota.sizePercent >= 90 ? 'danger' : (media.quota.sizePercent >= 70 ? 'warning' : 'success')}}"
+                    style="width: {{media.quota.sizePercent}}%"
+                  ></view>
+                </view>
               </view>
             </view>
-            <view class="quota-item">
-              <view class="quota-header">
-                <text class="quota-label">存储容量</text>
-                <text class="quota-value"
-                  >{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}</text
-                >
-              </view>
-              <view class="quota-progress">
-                <view
-                  class="quota-progress-bar {{media.quota.sizePercent >= 90 ? 'danger' : (media.quota.sizePercent >= 70 ? 'warning' : 'success')}}"
-                  style="width: {{media.quota.sizePercent}}%"
-                ></view>
-              </view>
+            <view class="media-tabs">
+              <view
+                class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}"
+                data-tab="images"
+                bindtap="onMediaTabChange"
+                >照片墙</view
+              >
+              <view
+                class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}"
+                data-tab="documents"
+                bindtap="onMediaTabChange"
+                >文档列表</view
+              >
             </view>
-          </view>
-          <view class="media-tabs">
-            <view
-              class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}"
-              data-tab="images"
-              bindtap="onMediaTabChange"
-              >照片墙</view
-            >
-            <view
-              class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}"
-              data-tab="documents"
-              bindtap="onMediaTabChange"
-              >文档列表</view
-            >
           </view>
         </view>
 
@@ -600,7 +606,7 @@
           </view>
           <view wx:if="{{!media.documents.length}}" class="placeholder">暂无文档资料</view>
         </view>
-      </view>
+      </block>
     </view>
   </scroll-view>
 

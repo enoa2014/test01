@@ -376,6 +376,7 @@ Page({
       content: '',
     },
     lastSaveError: null,
+    mediaInitialized: false,
   },
 
   handleThemeChange(theme) {
@@ -442,6 +443,9 @@ Page({
     this.setData({ loading: true, error: '' });
 
     try {
+      const existingPatientName = (this.data && this.data.patient && this.data.patient.patientName) || '';
+      const profileKeySnapshot = this.profileKey || '';
+
       let profileResult = {
         patient: null,
         basicInfo: [],
@@ -450,24 +454,103 @@ Page({
         records: [],
       };
 
-      if (this.profileKey) {
+      const hasPatientKey = Boolean(this.patientKey);
+      const needProfile = Boolean(this.profileKey);
+
+      const profilePromise = needProfile
+        ? wx.cloud
+            .callFunction({ name: 'patientProfile', data: { action: 'detail', key: this.profileKey } })
+            .catch(error => {
+              logger.error('Failed to load profile detail', error);
+              return null;
+            })
+        : Promise.resolve(null);
+
+      let patientRes = null;
+      let intakeRecordsRes = null;
+
+      if (hasPatientKey) {
+        const [profileRes, patientDetailRes, intakeRes] = await Promise.all([
+          profilePromise,
+          wx.cloud.callFunction({
+            name: 'patientIntake',
+            data: {
+              action: 'getPatientDetail',
+              patientKey: this.patientKey,
+              recordKey: profileKeySnapshot,
+              patientName: existingPatientName,
+            },
+          }),
+          wx.cloud.callFunction({
+            name: 'patientIntake',
+            data: {
+              action: 'getAllIntakeRecords',
+              patientKey: this.patientKey,
+              recordKey: profileKeySnapshot,
+              patientName: existingPatientName,
+            },
+          }),
+        ]);
+        profileResult = (profileRes && profileRes.result) || profileResult;
+        patientRes = patientDetailRes;
+        intakeRecordsRes = intakeRes;
+      } else {
         try {
-          const profileRes = await wx.cloud.callFunction({
-            name: 'patientProfile',
-            data: { action: 'detail', key: this.profileKey },
-          });
-          profileResult = (profileRes && profileRes.result) || profileResult;
+          const profileRes = await profilePromise;
+          if (profileRes && profileRes.result) {
+            profileResult = profileRes.result;
+          }
         } catch (profileError) {
           logger.error('Failed to load profile detail', profileError);
+        }
+
+        const resolvedPatientKeyFromProfile =
+          (profileResult &&
+            (profileResult.patientKey ||
+              (profileResult.patient &&
+                (profileResult.patient.key || profileResult.patient.patientKey)))) ||
+          '';
+
+        if (resolvedPatientKeyFromProfile) {
+          this.patientKey = resolvedPatientKeyFromProfile;
+        }
+
+        if (this.patientKey) {
+          try {
+            [patientRes, intakeRecordsRes] = await Promise.all([
+              wx.cloud.callFunction({
+                name: 'patientIntake',
+                data: {
+              action: 'getPatientDetail',
+              patientKey: this.patientKey,
+              recordKey: profileKeySnapshot,
+              patientName: profileResult.patientName || '',
+            },
+          }),
+          wx.cloud.callFunction({
+            name: 'patientIntake',
+            data: {
+              action: 'getAllIntakeRecords',
+              patientKey: this.patientKey,
+              recordKey: profileKeySnapshot,
+              patientName: profileResult.patientName || '',
+            },
+          }),
+        ]);
+          } catch (intakeError) {
+            logger.error('Failed to load intake records from patientIntake', intakeError);
+            patientRes = null;
+            intakeRecordsRes = null;
+          }
         }
       }
 
       const resolvedPatientKey =
+        this.patientKey ||
         (profileResult &&
           (profileResult.patientKey ||
             (profileResult.patient &&
               (profileResult.patient.key || profileResult.patient.patientKey)))) ||
-        this.patientKey ||
         '';
 
       if (resolvedPatientKey) {
@@ -486,39 +569,8 @@ Page({
         patientDisplay.recordKey = this.profileKey;
       }
 
-      let patientRes = null;
-      let intakeRecordsRes = null;
       const recordKeyForExcel = this.profileKey || '';
-      const patientNameForExcel = patientDisplay.patientName || profileResult.patientName || '';
-
-      if (this.patientKey) {
-        try {
-          [patientRes, intakeRecordsRes] = await Promise.all([
-            wx.cloud.callFunction({
-              name: 'patientIntake',
-              data: {
-                action: 'getPatientDetail',
-                patientKey: this.patientKey,
-                recordKey: recordKeyForExcel,
-                patientName: patientNameForExcel,
-              },
-            }),
-            wx.cloud.callFunction({
-              name: 'patientIntake',
-              data: {
-                action: 'getAllIntakeRecords',
-                patientKey: this.patientKey,
-                recordKey: recordKeyForExcel,
-                patientName: patientNameForExcel,
-              },
-            }),
-          ]);
-        } catch (intakeError) {
-          logger.error('Failed to load intake records from patientIntake', intakeError);
-          patientRes = null;
-          intakeRecordsRes = null;
-        }
-      }
+      const patientNameForExcel = patientDisplay.patientName || profileResult.patientName || existingPatientName || '';
 
       const detailData = (patientRes && patientRes.result && patientRes.result.data) || {};
       const patientForEdit = detailData.patient || {};
@@ -594,19 +646,15 @@ Page({
         .filter(Boolean);
       const filteredServerRecords = serverRecords.filter(shouldDisplayIntakeRecord);
 
-      const profileRecordsForDisplay = Array.isArray(profileResult.records)
-        ? profileResult.records
-            .map((record, index) => mapProfileRecordForDisplay(record, index))
-            .filter(Boolean)
-        : [];
-
       let aggregatedRecords = filteredServerRecords;
-      if (!aggregatedRecords.length && profileRecordsForDisplay.length) {
-        aggregatedRecords = profileRecordsForDisplay.filter(shouldDisplayIntakeRecord);
+      if (!aggregatedRecords.length && Array.isArray(profileResult.records)) {
+        const profileRecordsForDisplay = profileResult.records
+          .map((record, index) => mapProfileRecordForDisplay(record, index))
+          .filter(Boolean)
+          .filter(shouldDisplayIntakeRecord);
+        aggregatedRecords = profileRecordsForDisplay;
       }
       const aggregatedSortedRecords = sortIntakeRecords(aggregatedRecords, currentOrder);
-
-      const rawSortedRecords = sortIntakeRecords(serverRecords, currentOrder);
 
       this.allIntakeRecordsSource = aggregatedRecords;
 
@@ -834,8 +882,6 @@ Page({
           basicInfo: basicInfoDisplay,
           familyInfo: familyInfoDisplay,
           economicInfo: economicInfoDisplay,
-          records: profileResult.records || [],
-          allIntakeRecords: aggregatedSortedRecords,
           visibleIntakeRecords: aggregatedSortedRecords,
           intakeRecordCount: resolvedCount,
           intakeSummaryVersion:
@@ -859,10 +905,7 @@ Page({
           editPickerIndex: buildPickerIndexMap(editForm),
         },
         () => {
-          if (!this.mediaInitialized) {
-            this.mediaInitialized = true;
-            this.initMediaSection();
-          }
+          // 附件改为按需加载，首屏不再默认请求
         }
       );
     } catch (error) {
@@ -887,7 +930,6 @@ Page({
     const sorted = sortIntakeRecords(list, nextOrder);
     this.setData({
       recordsSortOrder: nextOrder,
-      allIntakeRecords: sorted,
       visibleIntakeRecords: sorted,
     });
   },
@@ -1436,7 +1478,16 @@ Page({
   },
 
   async initMediaSection() {
+    this.ensureMediaInitialized();
     return this.mediaService.initMediaSection();
+  },
+
+  ensureMediaInitialized() {
+    if (this.mediaInitialized) {
+      return;
+    }
+    this.mediaInitialized = true;
+    this.setData({ mediaInitialized: true });
   },
 
   async refreshMediaList() {
@@ -1451,7 +1502,18 @@ Page({
     if (this.data.media.loading) {
       return;
     }
+    if (!this.mediaInitialized) {
+      this.initMediaSection();
+      return;
+    }
     this.refreshMediaList();
+  },
+
+  onMediaLoadTap() {
+    if (this.data.media.loading) {
+      return;
+    }
+    this.initMediaSection();
   },
 
   onMediaTabChange(event) {
