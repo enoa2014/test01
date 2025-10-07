@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const ExcelJS = require('exceljs');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -10,6 +11,8 @@ const {
   normalizeTimestamp,
   ensureCollectionExists,
   buildPatientGroups,
+  parseFamilyContact,
+  toIntakeRecordKey,
 } = require('./utils/patient');
 
 // Collection names
@@ -24,6 +27,9 @@ const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 const PATIENT_LIST_CACHE_TTL = 5 * 60 * 1000;
 const DEFAULT_PATIENT_LIST_LIMIT = 80;
 const MAX_PATIENT_LIST_LIMIT = 200;
+const EXPORT_TEMPLATE_FILE_ID =
+  'cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx';
+const EXPORT_CLOUD_DIR = 'exports';
 
 // Utility functions
 function makeError(code, message, details) {
@@ -39,6 +45,271 @@ function safeNumber(value) {
   return Number.isFinite(num) ? num : 0;
 }
 
+function firstDefined() {
+  for (let i = 0; i < arguments.length; i += 1) {
+    const value = arguments[i];
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function mapGenderLabel(value) {
+  const text = normalizeSpacing(value).toLowerCase();
+  if (!text) {
+    return '';
+  }
+  const maleValues = ['m', 'male', 'man', '男', '男性'];
+  const femaleValues = ['f', 'female', 'woman', '女', '女性'];
+  if (maleValues.indexOf(text) >= 0) {
+    return '男';
+  }
+  if (femaleValues.indexOf(text) >= 0) {
+    return '女';
+  }
+  return value || '';
+}
+
+function formatDateText(value) {
+  const text = normalizeSpacing(value);
+  if (!text) {
+    return '';
+  }
+  if (/^\d{4}[.\/年-]\d{1,2}[.\/月-]\d{1,2}/.test(text)) {
+    return text.replace(/[年\/-]/g, '.').replace(/月/g, '.').replace(/日/g, '');
+  }
+  const date = new Date(text);
+  if (isNaN(date.getTime())) {
+    return text;
+  }
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return year + '.' + month + '.' + day;
+}
+
+function prefer() {
+  for (let i = 0; i < arguments.length; i += 1) {
+    const value = arguments[i];
+    const normalized = normalizeSpacing(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return '';
+}
+
+function buildPatientDocFromSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return null;
+  }
+
+  const normalize = value => normalizeSpacing(value);
+  const key = normalize(snapshot.key);
+  const recordKey = normalize(snapshot.recordKey) || key;
+  const patientKey = normalize(snapshot.patientKey) || recordKey || key;
+
+  const doc = {
+    key,
+    recordKey,
+    patientKey,
+    patientName: normalize(snapshot.patientName || snapshot.name),
+    gender: normalize(snapshot.gender),
+    genderLabel: normalize(snapshot.genderLabel || snapshot.gender),
+    birthDate: normalize(snapshot.birthDate),
+    nativePlace: normalize(snapshot.nativePlace),
+    ethnicity: normalize(snapshot.ethnicity),
+    idNumber: normalize(snapshot.idNumber),
+    latestHospital: normalize(snapshot.latestHospital),
+    firstHospital: normalize(snapshot.firstHospital),
+    latestDiagnosis: normalize(snapshot.latestDiagnosis),
+    firstDiagnosis: normalize(snapshot.firstDiagnosis),
+    latestDoctor: normalize(snapshot.latestDoctor),
+    summaryCaregivers: normalize(snapshot.summaryCaregivers || snapshot.caregivers),
+    caregivers: normalize(snapshot.caregivers),
+    address: normalize(snapshot.address),
+    fatherInfo: normalize(snapshot.fatherInfo),
+    motherInfo: normalize(snapshot.motherInfo),
+    otherGuardian: normalize(snapshot.otherGuardian),
+    familyEconomy: normalize(snapshot.familyEconomy),
+    familyEconomyRaw: normalize(snapshot.familyEconomy),
+    fatherInfoRaw: normalize(snapshot.fatherInfo),
+    motherInfoRaw: normalize(snapshot.motherInfo),
+    otherGuardianRaw: normalize(snapshot.otherGuardian),
+    latestAdmissionDateFormatted: normalize(
+      snapshot.latestAdmissionDateFormatted || snapshot.latestAdmissionDate
+    ),
+    latestAdmissionDate: normalize(snapshot.latestAdmissionDate || snapshot.latestAdmissionDateFormatted),
+    firstAdmissionDateFormatted: normalize(
+      snapshot.firstAdmissionDateFormatted || snapshot.firstAdmissionDate
+    ),
+    firstAdmissionDate: normalize(snapshot.firstAdmissionDate || snapshot.firstAdmissionDateFormatted),
+    symptoms: normalize(snapshot.symptoms || (snapshot.lastIntakeNarrative && snapshot.lastIntakeNarrative.symptoms)),
+    treatmentProcess: normalize(
+      snapshot.treatmentProcess ||
+        (snapshot.lastIntakeNarrative && snapshot.lastIntakeNarrative.treatmentProcess)
+    ),
+    followUpPlan: normalize(
+      snapshot.followUpPlan || (snapshot.lastIntakeNarrative && snapshot.lastIntakeNarrative.followUpPlan)
+    ),
+    latestAdmissionTimestamp: normalizeTimestamp(
+      snapshot.latestAdmissionTimestamp || snapshot.admissionTimestamp || snapshot.intakeTimestamp
+    ),
+    firstAdmissionTimestamp: normalizeTimestamp(snapshot.firstAdmissionTimestamp),
+  };
+
+  const contactSet = new Set();
+  const contacts = [];
+  const addContact = (role, rawValue) => {
+    const normalizedRaw = normalize(rawValue);
+    if (!normalizedRaw) {
+      return;
+    }
+    const segments =
+      role === 'other'
+        ? normalizedRaw
+            .replace(/[、，,]/g, '、')
+            .split('、')
+            .map(item => normalize(item))
+            .filter(Boolean)
+        : [normalizedRaw];
+
+    segments.forEach(segment => {
+      const parsed = typeof parseFamilyContact === 'function' ? parseFamilyContact(segment, role) : null;
+      const contact = parsed || {
+        role,
+        raw: segment,
+        name: normalize(segment),
+        phone: '',
+        idNumber: '',
+      };
+      const key = [contact.role, contact.name, contact.phone, contact.idNumber]
+        .map(value => normalize(value).toLowerCase())
+        .join('|');
+      if (!key.trim()) {
+        return;
+      }
+      if (!contactSet.has(key)) {
+        contactSet.add(key);
+        contacts.push(contact);
+      }
+    });
+  };
+
+  addContact('father', snapshot.fatherInfo);
+  addContact('mother', snapshot.motherInfo);
+  addContact('other', snapshot.otherGuardian);
+
+  if (Array.isArray(snapshot.familyContacts)) {
+    snapshot.familyContacts.forEach(contact => {
+      if (!contact || typeof contact !== 'object') {
+        return;
+      }
+      const role = normalize(contact.role) || 'other';
+      const raw = normalize(contact.raw || contact.name);
+      const parsed = {
+        role,
+        raw,
+        name: normalize(contact.name || raw),
+        phone: normalize(contact.phone),
+        idNumber: normalize(contact.idNumber),
+      };
+      const key = [parsed.role, parsed.name, parsed.phone, parsed.idNumber]
+        .map(value => normalize(value).toLowerCase())
+        .join('|');
+      if (key.trim() && !contactSet.has(key)) {
+        contactSet.add(key);
+        contacts.push(parsed);
+      }
+    });
+  }
+
+  doc.familyContacts = contacts;
+
+  return doc;
+}
+
+function buildRecordFromSnapshot(snapshot) {
+  const patientDoc = buildPatientDocFromSnapshot(snapshot);
+  if (!patientDoc) {
+    return null;
+  }
+
+  const normalize = value => normalizeSpacing(value);
+  const admissionTimestamp = normalizeTimestamp(
+    snapshot && (snapshot.admissionTimestamp || snapshot.latestAdmissionTimestamp)
+  );
+  const intakeTimestamp = normalizeTimestamp(snapshot && snapshot.intakeTimestamp);
+  const admissionDate =
+    patientDoc.latestAdmissionDate ||
+    patientDoc.latestAdmissionDateFormatted ||
+    patientDoc.firstAdmissionDate ||
+    patientDoc.firstAdmissionDateFormatted;
+
+  const record = {
+    key: patientDoc.recordKey || patientDoc.key || patientDoc.patientKey || '',
+    recordKey: patientDoc.recordKey || patientDoc.key || patientDoc.patientKey || '',
+    patientKey: patientDoc.patientKey || patientDoc.key || '',
+    patientName: patientDoc.patientName || '',
+    gender: patientDoc.gender || '',
+    genderLabel: patientDoc.genderLabel || '',
+    admissionDate: admissionDate || '',
+    admissionDateRaw: normalize(snapshot && (snapshot.admissionDateRaw || snapshot.latestAdmissionDateRaw)),
+    admissionTimestamp: admissionTimestamp !== null ? admissionTimestamp : undefined,
+    intakeTimestamp: intakeTimestamp !== null ? intakeTimestamp : undefined,
+    birthDate: patientDoc.birthDate || '',
+    nativePlace: patientDoc.nativePlace || '',
+    ethnicity: patientDoc.ethnicity || '',
+    idNumber: patientDoc.idNumber || '',
+    hospital: patientDoc.latestHospital || patientDoc.firstHospital || '',
+    latestHospital: patientDoc.latestHospital || '',
+    firstHospital: patientDoc.firstHospital || '',
+    diagnosis: patientDoc.latestDiagnosis || patientDoc.firstDiagnosis || '',
+    latestDiagnosis: patientDoc.latestDiagnosis || '',
+    firstDiagnosis: patientDoc.firstDiagnosis || '',
+    doctor: patientDoc.latestDoctor || '',
+    caregivers: patientDoc.summaryCaregivers || patientDoc.caregivers || '',
+    summaryCaregivers: patientDoc.summaryCaregivers || '',
+    symptoms: patientDoc.symptoms || '',
+    treatmentProcess: patientDoc.treatmentProcess || '',
+    followUpPlan: patientDoc.followUpPlan || '',
+    address: patientDoc.address || '',
+    fatherInfo: patientDoc.fatherInfo || '',
+    motherInfo: patientDoc.motherInfo || '',
+    otherGuardian: patientDoc.otherGuardian || '',
+    familyEconomy: patientDoc.familyEconomy || '',
+    excelRowIndex: Number(snapshot && snapshot.excelRowIndex) || undefined,
+    importOrder: Number(snapshot && snapshot.importOrder) || undefined,
+    raw: { cells: [] },
+  };
+
+  const baseCells = new Array(20).fill('');
+  baseCells[1] = record.patientName;
+  baseCells[2] = mapGenderLabel(record.genderLabel || record.gender || '');
+  baseCells[3] = formatDateText(record.admissionDate || record.admissionDateRaw || '');
+  baseCells[4] = record.caregivers;
+  baseCells[5] = formatDateText(record.birthDate || '');
+  baseCells[6] = record.nativePlace;
+  baseCells[7] = record.ethnicity;
+  baseCells[8] = record.idNumber;
+  baseCells[9] = record.hospital;
+  baseCells[10] = record.diagnosis;
+  baseCells[11] = record.doctor;
+  baseCells[12] = record.symptoms;
+  baseCells[13] = record.treatmentProcess;
+  baseCells[14] = record.followUpPlan;
+  baseCells[15] = record.address;
+  baseCells[16] = record.fatherInfo;
+  baseCells[17] = record.motherInfo;
+  baseCells[18] = record.otherGuardian;
+  baseCells[19] = record.familyEconomy;
+
+  record.raw.cells = baseCells;
+
+  return record;
+}
+
 function formatGuardian(name, phone) {
   const normalizedName = normalizeValue(name);
   const normalizedPhone = normalizeValue(phone);
@@ -46,6 +317,281 @@ function formatGuardian(name, phone) {
     return `${normalizedName} ${normalizedPhone}`;
   }
   return normalizedName || normalizedPhone || '';
+}
+
+function getRecordOrder(record) {
+  if (!record || typeof record !== 'object') {
+    return 0;
+  }
+  if (record.excelRowIndex !== undefined && record.excelRowIndex !== null) {
+    return Number(record.excelRowIndex) || 0;
+  }
+  if (record.importOrder !== undefined && record.importOrder !== null) {
+    return Number(record.importOrder) || 0;
+  }
+  if (record.rowIndex !== undefined && record.rowIndex !== null) {
+    return Number(record.rowIndex) || 0;
+  }
+  return 0;
+}
+
+function getRecordTimestamp(record) {
+  if (!record || typeof record !== 'object') {
+    return 0;
+  }
+  if (record.admissionTimestamp !== undefined && record.admissionTimestamp !== null) {
+    return Number(record.admissionTimestamp) || 0;
+  }
+  if (record.intakeTimestamp !== undefined && record.intakeTimestamp !== null) {
+    return Number(record.intakeTimestamp) || 0;
+  }
+  return 0;
+}
+
+async function fetchPatientDocByKey(rawKey) {
+  const normalizedKey = normalizeSpacing(rawKey);
+  if (!normalizedKey) {
+    return null;
+  }
+
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
+
+  async function tryQuery(promise) {
+    try {
+      const res = await promise;
+      if (res && res.data && res.data.length) {
+        const doc = res.data[0];
+        const docId = doc._id || doc.patientKey || doc.recordKey || normalizedKey;
+        return Object.assign({ _id: docId }, doc);
+      }
+    } catch (error) {
+      // ignore and continue
+    }
+    return null;
+  }
+
+  let doc = await tryQuery(db.collection(PATIENTS_COLLECTION).doc(normalizedKey).get());
+  if (doc) {
+    return doc;
+  }
+
+  doc = await tryQuery(
+    db.collection(PATIENTS_COLLECTION).where({ patientKey: normalizedKey }).limit(1).get()
+  );
+  if (doc) {
+    return doc;
+  }
+
+  doc = await tryQuery(
+    db.collection(PATIENTS_COLLECTION).where({ recordKey: normalizedKey }).limit(1).get()
+  );
+  if (doc) {
+    return doc;
+  }
+
+  doc = await tryQuery(
+    db.collection(PATIENTS_COLLECTION).where({ excelRecordKeys: normalizedKey }).limit(1).get()
+  );
+  if (doc) {
+    return doc;
+  }
+
+  doc = await tryQuery(
+    db.collection(PATIENTS_COLLECTION).where({ patientName: normalizedKey }).limit(1).get()
+  );
+  return doc;
+}
+
+
+async function fetchExcelRecordsByCandidates(candidateKeys) {
+  const keys = Array.isArray(candidateKeys) ? candidateKeys.slice() : [];
+  const normalizedKeys = [];
+  keys.forEach(value => {
+    const key = normalizeSpacing(value);
+    if (key && normalizedKeys.indexOf(key) === -1) {
+      normalizedKeys.push(key);
+    }
+  });
+
+  if (!normalizedKeys.length) {
+    return [];
+  }
+
+  await ensureCollectionExists(db, EXCEL_RECORDS_COLLECTION);
+  const collection = db.collection(EXCEL_RECORDS_COLLECTION);
+  const recordsMap = {};
+
+  function addRecords(docs) {
+    if (!Array.isArray(docs)) {
+      return;
+    }
+    docs.forEach(doc => {
+      if (doc && doc._id && !recordsMap[doc._id]) {
+        recordsMap[doc._id] = doc;
+      }
+    });
+  }
+
+  for (let i = 0; i < normalizedKeys.length; i += 1) {
+    const key = normalizedKeys[i];
+
+    try {
+      const docRes = await collection.doc(key).get();
+      if (docRes && docRes.data) {
+        addRecords([{ _id: key, ...docRes.data }]);
+      }
+    } catch (error) {
+      const code = error && (error.errCode !== undefined ? error.errCode : error.code);
+      if (code !== -1 && code !== 'DOCUMENT_NOT_FOUND' && code !== 'DATABASE_DOCUMENT_NOT_EXIST') {
+        console.warn('fetch excel by id failed', key, error);
+      }
+    }
+
+    const queryFields = ['key', 'recordKey', 'patientKey', 'excelRecordId'];
+    for (let j = 0; j < queryFields.length; j += 1) {
+      const field = queryFields[j];
+      const filter = {};
+      filter[field] = key;
+      try {
+        const res = await collection.where(filter).limit(1000).get();
+        addRecords(res && res.data);
+      } catch (error) {
+        console.warn('fetch excel records failed', field, key, error);
+      }
+    }
+  }
+
+  const records = Object.keys(recordsMap).map(id => recordsMap[id]);
+  records.sort((a, b) => {
+    const orderA = getRecordOrder(a);
+    const orderB = getRecordOrder(b);
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    const tsA = getRecordTimestamp(a);
+    const tsB = getRecordTimestamp(b);
+    if (tsA !== tsB) {
+      return tsA - tsB;
+    }
+    const idA = a && a._id ? String(a._id) : '';
+    const idB = b && b._id ? String(b._id) : '';
+    return idA.localeCompare(idB);
+  });
+
+  return records;
+}
+
+function buildExportRow(rowIndex, record, patientDoc, fallbackDoc, key) {
+  const sourceRecord = record || {};
+  const patient = patientDoc || {};
+  const fallback = fallbackDoc || {};
+
+  const baseCells =
+    sourceRecord.raw && Array.isArray(sourceRecord.raw.cells)
+      ? sourceRecord.raw.cells.slice(0, 20)
+      : new Array(20).fill('');
+
+  const admissionDate = prefer(
+    sourceRecord.admissionDateRaw,
+    sourceRecord.admissionDate,
+    patient.latestAdmissionDateFormatted,
+    patient.latestAdmissionDate,
+    fallback.latestAdmissionDateFormatted,
+    fallback.latestAdmissionDate,
+    patient.firstAdmissionDate,
+    fallback.firstAdmissionDate
+  );
+
+  const birthDate = prefer(sourceRecord.birthDate, patient.birthDate, fallback.birthDate);
+
+  const caregivers = prefer(
+    sourceRecord.caregivers,
+    patient.summaryCaregivers,
+    patient.caregivers,
+    fallback.summaryCaregivers,
+    fallback.caregivers,
+    Array.isArray(patient.familyContacts)
+      ? patient.familyContacts.map(contact => contact.raw || contact.name).join('、')
+      : ''
+  );
+
+  const symptoms = prefer(sourceRecord.symptoms, patient.symptoms, fallback.symptoms);
+  const treatmentProcess = prefer(
+    sourceRecord.treatmentProcess,
+    patient.treatmentProcess,
+    fallback.treatmentProcess
+  );
+  const followUpPlan = prefer(sourceRecord.followUpPlan, patient.followUpPlan, fallback.followUpPlan);
+  const address = prefer(sourceRecord.address, patient.address, fallback.address);
+  const fatherInfo = prefer(sourceRecord.fatherInfo, patient.fatherInfo, fallback.fatherInfo);
+  const motherInfo = prefer(sourceRecord.motherInfo, patient.motherInfo, fallback.motherInfo);
+  const otherGuardian = prefer(
+    sourceRecord.otherGuardian,
+    patient.otherGuardian,
+    fallback.otherGuardian
+  );
+  const familyEconomy = prefer(
+    sourceRecord.familyEconomy,
+    patient.familyEconomy,
+    fallback.familyEconomy
+  );
+
+  const hospital = prefer(
+    sourceRecord.hospital,
+    patient.latestHospital,
+    fallback.latestHospital,
+    patient.firstHospital,
+    fallback.firstHospital
+  );
+  const diagnosis = prefer(
+    sourceRecord.diagnosis,
+    patient.latestDiagnosis,
+    fallback.latestDiagnosis,
+    patient.firstDiagnosis,
+    fallback.firstDiagnosis
+  );
+  const doctor = prefer(sourceRecord.doctor, patient.latestDoctor, fallback.latestDoctor);
+
+  const gender = prefer(
+    sourceRecord.gender,
+    patient.gender,
+    patient.genderLabel,
+    fallback.gender,
+    fallback.genderLabel
+  );
+
+  const values = baseCells.slice(0, 20);
+  while (values.length < 20) {
+    values.push('');
+  }
+
+  values[0] = rowIndex + 1;
+  values[1] = prefer(patient.patientName, fallback.patientName, sourceRecord.patientName, key, values[1]);
+  values[2] = mapGenderLabel(gender || values[2]);
+  values[3] = formatDateText(admissionDate || values[3]);
+  values[4] = caregivers || values[4];
+  values[5] = formatDateText(birthDate || values[5]);
+  values[6] = prefer(sourceRecord.nativePlace, patient.nativePlace, fallback.nativePlace, values[6]);
+  values[7] = prefer(sourceRecord.ethnicity, patient.ethnicity, fallback.ethnicity, values[7]);
+  values[8] = prefer(sourceRecord.idNumber, patient.idNumber, fallback.idNumber, values[8]);
+  values[9] = hospital || values[9];
+  values[10] = diagnosis || values[10];
+  values[11] = doctor || values[11];
+  values[12] = symptoms || values[12];
+  values[13] = treatmentProcess || values[13];
+  values[14] = followUpPlan || values[14];
+  values[15] = address || values[15];
+  values[16] = fatherInfo || values[16];
+  values[17] = motherInfo || values[17];
+  values[18] = otherGuardian || values[18];
+  values[19] = familyEconomy || values[19];
+
+  return values.map(function(item) {
+    if (item === undefined || item === null) {
+      return '';
+    }
+    return item;
+  });
 }
 
 // Load patient list from cache
@@ -1291,6 +1837,247 @@ async function handleGetPatientsList(event = {}) {
   }
 }
 
+async function handleExportPatients(event = {}) {
+  const rawKeys = [];
+  if (Array.isArray(event.patientKeys)) {
+    for (let i = 0; i < event.patientKeys.length; i += 1) {
+      rawKeys.push(event.patientKeys[i]);
+    }
+  }
+  if (event.patientKey) {
+    rawKeys.push(event.patientKey);
+  }
+
+  const snapshotMap = new Map();
+  if (Array.isArray(event.patientSnapshots)) {
+    event.patientSnapshots.forEach(snapshot => {
+      if (!snapshot || typeof snapshot !== 'object') {
+        return;
+      }
+      const key = normalizeSpacing(snapshot.key || snapshot.patientKey || snapshot.recordKey);
+      if (key && !snapshotMap.has(key)) {
+        snapshotMap.set(key, snapshot);
+      }
+    });
+  }
+
+  const normalizedKeys = [];
+  rawKeys.forEach(value => {
+    const key = normalizeSpacing(value);
+    if (key && normalizedKeys.indexOf(key) === -1) {
+      normalizedKeys.push(key);
+    }
+  });
+
+  if (!normalizedKeys.length) {
+    throw makeError('EXPORT_NO_KEYS', '请先选择需要导出的住户');
+  }
+
+  const exportRows = [];
+  const missingKeys = [];
+
+  for (let i = 0; i < normalizedKeys.length; i += 1) {
+    const key = normalizedKeys[i];
+    const snapshot = snapshotMap.get(key);
+
+    let detail = null;
+    let fallbackDoc = null;
+    try {
+      detail = await fetchPatientDetailByKey(key);
+    } catch (error) {
+      if (error && error.code === 'PATIENT_NOT_FOUND') {
+        fallbackDoc = await fetchPatientDocByKey(key);
+        if (!fallbackDoc && snapshot) {
+          fallbackDoc = buildPatientDocFromSnapshot(snapshot);
+        }
+      } else {
+        throw error;
+      }
+    }
+
+    const snapshotDoc = buildPatientDocFromSnapshot(snapshot);
+    const candidateKeys = [key];
+
+    if (snapshotDoc) {
+      candidateKeys.push(snapshotDoc.recordKey);
+      candidateKeys.push(snapshotDoc.patientKey);
+    }
+    if (fallbackDoc) {
+      candidateKeys.push(fallbackDoc.recordKey);
+      candidateKeys.push(fallbackDoc.patientKey);
+    }
+    if (detail && detail.patient) {
+      candidateKeys.push(detail.patient.recordKey);
+      candidateKeys.push(detail.patient.patientKey);
+    }
+    if (detail && Array.isArray(detail.records)) {
+      detail.records.forEach(recordItem => {
+        candidateKeys.push(recordItem && recordItem.key);
+        candidateKeys.push(recordItem && recordItem.recordKey);
+      });
+    }
+
+    const excelRecords = await fetchExcelRecordsByCandidates(candidateKeys);
+    const recordList = [];
+    const recordSeen = new Set();
+
+    const pushRecord = recordItem => {
+      if (!recordItem) {
+        return;
+      }
+      const candidateKeys = [
+        recordItem._id,
+        recordItem.id,
+        recordItem.recordKey,
+        recordItem.key,
+        recordItem.intakeId,
+        recordItem.excelRecordId,
+        recordItem.excelRowId,
+        recordItem && recordItem.metadata && recordItem.metadata.intakeId,
+        toIntakeRecordKey(recordItem),
+      ];
+      let uniqueKey = '';
+      for (let idx = 0; idx < candidateKeys.length; idx += 1) {
+        const candidate = normalizeSpacing(candidateKeys[idx]);
+        if (candidate) {
+          uniqueKey = candidate;
+          break;
+        }
+      }
+      if (!uniqueKey) {
+        uniqueKey = `ts:${getRecordTimestamp(recordItem)}:${recordSeen.size}`;
+      }
+      const dedupeKey = `${uniqueKey}::${getRecordTimestamp(recordItem)}::${getRecordOrder(
+        recordItem
+      )}`;
+      if (recordSeen.has(dedupeKey)) {
+        return;
+      }
+      recordSeen.add(dedupeKey);
+      recordList.push(recordItem);
+    };
+
+    excelRecords.forEach(pushRecord);
+    if (detail && Array.isArray(detail.records)) {
+      detail.records.forEach(pushRecord);
+    }
+
+    if (!recordList.length && snapshot) {
+      const snapshotRecord = buildRecordFromSnapshot(snapshot);
+      pushRecord(snapshotRecord);
+    }
+
+    if (recordList.length > 1) {
+      recordList.sort((a, b) => {
+        const orderA = getRecordOrder(a);
+        const orderB = getRecordOrder(b);
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        const tsA = getRecordTimestamp(a);
+        const tsB = getRecordTimestamp(b);
+        if (tsA !== tsB) {
+          return tsA - tsB;
+        }
+        const idA = normalizeSpacing(a && (a._id || a.id || a.recordKey || a.intakeId || ''));
+        const idB = normalizeSpacing(b && (b._id || b.id || b.recordKey || b.intakeId || ''));
+        return idA.localeCompare(idB);
+      });
+    }
+
+    if (!recordList.length) {
+      missingKeys.push(key);
+      continue;
+    }
+
+    const patientDoc = Object.assign(
+      {},
+      snapshotDoc || {},
+      fallbackDoc || {},
+      detail && detail.patient ? detail.patient : {}
+    );
+    const mergedFallbackDoc = fallbackDoc || snapshotDoc || {};
+
+    recordList.forEach(recordItem => {
+      exportRows.push({
+        key,
+        record: recordItem,
+        patientDoc,
+        fallbackDoc: mergedFallbackDoc,
+      });
+    });
+  }
+
+  if (!exportRows.length) {
+    throw makeError('EXPORT_NO_DATA', '未找到可导出的住户档案', { missingKeys });
+  }
+
+  const template = await cloud.downloadFile({ fileID: EXPORT_TEMPLATE_FILE_ID });
+  if (!template || !template.fileContent) {
+    throw makeError('EXPORT_TEMPLATE_MISSING', '无法下载导出模板');
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(template.fileContent);
+  const worksheet = workbook.getWorksheet('Sheet1') || workbook.worksheets[0];
+  if (!worksheet) {
+    throw makeError('EXPORT_TEMPLATE_INVALID', '导出模板缺少 Sheet1 工作表');
+  }
+
+  const dataStartRow = 3;
+  const templateRow = worksheet.getRow(dataStartRow);
+  const templateStyles = [];
+  for (let col = 1; col <= 20; col += 1) {
+    const cell = templateRow.getCell(col);
+    templateStyles.push(cell && cell.style ? JSON.parse(JSON.stringify(cell.style)) : {});
+  }
+  const templateHeight = templateRow ? templateRow.height : undefined;
+
+  while (worksheet.rowCount >= dataStartRow) {
+    worksheet.spliceRows(dataStartRow, 1);
+  }
+
+  exportRows.forEach((item, index) => {
+    const values = buildExportRow(index, item.record, item.patientDoc, item.fallbackDoc, item.key);
+    const rowNumber = dataStartRow + index;
+    const row = index === 0 ? worksheet.getRow(rowNumber) : worksheet.insertRow(rowNumber, []);
+    if (templateHeight) {
+      row.height = templateHeight;
+    }
+    for (let col = 0; col < values.length; col += 1) {
+      const cell = row.getCell(col + 1);
+      cell.value = values[col];
+      const style = templateStyles[col];
+      if (style) {
+        cell.style = JSON.parse(JSON.stringify(style));
+      }
+    }
+  });
+
+  worksheet.getColumn(16).hidden = true;
+  worksheet.getColumn(17).hidden = true;
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const fileContent = Buffer.from(buffer);
+  const cloudPath = EXPORT_CLOUD_DIR + '/patient-report-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.xlsx';
+
+  const uploadRes = await cloud.uploadFile({
+    cloudPath,
+    fileContent,
+  });
+
+  if (!uploadRes || !uploadRes.fileID) {
+    throw makeError('EXPORT_UPLOAD_FAILED', '导出文件上传失败');
+  }
+
+  return {
+    success: true,
+    fileID: uploadRes.fileID,
+    exported: exportRows.length,
+    missingKeys,
+  };
+}
+
 // Handle patient detail request
 async function handleGetPatientDetail(event) {
   const { key } = event;
@@ -1389,6 +2176,8 @@ exports.main = async event => {
         return await handleGetPatientDetail(event);
       case 'delete':
         return await handleDeletePatient(event);
+      case 'export':
+        return await handleExportPatients(event);
       default:
         throw makeError('UNSUPPORTED_ACTION', `Unsupported action: ${action || 'unknown'}`);
     }
