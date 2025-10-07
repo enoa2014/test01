@@ -1,6 +1,9 @@
 // 住户选择页面
 const logger = require('../../../utils/logger');
+const themeManager = require('../../../utils/theme');
 const { formatDate, formatAge } = require('../../../utils/date');
+
+const INITIAL_THEME_KEY = themeManager.getTheme();
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_CACHE_TTL = 5 * 60 * 1000;
@@ -34,6 +37,8 @@ function writePatientsCache(patients) {
 
 Page({
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
     patients: [],
     allPatients: [],
     filteredPatients: [],
@@ -51,6 +56,12 @@ Page({
   },
 
   onLoad() {
+    const app = getApp();
+    this.themeUnsubscribe =
+      app && typeof app.watchTheme === 'function'
+        ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+        : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
+
     // 设置搜索框聚焦
     this.setData({ searchFocus: true });
 
@@ -73,11 +84,25 @@ Page({
     this.fetchPatients({ silent: !!(cachedPatients && cachedPatients.length) });
   },
 
+  onUnload() {
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
+  },
+
   onShow() {
     // 每次显示时更新搜索焦点
     setTimeout(() => {
       this.setData({ searchFocus: true });
     }, 100);
+  },
+
+  handleThemeChange(themeKey) {
+    this.setData({
+      theme: themeKey,
+      themeClass: themeManager.resolveThemeClass(themeKey),
+    });
   },
 
   // 获取住户列表

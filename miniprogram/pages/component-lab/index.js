@@ -1,10 +1,15 @@
 const components = require('./data/components.js');
+const themeManager = require('../../utils/theme');
 
 const PRESET_BASE_ID = 'base';
 const PRESET_CUSTOM_ID = 'custom';
 
+const INITIAL_THEME_KEY = themeManager.getTheme();
+
 Page({
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
     components,
     activeId: components.length ? components[0].id : '',
     current: components.length ? components[0] : {},
@@ -17,12 +22,32 @@ Page({
   },
 
   onLoad(options) {
+    const app = getApp();
+    this.themeUnsubscribe =
+      app && typeof app.watchTheme === 'function'
+        ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+        : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
+
     if (!components.length) {
       return;
     }
     const { id } = options || {};
     const initial = components.find(item => item.id === id) || components[0];
     this._setCurrent(initial);
+  },
+
+  onUnload() {
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
+  },
+
+  handleThemeChange(themeKey) {
+    this.setData({
+      theme: themeKey,
+      themeClass: themeManager.resolveThemeClass(themeKey),
+    });
   },
 
   handleSelect(event) {

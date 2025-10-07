@@ -1,5 +1,5 @@
 <!--住户选择页面-->
-<view class="theme-root select-container">
+<view class="theme-root select-container {{themeClass}}">
   <view class="header">
     <view class="title">住户入住登记</view>
     <view class="select-subtitle">请选择住户或创建新住户</view>

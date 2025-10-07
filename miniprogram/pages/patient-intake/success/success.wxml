@@ -1,5 +1,5 @@
 <!--入住成功页面-->
-<view class="theme-root success-container">
+<view class="theme-root success-container {{themeClass}}">
   <view class="success-header">
     <view class="success-icon">✅</view>
     <view class="success-title">{{titleText}}</view>

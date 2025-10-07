@@ -1,4 +1,7 @@
 const logger = require('../../utils/logger');
+const themeManager = require('../../utils/theme');
+
+const INITIAL_THEME_KEY = themeManager.getTheme();
 
 const AGE_BUCKETS = [
   { id: '0-3', label: '0-3岁', min: 0, max: 3 },
@@ -605,6 +608,8 @@ function createSelectionState(overrides = {}) {
 
 Page({
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
     loading: true,
     error: '',
     patients: [],
@@ -624,10 +629,30 @@ Page({
   },
 
   onLoad() {
+    const app = getApp();
+    this.themeUnsubscribe =
+      app && typeof app.watchTheme === 'function'
+        ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+        : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
+
     this.eventChannel =
       typeof this.getOpenerEventChannel === 'function' ? this.getOpenerEventChannel() : null;
     this.pendingPieRenders = new Set();
     this.fetchPatients();
+  },
+
+  onUnload() {
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
+  },
+
+  handleThemeChange(themeKey) {
+    this.setData({
+      theme: themeKey,
+      themeClass: themeManager.resolveThemeClass(themeKey),
+    });
   },
 
   async fetchPatients() {

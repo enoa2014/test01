@@ -5,6 +5,7 @@ let initialized = false;
 
 const THEME_PRESETS = [
   { key: 'default', label: '浅色主题', className: 'theme-default' },
+  { key: 'care', label: '疗愈青绿', className: 'theme-care' },
   { key: 'dark', label: '深色主题', className: 'theme-dark' },
 ];
 

@@ -1,4 +1,4 @@
-<view class="theme-root lab">
+<view class="theme-root lab {{themeClass}}">
   <view class="lab__sidebar">
     <view class="lab__sidebar-title">组件列表</view>
     <block wx:for="{{components}}" wx:key="id">

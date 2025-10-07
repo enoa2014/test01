@@ -2088,15 +2088,12 @@ Page({
     this.fetchPatients({ silent: false });
   },
   onPatientTap(event) {
-    const detailPatient = (event.detail && event.detail.patient) || null;
-    if (detailPatient) {
-      if (this.data.batchMode) {
-        return;
-      }
-      this.navigateToPatient(detailPatient);
+    if (this.data.batchMode) {
       return;
     }
-    if (this.data.batchMode) {
+    const detailPatient = (event.detail && event.detail.patient) || null;
+    if (detailPatient) {
+      this.navigateToPatient(detailPatient);
       return;
     }
     const { key, patientKey, recordKey } =

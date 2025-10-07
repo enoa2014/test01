@@ -1,6 +1,12 @@
 ﻿// 入住成功页面
+const themeManager = require('../../../utils/theme');
+
+const INITIAL_THEME_KEY = themeManager.getTheme();
+
 Page({
   data: {
+    theme: INITIAL_THEME_KEY,
+    themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
     mode: 'intake',
     titleText: '入住登记成功',
     subtitleText: '住户信息已录入系统',
@@ -22,6 +28,12 @@ Page({
   },
 
   onLoad(options) {
+    const app = getApp();
+    this.themeUnsubscribe =
+      app && typeof app.watchTheme === 'function'
+        ? app.watchTheme(theme => this.handleThemeChange(theme), { immediate: true })
+        : themeManager.subscribeTheme(theme => this.handleThemeChange(theme));
+
     const mode = options?.mode === 'create' ? 'create' : 'intake';
     const displayTexts = this.resolveDisplayTexts(mode);
 
@@ -66,6 +78,20 @@ Page({
     // 设置导航栏标题
     wx.setNavigationBarTitle({
       title: this.data.mode === 'create' ? '住户创建成功' : '入住成功',
+    });
+  },
+
+  onUnload() {
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
+  },
+
+  handleThemeChange(themeKey) {
+    this.setData({
+      theme: themeKey,
+      themeClass: themeManager.resolveThemeClass(themeKey),
     });
   },
 

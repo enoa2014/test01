@@ -16,24 +16,9 @@
     </view>
     <view class="progress-info">
       <text class="current-step">第{{currentVisibleStepNumber}}步 / 共{{totalVisibleSteps}}步</text>
-      <view class="theme-control">
-        <text class="required-count" wx:if="{{requiredFieldsCount > 0}}"
-          >剩余必填项：{{requiredFieldsCount}}</text
-        >
-        <picker
-          class="theme-picker"
-          mode="selector"
-          range="{{themeOptions}}"
-          range-key="label"
-          value="{{themePickerIndex}}"
-          bindchange="onThemePick"
-        >
-          <view class="theme-select">
-            <text class="theme-select__label">{{themePickerLabel}}</text>
-            <text class="theme-select__icon">▾</text>
-          </view>
-        </picker>
-      </view>
+      <text class="required-count" wx:if="{{requiredFieldsCount > 0}}"
+        >剩余必填项：{{requiredFieldsCount}}</text
+      >
     </view>
   </view>
 

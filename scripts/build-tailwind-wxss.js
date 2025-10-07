@@ -1,21 +1,25 @@
 #!/usr/bin/env node
 const path = require('path');
 const { spawnSync } = require('child_process');
-tconst fs = require('fs/promises');
-tconst { createStyleHandler } = require('@weapp-tailwindcss/postcss');
+const fs = require('fs/promises');
+const { createStyleHandler } = require('@weapp-tailwindcss/postcss');
 
 async function runTailwind(inputPath, tempOutputPath, configPath, cwd) {
   const args = ['@tailwindcss/cli', '-i', inputPath, '-o', tempOutputPath, '--config', configPath, '--minify'];
-t  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   const result = spawnSync(command, args, {
     cwd,
     stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: process.env.NODE_ENV || 'development', TAILWIND_DISABLE_WATCHER: '1' },
+    env: {
+      ...process.env,
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      TAILWIND_DISABLE_WATCHER: '1',
+    },
   });
   if (result.status !== 0) {
     throw new Error(`Tailwind 构建失败，退出码 ${result.status}`);
   }
-t}
+}
 
 async function transformToWxss(rawCssPath, wxssOutputPath) {
   const styleHandler = createStyleHandler({ platform: 'wechat' });

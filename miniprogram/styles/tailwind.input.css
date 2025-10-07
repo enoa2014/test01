@@ -6,6 +6,7 @@
   .theme-default {
     --bg-default: 246 247 246;
     --surface: 255 255 255;
+    --surface-muted: 248 249 247;
     --divider: 230 232 234;
     --divider-cool: 220 226 231;
 
@@ -13,10 +14,36 @@
     --text-secondary: 99 98 98;
     --text-tertiary: 161 161 161;
 
+    --ink-900: 23 33 42;
+    --ink-700: 85 96 108;
+    --ink-500: 144 152 161;
+    --on-dark: 255 255 255;
+
     --brand-blue: 50 123 225;
     --brand-blue-hover: 61 130 225;
     --brand-blue-aa: 47 109 210;
     --brand-blue-soft: 118 165 229;
+
+    --brand-50: 240 250 248;
+    --brand-100: 213 241 236;
+    --brand-300: 156 216 203;
+    --brand-500: 20 144 127;
+    --brand-600: 15 122 109;
+    --brand-700: 11 106 94;
+
+    --peach-100: 255 237 230;
+    --peach-300: 255 197 172;
+    --peach-500: 245 158 116;
+    --peach-600: 219 103 69;
+
+    --info-100: 232 242 255;
+    --info-600: 47 109 210;
+    --success-100: 226 245 236;
+    --success-600: 33 160 106;
+    --warning-100: 255 246 228;
+    --warning-600: 197 126 20;
+    --danger-100: 255 236 236;
+    --danger-600: 214 69 69;
 
     --ink: 15 15 16;
     --ink-on: 255 255 255;
@@ -42,9 +69,76 @@
     --shadow-sm: 0 2rpx 12rpx rgba(17, 24, 39, 0.06);
   }
 
+  .theme-care {
+    --bg-default: 250 250 247;
+    --surface: 255 255 255;
+    --surface-muted: 248 249 247;
+    --divider: 231 235 239;
+    --divider-cool: 223 230 234;
+
+    --text-primary: 23 33 42;
+    --text-secondary: 85 96 108;
+    --text-tertiary: 144 152 161;
+
+    --ink-900: 23 33 42;
+    --ink-700: 85 96 108;
+    --ink-500: 144 152 161;
+    --on-dark: 255 255 255;
+
+    --brand-blue: 20 144 127;
+    --brand-blue-hover: 15 122 109;
+    --brand-blue-aa: 11 106 94;
+    --brand-blue-soft: 156 216 203;
+
+    --brand-50: 240 250 248;
+    --brand-100: 213 241 236;
+    --brand-300: 156 216 203;
+    --brand-500: 20 144 127;
+    --brand-600: 15 122 109;
+    --brand-700: 11 106 94;
+
+    --peach-100: 255 237 230;
+    --peach-300: 255 197 172;
+    --peach-500: 245 158 116;
+    --peach-600: 219 103 69;
+
+    --info-100: 232 242 255;
+    --info-600: 47 109 210;
+    --success-100: 226 245 236;
+    --success-600: 33 160 106;
+    --warning-100: 255 246 228;
+    --warning-600: 197 126 20;
+    --danger-100: 255 236 236;
+    --danger-600: 214 69 69;
+
+    --ink: 23 33 42;
+    --ink-on: 255 255 255;
+
+    --accent-warm-1: 245 158 116;
+    --accent-warm-2: 219 103 69;
+
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #fafaf7;
+    --color-bg-tertiary: #f8f9f7;
+    --color-text-primary: #17212a;
+    --color-text-secondary: #55606c;
+    --color-text-tertiary: #9098a1;
+    --color-border-primary: #d5e3e0;
+    --color-border-secondary: #e7ebef;
+    --color-border-tertiary: #f0faf8;
+    --color-primary: #0b6a5e;
+    --color-primary-light: #9cd8cb;
+    --color-primary-dark: #0f7a6d;
+    --color-secondary: #f59e74;
+    --color-secondary-light: #ffc5ac;
+    --color-secondary-dark: #db6745;
+    --shadow-sm: 0 2rpx 12rpx rgba(17, 24, 39, 0.06);
+  }
+
   .theme-dark {
     --bg-default: 16 17 18;
     --surface: 21 23 25;
+    --surface-muted: 23 27 30;
     --divider: 44 48 54;
     --divider-cool: 48 54 60;
 
@@ -52,10 +146,36 @@
     --text-secondary: 188 188 192;
     --text-tertiary: 129 133 139;
 
+    --ink-900: 240 244 247;
+    --ink-700: 196 202 208;
+    --ink-500: 153 162 172;
+    --on-dark: 255 255 255;
+
     --brand-blue: 50 123 225;
     --brand-blue-hover: 76 149 240;
     --brand-blue-aa: 50 123 225;
     --brand-blue-soft: 118 165 229;
+
+    --brand-50: 40 70 74;
+    --brand-100: 54 90 94;
+    --brand-300: 70 117 110;
+    --brand-500: 26 140 124;
+    --brand-600: 18 116 103;
+    --brand-700: 12 96 85;
+
+    --peach-100: 72 55 46;
+    --peach-300: 149 92 69;
+    --peach-500: 235 145 108;
+    --peach-600: 210 96 65;
+
+    --info-100: 60 86 126;
+    --info-600: 88 146 230;
+    --success-100: 58 96 74;
+    --success-600: 41 168 114;
+    --warning-100: 92 72 36;
+    --warning-600: 207 136 30;
+    --danger-100: 94 60 60;
+    --danger-600: 218 88 88;
 
     --ink: 255 255 255;
     --ink-on: 15 15 16;
