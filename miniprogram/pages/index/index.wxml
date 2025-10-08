@@ -1,4 +1,4 @@
-﻿<view class="theme-root container stack gap-4 {{themeClass}}">
+﻿<view class="theme-root container stack gap-4 {{themeClass}}" data-theme="{{theme}}">
   <view class="hero">
     <view class="hero-header">
       <text class="title">住户档案</text>

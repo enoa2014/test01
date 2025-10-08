@@ -8,6 +8,8 @@ let initialized = false;
 const THEME_PRESETS = [
   { key: 'default', label: '浅色主题', className: 'theme-default' },
   { key: 'care', label: '疗愈青绿', className: 'theme-care' },
+  { key: 'forest', label: 'Ecru × Forest', className: 'theme-forest' },
+  { key: 'sky', label: '晨空 Calm-Sky', className: 'theme-sky' },
   { key: 'dark', label: '深色主题', className: 'theme-dark' },
 ];
 

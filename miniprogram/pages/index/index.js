@@ -674,6 +674,7 @@ Page({
     filterNativePlaceOptions: [],
     filterDoctorOptions: [],
     filterAgeRangeOptions: AGE_BUCKETS.map(bucket => ({ id: bucket.id, label: bucket.label })),
+    filterPanelDefaults: getDefaultAdvancedFilters(),
     filterPreviewCount: -1,
     filterPreviewLoading: false,
     filterPreviewLabel: '名住户符合筛选',
@@ -1610,14 +1611,16 @@ Page({
     const ageOptionsBase = AGE_BUCKETS.map(bucket => ({ id: bucket.id, label: bucket.label }));
     const ageOptions = mergeSelectedIntoOptions(ageOptionsBase, Array.from(ageSelectedSet));
     this.setData({
-      filterHospitalOptions: hospitalOptions,
-      filterDiagnosisOptions: diagnosisOptionsAll.slice(0, 12),
-      filterAllDiagnosisOptions: diagnosisOptionsAll,
-      filterGenderOptions: genderOptions,
-      filterEthnicityOptions: ethnicityOptions,
-      filterNativePlaceOptions: nativePlaceOptions,
-      filterDoctorOptions: doctorOptions,
-      filterAgeRangeOptions: ageOptions,
+      filterHospitalOptions: Array.isArray(hospitalOptions) ? hospitalOptions : [],
+      filterDiagnosisOptions: Array.isArray(diagnosisOptionsAll)
+        ? diagnosisOptionsAll.slice(0, 12)
+        : [],
+      filterAllDiagnosisOptions: Array.isArray(diagnosisOptionsAll) ? diagnosisOptionsAll : [],
+      filterGenderOptions: Array.isArray(genderOptions) ? genderOptions : [],
+      filterEthnicityOptions: Array.isArray(ethnicityOptions) ? ethnicityOptions : [],
+      filterNativePlaceOptions: Array.isArray(nativePlaceOptions) ? nativePlaceOptions : [],
+      filterDoctorOptions: Array.isArray(doctorOptions) ? doctorOptions : [],
+      filterAgeRangeOptions: Array.isArray(ageOptions) ? ageOptions : [],
     });
   },
   onFilterSaveScheme() {
@@ -1725,7 +1728,7 @@ Page({
   },
   loadFilterSchemes() {
     const schemes = loadSchemesFromStorage();
-    this.setData({ filterSchemes: schemes });
+    this.setData({ filterSchemes: Array.isArray(schemes) ? schemes : [] });
   },
   saveFilterSchemes(schemes) {
     const normalized = (schemes || [])

@@ -44,6 +44,22 @@ const config: Config = {
           600: 'rgb(var(--peach-600) / <alpha-value>)',
         },
 
+        /* Accent 别名 - Ecru（与 peach 等价，更语义化） */
+        ecru: {
+          100: 'rgb(var(--peach-100) / <alpha-value>)',
+          300: 'rgb(var(--peach-300) / <alpha-value>)',
+          500: 'rgb(var(--peach-500) / <alpha-value>)',
+          600: 'rgb(var(--peach-600) / <alpha-value>)',
+        },
+
+        /* Accent 别名 - Lilac（Calm-Sky 中的薰衣草点缀） */
+        lilac: {
+          100: 'rgb(var(--peach-100) / <alpha-value>)',
+          300: 'rgb(var(--peach-300) / <alpha-value>)',
+          500: 'rgb(var(--peach-500) / <alpha-value>)',
+          600: 'rgb(var(--peach-600) / <alpha-value>)',
+        },
+
         /* 状态色 */
         info: {
           100: 'rgb(var(--info-100) / <alpha-value>)',
