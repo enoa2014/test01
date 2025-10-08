@@ -1586,15 +1586,13 @@ Page({
   // 获取所有缺失的必填项
   getAllMissingRequiredFields() {
     const { formData, isEditingExisting } = this.data;
-    const baseAndContactFields = [
-      { key: 'patientName', label: '姓名' },
-      { key: 'idNumber', label: '证件号码' },
-      { key: 'gender', label: '性别' },
-      { key: 'birthDate', label: '出生日期' },
-      { key: 'address', label: '常住地址' },
-      { key: 'emergencyContact', label: '紧急联系人' },
-      { key: 'emergencyPhone', label: '紧急联系人电话' },
-    ];
+  const baseAndContactFields = [
+    { key: 'patientName', label: '姓名' },
+    { key: 'idNumber', label: '证件号码' },
+    { key: 'gender', label: '性别' },
+    { key: 'birthDate', label: '出生日期' },
+    { key: 'address', label: '常住地址' },
+  ];
 
     const missing = [];
 
@@ -2005,8 +2003,15 @@ Page({
         ? `/pages/patient-intake/success/success?${query}`
         : '/pages/patient-intake/success/success';
 
+      console.info('[wizard] redirecting to success page', target);
       wx.redirectTo({
         url: target,
+        success: () => {
+          console.info('[wizard] redirectTo success', target);
+        },
+        fail: err => {
+          console.error('[wizard] redirectTo failed', err && err.errMsg ? err.errMsg : err);
+        },
       });
     } catch (error) {
       logger.error('提交失败', error);

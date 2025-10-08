@@ -136,15 +136,26 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
   const birth = patientOverrides.birthDate || patientOverrides.birth || '2012-04-16';
   const gender = patientOverrides.gender || patientOverrides.sex || '女';
 
+  const primaryContact =
+    patientOverrides.primaryContact || patientOverrides.emergencyContact || 'Automation Caregiver';
+  const primaryPhone =
+    patientOverrides.primaryPhone || patientOverrides.emergencyPhone || generateMobile();
+  const primaryRelation =
+    patientOverrides.primaryRelation || patientOverrides.emergencyRelation || '家属';
+
   const patientData = {
     patientName: randomString('TEST_AUTOMATION'),
     idNumber: generateIdNumber(birth, gender),
     birthDate: birth,
     phone: generateMobile(),
     address: 'Automation Rehab Center, Beijing',
-    emergencyContact: 'Automation Caregiver',
-    emergencyPhone: generateMobile(),
-    emergencyRelation: '家属',
+    primaryContact,
+    primaryPhone,
+    primaryRelation,
+    // legacy aliases kept for backward compatibility with existing helpers/tests
+    emergencyContact: primaryContact,
+    emergencyPhone: primaryPhone,
+    emergencyRelation: primaryRelation,
     situation: `${situationText()} Follow-up observation in progress.`,
     gender,
     ...patientOverrides,
@@ -206,26 +217,19 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     const addressTextarea = await waitForFieldElement(wizardPage, 'address');
     console.info('[e2e] address field ready');
     await inputValue(addressTextarea, patientData.address);
-    const emergencyContactInput = await waitForFieldElement(wizardPage, 'emergencyContact');
-    console.info('[e2e] emergencyContact field ready');
-    await inputValue(emergencyContactInput, patientData.emergencyContact);
-    const emergencyPhoneInput = await waitForFieldElement(wizardPage, 'emergencyPhone');
-    console.info('[e2e] emergencyPhone field ready');
-    await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
-
     const contactRelationInput = await waitForFieldElement(wizardPage, 'relationship', {
       timeout: 12000,
     });
     console.info('[e2e] contact relationship field ready');
-    await inputValue(contactRelationInput, patientData.emergencyRelation || '家属');
+    await inputValue(contactRelationInput, patientData.primaryRelation || '家属');
 
     const contactNameInput = await waitForFieldElement(wizardPage, 'name', { timeout: 12000 });
     console.info('[e2e] contact name field ready');
-    await inputValue(contactNameInput, patientData.emergencyContact);
+    await inputValue(contactNameInput, patientData.primaryContact || 'Automation Caregiver');
 
     const contactPhoneInput = await waitForFieldElement(wizardPage, 'phone', { timeout: 12000 });
     console.info('[e2e] contact phone field ready');
-    await inputValue(contactPhoneInput, patientData.emergencyPhone);
+    await inputValue(contactPhoneInput, patientData.primaryPhone || generateMobile());
 
     await waitForCondition(
       async () => {
@@ -288,7 +292,17 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       console.info('[e2e] success page loaded');
     } catch (error) {
       successPage = await miniProgram.currentPage();
-      console.warn('[e2e] success page fall back to current page', error && error.message);
+      let fallbackRoute = '';
+      try {
+        fallbackRoute = successPage && (successPage.route || successPage.path || successPage.is);
+      } catch (routeError) {
+        fallbackRoute = `[route read failed: ${routeError && routeError.message}]`;
+      }
+      console.warn(
+        '[e2e] success page fall back to current page',
+        error && error.message,
+        fallbackRoute
+      );
     }
 
     const successData =
@@ -369,6 +383,25 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
     throw new Error('Existing patient wizard未提供可见步骤');
   }
 
+  const baseFormData = (await wizardPage.data()).formData || {};
+  const existingContacts = Array.isArray(baseFormData.contacts) ? baseFormData.contacts : [];
+  if (!existingContacts.length || !existingContacts[0] || !existingContacts[0].name) {
+    const relationship = overrides.primaryRelation || existingPatient.primaryRelation || '家属';
+    const name = overrides.primaryContact || existingPatient.primaryContact || '自动联系人';
+    const phone = overrides.primaryPhone || existingPatient.primaryPhone || generateMobile();
+    await wizardPage.setData({
+      'formData.contacts': [
+        {
+          relationship,
+          name,
+          phone,
+        },
+      ],
+      'formData.emergencyContact': name,
+      'formData.emergencyPhone': phone,
+    });
+  }
+
   const situationTextarea = await waitForFieldElement(wizardPage, 'situation', {
     timeout: 12000,
   });
@@ -426,24 +459,25 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
   const submitButton = await waitForElement(wizardPage, '.btn-success', { timeout: 8000 });
   await submitButton.tap();
 
+  let successPage = null;
   try {
-    const successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
+    successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
       timeout: 20000,
     });
     await waitForElement(successPage, '.success-title');
-
-    return {
-      successPage,
-      patientData: {
-        ...existingPatient,
-        situation: followUpSituation,
-      },
-      wizardSnapshot: initialSnapshot,
-    };
+    console.info('[e2e] existing patient success page loaded');
   } catch (error) {
+    successPage = await miniProgram.currentPage();
     const finalState = await wizardPage.data();
-    console.error('[e2e] existing patient submission failed', {
+    let fallbackRoute = '';
+    try {
+      fallbackRoute = successPage && (successPage.route || successPage.path || successPage.is);
+    } catch (routeError) {
+      fallbackRoute = `[route read failed: ${routeError && routeError.message}]`;
+    }
+    console.warn('[e2e] existing patient success page fallback', {
       error: error && error.message,
+      route: fallbackRoute,
       submitting: finalState && finalState.submitting,
       errors: finalState && finalState.errors,
       canProceedToNext: finalState && finalState.canProceedToNext,
@@ -451,8 +485,16 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
       toast: finalState && finalState.toastMessage,
       patientKey: existingPatient.patientKey,
     });
-    throw error;
   }
+
+  return {
+    successPage,
+    patientData: {
+      ...existingPatient,
+      situation: followUpSituation,
+    },
+    wizardSnapshot: initialSnapshot,
+  };
 }
 
 module.exports = {

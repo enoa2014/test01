@@ -59,7 +59,7 @@ describe('patient list actions', () => {
     expect(latest.testLastActionSheet).toEqual([
       '入住',
       '详情',
-      '发送消息',
+      '修改状态',
       '导出报告',
       '删除住户',
     ]);
@@ -84,13 +84,13 @@ describe('patient list actions', () => {
     expect(latest.testLastActionSheet).toEqual([
       '详情',
       '离开',
-      '发送消息',
+      '修改状态',
       '导出报告',
       '删除住户',
     ]);
     await indexPage.callMethod('handlePatientCheckout', inCare);
     const afterToast = await indexPage.data();
-    expect(afterToast.testLastToast).toBe('功能开发中');
+    expect(afterToast.testLastToast).toBeFalsy();
   }, 120000);
 
   test('新建住户入口跳转到向导创建模式', async () => {

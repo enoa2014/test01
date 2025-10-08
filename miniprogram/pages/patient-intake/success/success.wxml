@@ -25,11 +25,6 @@
           <text class="info-value">{{actionTime}}</text>
         </view>
 
-        <view class="info-row" wx:if="{{emergencyContact}}">
-          <text class="info-label">紧急联系人</text>
-          <text class="info-value">{{emergencyContact}} {{emergencyPhone}}</text>
-        </view>
-
         <view class="info-row" wx:if="{{mode !== 'create' && uploadCount > 0}}">
           <text class="info-label">附件数量</text>
           <text class="info-value">{{uploadCount}}个文件</text>

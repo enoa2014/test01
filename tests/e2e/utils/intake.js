@@ -17,9 +17,9 @@ async function createPatientViaWizard(miniProgram, options = {}) {
     birthDate: '2012-04-16',
     phone: generateMobile(),
     address: 'Automation Rehab Center, Beijing',
-    emergencyContact: 'Automation Caregiver',
-    emergencyPhone: generateMobile(),
-    emergencyRelation: '家属',
+    primaryContact: 'Automation Caregiver',
+    primaryPhone: generateMobile(),
+    primaryRelation: '家属',
     situation: `${situationText()} Follow-up observation in progress.`,
   };
 
@@ -60,34 +60,23 @@ async function createPatientViaWizard(miniProgram, options = {}) {
 
   const addressTextarea = await waitForElement(wizardPage, 'textarea[data-field="address"]');
   await inputValue(addressTextarea, patientData.address);
-  const emergencyContactInput = await waitForElement(
-    wizardPage,
-    'input[data-field="emergencyContact"]'
-  );
-  await inputValue(emergencyContactInput, patientData.emergencyContact);
-  const emergencyPhoneInput = await waitForElement(
-    wizardPage,
-    'input[data-field="emergencyPhone"]'
-  );
-  await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
-
   const contactRelationInput = await waitForElement(
     wizardPage,
     '.pm-input__field[data-field="relationship"]'
   );
-  await inputValue(contactRelationInput, patientData.emergencyRelation || '家属');
+  await inputValue(contactRelationInput, patientData.primaryRelation || '家属');
 
   const contactNameInput = await waitForElement(
     wizardPage,
     '.pm-input__field[data-field="name"]'
   );
-  await inputValue(contactNameInput, patientData.emergencyContact);
+  await inputValue(contactNameInput, patientData.primaryContact || 'Automation Caregiver');
 
   const contactPhoneInput = await waitForElement(
     wizardPage,
     '.pm-input__field[data-field="phone"]'
   );
-  await inputValue(contactPhoneInput, patientData.emergencyPhone);
+  await inputValue(contactPhoneInput, patientData.primaryPhone || generateMobile());
 
   await waitForCondition(
     async () => {

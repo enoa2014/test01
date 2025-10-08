@@ -15,15 +15,6 @@ const PATIENT_FIELD_CONFIG = [
 
 const CONTACT_FIELD_CONFIG = [
   { key: 'address', label: '常住地址', type: 'textarea', required: true, maxLength: 200 },
-  { key: 'emergencyContact', label: '紧急联系人', type: 'text', required: false, maxLength: 30 },
-  {
-    key: 'emergencyPhone',
-    label: '紧急联系人电话',
-    type: 'text',
-    required: false,
-    keyboard: 'number',
-    maxLength: 11,
-  },
   { key: 'backupContact', label: '备用联系人', type: 'text', maxLength: 30 },
   { key: 'backupPhone', label: '备用联系人电话', type: 'text', keyboard: 'number', maxLength: 11 },
 ];

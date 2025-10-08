@@ -275,7 +275,7 @@ module.exports = [
         props: {
           status: 'warning',
           title: '信息待完善',
-          description: '患者紧急联系人信息缺失，请尽快补充。',
+          description: '患者联系信息缺失，请尽快补充。',
           clickable: true,
           variant: 'default',
         },

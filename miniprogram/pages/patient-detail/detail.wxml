@@ -173,7 +173,7 @@
         </block>
       </block>
 
-      <text class="form-section-title">联系与紧急联系人</text>
+      <text class="form-section-title">联系信息</text>
       <block wx:for="{{contactFieldConfig}}" wx:key="key">
         <block wx:if="{{item.type === 'textarea'}}">
           <pm-input

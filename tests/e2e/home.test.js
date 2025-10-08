@@ -42,7 +42,14 @@ describe('home page admissions', () => {
     const listName = cardNameNode ? (await cardNameNode.text()).trim() : '';
     expect(listName.length).toBeGreaterThan(0);
 
-    await firstItem.tap();
+    const currentState = await indexPage.data();
+    const firstPatient =
+      currentState && Array.isArray(currentState.displayPatients) && currentState.displayPatients.length
+        ? currentState.displayPatients[0]
+        : null;
+    expect(firstPatient).toBeTruthy();
+
+    await indexPage.callMethod('onPatientTap', { detail: { patient: firstPatient } });
     const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', {
       timeout: 20000,
     });

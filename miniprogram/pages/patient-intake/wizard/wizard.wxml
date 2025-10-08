@@ -270,7 +270,7 @@
         </view>
       </view>
 
-      <view class="legacy-emergency-inputs">
+      <view wx:if="{{false}}" class="legacy-emergency-inputs">
         <pm-input
           label="紧急联系人"
           value="{{formData.emergencyContact}}"

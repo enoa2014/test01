@@ -824,16 +824,6 @@ Page({
         )
       );
 
-      pushFamily(
-        '紧急联系人',
-        coalesceValue(patientForEdit.emergencyContact, patientDisplay.emergencyContact)
-      );
-
-      pushFamily(
-        '紧急联系电话',
-        coalesceValue(patientForEdit.emergencyPhone, patientDisplay.emergencyPhone)
-      );
-
       const economicInfoDisplay = [];
       pushDisplayItem(
         economicInfoDisplay,
@@ -981,12 +971,8 @@ Page({
       ...pickerIndexUpdates,
     });
 
-    if (wx.enableAlertBeforeUnload && wx.disableAlertBeforeUnload) {
-      if (dirty) {
-        wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
-      } else {
-        wx.disableAlertBeforeUnload();
-      }
+    if (wx.disableAlertBeforeUnload) {
+      wx.disableAlertBeforeUnload();
     }
   },
 
@@ -1243,12 +1229,8 @@ Page({
       editCanSave: dirty && Object.keys(nextErrors).length === 0,
     });
 
-    if (wx.enableAlertBeforeUnload && wx.disableAlertBeforeUnload) {
-      if (dirty) {
-        wx.enableAlertBeforeUnload({ message: '当前编辑内容尚未保存，确定离开吗？' });
-      } else {
-        wx.disableAlertBeforeUnload();
-      }
+    if (wx.disableAlertBeforeUnload) {
+      wx.disableAlertBeforeUnload();
     }
 
     return changed;
@@ -1417,14 +1399,8 @@ Page({
       if (item.label === '家庭地址') {
         return { ...item, value: form.address || item.value };
       }
-      if (item.label === '紧急联系人') {
-        return { ...item, value: form.emergencyContact || item.value };
-      }
-      if (item.label === '紧急联系电话') {
-        return { ...item, value: form.emergencyPhone || item.value };
-      }
       return item;
-    });
+    }).filter(item => !item || (item.label !== '紧急联系人' && item.label !== '紧急联系电话'));
 
     this.setData({
       patient: nextPatient,
@@ -1443,8 +1419,6 @@ Page({
       birthDate: form.birthDate,
       phone: form.phone,
       address: form.address,
-      emergencyContact: form.emergencyContact,
-      emergencyPhone: form.emergencyPhone,
     };
 
     this.patientDisplaySource = {
@@ -1454,8 +1428,6 @@ Page({
       birthDate: form.birthDate,
       phone: form.phone,
       address: form.address,
-      emergencyContact: form.emergencyContact,
-      emergencyPhone: form.emergencyPhone,
     };
 
     this.originalEditForm = {

@@ -34,8 +34,6 @@ describe('患者详情编辑预填功能', () => {
       birthDate: formatDateForInput(birthDate),
       phone: patient.phone || '',
       address: patient.address || '',
-      emergencyContact: patient.emergencyContact || '',
-      emergencyPhone: patient.emergencyPhone || '',
       backupContact: patient.backupContact || '',
       backupPhone: patient.backupPhone || '',
       intakeTime: formatDateForInput(intakeInfo.intakeTime || intake.lastIntakeTime),
@@ -86,8 +84,6 @@ describe('患者详情编辑预填功能', () => {
       birthDate: 631152000000, // 1990-01-01
       phone: '13912345678',
       address: '北京市朝阳区测试地址123号',
-      emergencyContact: '李四',
-      emergencyPhone: '13987654321',
     };
 
     const intake = {
@@ -105,7 +101,6 @@ describe('患者详情编辑预填功能', () => {
     expect(editForm.birthDate).toBe('1990-01-01');
     expect(editForm.phone).toBe('13912345678');
     expect(editForm.address).toBe('北京市朝阳区测试地址123号');
-    expect(editForm.emergencyContact).toBe('李四');
     expect(editForm.narrative).toBe('患者情况良好');
     expect(editForm.followUpPlan).toBe('定期复查');
   });

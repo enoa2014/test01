@@ -127,8 +127,6 @@ describe('patient detail edit flow', () => {
       gender: '男',
       birthDate: '2000-01-01',
       address: '广州市',
-      emergencyContact: '李四',
-      emergencyPhone: '13800000001',
     };
     page.setData({
       editMode: true,
@@ -139,8 +137,6 @@ describe('patient detail edit flow', () => {
         gender: '男',
         birthDate: '2000-01-01',
         address: '',
-        emergencyContact: '',
-        emergencyPhone: '',
       },
       editErrors: {},
     });
@@ -169,8 +165,6 @@ describe('patient detail edit flow', () => {
       birthDate: '2000-01-01',
       phone: '13800000000',
       address: '广州市',
-      emergencyContact: '李四',
-      emergencyPhone: '13800000001',
       intakeDocId: 'intake-123',
       intakeUpdatedAt: 1700000000000,
     };
