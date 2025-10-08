@@ -201,14 +201,31 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 8000, message: 'Wizard did not enter contact step' }
     );
 
+    console.info('[e2e] contact step reached');
+
     const addressTextarea = await waitForFieldElement(wizardPage, 'address');
+    console.info('[e2e] address field ready');
     await inputValue(addressTextarea, patientData.address);
     const emergencyContactInput = await waitForFieldElement(wizardPage, 'emergencyContact');
+    console.info('[e2e] emergencyContact field ready');
     await inputValue(emergencyContactInput, patientData.emergencyContact);
     const emergencyPhoneInput = await waitForFieldElement(wizardPage, 'emergencyPhone');
+    console.info('[e2e] emergencyPhone field ready');
     await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
-    const emergencyRelationInput = await waitForFieldElement(wizardPage, 'emergencyRelation');
-    await inputValue(emergencyRelationInput, patientData.emergencyRelation || '家属');
+
+    const contactRelationInput = await waitForFieldElement(wizardPage, 'relationship', {
+      timeout: 12000,
+    });
+    console.info('[e2e] contact relationship field ready');
+    await inputValue(contactRelationInput, patientData.emergencyRelation || '家属');
+
+    const contactNameInput = await waitForFieldElement(wizardPage, 'name', { timeout: 12000 });
+    console.info('[e2e] contact name field ready');
+    await inputValue(contactNameInput, patientData.emergencyContact);
+
+    const contactPhoneInput = await waitForFieldElement(wizardPage, 'phone', { timeout: 12000 });
+    console.info('[e2e] contact phone field ready');
+    await inputValue(contactPhoneInput, patientData.emergencyPhone);
 
     await waitForCondition(
       async () => {
@@ -217,6 +234,8 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       },
       { timeout: 8000, message: 'Contact step requirements not satisfied' }
     );
+
+    console.info('[e2e] contact step completed');
 
     if (typeof wizardPage.callMethod === 'function') {
       await wizardPage.callMethod('onNextStep');
@@ -236,6 +255,8 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       { timeout: 8000, message: 'Wizard did not enter review step' }
     );
 
+    console.info('[e2e] review step reached');
+
     await waitForCondition(
       async () => {
         const data = await wizardPage.data();
@@ -243,6 +264,8 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       },
       { timeout: 8000, message: 'Review step reports missing required data' }
     );
+
+    console.info('[e2e] review step confirmed complete');
 
     if (typeof wizardPage.callMethod === 'function') {
       await wizardPage.callMethod('onSubmit');
@@ -254,14 +277,18 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
       await submitButton.tap();
     }
 
+    console.info('[e2e] submit action triggered');
+
     let successPage = null;
     try {
       successPage = await waitForPage(miniProgram, 'pages/patient-intake/success/success', {
         timeout: 20000,
       });
       await waitForElement(successPage, '.success-title');
+      console.info('[e2e] success page loaded');
     } catch (error) {
       successPage = await miniProgram.currentPage();
+      console.warn('[e2e] success page fall back to current page', error && error.message);
     }
 
     const successData =
@@ -269,8 +296,11 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
 
     let patientKey = successData?.patientKey;
     if (!patientKey) {
+      console.warn('[e2e] success data missing patientKey, resolving via cloud lookup');
       patientKey = await resolvePatientKey(miniProgram, patientData, successPage);
     }
+
+    console.info('[e2e] patient resource prepared', { patientKey });
 
     const payload = {
       successPage,
@@ -355,19 +385,28 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
   const firstNextButton = await waitForElement(wizardPage, '.btn-primary', { timeout: 8000 });
   await firstNextButton.tap();
 
-  const uploadStepIndex = stepOrder[1];
-  await waitForCondition(
-    async () => {
-      const data = await wizardPage.data();
-      return data.currentStep === uploadStepIndex;
-    },
-    { timeout: 8000, message: 'Existing patient未进入附件上传步骤' }
+  const reviewStepIndex = stepOrder[stepOrder.length - 1];
+  const hasUploadStep = Boolean(
+    Array.isArray(initialSnapshot.visibleSteps) &&
+      initialSnapshot.visibleSteps.some(step => step && step.key === 'upload')
   );
 
-  const secondNextButton = await waitForElement(wizardPage, '.btn-primary', { timeout: 8000 });
-  await secondNextButton.tap();
+  if (hasUploadStep) {
+    const uploadStep = initialSnapshot.visibleSteps.find(step => step && step.key === 'upload');
+    const uploadStepIndex = uploadStep ? uploadStep.originalIndex : undefined;
 
-  const reviewStepIndex = stepOrder[stepOrder.length - 1];
+    await waitForCondition(
+      async () => {
+        const data = await wizardPage.data();
+        return uploadStepIndex !== undefined && data.currentStep === uploadStepIndex;
+      },
+      { timeout: 8000, message: 'Existing patient未进入附件上传步骤' }
+    );
+
+    const secondNextButton = await waitForElement(wizardPage, '.btn-primary', { timeout: 8000 });
+    await secondNextButton.tap();
+  }
+
   await waitForCondition(
     async () => {
       const data = await wizardPage.data();

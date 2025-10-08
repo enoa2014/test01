@@ -298,6 +298,22 @@
     <!-- 第3步：情况说明 -->
     <view wx:if="{{currentStepData && currentStepData.key === 'situation'}}" class="form-section">
       <view class="form-group">
+        <label class="form-label required">入住时间</label>
+        <picker
+          class="form-picker {{errors.admissionDate ? 'error' : ''}}"
+          mode="date"
+          value="{{formData.admissionDate || today}}"
+          start="2000-01-01"
+          end="{{today}}"
+          data-field="admissionDate"
+          bindchange="onDateChange"
+        >
+          <view class="picker-display">{{formData.admissionDate || today}}</view>
+        </picker>
+        <text class="error-text" wx:if="{{errors.admissionDate}}">{{errors.admissionDate}}</text>
+      </view>
+
+      <view class="form-group">
         <view class="textarea-container">
           <pm-input
             label="入住理由说明（选填）"
@@ -410,41 +426,7 @@
       </view>
     </view>
 
-    <!-- 第4步：附件上传 -->
-    <view wx:if="{{currentStepData && currentStepData.key === 'upload'}}" class="form-section">
-      <view class="upload-section">
-        <view class="upload-header">
-          <view class="upload-title">附件上传（选填）</view>
-          <view class="upload-desc">支持身份证、诊断证明、知情同意书等文件</view>
-        </view>
-
-        <view class="upload-rules">
-          <view class="rule-item">• 单个文件不超过 {{uploadConfig.maxFileSize}}MB</view>
-          <view class="rule-item">• 支持格式：{{uploadConfig.allowedTypes}}</view>
-          <view class="rule-item">• 最多上传 {{uploadConfig.maxCount}} 个文件</view>
-        </view>
-
-        <view class="upload-area" bindtap="chooseFile">
-          <view class="upload-icon">📎</view>
-          <view class="upload-text">点击选择文件</view>
-        </view>
-
-        <view class="upload-list" wx:if="{{uploadedFiles.length > 0}}">
-          <view wx:for="{{uploadedFiles}}" wx:key="id" class="file-item">
-            <view class="file-info">
-              <view class="file-name">{{item.displayName}}</view>
-              <view class="file-size">{{item.sizeText}}</view>
-            </view>
-            <view class="file-actions">
-              <text class="action-btn" data-id="{{item.id}}" bindtap="previewFile">预览</text>
-              <text class="action-btn delete" data-id="{{item.id}}" bindtap="deleteFile">删除</text>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 第5步：核对与提交 -->
+    <!-- 第4步：核对与提交 -->
     <view wx:if="{{currentStepData && currentStepData.key === 'review'}}" class="form-section">
       <view class="review-section">
         <view class="review-title">请核对以下信息</view>
@@ -498,6 +480,14 @@
           </view>
         </view>
 
+        <view class="review-group">
+          <view class="group-title">入住信息</view>
+          <view class="review-item">
+            <text class="item-label">入住时间：</text>
+            <text class="item-value">{{formData.admissionDate}}</text>
+          </view>
+        </view>
+
         <view
           class="review-group"
           wx:if="{{formData.visitHospital || formData.hospitalDiagnosis || formData.attendingDoctor}}"
@@ -533,13 +523,6 @@
           <view class="review-item" wx:if="{{formData.followUpPlan}}">
             <text class="item-label">后续治疗安排：</text>
             <text class="item-value">{{formData.followUpPlan}}</text>
-          </view>
-        </view>
-
-        <view class="review-group" wx:if="{{uploadedFiles.length > 0}}">
-          <view class="group-title">附件 ({{uploadedFiles.length}})</view>
-          <view wx:for="{{uploadedFiles}}" wx:key="id" class="review-item">
-            <text class="item-value">{{item.displayName}}</text>
           </view>
         </view>
 
@@ -586,39 +569,11 @@
         text="{{submitting ? '提交中...' : '完成入住'}}"
       ></pm-button>
     </view>
-
-    <view class="draft-info" wx:if="{{draftSaved}}">
-      <text class="draft-text">✅ 草稿已保存</text>
-    </view>
   </view>
 
   <!-- 自动填充成功提示 Toast -->
   <view class="auto-fill-toast" wx:if="{{showAutoFillTip}}">
     <icon type="success_no_circle" size="20" color="#52c41a"/>
     <text>已自动识别性别和出生日期</text>
-  </view>
-</view>
-
-<!-- 草稿恢复提示 -->
-<view class="draft-modal" wx:if="{{showDraftModal}}">
-  <view class="modal-content">
-    <view class="modal-title">发现未完成的草稿</view>
-    <view class="modal-text">您上次有未完成的入住流程，是否继续？</view>
-    <view class="modal-actions">
-      <pm-button
-        type="default"
-        size="small"
-        block="{{true}}"
-        bindtap="discardDraft"
-        text="重新开始"
-      ></pm-button>
-      <pm-button
-        type="primary"
-        size="small"
-        block="{{true}}"
-        bindtap="restoreDraft"
-        text="继续草稿"
-      ></pm-button>
-    </view>
   </view>
 </view>

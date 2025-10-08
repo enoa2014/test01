@@ -17,13 +17,26 @@ describe('patient media management (mpflow)', () => {
   }, 300000);
 
   test('media section renders and provides fallback data when empty', async () => {
-    await miniProgram.reLaunch('/pages/index/index');
-    const indexPage = await waitForPage(miniProgram, 'pages/index/index', { timeout: 20000 });
+    const normalizeRoute = route => (route || '').replace(/^\//, '');
+    let indexPage = await miniProgram.currentPage();
+    let currentRoute = indexPage ? normalizeRoute(indexPage.route || indexPage.path || '') : '';
+
+    if (currentRoute !== 'pages/index/index') {
+      console.info('[e2e][media] re-launching index page from', currentRoute || 'unknown');
+      await miniProgram.reLaunch('/pages/index/index');
+      indexPage = await waitForPage(miniProgram, 'pages/index/index', { timeout: 20000 });
+      currentRoute = 'pages/index/index';
+    } else {
+      console.info('[e2e][media] index page already active');
+    }
+
     await indexPage.waitFor(500);
+    console.info('[e2e][media] index page loaded');
 
     let patientItems = [];
     try {
       patientItems = await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 15000 });
+      console.info('[e2e][media] patient cards detected', patientItems.length);
     } catch (error) {
       const fallbackKey = `TEST_AUTOMATION_${Date.now()}`;
       const fallbackPatient = {
@@ -57,16 +70,19 @@ describe('patient media management (mpflow)', () => {
         error: '',
       });
       patientItems = await waitForElements(indexPage, 'patient-card', { min: 1, timeout: 5000 });
+      console.info('[e2e][media] fallback patient injected');
     }
 
     expect(patientItems.length).toBeGreaterThan(0);
 
     const detailTarget = (await indexPage.data()).displayPatients?.[0];
     const targetKey = detailTarget?.patientKey || detailTarget?.key || seededPatient.patientKey;
+    console.info('[e2e][media] navigating to detail with key', targetKey);
     await miniProgram.reLaunch(`/pages/patient-detail/detail?key=${encodeURIComponent(targetKey)}`);
     const detailPage = await waitForPage(miniProgram, 'pages/patient-detail/detail', {
       timeout: 20000,
     });
+    console.info('[e2e][media] detail page reached');
 
     await waitForCondition(
       async () => {
@@ -75,6 +91,7 @@ describe('patient media management (mpflow)', () => {
       },
       { timeout: 20000, message: 'Detail page did not finish loading' }
     );
+    console.info('[e2e][media] detail page finished loading');
 
     let mediaState = (await detailPage.data()).media || null;
     if (!mediaState || !mediaState.accessChecked) {
@@ -115,10 +132,12 @@ describe('patient media management (mpflow)', () => {
       };
       await detailPage.setData({ media: mediaState });
       await detailPage.waitFor(200);
+      console.info('[e2e][media] fallback media state applied');
     }
 
     const sectionNode = await waitForElement(detailPage, '.media-section', { timeout: 10000 });
     expect(sectionNode).toBeTruthy();
+    console.info('[e2e][media] media section located');
 
     const titleNode = await detailPage.$('.media-section .section-title');
     const titleText = titleNode ? (await titleNode.text()).trim() : '';
@@ -128,5 +147,6 @@ describe('patient media management (mpflow)', () => {
     expect(finalState.accessChecked).toBe(true);
     expect(Array.isArray(finalState.images)).toBe(true);
     expect(Array.isArray(finalState.documents)).toBe(true);
+    console.info('[e2e][media] media assertions completed');
   }, 300000);
 });

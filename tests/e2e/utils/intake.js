@@ -70,11 +70,24 @@ async function createPatientViaWizard(miniProgram, options = {}) {
     'input[data-field="emergencyPhone"]'
   );
   await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
-  const emergencyRelationInput = await waitForElement(
+
+  const contactRelationInput = await waitForElement(
     wizardPage,
-    'input[data-field="emergencyRelation"]'
+    '.pm-input__field[data-field="relationship"]'
   );
-  await inputValue(emergencyRelationInput, patientData.emergencyRelation || '家属');
+  await inputValue(contactRelationInput, patientData.emergencyRelation || '家属');
+
+  const contactNameInput = await waitForElement(
+    wizardPage,
+    '.pm-input__field[data-field="name"]'
+  );
+  await inputValue(contactNameInput, patientData.emergencyContact);
+
+  const contactPhoneInput = await waitForElement(
+    wizardPage,
+    '.pm-input__field[data-field="phone"]'
+  );
+  await inputValue(contactPhoneInput, patientData.emergencyPhone);
 
   await waitForCondition(
     async () => {
@@ -109,23 +122,6 @@ async function createPatientViaWizard(miniProgram, options = {}) {
     async () => {
       const data = await wizardPage.data();
       return data.currentStep === 3;
-    },
-    { timeout: 5000, message: 'Wizard did not enter upload step' }
-  );
-
-  await waitForCondition(
-    async () => {
-      const data = await wizardPage.data();
-      return data.canProceedToNext === true;
-    },
-    { timeout: 3000, message: 'Upload step unexpectedly blocked' }
-  );
-
-  await (await waitForElement(wizardPage, '.btn-primary')).tap();
-  await waitForCondition(
-    async () => {
-      const data = await wizardPage.data();
-      return data.currentStep === 4;
     },
     { timeout: 5000, message: 'Wizard did not enter review step' }
   );
