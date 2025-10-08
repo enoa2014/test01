@@ -213,8 +213,6 @@ function validateFormData(formData) {
     { key: 'gender', label: '性别' },
     { key: 'birthDate', label: '出生日期' },
     { key: 'address', label: '常住地址' },
-    { key: 'emergencyContact', label: '紧急联系人' },
-    { key: 'emergencyPhone', label: '紧急联系人电话' },
   ];
 
   for (const field of requiredFields) {
