@@ -1073,6 +1073,7 @@
   overflow: hidden;
   border: 2rpx solid var(--color-border-secondary);
   transition: var(--transition-base);
+  position: relative;
 }
 
 .info-card:hover {
@@ -1123,4 +1124,31 @@
   flex: 1;
   text-align: right;
   word-break: break-all;
+}
+
+.info-card--basic {
+  border-color: rgba(46, 134, 171, 0.35);
+  background: linear-gradient(135deg, rgba(46, 134, 171, 0.12) 0%, var(--color-bg-primary) 100%);
+}
+
+.info-card--basic .info-card-header {
+  background: linear-gradient(135deg, rgba(46, 134, 171, 0.18), rgba(46, 134, 171, 0.04));
+}
+
+.info-card--contact {
+  border-color: rgba(242, 66, 54, 0.28);
+  background: linear-gradient(135deg, rgba(242, 66, 54, 0.1) 0%, var(--color-bg-primary) 100%);
+}
+
+.info-card--contact .info-card-header {
+  background: linear-gradient(135deg, rgba(242, 66, 54, 0.16), rgba(242, 66, 54, 0.04));
+}
+
+.info-card--economic {
+  border-color: rgba(82, 196, 26, 0.28);
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.12) 0%, var(--color-bg-primary) 100%);
+}
+
+.info-card--economic .info-card-header {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.18), rgba(82, 196, 26, 0.05));
 }

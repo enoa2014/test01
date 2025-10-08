@@ -275,7 +275,7 @@
     <block wx:if="{{!editMode}}">
       <!-- P1: 信息区域卡片化 -->
       <view class="info-card-grid">
-        <view class="info-card" wx:if="{{basicInfo.length}}">
+        <view class="info-card info-card--basic" wx:if="{{basicInfo.length}}">
           <view class="info-card-header">
             <text class="info-card-title">👤 住户基本信息</text>
           </view>
@@ -287,7 +287,7 @@
           </view>
         </view>
 
-        <view class="info-card" wx:if="{{familyInfo.length}}">
+        <view class="info-card info-card--contact" wx:if="{{familyInfo.length}}">
           <view class="info-card-header">
             <text class="info-card-title">📞 联系信息</text>
           </view>
@@ -299,7 +299,7 @@
           </view>
         </view>
 
-        <view class="info-card" wx:if="{{economicInfo.length}}">
+        <view class="info-card info-card--economic" wx:if="{{economicInfo.length}}">
           <view class="info-card-header">
             <text class="info-card-title">💰 经济情况</text>
           </view>
