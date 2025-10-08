@@ -569,9 +569,6 @@ Page({
         patientDisplay.recordKey = this.profileKey;
       }
 
-      const recordKeyForExcel = this.profileKey || '';
-      const patientNameForExcel = patientDisplay.patientName || profileResult.patientName || existingPatientName || '';
-
       const detailData = (patientRes && patientRes.result && patientRes.result.data) || {};
       const patientForEdit = detailData.patient || {};
       if (patientForEdit.key && patientForEdit.key !== this.patientKey) {

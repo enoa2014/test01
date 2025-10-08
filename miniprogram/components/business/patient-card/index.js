@@ -121,7 +121,6 @@ Component({
     hasActions: false,
     statusIndicator: null,
     statusIcon: null,
-    swipeActions: [],
     isSwiping: false,
     isLongPressing: false,
   },

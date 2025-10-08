@@ -1,3 +1,5 @@
+const logger = require('./logger');
+
 const STORAGE_KEY = 'app_theme_preference';
 const listeners = new Set();
 let currentTheme = 'default';
@@ -28,7 +30,7 @@ function readStoredTheme() {
   try {
     return wx.getStorageSync(STORAGE_KEY);
   } catch (error) {
-    console.warn('[theme-manager] 读取主题缓存失败', error);
+    logger.warn('[theme-manager] 读取主题缓存失败', error);
     return undefined;
   }
 }
@@ -57,7 +59,7 @@ function detectSystemTheme() {
       }
     }
   } catch (error) {
-    console.warn('[theme-manager] 无法读取系统主题', error);
+    logger.warn('[theme-manager] 无法读取系统主题', error);
   }
   return 'default';
 }
@@ -69,7 +71,7 @@ function persistTheme(themeKey) {
   try {
     wx.setStorageSync(STORAGE_KEY, themeKey);
   } catch (error) {
-    console.warn('[theme-manager] 主题写入缓存失败', error);
+    logger.warn('[theme-manager] 主题写入缓存失败', error);
   }
 }
 
@@ -96,7 +98,7 @@ function notify(theme) {
     try {
       listener(theme);
     } catch (error) {
-      console.warn('[theme-manager] 主题监听器执行失败', error);
+      logger.warn('[theme-manager] 主题监听器执行失败', error);
     }
   });
 }

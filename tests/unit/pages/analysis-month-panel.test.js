@@ -55,7 +55,7 @@ describe('analysis month panel ordering', () => {
     ];
 
     const panels = buildPanels.call(pageConfig, samplePatients);
-    const monthPanel = panels.find(panel => panel.title === '按最近入住月份分析');
+    const monthPanel = panels.find(panel => panel.panelKey === 'month');
     expect(monthPanel).toBeTruthy();
 
     const labels = monthPanel.stats.map(stat => stat.label);

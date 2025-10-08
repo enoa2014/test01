@@ -127,6 +127,10 @@
   box-sizing: border-box;
 }
 
+.patient-list--batch {
+  padding-bottom: calc(var(--space-5) + 200rpx);
+}
+
 /* P1-4: 不同密度模式的卡片间距 */
 .patient-card {
   margin-bottom: var(--space-3);
@@ -199,6 +203,45 @@
   font-weight: var(--font-medium);
   color: var(--color-text-primary);
 }
+
+.batch-toolbar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+  background: var(--color-bg-primary);
+  box-shadow: 0 -8rpx 24rpx rgba(15, 23, 42, 0.12);
+  z-index: 20;
+}
+
+.batch-toolbar__info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.batch-toolbar__count {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.batch-toolbar__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.batch-toolbar__actions .pm-button {
+  flex: 1;
+  min-width: 180rpx;
+}
+
 
 .patient-meta {
   display: flex;

@@ -653,6 +653,7 @@ Page({
     selectedPatientMap: {},
     selectedCount: 0,
     allSelected: false,
+    batchOperationType: '',
     page: 0,
     nextPage: 1,
     pageSize: PATIENT_PAGE_SIZE,
@@ -710,6 +711,7 @@ Page({
       note: '',
     },
     statusDialogPatient: null,
+    statusDialogBatchKeys: [],
     // P1-4: 卡片密度模式
     cardDensityMode: 'comfortable', // 'compact' | 'comfortable' | 'spacious'
     canCreatePatient: true,
@@ -742,8 +744,14 @@ Page({
     }
 
     // P1-8: 动态计算骨架屏数量
-    const systemInfo = wx.getSystemInfoSync();
-    const screenHeight = systemInfo.windowHeight || 667; // 默认iPhone 6/7/8高度
+    let screenHeight = 667;
+    if (typeof wx.getWindowInfo === 'function') {
+      const windowInfo = wx.getWindowInfo();
+      screenHeight = windowInfo && windowInfo.windowHeight ? windowInfo.windowHeight : screenHeight;
+    } else if (typeof wx.getSystemInfoSync === 'function') {
+      const systemInfo = wx.getSystemInfoSync();
+      screenHeight = systemInfo.windowHeight || systemInfo.screenHeight || screenHeight;
+    }
     const estimatedCardHeight = 180; // 估计的卡片高度(rpx转px后约90px)
     const skeletonCount = Math.min(Math.ceil(screenHeight / estimatedCardHeight) + 1, 8); // 最多8个
     this.setData({
@@ -1925,9 +1933,12 @@ Page({
     if (this.data.batchMode) {
       this.exitBatchMode();
     } else {
-      this.setData({ batchMode: true, fabExpanded: false }, () => {
+      this.setData(
+        { batchMode: true, fabExpanded: false, batchOperationLoading: false, batchOperationType: '' },
+        () => {
         this.applyFilters();
-      });
+        }
+      );
     }
 
     if (typeof wx.vibrateShort === 'function') {
@@ -2115,16 +2126,47 @@ Page({
     this.fetchPatients({ silent: false });
   },
   onPatientTap(event) {
-    if (this.data.batchMode) {
-      return;
-    }
     const detailPatient = (event.detail && event.detail.patient) || null;
     if (detailPatient) {
+      if (this.data.batchMode) {
+        const key = this.resolvePatientKey(detailPatient);
+        if (!key) {
+          return;
+        }
+        const map = { ...this.data.selectedPatientMap };
+        if (map[key]) {
+          delete map[key];
+        } else {
+          map[key] = detailPatient;
+        }
+        this.setBatchState(map, true);
+        return;
+      }
       this.navigateToPatient(detailPatient);
       return;
     }
     const { key, patientKey, recordKey } =
       (event.currentTarget && event.currentTarget.dataset) || {};
+    if (this.data.batchMode) {
+      const resolvedKey = this.resolvePatientKey({ key, patientKey, recordKey });
+      if (!resolvedKey) {
+        return;
+      }
+      const map = { ...this.data.selectedPatientMap };
+      const existing = map[resolvedKey];
+      const patient = this.findPatientByKey(resolvedKey) || existing || {
+        key: resolvedKey,
+        patientKey: patientKey || key || recordKey || resolvedKey,
+        recordKey: recordKey || key || patientKey || resolvedKey,
+      };
+      if (existing) {
+        delete map[resolvedKey];
+      } else {
+        map[resolvedKey] = patient;
+      }
+      this.setBatchState(map, true);
+      return;
+    }
     this.navigateToPatient({ key, patientKey, recordKey });
   },
   setBatchState(map, batchMode) {
@@ -2146,6 +2188,8 @@ Page({
         selectedCount,
         allSelected,
         fabExpanded: nextMode ? false : this.data.fabExpanded,
+        batchOperationLoading: false,
+        batchOperationType: '',
       },
       () => {
         this.applyFilters();
@@ -2191,44 +2235,207 @@ Page({
   handleBatchClear() {
     this.setBatchState({}, false);
   },
-  handleBatchRemind() {
-    const patients = Object.values(this.data.selectedPatientMap || {});
-    if (!patients.length) {
-      wx.showToast({ icon: 'none', title: '请先选择患者' });
-      return;
-    }
-    wx.showToast({ icon: 'none', title: `已发送提醒（${patients.length}）` });
+  getSelectedPatients() {
+    return Object.values(this.data.selectedPatientMap || {});
   },
-  handleBatchExport() {
-    const patients = Object.values(this.data.selectedPatientMap || {});
-    if (!patients.length) {
-      wx.showToast({ icon: 'none', title: '请先选择患者' });
-      return;
+  findPatientByKey(key) {
+    const resolvedKey = this.resolvePatientKey(key);
+    if (!resolvedKey) {
+      return null;
     }
-    wx.showToast({ icon: 'none', title: `已导出档案（${patients.length}）` });
+    const selectedMap = this.data.selectedPatientMap || {};
+    if (selectedMap[resolvedKey]) {
+      return selectedMap[resolvedKey];
+    }
+    const sources = [];
+    if (Array.isArray(this.data.displayPatients)) {
+      sources.push(this.data.displayPatients);
+    }
+    if (Array.isArray(this.data.patients)) {
+      sources.push(this.data.patients);
+    }
+    for (const list of sources) {
+      const match = list.find(item => this.resolvePatientKey(item) === resolvedKey);
+      if (match) {
+        return match;
+      }
+    }
+    return null;
   },
-  showBatchActionSheet() {
-    const patients = Object.values(this.data.selectedPatientMap || {});
-    if (!patients.length) {
-      wx.showToast({ icon: 'none', title: '请先选择患者' });
+  onBatchToggleSelectAll() {
+    this.handleBatchSelectAll();
+  },
+  async onBatchExportTap() {
+    if (this.data.batchOperationLoading) {
       return;
     }
-    wx.showActionSheet({
-      itemList: ['批量提醒', '导出档案', '清空选择'],
-      success: res => {
-        switch (res.tapIndex) {
-          case 0:
-            this.handleBatchRemind();
-            break;
-          case 1:
-            this.handleBatchExport();
-            break;
-          case 2:
-            this.handleBatchClear();
-            break;
-        }
-      },
+    const patients = this.getSelectedPatients();
+    if (!patients.length) {
+      wx.showToast({ icon: 'none', title: '请先选择住户' });
+      return;
+    }
+    this.setData({ batchOperationLoading: true, batchOperationType: 'export' });
+    try {
+      await this.exportPatients(patients);
+    } finally {
+      this.setData({ batchOperationLoading: false, batchOperationType: '' });
+    }
+  },
+  onBatchStatusTap() {
+    if (this.data.batchOperationLoading) {
+      return;
+    }
+    const patients = this.getSelectedPatients();
+    if (!patients.length) {
+      wx.showToast({ icon: 'none', title: '请先选择住户' });
+      return;
+    }
+    const keys = patients
+      .map(item => this.resolvePatientKey(item))
+      .filter(key => !!key);
+    if (!keys.length) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    this.openStatusDialog(patients[0], {
+      batchKeys: keys,
+      referencePatient: patients[0],
     });
+  },
+  async onBatchDeleteTap() {
+    if (this.data.batchOperationLoading) {
+      return;
+    }
+    const patients = this.getSelectedPatients();
+    if (!patients.length) {
+      wx.showToast({ icon: 'none', title: '请先选择住户' });
+      return;
+    }
+
+    const displayNames = patients
+      .slice(0, 3)
+      .map(item => safeString(item.patientName || item.name || ''))
+      .filter(Boolean)
+      .join('、');
+    const extraCount = patients.length - 3;
+    const confirmText = displayNames
+      ? extraCount > 0
+        ? `「${displayNames}」等 ${patients.length} 位住户`
+        : `「${displayNames}」`
+      : `${patients.length} 位住户`;
+
+    try {
+      const confirmRes = await wx.showModal({
+        title: '确认批量删除',
+        content: `删除${confirmText}后将移除档案及附件，且不可恢复，是否继续？`,
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmColor: '#e64340',
+      });
+      if (!confirmRes.confirm) {
+        wx.showToast({ icon: 'none', title: '已取消' });
+        return;
+      }
+    } catch (error) {
+      wx.showToast({ icon: 'none', title: '操作已取消' });
+      return;
+    }
+
+    this.setData({ batchOperationLoading: true, batchOperationType: 'delete' });
+    wx.showLoading({ title: '批量删除中…', mask: true });
+
+    const successKeys = [];
+    const failedItems = [];
+
+    for (const patient of patients) {
+      const patientKey = this.resolvePatientKey(patient);
+      if (!patientKey) {
+        failedItems.push({ patient, error: new Error('缺少住户标识') });
+        continue;
+      }
+      const recordKey = safeString(patient.recordKey || patient.key || patient.patientKey || '');
+      try {
+        const res = await wx.cloud.callFunction({
+          name: 'patientProfile',
+          data: {
+            action: 'delete',
+            patientKey,
+            recordKey,
+          },
+        });
+        const result = (res && res.result) || {};
+        if (result.success === false || result.error) {
+          const errMsg =
+            (result.error && (result.error.message || result.error.errMsg)) || '删除失败';
+          throw new Error(errMsg);
+        }
+        successKeys.push(patientKey);
+        this.markPatientDeletedFlag(patientKey);
+      } catch (error) {
+        logger.error('batch delete failed', patientKey, error);
+        failedItems.push({ patient, error });
+      }
+    }
+
+    wx.hideLoading();
+    this.setData({ batchOperationLoading: false, batchOperationType: '' });
+
+    if (successKeys.length) {
+      this.removePatientsFromData(successKeys);
+    }
+
+    if (successKeys.length && failedItems.length === 0) {
+      wx.showToast({ icon: 'success', title: `已删除${successKeys.length}位` });
+      this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+      return;
+    }
+
+    if (successKeys.length && failedItems.length) {
+      wx.showToast({
+        icon: 'none',
+        title: `成功${successKeys.length}位，失败${failedItems.length}位`,
+      });
+      this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+      return;
+    }
+
+    const firstError = failedItems[0] && failedItems[0].error;
+    const message = safeString(
+      (firstError && (firstError.message || firstError.errMsg)) || '删除失败，请稍后重试'
+    );
+    const toastMessage = message.length > 14 ? `${message.slice(0, 13)}...` : message;
+    wx.showToast({ icon: 'none', title: toastMessage || '删除失败' });
+  },
+  removePatientsFromData(keys = []) {
+    const normalizedKeys = keys
+      .map(key => this.resolvePatientKey(key) || safeString(key))
+      .filter(Boolean);
+    if (!normalizedKeys.length) {
+      return;
+    }
+    const keySet = new Set(normalizedKeys);
+    const nextPatients = (this.data.patients || []).filter(
+      item => !keySet.has(this.resolvePatientKey(item))
+    );
+    const selectedMap = { ...(this.data.selectedPatientMap || {}) };
+    keySet.forEach(key => {
+      if (selectedMap[key]) {
+        delete selectedMap[key];
+      }
+    });
+    const selectedCount = Object.keys(selectedMap).length;
+    this.setData(
+      {
+        patients: nextPatients,
+        selectedPatientMap: selectedMap,
+        selectedCount,
+        allSelected: false,
+      },
+      () => {
+        this.applyFilters();
+        this.updateFilterOptions(nextPatients);
+      }
+    );
   },
   onCardAction(event) {
     const { action, patient } = event.detail || {};
@@ -2245,7 +2452,7 @@ Page({
     }
     this.showPatientActionSheet(patient);
   },
-  showPatientActionSheet(patient) {
+  showPatientActionSheet(patient, options = {}) {
     if (this.data.deletingPatientKey) {
       wx.showToast({ icon: 'none', title: '操作进行中，请稍候' });
       return;
@@ -2257,6 +2464,62 @@ Page({
     const releaseActionSheetLock = () => {
       this._patientActionSheetVisible = false;
     };
+
+    const isBatchMode = Boolean(options && options.batch && this.data.batchMode);
+
+    if (isBatchMode) {
+      const selectedPatients = this.getSelectedPatients();
+      if (!selectedPatients.length) {
+        wx.showToast({ icon: 'none', title: '请先选择住户' });
+        releaseActionSheetLock();
+        return;
+      }
+
+      const operations = [
+        { id: 'batch-status', label: '批量修改状态' },
+        { id: 'batch-export', label: '批量导出报告' },
+        { id: 'batch-delete', label: '批量删除住户' },
+      ];
+
+      if (this.data && this.data.testCaptureActionSheet) {
+        this.setData({ testLastActionSheet: operations.map(item => item.label) });
+        releaseActionSheetLock();
+        return;
+      }
+
+      try {
+        wx.showActionSheet({
+          itemList: operations.map(item => item.label),
+          success: res => {
+            const operation = operations[res.tapIndex];
+            if (!operation) {
+              return;
+            }
+            switch (operation.id) {
+              case 'batch-status':
+                this.onBatchStatusTap();
+                break;
+              case 'batch-export':
+                this.onBatchExportTap();
+                break;
+              case 'batch-delete':
+                this.onBatchDeleteTap();
+                break;
+              default:
+                break;
+            }
+          },
+          complete: () => {
+            releaseActionSheetLock();
+          },
+        });
+      } catch (error) {
+        releaseActionSheetLock();
+        throw error;
+      }
+      return;
+    }
+
     const canCheckIn = patient && patient.careStatus !== 'in_care';
     const canCheckout = patient && patient.careStatus === 'in_care';
     const operations = [];
@@ -2317,25 +2580,45 @@ Page({
       throw error;
     }
   },
-  openStatusDialog(patient) {
+  openStatusDialog(patient, options = {}) {
     if (this.data.statusDialogVisible || this.data.statusDialogSubmitting) {
       return;
     }
+    const batchKeys = Array.isArray(options.batchKeys)
+      ? options.batchKeys.map(key => safeString(key)).filter(Boolean)
+      : [];
+    const isBatch = batchKeys.length > 0;
+    const referencePatient = options.referencePatient || patient || {};
+
     const nextPatient = {
-      patientKey: this.resolvePatientKey(patient),
-      patientName: safeString((patient && (patient.patientName || patient.name)) || ''),
-      careStatus: safeString(patient && patient.careStatus) || 'pending',
+      patientKey: this.resolvePatientKey(referencePatient),
+      patientName: safeString(
+        (referencePatient && (referencePatient.patientName || referencePatient.name)) || ''
+      ),
+      careStatus: safeString(referencePatient && referencePatient.careStatus) || 'pending',
     };
-    if (!nextPatient.patientKey) {
+
+    if (!isBatch && !nextPatient.patientKey) {
       wx.showToast({ icon: 'none', title: '缺少住户标识' });
       return;
     }
+
+    const dialogSummary = isBatch
+      ? {
+          patientName: nextPatient.patientName || '多位住户',
+          careStatus: '',
+          isBatch: true,
+          batchCount: batchKeys.length,
+        }
+      : nextPatient;
+
     this.setData({
       statusDialogVisible: true,
       statusDialogSubmitting: false,
-      statusDialogPatient: nextPatient,
+      statusDialogPatient: dialogSummary,
+      statusDialogBatchKeys: batchKeys,
       statusDialogForm: {
-        value: nextPatient.careStatus,
+        value: dialogSummary.careStatus,
         note: '',
       },
     });
@@ -2368,55 +2651,97 @@ Page({
     }
     this.resetStatusDialog();
   },
-  onStatusDialogConfirm() {
+  async onStatusDialogConfirm() {
     if (this.data.statusDialogSubmitting) {
       return;
     }
-    const patient = this.data.statusDialogPatient || {};
-    const patientKey = this.resolvePatientKey(patient);
-    if (!patientKey) {
-      wx.showToast({ icon: 'none', title: '缺少住户标识' });
-      this.resetStatusDialog();
-      return;
-    }
+
     const formValue = safeString(this.data.statusDialogForm && this.data.statusDialogForm.value);
     if (!formValue) {
       wx.showToast({ icon: 'none', title: '请选择状态' });
       return;
     }
+
     const note = safeString(this.data.statusDialogForm && this.data.statusDialogForm.note);
-    this.setData({ statusDialogSubmitting: true });
-    wx.showLoading({ title: '处理中', mask: true });
-    callPatientIntake('updateCareStatus', {
-      patientKey,
-      status: formValue,
-      note,
-    })
-      .then(result => {
-        wx.hideLoading();
-        this.setData({ statusDialogSubmitting: false });
-        wx.showToast({ icon: 'success', title: '已更新' });
+    const batchKeys = Array.isArray(this.data.statusDialogBatchKeys)
+      ? this.data.statusDialogBatchKeys
+      : [];
+    const isBatch = batchKeys.length > 0;
+
+    let targetKeys = batchKeys;
+    if (!isBatch) {
+      const patient = this.data.statusDialogPatient || {};
+      const patientKey = this.resolvePatientKey(patient);
+      if (!patientKey) {
+        wx.showToast({ icon: 'none', title: '缺少住户标识' });
         this.resetStatusDialog();
-        this.applyStatusChangeResult(patientKey, {
-          careStatus: formValue,
+        return;
+      }
+      targetKeys = [patientKey];
+    }
+
+    this.setData({ statusDialogSubmitting: true });
+    wx.showLoading({ title: isBatch ? '批量处理中…' : '处理中', mask: true });
+
+    const results = [];
+
+    for (const key of targetKeys) {
+      try {
+        const payload = await callPatientIntake('updateCareStatus', {
+          patientKey: key,
+          status: formValue,
           note,
-          checkoutAt: result && Number(result.checkoutAt) ? Number(result.checkoutAt) : null,
-          statusAdjustedAt:
-            result && Number(result.statusAdjustedAt)
-              ? Number(result.statusAdjustedAt)
-              : Date.now(),
         });
-      })
-      .catch(error => {
-        wx.hideLoading();
-        this.setData({ statusDialogSubmitting: false });
+        results.push({ key, payload, success: true });
+      } catch (error) {
         logger.error('updateCareStatus failed', error);
-        const message = safeString(
-          (error && (error.message || error.errMsg)) || '更新失败，请稍后重试'
-        );
-        const toastMessage = message.length > 14 ? `${message.slice(0, 13)}...` : message;
-        wx.showToast({ icon: 'none', title: toastMessage || '更新失败' });
+        results.push({ key, error, success: false });
+      }
+    }
+
+    wx.hideLoading();
+    this.setData({ statusDialogSubmitting: false });
+    this.resetStatusDialog();
+
+    const successItems = results.filter(item => item.success);
+    const failedItems = results.filter(item => !item.success);
+
+    successItems.forEach(item => {
+      const payload = item.payload || {};
+      this.applyStatusChangeResult(item.key, {
+        careStatus: formValue,
+        note,
+        checkoutAt: payload && Number(payload.checkoutAt) ? Number(payload.checkoutAt) : null,
+        statusAdjustedAt:
+          payload && Number(payload.statusAdjustedAt)
+            ? Number(payload.statusAdjustedAt)
+            : Date.now(),
       });
+    });
+
+    if (successItems.length && failedItems.length === 0) {
+      if (isBatch) {
+        wx.showToast({ icon: 'success', title: `已更新${successItems.length}位` });
+      } else {
+        wx.showToast({ icon: 'success', title: '已更新' });
+      }
+      return;
+    }
+
+    if (successItems.length && failedItems.length) {
+      wx.showToast({
+        icon: 'none',
+        title: `成功${successItems.length}位，失败${failedItems.length}位`,
+      });
+      return;
+    }
+
+    const firstError = failedItems[0] && failedItems[0].error;
+    const message = safeString(
+      (firstError && (firstError.message || firstError.errMsg)) || '更新失败，请稍后重试'
+    );
+    const toastMessage = message.length > 14 ? `${message.slice(0, 13)}...` : message;
+    wx.showToast({ icon: 'none', title: toastMessage || '更新失败' });
   },
   resetStatusDialog() {
     this.setData({
@@ -2427,6 +2752,7 @@ Page({
         note: '',
       },
       statusDialogPatient: null,
+      statusDialogBatchKeys: [],
     });
   },
   startIntakeForPatient(patient) {
@@ -2660,8 +2986,15 @@ Page({
       };
     });
     const selectedMap = { ...(this.data.selectedPatientMap || {}) };
-    if (selectedMap[patientKey]) {
+    if (!this.data.batchMode && selectedMap[patientKey]) {
       delete selectedMap[patientKey];
+    } else if (this.data.batchMode && selectedMap[patientKey]) {
+      const updatedPatient = updatedPatients.find(
+        item => this.resolvePatientKey(item) === patientKey
+      );
+      if (updatedPatient) {
+        selectedMap[patientKey] = updatedPatient;
+      }
     }
     const selectedCount = Object.keys(selectedMap).length;
     this.setData(
@@ -2789,11 +3122,154 @@ Page({
     }
     this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
   },
-  handleExportReport() {
-    if (this.data && this.data.testCaptureToast) {
-      this.setData({ testLastToast: '功能开发中' });
+  async exportPatients(patients = []) {
+    const list = Array.isArray(patients) ? patients : [];
+    const normalizedKeys = [];
+    const snapshots = [];
+    const seen = new Set();
+
+    list.forEach(item => {
+      if (!item) {
+        return;
+      }
+
+      let key = '';
+      let source = null;
+
+      if (typeof item === 'string') {
+        key = safeString(item);
+      } else if (typeof item === 'object') {
+        key = safeString(this.resolvePatientKey(item));
+        source = item;
+      }
+
+      if (!key || seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      normalizedKeys.push(key);
+
+      if (source) {
+        const summary = source.lastIntakeNarrative || {};
+        snapshots.push({
+          key,
+          patientKey: safeString(source.patientKey || key),
+          recordKey: safeString(source.recordKey || key),
+          patientName: safeString(source.patientName || source.name),
+          gender: safeString(source.gender),
+          genderLabel: safeString(source.genderLabel),
+          birthDate: safeString(source.birthDate),
+          nativePlace: safeString(source.nativePlace),
+          ethnicity: safeString(source.ethnicity),
+          idNumber: safeString(source.idNumber),
+          latestHospital: safeString(source.latestHospital),
+          firstHospital: safeString(source.firstHospital),
+          latestDiagnosis: safeString(source.latestDiagnosis),
+          firstDiagnosis: safeString(source.firstDiagnosis),
+          latestDoctor: safeString(source.latestDoctor),
+          summaryCaregivers: safeString(source.summaryCaregivers),
+          caregivers: safeString(source.caregivers),
+          address: safeString(source.address),
+          fatherInfo: safeString(source.fatherInfo),
+          motherInfo: safeString(source.motherInfo),
+          otherGuardian: safeString(source.otherGuardian),
+          familyEconomy: safeString(source.familyEconomy),
+          latestAdmissionDate: safeString(
+            source.latestAdmissionDateFormatted || source.latestAdmissionDate
+          ),
+          firstAdmissionDate: safeString(
+            source.firstAdmissionDate || source.firstAdmissionDateFormatted
+          ),
+          symptoms: safeString(summary.symptoms || source.symptoms),
+          treatmentProcess: safeString(summary.treatmentProcess || source.treatmentProcess),
+          followUpPlan: safeString(summary.followUpPlan || source.followUpPlan),
+        });
+      }
+    });
+
+    const notify = message => {
+      if (this.data && this.data.testCaptureToast) {
+        this.setData({ testLastToast: message });
+      }
+      wx.showToast({ icon: 'none', title: message });
+    };
+
+    if (!normalizedKeys.length) {
+      notify('请选择住户');
+      return;
     }
-    wx.showToast({ icon: 'none', title: '功能开发中' });
+
+    try {
+      wx.showLoading({ title: '导出中…', mask: true });
+      logger.info('[exportPatients] keys', normalizedKeys, 'snapshotCount', snapshots.length);
+      const res = await wx.cloud.callFunction({
+        name: 'patientProfile',
+        data: {
+          action: 'export',
+          patientKeys: normalizedKeys,
+          patientSnapshots: snapshots,
+        },
+      });
+
+      const result = (res && res.result) || {};
+      const fileID = result.fileID;
+      if (!fileID) {
+        throw new Error('缺少文件信息');
+      }
+
+      let missingMessage = '';
+      if (Array.isArray(result.missingKeys) && result.missingKeys.length) {
+        missingMessage = `有 ${result.missingKeys.length} 位住户缺少原始档案`;
+      }
+
+      const downloadRes = await wx.cloud.downloadFile({ fileID });
+      const tempFilePath = downloadRes && downloadRes.tempFilePath;
+      if (!tempFilePath) {
+        throw new Error('下载文件失败');
+      }
+
+      try {
+        await wx.openDocument({
+          filePath: tempFilePath,
+          fileType: 'xlsx',
+          showMenu: true,
+        });
+      } catch (openError) {
+        logger.error('open export document failed', openError);
+        notify('已导出，可在“最近文件”查看');
+      }
+
+      if (missingMessage) {
+        notify(missingMessage);
+      }
+    } catch (error) {
+      logger.error('export patients failed', error);
+      notify('导出失败，请稍后重试');
+    } finally {
+      if (typeof wx.hideLoading === 'function') {
+        wx.hideLoading();
+      }
+    }
+  },
+  async handleExportReport(patient) {
+    if (this.data.batchMode) {
+      const selectedPatients = Object.values(this.data.selectedPatientMap || {});
+      if (selectedPatients.length) {
+        await this.exportPatients(selectedPatients);
+        return;
+      }
+    }
+
+    const key = this.resolvePatientKey(patient);
+    if (!key) {
+      if (this.data && this.data.testCaptureToast) {
+        this.setData({ testLastToast: '缺少住户标识' });
+      }
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    await this.exportPatients([patient]);
   },
   async handleDeletePatient(patient) {
     const patientKey = this.resolvePatientKey(patient);
@@ -2911,7 +3387,12 @@ Page({
       this.showPatientActionSheet(patient);
       return;
     }
-    // 如果在批量模式,进入批量选择
+    const key = this.resolvePatientKey(patient);
+    const selectedMap = this.data.selectedPatientMap || {};
+    if (key && selectedMap[key]) {
+      this.showPatientActionSheet(patient, { batch: true });
+      return;
+    }
     this.enterBatchMode(patient);
   },
   onCardSelectChange(event) {

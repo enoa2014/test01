@@ -1,5 +1,5 @@
 <pm-card
-  class="patient-card patient-card--{{mode}}"
+  class="patient-card patient-card--{{mode}} {{selectable ? 'patient-card--selectable' : ''}} {{selected ? 'patient-card--selected' : ''}}"
   status="{{status}}"
   variant="{{cardVariant}}"
   clickable="{{clickable}}"
@@ -8,6 +8,12 @@
   bind:tap="handleCardTap"
   bind:longpress="handleLongPress"
 >
+  <!-- 多选高亮蒙层 -->
+  <view
+    wx:if="{{selectable}}"
+    class="patient-card__selection-overlay {{selected ? 'patient-card__selection-overlay--active' : ''}}"
+  ></view>
+
   <!-- 状态指示色条 -->
   <view wx:if="{{statusIndicator}}" class="patient-card__status-indicator patient-card__status-indicator--{{statusIndicator.type}}"></view>
 
@@ -34,13 +40,20 @@
     </view>
     <view class="patient-card__title">
       <view class="patient-card__title-row">
+        <view
+          wx:if="{{selectable}}"
+          class="patient-card__select-control"
+          bindtap="handleSelectChange"
+          catchtap="handleSelectChange"
+        >
+          <view class="patient-card__checkbox {{selected ? 'patient-card__checkbox--checked' : ''}}">
+            <text wx:if="{{selected}}" class="patient-card__checkbox-icon">✓</text>
+          </view>
+        </view>
         <text class="patient-card__name patient-name"
           >{{patient.name || patient.patientName || '-'}}</text
         >
         <text wx:if="{{ageText}}" class="patient-card__age">{{ageText}}</text>
-        <view wx:if="{{selectable}}" class="patient-card__select" bindtap="handleSelectChange">
-          <text class="patient-card__select-icon">{{selected ? '☑' : '☐'}}</text>
-        </view>
       </view>
       <view wx:if="{{badges && badges.length}}" class="patient-card__badges">
         <pm-badge

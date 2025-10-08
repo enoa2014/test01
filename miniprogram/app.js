@@ -1,5 +1,6 @@
 const { envList, cloudEnvId, isProduction } = require('./config/envList');
 const themeManager = require('./utils/theme');
+const logger = require('./utils/logger');
 
 const themeListeners = new Set();
 
@@ -12,7 +13,7 @@ function registerThemeSync(appInstance) {
       try {
         listener(themeKey, themeClass);
       } catch (error) {
-        console.warn('[app-theme] 主题监听器执行失败', error);
+        logger.warn('[app-theme] 主题监听器执行失败', error);
       }
     });
   };

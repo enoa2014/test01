@@ -178,7 +178,7 @@
       />
     </view>
   </pm-card>
-  <scroll-view wx:else scroll-y class="patient-list">
+  <scroll-view wx:else scroll-y class="patient-list {{batchMode ? 'patient-list--batch' : ''}}">
     <patient-card
       wx:for="{{displayPatients}}"
       wx:key="patientKey"
@@ -198,6 +198,52 @@
       bind:longpress="onCardLongPress"
     />
   </scroll-view>
+
+  <view wx:if="{{batchMode}}" class="batch-toolbar">
+    <view class="batch-toolbar__info">
+      <text class="batch-toolbar__count">已选 {{selectedCount}}</text>
+      <pm-button
+        class="batch-toolbar__select-all"
+        size="small"
+        type="primary"
+        ghost="{{allSelected}}"
+        text="{{allSelected ? '取消全选' : '全选当前'}}"
+        bindtap="onBatchToggleSelectAll"
+      />
+    </view>
+    <view class="batch-toolbar__actions">
+      <pm-button
+        size="small"
+        icon="📄"
+        text="批量导出"
+        ghost="{{false}}"
+        type="primary"
+        disabled="{{selectedCount === 0 || batchOperationLoading}}"
+        loading="{{batchOperationLoading && batchOperationType === 'export'}}"
+        bindtap="onBatchExportTap"
+      />
+      <pm-button
+        size="small"
+        icon="🛠"
+        text="批量修改状态"
+        type="default"
+        ghost="{{true}}"
+        disabled="{{selectedCount === 0 || batchOperationLoading}}"
+        loading="{{batchOperationLoading && batchOperationType === 'status'}}"
+        bindtap="onBatchStatusTap"
+      />
+      <pm-button
+        size="small"
+        icon="🗑"
+        text="批量删除"
+        type="danger"
+        ghost="{{true}}"
+        disabled="{{selectedCount === 0 || batchOperationLoading}}"
+        loading="{{batchOperationLoading && batchOperationType === 'delete'}}"
+        bindtap="onBatchDeleteTap"
+      />
+    </view>
+  </view>
 
   <!-- P1-7: FAB标签提示 -->
   <view
@@ -349,8 +395,16 @@
   >
     <view class="status-dialog__body">
       <view class="status-dialog__summary" wx:if="{{statusDialogPatient}}">
-        <text class="status-dialog__name">{{statusDialogPatient.patientName || '该住户'}}</text>
-        <text class="status-dialog__desc">选择新的住户状态，便于列表展示一致。</text>
+        <text class="status-dialog__name"
+          >{{statusDialogPatient.isBatch
+            ? '已选 ' + statusDialogPatient.batchCount + ' 位住户'
+            : statusDialogPatient.patientName || '该住户'}}</text
+        >
+        <text class="status-dialog__desc"
+          >{{statusDialogPatient.isBatch
+            ? '状态将同步应用到所有已选住户。'
+            : '选择新的住户状态，便于列表展示一致。'}}</text
+        >
       </view>
       <view class="status-dialog__options">
         <view

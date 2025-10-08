@@ -98,4 +98,24 @@ describe('patient list actions', () => {
     const latest = await indexPage.data();
     expect(latest.testLastNavigation).toContain('/pages/patient-intake/wizard/wizard?mode=create');
   }, 120000);
+
+  test('批量操作菜单仅包含批量选项', async () => {
+    const bulkPatient = buildPatient({ key: 'bulk-001', careStatus: 'pending' });
+    await indexPage.setData({
+      patients: [bulkPatient],
+      displayPatients: [bulkPatient],
+      batchMode: true,
+      selectedPatientMap: { 'bulk-001': bulkPatient },
+      testCaptureActionSheet: true,
+      testLastActionSheet: [],
+    });
+
+    await indexPage.callMethod('showPatientActionSheet', bulkPatient, { batch: true });
+    const latest = await indexPage.data();
+    expect(latest.testLastActionSheet).toEqual([
+      '批量修改状态',
+      '批量导出报告',
+      '批量删除住户',
+    ]);
+  }, 120000);
 });

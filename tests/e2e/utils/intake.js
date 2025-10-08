@@ -19,6 +19,7 @@ async function createPatientViaWizard(miniProgram, options = {}) {
     address: 'Automation Rehab Center, Beijing',
     emergencyContact: 'Automation Caregiver',
     emergencyPhone: generateMobile(),
+    emergencyRelation: '家属',
     situation: `${situationText()} Follow-up observation in progress.`,
   };
 
@@ -69,6 +70,11 @@ async function createPatientViaWizard(miniProgram, options = {}) {
     'input[data-field="emergencyPhone"]'
   );
   await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
+  const emergencyRelationInput = await waitForElement(
+    wizardPage,
+    'input[data-field="emergencyRelation"]'
+  );
+  await inputValue(emergencyRelationInput, patientData.emergencyRelation || '家属');
 
   await waitForCondition(
     async () => {

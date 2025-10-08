@@ -301,11 +301,11 @@ Page({
     }
     const phone = phoneMatch[0];
 
-    let name = value.replace(/[^\u4e00-\u9fa5A-Za-z]+/g, ' ').replace(/1[3-9]\d{9}/g, ' ');
-    name = name
+    const sanitizedForName = value.replace(/[^\u4e00-\u9fa5A-Za-z]+/g, ' ').replace(/1[3-9]\d{9}(?!\d)/g, ' ');
+    const name = sanitizedForName
       .replace(/\d{15,18}[Xx]?/g, ' ')
       .replace(/身份证|证件|电话号码|联系电话|联系方式|手机|手机号/g, ' ')
-      .replace(/[\(\)（）:\-]/g, ' ')
+      .replace(/[()（）:-]/g, ' ')
       .replace(/[,，、;；]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -699,7 +699,7 @@ Page({
       wx.showLoading({ title: '加载中...' });
 
       // 使用 patientProfile 获取完整的住户信息,包括父母联系方式
-      let excelRecordKey = this.normalizeExcelSpacing(patientKey) || '';
+      const excelRecordKey = this.normalizeExcelSpacing(patientKey) || '';
       let profilePayload = null;
       let intakePatientDoc = null;
       let latestIntakeDetail = null;
@@ -781,12 +781,6 @@ Page({
       })();
       const basicInfoList = Array.isArray(payload.basicInfo) ? payload.basicInfo : [];
       const familyInfoList = Array.isArray(payload.family) ? payload.family : [];
-      const records = Array.isArray(payload.excelRecords)
-        ? payload.excelRecords
-        : Array.isArray(payload.records)
-        ? payload.records
-        : [];
-
       const resolvedExcelKey =
         this.normalizeExcelSpacing(overviewPayload.recordKey) ||
         this.normalizeExcelSpacing(patientDocForEdit.recordKey) ||
@@ -1525,7 +1519,7 @@ Page({
   // 更新必填项状态
   updateRequiredFields() {
     const { currentStep } = this.data;
-    let { formData } = this.data;
+    const { formData } = this.data;
     let requiredFields = [];
     let requiredFieldsText = '';
     let allowContactByEmergencyPair = false;
@@ -1663,7 +1657,7 @@ Page({
     });
 
     if (this.data.mode === 'create' && currentStep === 1) {
-      console.warn('[wizard] contact step update', {
+      logger.warn('[wizard] contact step update', {
         requiredFields,
         canProceedToNext,
         allowContactByEmergencyPair,
@@ -1737,7 +1731,7 @@ Page({
     }
 
     if (this.data.mode === 'create' && missing.length) {
-      console.warn('[wizard] missing required fields in create mode', missing, formData);
+      logger.warn('[wizard] missing required fields in create mode', missing, formData);
     }
 
     return missing;
@@ -1782,7 +1776,7 @@ Page({
         this.updateFormData({ contacts: nextContacts });
       }
       if (this.data.mode === 'create') {
-        console.warn('[wizard] emergency fields updated', field, {
+        logger.warn('[wizard] emergency fields updated', field, {
           emergencyContact: synced.emergencyContact,
           emergencyPhone: synced.emergencyPhone,
           contacts: synced.contacts,

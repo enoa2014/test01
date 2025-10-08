@@ -144,6 +144,7 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     address: 'Automation Rehab Center, Beijing',
     emergencyContact: 'Automation Caregiver',
     emergencyPhone: generateMobile(),
+    emergencyRelation: '家属',
     situation: `${situationText()} Follow-up observation in progress.`,
     gender,
     ...patientOverrides,
@@ -206,6 +207,8 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     await inputValue(emergencyContactInput, patientData.emergencyContact);
     const emergencyPhoneInput = await waitForFieldElement(wizardPage, 'emergencyPhone');
     await inputValue(emergencyPhoneInput, patientData.emergencyPhone);
+    const emergencyRelationInput = await waitForFieldElement(wizardPage, 'emergencyRelation');
+    await inputValue(emergencyRelationInput, patientData.emergencyRelation || '家属');
 
     await waitForCondition(
       async () => {
