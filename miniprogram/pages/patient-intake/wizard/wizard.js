@@ -60,10 +60,11 @@ Page({
       birthDate: '',
       phone: '',
       address: '',
-      emergencyContact: '',
-      emergencyPhone: '',
       backupContact: '',
       backupPhone: '',
+      guardianInfo: '',
+      guardianContactName: '',
+      guardianContactPhone: '',
       admissionDate: '',
       situation: '',
       visitHospital: '',
@@ -707,10 +708,6 @@ Page({
       // 每次入住都应该填写新的情况说明，反映当前入住时的实际情况
       // 已移除从历史记录中提取医疗情况的逻辑
 
-      // 解析父母联系方式作为紧急联系人
-      const { emergencyContact, emergencyPhone } =
-        this._extractEmergencyContactFromProfile(familyInfoList);
-
       const patientDocSource = patientDocForEdit || {};
       const latestIntakeRecord = latestIntakeDetail || {};
       const latestIntakeInfo = (latestIntakeRecord && latestIntakeRecord.intakeInfo) || {};
@@ -783,8 +780,6 @@ Page({
         intakePatientDoc && intakePatientDoc.address,
         this.data.formData.address
       );
-      const resolvedEmergencyContact = this.data.formData.emergencyContact || '';
-      const resolvedEmergencyPhone = this.data.formData.emergencyPhone || '';
       const resolvedBackupContact = this.data.formData.backupContact || '';
       const resolvedBackupPhone = this.data.formData.backupPhone || '';
       const resolvedVisitHospital = this.data.formData.visitHospital || '';
@@ -832,8 +827,6 @@ Page({
       appendContactText(intakePatientDoc && intakePatientDoc.otherGuardian, '监护人');
 
       const contacts = this.buildContactsFromFields({
-        emergencyContact: resolvedEmergencyContact,
-        emergencyPhone: resolvedEmergencyPhone,
         backupContact: resolvedBackupContact,
         backupPhone: resolvedBackupPhone,
         additionalContacts,
@@ -1047,6 +1040,16 @@ Page({
 
   buildContactsFromFields(source = {}) {
     const contacts = [];
+    const baseContacts = this.ensureContactsArray(source.contacts);
+    if (baseContacts.length) {
+      contacts.push(
+        ...baseContacts.map(item => ({
+          relationship: this.normalizeExcelSpacing(item.relationship) || '',
+          name: this.normalizeExcelSpacing(item.name) || '',
+          phone: this.normalizePhoneDigits(item.phone) || '',
+        }))
+      );
+    }
 
     const normalizeRelationHint = value => {
       const normalized = this.normalizeExcelSpacing(value);
@@ -1108,33 +1111,6 @@ Page({
       });
     };
 
-    const normalizedExisting = [];
-    const existingCandidates = [];
-    if (Array.isArray(source.existingContacts)) {
-      existingCandidates.push(...source.existingContacts);
-    }
-    if (Array.isArray(source.contacts)) {
-      existingCandidates.push(...source.contacts);
-    }
-    const seenExisting = new WeakSet();
-    existingCandidates.forEach(item => {
-      if (!item || typeof item !== 'object' || seenExisting.has(item)) {
-        return;
-      }
-      seenExisting.add(item);
-      const normalized = {
-        relationship: this.normalizeExcelSpacing(item.relationship) || '',
-        name: this.normalizeExcelSpacing(item.name) || '',
-        phone: this.normalizeExcelSpacing(item.phone) || '',
-      };
-      if (!normalized.relationship && !normalized.name && !normalized.phone) {
-        return;
-      }
-      normalizedExisting.push(normalized);
-    });
-
-    contacts.push(...normalizedExisting);
-
     const extraArrays = [];
     if (Array.isArray(source.additionalContacts)) {
       extraArrays.push(source.additionalContacts);
@@ -1178,6 +1154,14 @@ Page({
       });
     }
 
+    if (source.guardianContactName || source.guardianContactPhone) {
+      pushContact(
+        this.normalizeExcelSpacing(source.guardianContactName) || '',
+        source.guardianContactPhone || '',
+        { fallbackRelation: '监护人' }
+      );
+    }
+
     const sanitized = contacts
       .map(item => ({
         relationship: this.normalizeExcelSpacing(item.relationship) || '',
@@ -1218,13 +1202,33 @@ Page({
     const contacts = this.ensureContactsArray(next.contacts || []);
     next.contacts = contacts;
     const primary = contacts[0] || { relationship: '', name: '', phone: '' };
-    const normalizedEmergencyName = this.normalizeExcelSpacing(next.emergencyContact);
-    const normalizedEmergencyPhone = this.normalizePhoneDigits(next.emergencyPhone);
-    if (!normalizedEmergencyName && !normalizedEmergencyPhone) {
-      next.emergencyContact = this.formatContactDisplay(primary);
-      next.emergencyPhone = primary.phone || '';
-    }
     const secondary = contacts[1] || { relationship: '', name: '', phone: '' };
+    const primaryName = this.normalizeExcelSpacing(primary.name);
+    const primaryPhone = this.normalizePhoneDigits(primary.phone);
+    const primaryRelation = this.normalizeExcelSpacing(primary.relationship);
+
+    next.guardianContactName = primaryName;
+    next.guardianContactPhone = primaryPhone;
+    if (primaryName || primaryPhone) {
+      const relationForDisplay = primaryRelation || (primaryName ? '' : '联系人');
+      const displayLabel = this.formatContactDisplay({
+        relationship: relationForDisplay,
+        name: primaryName,
+      });
+      const infoParts = [];
+      if (displayLabel) {
+        infoParts.push(displayLabel);
+      } else if (relationForDisplay) {
+        infoParts.push(relationForDisplay);
+      }
+      if (primaryPhone) {
+        infoParts.push(primaryPhone);
+      }
+      next.guardianInfo = infoParts.join(' ').trim();
+    } else {
+      next.guardianInfo = '';
+    }
+
     const normalizedBackupName = this.normalizeExcelSpacing(next.backupContact);
     const normalizedBackupPhone = this.normalizePhoneDigits(next.backupPhone);
     if (!normalizedBackupName && !normalizedBackupPhone && contacts.length > 1) {
@@ -1266,39 +1270,7 @@ Page({
   validateContacts(options = {}) {
     const { updateState = true, showToast = false } = options;
     let contacts = this.ensureContactsArray(this.data.formData.contacts);
-    const placeholderOnly = contacts.every(contact => {
-      if (!contact || typeof contact !== 'object') {
-        return true;
-      }
-      const relation = this.normalizeExcelSpacing(contact.relationship);
-      const name = this.normalizeExcelSpacing(contact.name);
-      const phoneDigits = this.normalizePhoneDigits(contact.phone);
-      return !relation && !name && !phoneDigits;
-    });
-
-    if (placeholderOnly) {
-      const derived = this.buildContactsFromFields(this.data.formData);
-      const hasDerivedData = derived.some(contact => {
-        if (!contact || typeof contact !== 'object') {
-          return false;
-        }
-        const name = this.normalizeExcelSpacing(contact.name);
-        const phoneDigits = this.normalizePhoneDigits(contact.phone);
-        return !!name || !!phoneDigits;
-      });
-      if (hasDerivedData) {
-        if (updateState) {
-          const synced = this.updateFormData({ contacts: derived });
-          contacts = synced.contacts;
-        } else {
-          const synced = this.syncContactsToFields({
-            ...this.data.formData,
-            contacts: derived,
-          });
-          contacts = synced.contacts;
-        }
-      }
-    }
+    contacts = contacts.filter(contact => contact && typeof contact === 'object');
 
     const errors = contacts.map(() => ({}));
     let valid = contacts.length > 0;
@@ -1425,7 +1397,6 @@ Page({
     const { formData } = this.data;
     let requiredFields = [];
     let requiredFieldsText = '';
-    let allowContactByEmergencyPair = false;
 
     switch (currentStep) {
       case 0: {
@@ -1475,9 +1446,6 @@ Page({
             contacts = derived;
           }
         }
-        const emergencyContactValue = this.normalizeExcelSpacing(formData.emergencyContact);
-        const emergencyPhoneDigits = this.normalizePhoneDigits(formData.emergencyPhone);
-
         const hasValidContacts =
           contacts.length > 0 &&
           contacts.every(contact => {
@@ -1493,9 +1461,6 @@ Page({
             return this.isValidMobileNumber(phoneDigits);
           });
 
-        const hasEmergencyPair =
-          emergencyContactValue && this.isValidMobileNumber(emergencyPhoneDigits);
-        const hasRelaxedEmergency = emergencyContactValue && emergencyPhoneDigits.length >= 5;
         const hasContactWithDigits = contacts.some(contact => {
           if (!contact || typeof contact !== 'object') {
             return false;
@@ -1506,9 +1471,7 @@ Page({
         });
 
         const contactRequirementSatisfied =
-          hasValidContacts ||
-          hasEmergencyPair ||
-          (this.data.isEditingExisting && (hasRelaxedEmergency || hasContactWithDigits));
+          hasValidContacts || (this.data.isEditingExisting && hasContactWithDigits);
 
         if (!contactRequirementSatisfied) {
           requiredFields.push({ key: 'contacts', label: '联系人信息' });
@@ -1519,13 +1482,6 @@ Page({
           ) {
             this.revealContactStepForManualInput();
           }
-        }
-        if (
-          hasEmergencyPair &&
-          formData.address &&
-          formData.address.trim()
-        ) {
-          allowContactByEmergencyPair = true;
         }
         break;
       }
@@ -1544,7 +1500,7 @@ Page({
 
     requiredFieldsText = requiredFields.map(field => field.label).join('、');
 
-    const canProceedToNext = requiredFields.length === 0 || allowContactByEmergencyPair;
+    const canProceedToNext = requiredFields.length === 0;
     const allRequiredCompleted = this.getAllMissingRequiredFields().length === 0;
 
     this.setData({
@@ -1566,18 +1522,6 @@ Page({
       !this.patientDataPrefetchFailed
     ) {
       this.startPatientDataPrefetch();
-    }
-
-    if (this.data.mode === 'create' && currentStep === 1) {
-      logger.warn('[wizard] contact step update', {
-        requiredFields,
-        canProceedToNext,
-        allowContactByEmergencyPair,
-        contacts: formData.contacts,
-        emergencyContact: formData.emergencyContact,
-        emergencyPhone: formData.emergencyPhone,
-        address: formData.address,
-      });
     }
 
     this.refreshVisibleStepMeta();
@@ -1605,8 +1549,6 @@ Page({
     }
 
     const contacts = this.ensureContactsArray(formData.contacts);
-    const emergencyContactValue = this.normalizeExcelSpacing(formData.emergencyContact);
-    const emergencyPhoneDigits = this.normalizePhoneDigits(formData.emergencyPhone);
 
     if (!formData.admissionDate) {
       missing.push({ key: 'admissionDate', label: '入住时间' });
@@ -1624,9 +1566,6 @@ Page({
         return !!relation && !!name && this.isValidMobileNumber(phoneDigits);
       });
 
-    const hasEmergencyPair =
-      emergencyContactValue && this.isValidMobileNumber(emergencyPhoneDigits);
-    const hasRelaxedEmergency = emergencyContactValue && emergencyPhoneDigits.length >= 5;
     const hasContactWithDigits = contacts.some(contact => {
       if (!contact || typeof contact !== 'object') {
         return false;
@@ -1637,8 +1576,8 @@ Page({
     });
 
     const contactRequirementSatisfied = !isEditingExisting
-      ? hasValidContacts || hasEmergencyPair
-      : hasValidContacts || hasEmergencyPair || hasRelaxedEmergency || hasContactWithDigits;
+      ? hasValidContacts
+      : hasValidContacts || hasContactWithDigits;
 
     if (!contactRequirementSatisfied) {
       missing.push({ key: 'contacts', label: '联系人信息' });
@@ -1889,23 +1828,12 @@ Page({
           formData = synced;
         }
 
-        const emergencyContactValue = this.normalizeExcelSpacing(formData.emergencyContact);
-        const emergencyPhoneValue = (this.normalizeExcelSpacing(formData.emergencyPhone) || '').replace(/\s+/g, '');
-
         const contactValidation = this.validateContacts({ updateState: true, showToast: false });
         if (!contactValidation.valid) {
-          const hasEmergencyPair = emergencyContactValue && /^1[3-9]\d{9}$/.test(emergencyPhoneValue);
-          if (hasEmergencyPair) {
-            const fallbackContacts = this.buildContactsFromFields(formData);
-            if (fallbackContacts.length) {
-              this.updateFormData({ contacts: fallbackContacts });
-            }
-          } else {
-            isValid = false;
-            errors.contacts = contactValidation.errors;
-            if (!firstErrorMessage) {
-              firstErrorMessage = contactValidation.message || '请完善联系人信息';
-            }
+          isValid = false;
+          errors.contacts = contactValidation.errors;
+          if (!firstErrorMessage) {
+            firstErrorMessage = contactValidation.message || '请完善联系人信息';
           }
         }
         break;
@@ -1974,8 +1902,6 @@ Page({
             patientName: latestForm.patientName,
             gender: latestForm.gender,
             birthDate: latestForm.birthDate,
-            emergencyContact: latestForm.emergencyContact,
-            emergencyPhone: latestForm.emergencyPhone,
             careStatus: 'pending',
           };
           if (submitData.admissionCount !== undefined) {
@@ -2028,38 +1954,22 @@ Page({
   async submitIntakeData() {
     const { formData, isEditingExisting, patientKey, mode } = this.data;
 
-    // 提交前最后检查:如果紧急联系人为空,尝试从父母信息自动填充
-    let finalFormData = { ...formData };
-    if (isEditingExisting && (!formData.emergencyContact || !formData.emergencyPhone)) {
-      const autoFilledContact = await this._autoFillEmergencyContactFromParents(patientKey);
-
-      if (autoFilledContact.emergencyContact && autoFilledContact.emergencyPhone) {
-        finalFormData = {
-          ...finalFormData,
-          emergencyContact: autoFilledContact.emergencyContact,
-          emergencyPhone: autoFilledContact.emergencyPhone,
-        };
-        this.updateFormData(finalFormData);
-        this.updateRequiredFields();
-      } else {
-        // 如果自动填充失败,给出明确提示
-        logger.error('无法自动填充紧急联系人,住户档案中未找到父母联系方式');
-        this.revealContactStepForManualInput();
-        wx.showToast({
-          icon: 'none',
-          title: '请填写紧急联系人信息',
-          duration: 3000,
-        });
-        throw new Error(
-          '紧急联系人不能为空。系统无法从住户档案中自动获取父母联系方式,请手动填写紧急联系人信息。'
-        );
-      }
+    let finalFormData = this.syncContactsToFields({ ...formData });
+    const guardianEntries = [];
+    const normalizedGuardianInfo = this.normalizeExcelSpacing(finalFormData.guardianInfo);
+    if (normalizedGuardianInfo) {
+      guardianEntries.push(normalizedGuardianInfo);
     }
-
-    finalFormData = this.syncContactsToFields(finalFormData);
     if (Array.isArray(finalFormData.extraContacts) && finalFormData.extraContacts.length) {
-      finalFormData.guardianInfo = finalFormData.extraContacts.join('；');
+      guardianEntries.push(
+        ...finalFormData.extraContacts
+          .map(entry => this.normalizeExcelSpacing(entry))
+          .filter(Boolean)
+      );
     }
+    finalFormData.guardianInfo = guardianEntries.join('；');
+    delete finalFormData.emergencyContact;
+    delete finalFormData.emergencyPhone;
 
     // 构建提交数据
     const cleanedFormData = { ...finalFormData };
@@ -2118,8 +2028,6 @@ Page({
     if (result.success) {
       const data = result.data || {};
       data.patientName = data.patientName || finalFormData.patientName;
-      data.emergencyContact = data.emergencyContact || finalFormData.emergencyContact;
-      data.emergencyPhone = data.emergencyPhone || finalFormData.emergencyPhone;
       data.mode = mode;
       if (mode === 'create') {
         data.patientKey = data.patientKey || patientKey || '';
@@ -2142,8 +2050,6 @@ Page({
             : Date.now())
       ),
       admissionDate: formData.admissionDate || '',
-      emergencyContact: formData.emergencyContact || '',
-      emergencyPhone: formData.emergencyPhone || '',
       uploadCount: '0',
       situationSummary: formData.situation || '',
       recordId: payload.intakeId || '',
@@ -2157,162 +2063,8 @@ Page({
   },
 
   // 从 patientProfile 的 familyInfo 列表中提取紧急联系人
-  _extractEmergencyContactFromProfile(familyInfoList) {
-    if (!Array.isArray(familyInfoList) || familyInfoList.length === 0) {
-      return { emergencyContact: '', emergencyPhone: '' };
-    }
-
-    const candidates = [];
-    const candidateKeys = new Set();
-
-    const addCandidate = (name, phone, options = {}) => {
-      const normalizedName = this.normalizeExcelSpacing(name);
-      const normalizedPhone = this.normalizePhoneDigits(phone);
-      if (!normalizedName || !normalizedPhone || normalizedPhone.length < 5) {
-        return false;
-      }
-      const key = `${normalizedName}|${normalizedPhone}`;
-      if (candidateKeys.has(key)) {
-        return true;
-      }
-      const candidate = { name: normalizedName, phone: normalizedPhone };
-      if (options.prioritize) {
-        candidates.unshift(candidate);
-      } else {
-        candidates.push(candidate);
-      }
-      candidateKeys.add(key);
-      return true;
-    };
-
-    const tryParseStructured = (raw, options = {}) => {
-      if (!raw && raw !== 0) {
-        return false;
-      }
-
-      if (typeof raw === 'object') {
-        const possibleName =
-          raw.name ||
-          raw.contactName ||
-          raw.fullname ||
-          raw.guardianName ||
-          raw.label ||
-          raw.value ||
-          raw.person;
-        const possiblePhone =
-          raw.phone ||
-          raw.mobile ||
-          raw.contactPhone ||
-          raw.telephone ||
-          raw.tel ||
-          raw.phoneNumber ||
-          raw.mobilePhone;
-        if (possibleName && possiblePhone && addCandidate(possibleName, possiblePhone, options)) {
-          return true;
-        }
-      }
-
-      const parsed = this._parseContactInfo(raw);
-      if (parsed && parsed.name && parsed.phone) {
-        return addCandidate(parsed.name, parsed.phone, options);
-      }
-      return false;
-    };
-
-    const bucketMap = new Map();
-    const ensureBucket = (key, prioritize = false) => {
-      if (!bucketMap.has(key)) {
-        bucketMap.set(key, { name: '', phone: '', prioritize });
-      }
-      return bucketMap.get(key);
-    };
-
-    familyInfoList.forEach(item => {
-      if (!item) {
-        return;
-      }
-      const label = this.normalizeExcelSpacing(item.label);
-      const value = item.value;
-      const prioritize = /紧急/.test(label);
-
-      if (tryParseStructured(value, prioritize ? { prioritize: true } : {})) {
-        return;
-      }
-
-      const normalizedValue = this.normalizeExcelSpacing(value);
-      const digits = this.normalizePhoneDigits(value);
-      const hasPhone = digits.length >= 5;
-      const hasName = normalizedValue && normalizedValue !== digits;
-      const isPhoneLabel = /电话|手机|联系方式|号码/.test(label);
-
-      let bucketKey = '';
-      if (/紧急/.test(label)) {
-        bucketKey = 'primary';
-      } else if (/备用|次要|第二|副|后备/.test(label)) {
-        bucketKey = 'backup';
-      }
-
-      if (bucketKey) {
-        const bucket = ensureBucket(bucketKey, bucketKey === 'primary');
-        if (hasName && !isPhoneLabel && !bucket.name) {
-          bucket.name = normalizedValue;
-        }
-        if (hasPhone && !bucket.phone) {
-          bucket.phone = digits;
-        }
-        if (!hasPhone && isPhoneLabel && typeof value === 'object') {
-          tryParseStructured(value, bucketKey === 'primary' ? { prioritize: true } : {});
-        }
-        return;
-      }
-
-      if (hasName || hasPhone) {
-        const bucket = ensureBucket(`label:${label}`);
-        if (hasName && !bucket.name) {
-          bucket.name = normalizedValue;
-        }
-        if (hasPhone && !bucket.phone) {
-          bucket.phone = digits;
-        }
-      }
-    });
-
-    Array.from(bucketMap.values()).forEach(bucket => {
-      if (bucket.name && bucket.phone) {
-        addCandidate(bucket.name, bucket.phone, bucket.prioritize ? { prioritize: true } : {});
-      }
-    });
-
-    if (!candidates.length) {
-      const names = [];
-      const phones = [];
-      familyInfoList.forEach(item => {
-        if (!item) {
-          return;
-        }
-        const normalizedValue = this.normalizeExcelSpacing(item.value);
-        const digits = this.normalizePhoneDigits(item.value);
-        if (normalizedValue && normalizedValue !== digits) {
-          names.push(normalizedValue);
-        }
-        if (digits.length >= 5) {
-          phones.push(digits);
-        }
-      });
-      if (names.length && phones.length) {
-        addCandidate(names[0], phones[0]);
-      }
-    }
-
-    if (candidates.length > 0) {
-      const contact = candidates[0];
-      return {
-        emergencyContact: contact.name,
-        emergencyPhone: contact.phone,
-      };
-    }
-
-    return { emergencyContact: '', emergencyPhone: '' };
+  _extractEmergencyContactFromProfile() {
+    return [];
   },
 
   // 新增：身份证号解析方法
@@ -2376,126 +2128,7 @@ Page({
     });
   },
 
-  // 从父母信息自动填充紧急联系人(提交前最后检查)
-  async _autoFillEmergencyContactFromParents(patientKey) {
-    try {
-      if (!wx.cloud || typeof wx.cloud.callFunction !== 'function') {
-        return { emergencyContact: '', emergencyPhone: '' };
-      }
-
-      const candidates = [];
-      const excelKey = this.normalizeExcelSpacing(this.data && this.data.excelRecordKey);
-      if (excelKey) {
-        candidates.push(excelKey);
-      }
-      if (patientKey) {
-        candidates.push(this.normalizeExcelSpacing(patientKey));
-      }
-      if (this.data && this.data.formData && this.data.formData.patientName) {
-        candidates.push(this.normalizeExcelSpacing(this.data.formData.patientName));
-      }
-
-      const uniqueKeys = Array.from(new Set(candidates.filter(Boolean)));
-
-      for (const key of uniqueKeys) {
-        try {
-          const res = await wx.cloud.callFunction({
-            name: 'patientProfile',
-            data: {
-              action: 'detail',
-              key,
-              patientKey,
-            },
-          });
-
-          if (!res.result || res.result.success === false) {
-            continue;
-          }
-
-          const payload = res.result.data || res.result || {};
-          const overviewData = payload.overview || {};
-          const familyInfoList = Array.isArray(payload.family)
-            ? payload.family
-            : Array.isArray(payload.familyInfo)
-            ? payload.familyInfo
-            : [];
-          const contactFromProfile = this._extractEmergencyContactFromProfile(familyInfoList);
-          const contactFromPatientDoc = this._extractContactFromPatientDoc(
-            overviewData.patientDoc || payload.patient || {}
-          );
-          const recordsSource = Array.isArray(payload.recordPreview && payload.recordPreview.items)
-            ? payload.recordPreview.items
-            : Array.isArray(payload.excelRecords)
-            ? payload.excelRecords
-            : Array.isArray(payload.records)
-            ? payload.records
-            : [];
-          const contactFromRecords = this._extractContactFromRecords(recordsSource);
-          const resolved = this._preferContact(
-            contactFromPatientDoc,
-            contactFromProfile &&
-              contactFromProfile.emergencyContact &&
-              contactFromProfile.emergencyPhone
-              ? contactFromProfile
-              : null,
-            contactFromRecords
-          );
-
-          if (resolved) {
-            return resolved;
-          }
-        } catch (innerError) {
-          // 忽略单次查询失败，尝试下一个候选 key
-        }
-      }
-
-      if (patientKey) {
-        try {
-          const intakeRes = await wx.cloud.callFunction({
-            name: 'patientIntake',
-            data: {
-              action: 'getPatientDetail',
-              patientKey,
-              recordKey: excelKey || patientKey,
-            },
-          });
-
-          if (intakeRes.result && intakeRes.result.success !== false) {
-            const detailData = intakeRes.result.data || intakeRes.result || {};
-            const intakePatient = detailData && detailData.patient ? detailData.patient : {};
-            const contactFromIntakeDoc = this._extractContactFromPatientDoc(intakePatient);
-            if (
-              contactFromIntakeDoc &&
-              contactFromIntakeDoc.emergencyContact &&
-              contactFromIntakeDoc.emergencyPhone
-            ) {
-              return contactFromIntakeDoc;
-            }
-
-            const latestIntakeRecord =
-              detailData && detailData.latestIntake ? [detailData.latestIntake] : [];
-            if (latestIntakeRecord.length) {
-              const fallbackContact = this._extractContactFromRecords(latestIntakeRecord);
-              if (fallbackContact) {
-                return fallbackContact;
-              }
-            }
-          }
-        } catch (intakeDetailError) {
-          // 忽略 patientIntake 回退失败
-        }
-      }
-
-      if (this.data && this.data.formData) {
-        const formContact = this._extractContactFromForm(this.data.formData);
-        if (formContact) {
-          return formContact;
-        }
-      }
-
-      return { emergencyContact: '', emergencyPhone: '' };
-    } catch (error) {
-      return { emergencyContact: '', emergencyPhone: '' };
-    }
+  async _autoFillEmergencyContactFromParents() {
+    return null;
   },
 });

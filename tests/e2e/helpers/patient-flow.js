@@ -152,10 +152,6 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
     primaryContact,
     primaryPhone,
     primaryRelation,
-    // legacy aliases kept for backward compatibility with existing helpers/tests
-    emergencyContact: primaryContact,
-    emergencyPhone: primaryPhone,
-    emergencyRelation: primaryRelation,
     situation: `${situationText()} Follow-up observation in progress.`,
     gender,
     ...patientOverrides,
@@ -397,8 +393,6 @@ async function continueExistingPatientIntake(miniProgram, existingPatient, overr
           phone,
         },
       ],
-      'formData.emergencyContact': name,
-      'formData.emergencyPhone': phone,
     });
   }
 

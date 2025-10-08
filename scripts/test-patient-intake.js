@@ -40,10 +40,15 @@ function buildFormData(seed) {
     birthDate: '1990-01-15',
     phone: `138${Math.floor(10000000 + Math.random() * 89999999)}`,
     address: '北京市东城区演示护理院 1 号楼 302',
-    emergencyContact: '测试紧急联系人',
-    emergencyPhone: `139${Math.floor(10000000 + Math.random() * 89999999)}`,
     backupContact: '备用联系人',
     backupPhone: `137${Math.floor(10000000 + Math.random() * 89999999)}`,
+    contacts: [
+      {
+        relationship: '家属',
+        name: '测试紧急联系人',
+        phone: `139${Math.floor(10000000 + Math.random() * 89999999)}`,
+      },
+    ],
     situation: '患者需要持续护理与康复训练，症状稳定但需观察护理计划执行情况。',
     followUpPlan: '两周复诊，持续康复训练',
     medicalHistory: ['高血压'],

@@ -102,11 +102,11 @@ describe('patient intake wizard validations', () => {
         birthDate: '2000-01-01',
         phone: '13800000000',
         address: '',
-        emergencyContact: '',
-        emergencyPhone: '',
         backupContact: '',
         backupPhone: '',
+        admissionDate: '2024-01-01',
         situation: '',
+        contacts: [{ relationship: '', name: '', phone: '' }],
       },
     });
 
@@ -120,8 +120,13 @@ describe('patient intake wizard validations', () => {
       formData: {
         ...page.data.formData,
         address: '广州市天河区',
-        emergencyContact: '李四',
-        emergencyPhone: '13800000001',
+        contacts: [
+          {
+            relationship: '家属',
+            name: '李四',
+            phone: '13800000001',
+          },
+        ],
       },
     });
     page.updateRequiredFields();
@@ -133,10 +138,6 @@ describe('patient intake wizard validations', () => {
     page.updateRequiredFields();
     page.onNextStep();
     expect(page.data.currentStep).toBe(3);
-
-    page.updateRequiredFields();
-    page.onNextStep();
-    expect(page.data.currentStep).toBe(4);
 
     expect(page.data.allRequiredCompleted).toBe(true);
   });
@@ -179,8 +180,6 @@ describe('patient intake wizard validations', () => {
         recordId: 'rec-01',
         patientName: '张三',
         intakeTime: '2024-10-01 10:00',
-        emergencyContact: '李四',
-        emergencyPhone: '13800000001',
       },
     });
     global.wx.redirectTo.mockClear();

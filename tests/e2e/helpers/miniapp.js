@@ -5,11 +5,21 @@ async function waitForCondition(
   { timeout = 15000, interval = 300, message = 'Condition not met' } = {}
 ) {
   const start = Date.now();
+  let lastError = null;
   while (true) {
-    if (await checker()) {
-      return true;
+    try {
+      if (await checker()) {
+        return true;
+      }
+    } catch (error) {
+      lastError = error;
     }
     if (Date.now() - start > timeout) {
+      if (lastError) {
+        const enriched = new Error(`${message}; last error: ${lastError.message || lastError}`);
+        enriched.cause = lastError;
+        throw enriched;
+      }
       throw new Error(message);
     }
     await delay(interval);

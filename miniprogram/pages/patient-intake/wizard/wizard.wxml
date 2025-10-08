@@ -270,29 +270,6 @@
         </view>
       </view>
 
-      <view wx:if="{{false}}" class="legacy-emergency-inputs">
-        <pm-input
-          label="紧急联系人"
-          value="{{formData.emergencyContact}}"
-          placeholder="请输入紧急联系人姓名"
-          data-field="emergencyContact"
-          bindinput="onInputChange"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
-        <pm-input
-          label="紧急联系人电话"
-          value="{{formData.emergencyPhone}}"
-          placeholder="请输入紧急联系人电话"
-          data-field="emergencyPhone"
-          type="number"
-          bindinput="onInputChange"
-          clearable="{{true}}"
-          label-position="top"
-          block="{{true}}"
-        ></pm-input>
-      </view>
     </view>
 
     <!-- 第3步：情况说明 -->
