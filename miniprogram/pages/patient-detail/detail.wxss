@@ -1127,28 +1127,52 @@
 }
 
 .info-card--basic {
-  border-color: rgba(46, 134, 171, 0.35);
-  background: linear-gradient(135deg, rgba(46, 134, 171, 0.12) 0%, var(--color-bg-primary) 100%);
+  border-color: rgb(var(--brand-blue, 46 134 171) / 0.35);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--brand-blue-soft, var(--brand-blue)) / 0.4) 0%,
+    var(--color-bg-primary) 100%
+  );
 }
 
 .info-card--basic .info-card-header {
-  background: linear-gradient(135deg, rgba(46, 134, 171, 0.18), rgba(46, 134, 171, 0.04));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--brand-blue, 46 134 171) / 0.2),
+    rgb(var(--brand-blue-soft, var(--brand-blue)) / 0.08)
+  );
 }
 
 .info-card--contact {
-  border-color: rgba(242, 66, 54, 0.28);
-  background: linear-gradient(135deg, rgba(242, 66, 54, 0.1) 0%, var(--color-bg-primary) 100%);
+  border-color: rgb(var(--peach-500, 245 158 116) / 0.35);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--peach-300, var(--peach-500, 245 158 116)) / 0.35) 0%,
+    var(--color-bg-primary) 100%
+  );
 }
 
 .info-card--contact .info-card-header {
-  background: linear-gradient(135deg, rgba(242, 66, 54, 0.16), rgba(242, 66, 54, 0.04));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--peach-500, 245 158 116) / 0.22),
+    rgb(var(--peach-300, var(--peach-500, 245 158 116)) / 0.08)
+  );
 }
 
 .info-card--economic {
-  border-color: rgba(82, 196, 26, 0.28);
-  background: linear-gradient(135deg, rgba(82, 196, 26, 0.12) 0%, var(--color-bg-primary) 100%);
+  border-color: rgb(var(--success-600, 82 196 26) / 0.32);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--success-100, 226 245 236) / 0.6) 0%,
+    var(--color-bg-primary) 100%
+  );
 }
 
 .info-card--economic .info-card-header {
-  background: linear-gradient(135deg, rgba(82, 196, 26, 0.18), rgba(82, 196, 26, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--success-600, 82 196 26) / 0.22),
+    rgb(var(--success-100, 226 245 236) / 0.12)
+  );
 }
