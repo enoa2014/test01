@@ -592,12 +592,6 @@ Page({
       if (patientForEdit.address) {
         patientDisplay.address = patientForEdit.address;
       }
-      if (patientForEdit.emergencyContact) {
-        patientDisplay.emergencyContact = patientForEdit.emergencyContact;
-      }
-      if (patientForEdit.emergencyPhone) {
-        patientDisplay.emergencyPhone = patientForEdit.emergencyPhone;
-      }
       if (patientForEdit.backupContact) {
         patientDisplay.backupContact = patientForEdit.backupContact;
       }
@@ -672,24 +666,6 @@ Page({
       }
 
       let editForm = buildEditForm(patientForEdit, latestIntakeRaw || {}, patientDisplay);
-
-      const parentFallback = this._extractParentContactFromSources(
-        this.familyInfoSource,
-        this.patientForEditSource,
-        this.patientDisplaySource
-      );
-      if (!normalizeString(editForm.emergencyContact) && parentFallback.emergencyContact) {
-        editForm = {
-          ...editForm,
-          emergencyContact: parentFallback.emergencyContact,
-        };
-      }
-      if (!normalizeString(editForm.emergencyPhone) && parentFallback.emergencyPhone) {
-        editForm = {
-          ...editForm,
-          emergencyPhone: parentFallback.emergencyPhone,
-        };
-      }
 
       this.originalEditForm = cloneForm(editForm);
 
@@ -1072,8 +1048,6 @@ Page({
     if (this.data.saving) {
       return;
     }
-    this._ensureEmergencyContactFilled();
-
     const form = this.data.editForm || {};
     const errors = this.validateAllFields(form);
     const hasErrors = Object.keys(errors).length > 0;
@@ -1116,8 +1090,6 @@ Page({
           birthDate: form.birthDate,
           phone: form.phone,
           address: form.address,
-          emergencyContact: form.emergencyContact,
-          emergencyPhone: form.emergencyPhone,
           backupContact: form.backupContact,
           backupPhone: form.backupPhone,
           lastIntakeNarrative: form.narrative,
@@ -1143,8 +1115,6 @@ Page({
           },
           contactInfo: {
             address: form.address,
-            emergencyContact: form.emergencyContact,
-            emergencyPhone: form.emergencyPhone,
             backupContact: form.backupContact,
             backupPhone: form.backupPhone,
           },
@@ -1193,140 +1163,6 @@ Page({
     }
   },
 
-  _ensureEmergencyContactFilled() {
-    const currentForm = this.data.editForm || {};
-    const contactEmpty = !normalizeString(currentForm.emergencyContact || '');
-    const phoneEmpty = !normalizeString(currentForm.emergencyPhone || '');
-
-    const fallback = this._extractParentContactFromSources(
-      this.familyInfoSource,
-      this.patientForEditSource,
-      this.patientDisplaySource
-    );
-
-    const nextForm = { ...currentForm };
-    let changed = false;
-
-    if (contactEmpty && fallback.emergencyContact) {
-      nextForm.emergencyContact = fallback.emergencyContact;
-      changed = true;
-    }
-
-    if (phoneEmpty && fallback.emergencyPhone) {
-      nextForm.emergencyPhone = fallback.emergencyPhone;
-      changed = true;
-    }
-
-    const nextErrors = { ...this.data.editErrors };
-    delete nextErrors.emergencyContact;
-    delete nextErrors.emergencyPhone;
-
-    const dirty = detectFormChanges(nextForm, this.originalEditForm);
-    this.setData({
-      editForm: nextForm,
-      editErrors: nextErrors,
-      editDirty: dirty,
-      editCanSave: dirty && Object.keys(nextErrors).length === 0,
-    });
-
-    if (wx.disableAlertBeforeUnload) {
-      wx.disableAlertBeforeUnload();
-    }
-
-    return changed;
-  },
-
-  _parseParentContactInfo(raw, fallbackLabel, role) {
-    const text = normalizeString(raw);
-    if (!text) {
-      return null;
-    }
-
-    const phoneMatch = text.match(/1[3-9]\d{9}/);
-    if (!phoneMatch) {
-      return null;
-    }
-    const phone = phoneMatch[0];
-
-    let name = text.replace(phone, ' ');
-    name = name.replace(/\d{15,18}[Xx]?/g, ' ');
-    name = name.replace(/\d{7,}/g, ' ');
-    name = name.replace(/[,:：，、（）()]/g, ' ');
-    name = name.replace(/(联系电话|电话|手机|联系方式)/g, ' ');
-    name = name.replace(/\s+/g, ' ').trim();
-
-    if (!name && fallbackLabel) {
-      name = fallbackLabel;
-    }
-    if (!name) {
-      name = role === 'mother' ? '母亲' : role === 'father' ? '父亲' : '';
-    }
-
-    if (!phone) {
-      return null;
-    }
-
-    return {
-      emergencyContact: name,
-      emergencyPhone: phone,
-      role,
-    };
-  },
-
-  _extractParentContactFromSources(familyInfoList = [], patientForEdit = {}, patientDisplay = {}) {
-    const candidates = [];
-
-    const pushCandidate = (value, fallbackLabel, role) => {
-      const parsed = this._parseParentContactInfo(value, fallbackLabel, role);
-      if (parsed && parsed.emergencyPhone) {
-        candidates.push(parsed);
-      }
-    };
-
-    if (Array.isArray(familyInfoList)) {
-      familyInfoList.forEach(item => {
-        if (!item || typeof item !== 'object') {
-          return;
-        }
-        const label = normalizeString(item.label || '');
-        const value = item.value || '';
-        if (!value) {
-          return;
-        }
-        const lower = (label || '').toLowerCase();
-        if (lower.includes('母') || lower.includes('mother')) {
-          pushCandidate(value, '母亲', 'mother');
-        } else if (lower.includes('父') || lower.includes('father')) {
-          pushCandidate(value, '父亲', 'father');
-        }
-      });
-    }
-
-    const motherCandidates = [patientForEdit.motherInfo, patientDisplay.motherInfo];
-    motherCandidates.forEach(value => pushCandidate(value, '母亲', 'mother'));
-
-    const fatherCandidates = [patientForEdit.fatherInfo, patientDisplay.fatherInfo];
-    fatherCandidates.forEach(value => pushCandidate(value, '父亲', 'father'));
-
-    if (!candidates.length) {
-      return { emergencyContact: '', emergencyPhone: '' };
-    }
-
-    const preferredMother = candidates.find(candidate => candidate.role === 'mother');
-    if (preferredMother) {
-      return {
-        emergencyContact: preferredMother.emergencyContact,
-        emergencyPhone: preferredMother.emergencyPhone,
-      };
-    }
-
-    const firstCandidate = candidates[0];
-    return {
-      emergencyContact: firstCandidate.emergencyContact,
-      emergencyPhone: firstCandidate.emergencyPhone,
-    };
-  },
-
   markPatientListDirty(form) {
     const flag = {
       timestamp: Date.now(),
@@ -1340,8 +1176,6 @@ Page({
         phone: form.phone,
         address: form.address,
         gender: form.gender,
-        emergencyContact: form.emergencyContact,
-        emergencyPhone: form.emergencyPhone,
       },
     };
 
@@ -1365,8 +1199,6 @@ Page({
       patientName: form.patientName,
       phone: form.phone,
       address: form.address,
-      emergencyContact: form.emergencyContact,
-      emergencyPhone: form.emergencyPhone,
     };
 
     const nextBasicInfo = (this.data.basicInfo || []).map(item => {
@@ -1437,8 +1269,6 @@ Page({
       birthDate: form.birthDate,
       phone: form.phone,
       address: form.address,
-      emergencyContact: form.emergencyContact,
-      emergencyPhone: form.emergencyPhone,
     };
   },
 

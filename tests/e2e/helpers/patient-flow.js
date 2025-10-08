@@ -136,12 +136,9 @@ async function createPatientViaWizard(miniProgram, overrides = {}) {
   const birth = patientOverrides.birthDate || patientOverrides.birth || '2012-04-16';
   const gender = patientOverrides.gender || patientOverrides.sex || '女';
 
-  const primaryContact =
-    patientOverrides.primaryContact || patientOverrides.emergencyContact || 'Automation Caregiver';
-  const primaryPhone =
-    patientOverrides.primaryPhone || patientOverrides.emergencyPhone || generateMobile();
-  const primaryRelation =
-    patientOverrides.primaryRelation || patientOverrides.emergencyRelation || '家属';
+  const primaryContact = patientOverrides.primaryContact || 'Automation Caregiver';
+  const primaryPhone = patientOverrides.primaryPhone || generateMobile();
+  const primaryRelation = patientOverrides.primaryRelation || '家属';
 
   const patientData = {
     patientName: randomString('TEST_AUTOMATION'),

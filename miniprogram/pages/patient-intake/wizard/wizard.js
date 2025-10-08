@@ -303,127 +303,6 @@ Page({
     return { name, phone };
   },
 
-  _preferContact(...candidates) {
-    for (const item of candidates) {
-      if (item && item.emergencyContact && item.emergencyPhone) {
-        return item;
-      }
-    }
-    return null;
-  },
-
-  _extractContactFromPatientDoc(patientDoc = {}) {
-    const emergencyContact = this.normalizeExcelSpacing(patientDoc.emergencyContact);
-    const emergencyPhone = this.normalizeExcelSpacing(patientDoc.emergencyPhone);
-    if (emergencyContact && emergencyPhone) {
-      return { emergencyContact, emergencyPhone };
-    }
-
-    const backupContact = this.normalizeExcelSpacing(patientDoc.backupContact);
-    const backupPhone = this.normalizeExcelSpacing(patientDoc.backupPhone);
-    if (backupContact && backupPhone) {
-      return { emergencyContact: backupContact, emergencyPhone: backupPhone };
-    }
-
-    const parsedPrimary = this._parseContactInfo(patientDoc.primaryGuardianInfo);
-    if (parsedPrimary) {
-      return {
-        emergencyContact: parsedPrimary.name,
-        emergencyPhone: parsedPrimary.phone,
-      };
-    }
-
-    const parsedFather = this._parseContactInfo({
-      name: patientDoc.fatherContactName,
-      phone: patientDoc.fatherContactPhone,
-      raw: patientDoc.fatherInfo,
-    });
-    if (parsedFather) {
-      return {
-        emergencyContact: parsedFather.name,
-        emergencyPhone: parsedFather.phone,
-      };
-    }
-
-    const parsedMother = this._parseContactInfo({
-      name: patientDoc.motherContactName,
-      phone: patientDoc.motherContactPhone,
-      raw: patientDoc.motherInfo,
-    });
-    if (parsedMother) {
-      return {
-        emergencyContact: parsedMother.name,
-        emergencyPhone: parsedMother.phone,
-      };
-    }
-
-    const parsedGuardian = this._parseContactInfo({
-      name: patientDoc.guardianContactName,
-      phone: patientDoc.guardianContactPhone,
-      raw: patientDoc.guardianInfo,
-    });
-    if (parsedGuardian) {
-      return {
-        emergencyContact: parsedGuardian.name,
-        emergencyPhone: parsedGuardian.phone,
-      };
-    }
-
-    if (patientDoc.contactInfo) {
-      const parsed = this._parseContactInfo(patientDoc.contactInfo);
-      if (parsed) {
-        return {
-          emergencyContact: parsed.name,
-          emergencyPhone: parsed.phone,
-        };
-      }
-    }
-
-    return null;
-  },
-
-  _extractContactFromRecords(records = []) {
-    if (!Array.isArray(records) || !records.length) {
-      return null;
-    }
-    for (const record of records) {
-      if (!record) {
-        continue;
-      }
-      if (record.contactInfo) {
-        const contactInfoParsed = this._parseContactInfo(record.contactInfo);
-        if (contactInfoParsed) {
-          return {
-            emergencyContact: contactInfoParsed.name,
-            emergencyPhone: contactInfoParsed.phone,
-          };
-        }
-      }
-      const motherParsed = this._parseContactInfo(record.motherInfo);
-      if (motherParsed) {
-        return {
-          emergencyContact: motherParsed.name,
-          emergencyPhone: motherParsed.phone,
-        };
-      }
-      const fatherParsed = this._parseContactInfo(record.fatherInfo);
-      if (fatherParsed) {
-        return {
-          emergencyContact: fatherParsed.name,
-          emergencyPhone: fatherParsed.phone,
-        };
-      }
-      const caregiverParsed = this._parseContactInfo(record.caregivers);
-      if (caregiverParsed) {
-        return {
-          emergencyContact: caregiverParsed.name,
-          emergencyPhone: caregiverParsed.phone,
-        };
-      }
-    }
-    return null;
-  },
-
   // 加载配置
   async loadConfig() {
     try {
@@ -1681,7 +1560,6 @@ Page({
         break;
 
       case 'phone':
-      case 'emergencyPhone':
       case 'backupPhone':
         if (value && !/^1[3-9]\d{9}$/.test(value)) {
           error = '手机号码格式不正确';
@@ -1968,8 +1846,6 @@ Page({
       );
     }
     finalFormData.guardianInfo = guardianEntries.join('；');
-    delete finalFormData.emergencyContact;
-    delete finalFormData.emergencyPhone;
 
     // 构建提交数据
     const cleanedFormData = { ...finalFormData };

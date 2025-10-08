@@ -24,8 +24,6 @@ function buildEditForm(patient = {}, intake = {}, fallbackPatient = {}) {
     birthDate: formatDateForInput(birthDate),
     phone: patient.phone || '',
     address: patient.address || '',
-    emergencyContact: patient.emergencyContact || '',
-    emergencyPhone: patient.emergencyPhone || '',
     backupContact: patient.backupContact || '',
     backupPhone: patient.backupPhone || '',
     intakeTime: formatDateForInput(intakeInfo.intakeTime || intake.lastIntakeTime),
@@ -136,7 +134,7 @@ function validateField(key, value, form) {
     }
   }
 
-  if ((key === 'phone' || key === 'emergencyPhone' || key === 'backupPhone') && currentValue) {
+  if ((key === 'phone' || key === 'backupPhone') && currentValue) {
     if (!/^1[3-9]\d{9}$/.test(currentValue)) {
       return '手机号格式不正确';
     }
