@@ -674,20 +674,6 @@ function buildPatientPayload(group, latestRecord) {
   );
   const now = Date.now();
 
-  const emergencyContactCandidates = [];
-  if (group.summaryCaregivers) {
-    emergencyContactCandidates.push(group.summaryCaregivers);
-  }
-  const guardianParts = [group.fatherInfo, group.motherInfo, group.otherGuardian].filter(part =>
-    normalizeSpacing(part)
-  );
-  if (guardianParts.length) {
-    emergencyContactCandidates.push(guardianParts.join('、'));
-  }
-  const normalizedEmergencyContact = emergencyContactCandidates.find(value =>
-    normalizeSpacing(value)
-  );
-
   const contacts = Array.isArray(group.familyContacts) ? group.familyContacts : [];
   const contactToString = contact => {
     if (!contact) {
@@ -714,7 +700,6 @@ function buildPatientPayload(group, latestRecord) {
     gender: group.gender || latestRecord.gender || '',
     birthDate: group.birthDate || latestRecord.birthDate || '',
     address: latestRecord.address || '',
-    emergencyContact: normalizeSpacing(normalizedEmergencyContact || ''),
     admissionCount: group.admissionCount || 0,
     firstAdmissionDate: group.firstAdmissionTimestamp,
     latestAdmissionDate: group.latestAdmissionTimestamp,
@@ -733,8 +718,6 @@ function buildPatientPayload(group, latestRecord) {
     nativePlace: normalizeSpacing(group.nativePlace || latestRecord.nativePlace || ''),
     ethnicity: normalizeSpacing(group.ethnicity || latestRecord.ethnicity || ''),
     excelImportOrder: group.importOrder || null,
-    emergencyContact: normalizeSpacing(normalizedEmergencyContact || ''),
-    emergencyPhone: '',
     backupContact: '',
     backupPhone: '',
     lastIntakeNarrative: latestRecord.symptoms || latestRecord.diagnosis || '',
@@ -827,20 +810,6 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
     normalize(latestRecord.diagnosis) ||
     normalize(latestRecord.treatmentProcess);
 
-  const emergencyContactParts = [];
-  if (group.summaryCaregivers) {
-    emergencyContactParts.push(group.summaryCaregivers);
-  }
-  const guardianContact = [group.fatherInfo, group.motherInfo, group.otherGuardian].filter(part =>
-    normalizeSpacing(part)
-  );
-  if (guardianContact.length) {
-    emergencyContactParts.push(guardianContact.join('、'));
-  }
-  const emergencyContact = normalize(
-    emergencyContactParts.find(value => normalizeSpacing(value)) || ''
-  );
-
   const pickTimestamp = (...candidates) => {
     for (const candidate of candidates) {
       const ts = normalizeTimestamp(candidate);
@@ -889,8 +858,6 @@ function buildIntakePayload(group, patientKey, syncBatchId, serverDate) {
     },
     contactInfo: {
       address: latestRecord.address || '',
-      emergencyContact,
-      emergencyPhone: '',
       backupContact: '',
       backupPhone: '',
       familyContacts: Array.isArray(group.familyContacts)

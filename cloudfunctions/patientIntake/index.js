@@ -231,7 +231,7 @@ function validateFormData(formData) {
   }
 
   // 手机号码校验
-  const phoneFields = ['phone', 'emergencyPhone', 'backupPhone'];
+  const phoneFields = ['phone', 'backupPhone'];
   for (const field of phoneFields) {
     const phone = normalizeString(formData[field]);
     if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
@@ -240,10 +240,6 @@ function validateFormData(formData) {
   }
 
   // 必填手机号码校验
-  if (formData.emergencyPhone && !/^1[3-9]\d{9}$/.test(formData.emergencyPhone)) {
-    errors.emergencyPhone = '紧急联系人电话格式不正确';
-  }
-
   // 情况说明校验
   const situation = normalizeString(formData.situation);
   if (situation && situation.length > SITUATION_MAX_LENGTH) {
@@ -335,8 +331,6 @@ async function handleCreatePatient(event) {
     birthDate: normalizeString(payload.birthDate),
     phone: normalizeString(payload.phone),
     address: normalizeString(payload.address),
-    emergencyContact: normalizeString(payload.emergencyContact),
-    emergencyPhone: normalizeString(payload.emergencyPhone),
     backupContact: normalizeString(payload.backupContact),
     backupPhone: normalizeString(payload.backupPhone),
     situation: normalizeString(payload.situation),
@@ -380,8 +374,6 @@ async function handleCreatePatient(event) {
     birthDate: normalizedForm.birthDate,
     phone: normalizedForm.phone,
     address: normalizedForm.address,
-    emergencyContact: normalizedForm.emergencyContact,
-    emergencyPhone: normalizedForm.emergencyPhone,
     backupContact: normalizedForm.backupContact,
     backupPhone: normalizedForm.backupPhone,
     lastIntakeNarrative: normalizedForm.situation,
@@ -403,8 +395,6 @@ async function handleCreatePatient(event) {
       birthDate: normalizedForm.birthDate,
       phone: normalizedForm.phone,
       address: normalizedForm.address,
-      emergencyContact: normalizedForm.emergencyContact,
-      emergencyPhone: normalizedForm.emergencyPhone,
       backupContact: normalizedForm.backupContact,
       backupPhone: normalizedForm.backupPhone,
       admissionCount: 0,
@@ -666,8 +656,6 @@ async function handleGetAllIntakeRecords(event) {
         idNumber: basicInfo.idNumber,
         primaryPhone: basicInfo.primaryPhone || contactInfo.primaryPhone,
         backupPhone: basicInfo.backupPhone || contactInfo.backupPhone,
-        emergencyContact: basicInfo.emergencyContact || contactInfo.emergencyContact,
-        emergencyPhone: basicInfo.emergencyPhone || contactInfo.emergencyPhone,
         medicalHistory: medicalInfo.medicalHistory || intakeInfo.medicalHistory || [],
         currentCondition: medicalInfo.currentCondition,
         medications: medicalInfo.medications || [],
@@ -889,8 +877,6 @@ async function handleGetPatientDetail(event) {
         ethnicity: patient.ethnicity || '',
         phone: patient.phone,
         address: patient.address,
-        emergencyContact: patient.emergencyContact,
-        emergencyPhone: patient.emergencyPhone,
         backupContact: patient.backupContact,
         backupPhone: patient.backupPhone,
         lastIntakeNarrative: patient.lastIntakeNarrative || '',
@@ -1095,8 +1081,6 @@ async function handleSubmitIntake(event) {
         birthDate: formData.birthDate,
         phone: formData.phone || '',
         address: formData.address,
-        emergencyContact: formData.emergencyContact,
-        emergencyPhone: formData.emergencyPhone,
         backupContact: formData.backupContact || '',
         backupPhone: formData.backupPhone || '',
         lastIntakeNarrative: formData.situation,
@@ -1142,8 +1126,6 @@ async function handleSubmitIntake(event) {
         birthDate: formData.birthDate,
         phone: formData.phone || '',
         address: formData.address,
-        emergencyContact: formData.emergencyContact,
-        emergencyPhone: formData.emergencyPhone,
         backupContact: formData.backupContact || '',
         backupPhone: formData.backupPhone || '',
         lastIntakeNarrative: formData.situation,
@@ -1196,8 +1178,6 @@ async function handleSubmitIntake(event) {
       },
       contactInfo: {
         address: formData.address,
-        emergencyContact: formData.emergencyContact,
-        emergencyPhone: formData.emergencyPhone,
         backupContact: formData.backupContact || '',
         backupPhone: formData.backupPhone || '',
       },
@@ -1355,8 +1335,6 @@ async function handleUpdatePatient(event = {}) {
       'birthDate',
       'phone',
       'address',
-      'emergencyContact',
-      'emergencyPhone',
       'backupContact',
       'backupPhone',
       'lastIntakeNarrative',
@@ -1434,8 +1412,6 @@ async function handleUpdatePatient(event = {}) {
       ]);
       assignNestedUpdates(intakeUpdateData, intakeUpdates.contactInfo, 'contactInfo', [
         'address',
-        'emergencyContact',
-        'emergencyPhone',
         'backupContact',
         'backupPhone',
       ]);
@@ -1577,8 +1553,6 @@ async function handleCheckoutPatient(event = {}) {
       },
       contactInfo: {
         address: patientDoc.address || '',
-        emergencyContact: patientDoc.emergencyContact || '',
-        emergencyPhone: patientDoc.emergencyPhone || '',
         backupContact: patientDoc.backupContact || '',
         backupPhone: patientDoc.backupPhone || '',
         guardianName: patientDoc.guardianContactName || '',

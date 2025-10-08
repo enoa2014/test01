@@ -29,8 +29,6 @@ describe('patientIntake updatePatient', () => {
       birthDate: 946656000000,
       phone: '13300000000',
       address: '旧地址',
-      emergencyContact: '李四',
-      emergencyPhone: '13300000001',
       backupContact: '王五',
       backupPhone: '13300000002',
       lastIntakeNarrative: 'old narrative',
@@ -54,8 +52,6 @@ describe('patientIntake updatePatient', () => {
       },
       contactInfo: {
         address: '旧地址',
-        emergencyContact: '李四',
-        emergencyPhone: '13300000001',
         backupContact: '王五',
         backupPhone: '13300000002',
       },
@@ -106,8 +102,6 @@ describe('patientIntake updatePatient', () => {
         },
         contactInfo: {
           address: '新地址',
-          emergencyContact: '韩梅梅',
-          emergencyPhone: '13311112223',
         },
         intakeInfo: {
           intakeTime: 1650000000000,

@@ -708,8 +708,6 @@ async function buildPatientsFromDatabase(options = {}) {
       idNumber: 1,
       phone: 1,
       address: 1,
-      emergencyContact: 1,
-      emergencyPhone: 1,
       backupContact: 1,
       backupPhone: 1,
       nativePlace: 1,
@@ -835,8 +833,6 @@ async function buildPatientsFromDatabase(options = {}) {
     }
     const phone = doc.phone || data.phone || '';
     const address = doc.address || data.address || '';
-    const emergencyContact = doc.emergencyContact || data.emergencyContact || '';
-    const emergencyPhone = doc.emergencyPhone || data.emergencyPhone || '';
     const backupContact = doc.backupContact || data.backupContact || '';
     const backupPhone = doc.backupPhone || data.backupPhone || '';
 
@@ -881,8 +877,6 @@ async function buildPatientsFromDatabase(options = {}) {
       idNumber: doc.idNumber || '',
       phone,
       address,
-      emergencyContact,
-      emergencyPhone,
       backupContact,
       backupPhone,
       nativePlace,
@@ -1528,8 +1522,6 @@ async function fetchFallbackPatientDetail(patientKey) {
 
     const familyInfo = buildList([
       ['家庭地址', patientDoc.address],
-      ['紧急联系人', patientDoc.emergencyContact],
-      ['紧急联系电话', patientDoc.emergencyPhone],
       ['备用联系人', patientDoc.backupContact],
       ['备用联系电话', patientDoc.backupPhone],
       [
@@ -1695,8 +1687,6 @@ function formatPatientDetail(group, patientDoc) {
     { label: '父亲联系方式', value: fatherInfoValue },
     { label: '母亲联系方式', value: motherInfoValue },
     { label: '其他监护人', value: otherGuardianValue },
-    { label: '紧急联系人', value: patientDoc && patientDoc.emergencyContact },
-    { label: '紧急联系电话', value: patientDoc && patientDoc.emergencyPhone },
   ]);
 
   // Build economic info

@@ -422,8 +422,6 @@ function createExcelSync({
       ethnicity: normalizeExcelSpacing(last.ethnicity) || normalizeExcelSpacing(first.ethnicity),
       phone: '',
       address: normalizeExcelSpacing(last.address),
-      emergencyContact: normalizeExcelSpacing(last.caregivers),
-      emergencyPhone: '',
       backupContact: '',
       backupPhone: '',
       lastIntakeNarrative: normalizeExcelSpacing(
@@ -532,8 +530,6 @@ function buildIntakeRecordFromExcel(record, patientKey, patientName, serverDate,
     },
     contactInfo: {
       address: normalizeExcelSpacing(record.address),
-      emergencyContact: normalizeExcelSpacing(record.caregivers),
-      emergencyPhone: '',
       backupContact: '',
       backupPhone: '',
     },
