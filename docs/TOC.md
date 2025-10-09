@@ -16,8 +16,7 @@
 
 ## 体验分析与优化（UX Analysis）
 - 首页
-  - 分析：docs/ux-analysis/index-page/analysis.md
-  - 分析（v2）：docs/ux-analysis/index-page/analysis-v2.md
+  - 分析（当前版）：docs/ux-analysis/index-page/analysis-v2.md
 - 患者接收入院流程
   - 优化方案：docs/ux-analysis/patient-intake/optimization-plan.md
 - 患者列表
@@ -46,14 +45,16 @@
 - 后台紧急联系人移除操作：docs/operations/backend-emergency-contact-removal.md
 
 ## 设计与重构（Design）
-- UI 重构（后续将拆分细化）
-  - 概览（原索引汇总）：docs/design/ui-refactor/index-refactor-summary.md
-  - 旧版索引（待拆分）：docs/design/ui-refactor/ui-refactor-index.md
-  - 旧版索引 v2（待拆分）：docs/design/ui-refactor/ui-refactor-index-v2.md
+- UI 重构（患者列表页）
+  - 总览：docs/design/ui-refactor/overview.md
+  - 页面方案与实现：docs/design/ui-refactor/pages.md
+  - 组件与设计系统对齐：docs/design/ui-refactor/components.md
+  - 变更记录与度量：docs/design/ui-refactor/changelog.md
 
 ## 归档（Archives）
 - 备份占位
   - backup-01：docs/archives/backups/backup-01.md
   - backup-02：docs/archives/backups/backup-02.md
   - backup-03：docs/archives/backups/backup-03.md
-
+ - 历史分析
+   - 首页分析（历史版）：docs/archives/ux-analysis/index-page-analysis-legacy.md
