@@ -912,6 +912,20 @@ exports.main = async event => {
   const action = normalizeString(event && event.action);
   try {
     switch (action) {
+      case 'summary': {
+        const patientKey = ensurePatientKey(event.patientKey);
+        await ensureCollectionExists(QUOTA_COLLECTION);
+        try {
+          const res = await db.collection(QUOTA_COLLECTION).doc(patientKey).get();
+          const data = (res && res.data) || {};
+          const totalCount = Number.isFinite(data.totalCount) ? data.totalCount : 0;
+          const totalBytes = Number.isFinite(data.totalBytes) ? data.totalBytes : 0;
+          const updatedAt = Number.isFinite(data.updatedAt) ? data.updatedAt : 0;
+          return { success: true, data: { totalCount, totalBytes, updatedAt } };
+        } catch (error) {
+          return { success: true, data: { totalCount: 0, totalBytes: 0, updatedAt: 0 } };
+        }
+      }
       case 'prepareUpload':
         return await handlePrepareUpload(event);
       case 'completeUpload':

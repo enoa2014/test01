@@ -38,6 +38,7 @@ const FILTER_SCHEME_STORAGE_KEY = 'filter_panel_schemes';
 const INITIAL_THEME_KEY = themeManager.getTheme();
 const INITIAL_THEME_INDEX = themeManager.getThemeIndex(INITIAL_THEME_KEY);
 const INITIAL_THEME_LABEL = themeManager.getThemeLabel(INITIAL_THEME_KEY);
+const MEDIA_SUMMARY_TTL = 5 * 60 * 1000; // 5分钟缓存
 // 快速筛选器已移除 - 功能已整合至统计卡片
 function safeString(value) {
   if (value === null || value === undefined) {
@@ -723,6 +724,9 @@ Page({
       pending: 0,
       discharged: 0,
     },
+    // 媒体摘要缓存（内存）
+    __mediaSummaryCache: {},
+    __mediaSummaryFetching: {},
     activeStatFilter: 'all', // 当前激活的统计筛选
   },
   onLoad() {
@@ -1300,6 +1304,8 @@ Page({
       // P1-9: 更新空状态配置
       emptyStateConfig: this.getEmptyStateConfig(filtered),
     });
+    // 异步更新媒体摘要徽标
+    this.updateMediaBadges();
   },
 
   // 统计卡片点击筛选
@@ -1317,6 +1323,70 @@ Page({
         this.applyFilters();
       }
     );
+  },
+
+  // 构建媒体摘要徽标
+  buildMediaBadge(summary) {
+    if (!summary) return null;
+    const count = Number(summary.totalCount || 0);
+    const updatedAt = Number(summary.updatedAt || 0);
+    const timeText = updatedAt ? formatTimeString(updatedAt) : '';
+    const text = timeText ? `附件 ${count} · ${timeText}` : `附件 ${count}`;
+    return { text, type: 'info', _type: 'media' };
+  },
+
+  // 列表项注入媒体徽标
+  updateMediaBadges() {
+    const list = Array.isArray(this.data.displayPatients) ? this.data.displayPatients.slice() : [];
+    if (!list.length) return;
+    const cache = this.data.__mediaSummaryCache || {};
+    const needFetch = [];
+
+    const updated = list.map(item => {
+      const key = this.resolvePatientKey(item);
+      let badges = Array.isArray(item.badges) ? item.badges.filter(b => !(b && b._type === 'media')) : [];
+      const cached = cache[key];
+      if (cached && Date.now() - cached.__ts < MEDIA_SUMMARY_TTL) {
+        const badge = this.buildMediaBadge(cached);
+        if (badge) badges.push(badge);
+      } else if (key) {
+        needFetch.push(key);
+      }
+      return { ...item, badges };
+    });
+
+    this.setData({ displayPatients: updated });
+    if (needFetch.length) {
+      this.fetchMediaSummaries(needFetch.slice(0, 8)); // 限制并发数量
+    }
+  },
+
+  // 批量拉取媒体摘要（并发受限）
+  async fetchMediaSummaries(keys) {
+    if (!Array.isArray(keys)) return;
+    const fetching = { ...(this.data.__mediaSummaryFetching || {}) };
+    for (const key of keys) {
+      if (!key || fetching[key]) continue;
+      fetching[key] = true;
+      this.setData({ __mediaSummaryFetching: fetching });
+      try {
+        const res = await wx.cloud.callFunction({
+          name: 'patientMedia',
+          data: { action: 'summary', patientKey: key },
+        });
+        const data = (res && res.result && res.result.data) || { totalCount: 0, updatedAt: 0 };
+        const cache = { ...(this.data.__mediaSummaryCache || {}) };
+        cache[key] = { ...data, __ts: Date.now() };
+        this.setData({ __mediaSummaryCache: cache });
+      } catch (error) {
+        // 忽略摘要失败
+      } finally {
+        fetching[key] = false;
+        this.setData({ __mediaSummaryFetching: fetching });
+      }
+    }
+    // 拉取结束后刷新徽标
+    this.updateMediaBadges();
   },
 
   // P1-9: 智能判断空状态类型
