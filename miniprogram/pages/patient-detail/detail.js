@@ -35,6 +35,7 @@ const {
 } = require('./data-mappers.js');
 
 const { getDefaultQuota, makeQuotaPayload, createMediaService } = require('./media-service.js');
+const { formatAge } = require('../../utils/date.js');
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
@@ -201,6 +202,9 @@ function mapIntakeRecordForDisplay(record) {
     record.intakeTime || intakeInfo.intakeTime || metadata.intakeTime || metadata.lastModifiedAt
   );
   const resolvedIntakeTime = Number.isFinite(intakeTime) ? intakeTime : Date.now();
+  const checkoutRaw = record.checkoutAt || intakeInfo.checkoutAt || metadata.checkoutAt;
+  const checkoutTs = Number(checkoutRaw);
+  const checkoutDisplay = Number.isFinite(checkoutTs) ? formatDateTime(checkoutTs) : '未离开';
 
   const hospitalDisplay = coalesceValue(
     record.hospital,
@@ -230,6 +234,10 @@ function mapIntakeRecordForDisplay(record) {
     medicalInfo.followUpPlan,
     intakeInfo.followUpPlan
   );
+  const durationDisplay = coalesceValue(
+    intakeInfo.durationText,
+    record.durationText
+  );
 
   const normalized = {
     ...record,
@@ -238,6 +246,23 @@ function mapIntakeRecordForDisplay(record) {
   normalized.intakeId = record.intakeId || record._id || `${resolvedIntakeTime}_${Math.random()}`;
   normalized.intakeTime = resolvedIntakeTime;
   normalized.displayTime = formatDateTime(resolvedIntakeTime);
+  normalized.checkoutTime = Number.isFinite(checkoutTs) ? checkoutTs : null;
+  normalized.checkoutDisplay = checkoutDisplay;
+  // 若后端未提供durationText，但存在离开时间，则在前端计算一个简短时长
+  if (!durationDisplay && Number.isFinite(checkoutTs) && checkoutTs > resolvedIntakeTime) {
+    const DAY = 24 * 60 * 60 * 1000;
+    const HOUR = 60 * 60 * 1000;
+    const diff = checkoutTs - resolvedIntakeTime;
+    if (diff >= DAY) {
+      const days = Math.floor(diff / DAY);
+      normalized.durationDisplay = `${days}天`;
+    } else {
+      const hours = Math.max(1, Math.ceil(diff / HOUR));
+      normalized.durationDisplay = `${hours}小时`;
+    }
+  } else if (durationDisplay) {
+    normalized.durationDisplay = durationDisplay;
+  }
   normalized.updatedTime = formatDateTime(
     record.updatedAt || metadata.lastModifiedAt || metadata.submittedAt || resolvedIntakeTime
   );
@@ -249,6 +274,9 @@ function mapIntakeRecordForDisplay(record) {
   normalized.followUpPlanDisplay = followUpPlanDisplay;
   normalized.statusDisplay = formatRecordStatus(record.status);
   normalized.followUpPlan = followUpPlanDisplay;
+  if (durationDisplay) {
+    normalized.durationDisplay = durationDisplay;
+  }
 
   return normalized;
 }
@@ -334,12 +362,14 @@ Page({
     loading: true,
     error: '',
     patient: null,
+    patientHeaderMeta: '',
     basicInfo: [],
     familyInfo: [],
     economicInfo: [],
     records: [],
     allIntakeRecords: [],
     operationLogs: [],
+    operationLogsCollapsed: true,
     visibleIntakeRecords: [],
     intakeRecordCount: 0,
     intakeSummaryVersion: null,
@@ -377,6 +407,60 @@ Page({
     },
     lastSaveError: null,
     mediaInitialized: false,
+    // 入住条目编辑
+    recordEditDialogVisible: false,
+    recordEditSubmitting: false,
+    recordEditForm: {
+      id: '',
+      intakeDate: '',
+      intakeTime: '',
+      checkoutDate: '',
+      checkoutTime: '',
+      hospital: '',
+      diagnosis: '',
+      doctor: '',
+      symptoms: '',
+      treatmentProcess: '',
+      followUpPlan: '',
+    },
+
+    // 状态调整对话框
+    statusDialogVisible: false,
+    statusDialogSubmitting: false,
+    statusDialogOptions: [
+      { id: 'in_care', label: '在住' },
+      { id: 'pending', label: '待入住' },
+      { id: 'discharged', label: '已离开' },
+    ],
+    statusDialogForm: {
+      value: '',
+      note: '',
+    },
+    statusDialogPatient: null,
+
+    // 分模块弹窗编辑
+    moduleEditDialogVisible: false,
+    moduleEditBlock: '', // 'basic' | 'contact' | 'economic'
+    blockEditForm: {},
+    blockEditErrors: {},
+    // 轻提示条
+    inlineToastVisible: false,
+    inlineToastText: '',
+    inlineToastType: 'success', // success | error
+  },
+  _buildHeaderMeta(fromPatient) {
+    const p = fromPatient || {};
+    const parts = [];
+    const gender = normalizeString(p.gender);
+    if (gender) parts.push(gender);
+    const ageText = formatAge(p.birthDate) || '';
+    if (ageText) parts.push(ageText);
+    const id = normalizeString(p.idNumber);
+    if (id) {
+      const tail = String(id).slice(-4);
+      if (tail) parts.push(`尾号${tail}`);
+    }
+    return parts.join(' · ');
   },
 
   handleThemeChange(theme) {
@@ -384,6 +468,536 @@ Page({
       theme,
       themeClass: themeManager.resolveThemeClass(theme),
     });
+  },
+  onToggleOperationLogs() {
+    const current = !!this.data.operationLogsCollapsed;
+    this.setData({ operationLogsCollapsed: !current });
+  },
+
+  // 长按状态卡片，打开状态调整
+  onStatusLongPress() {
+    const patient = this.data && this.data.patient ? this.data.patient : null;
+    if (!patient || !this.patientKey) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    const currentStatusText = normalizeStatusKey(
+      patient.careStatus || patient.status || patient.statusDisplay
+    );
+    let currentValue = 'pending';
+    if (currentStatusText.includes('incare') || currentStatusText === 'active') {
+      currentValue = 'in_care';
+    } else if (
+      currentStatusText.includes('discharged') ||
+      currentStatusText.includes('checkout') ||
+      currentStatusText.includes('checkedout') ||
+      currentStatusText.includes('checkedout') ||
+      currentStatusText.includes('checkedout') ||
+      currentStatusText.includes('checkedout') ||
+      currentStatusText.includes('离开')
+    ) {
+      currentValue = 'discharged';
+    } else if (
+      currentStatusText.includes('pending') ||
+      currentStatusText.includes('待') ||
+      currentStatusText.includes('随访')
+    ) {
+      currentValue = 'pending';
+    }
+    this.setData({
+      statusDialogVisible: true,
+      statusDialogSubmitting: false,
+      statusDialogPatient: {
+        patientName: patient.patientName || '',
+        careStatus: currentValue,
+      },
+      statusDialogForm: {
+        value: currentValue,
+        note: '',
+      },
+    });
+  },
+
+  // 信息卡片编辑入口（弹窗编辑该模块）
+  onEditStart(e) {
+    const block = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.block) || '';
+    if (!block) return;
+    const patient = this.data.patient || {};
+    const safe = v => (v === undefined || v === null ? '' : String(v));
+    let form = {};
+    if (block === 'basic') {
+      form = {
+        patientName: safe(patient.patientName),
+        gender: safe(patient.gender),
+        birthDate: safe(patient.birthDate),
+        idType: safe(patient.idType || '身份证'),
+        idNumber: safe(patient.idNumber),
+        phone: safe(patient.phone),
+        nativePlace: safe(patient.nativePlace),
+        ethnicity: safe(patient.ethnicity),
+      };
+    } else if (block === 'contact') {
+      form = {
+        address: safe(patient.address),
+        backupContact: safe(patient.backupContact),
+        backupPhone: safe(patient.backupPhone),
+        fatherInfo: safe(patient.fatherInfo),
+        motherInfo: safe(patient.motherInfo),
+        guardianInfo: safe(patient.guardianInfo),
+      };
+    } else if (block === 'economic') {
+      form = { familyEconomy: safe(patient.familyEconomy) };
+    }
+    this.setData({ moduleEditDialogVisible: true, moduleEditBlock: block, blockEditForm: form });
+  },
+  onModuleLongPress(e) {
+    this.onEditStart(e);
+  },
+
+  onBlockFieldInput(e) {
+    const field = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.field;
+    const value = (e.detail && e.detail.value) || '';
+    if (!field) return;
+    const errors = { ...(this.data.blockEditErrors || {}) };
+    if (errors[field]) {
+      delete errors[field];
+      this.setData({ blockEditErrors: errors });
+    }
+    this.setData({ [`blockEditForm.${field}`]: value });
+  },
+  onBlockGenderChange(e) {
+    const value = (e.detail && e.detail.value) || '';
+    const errors = { ...(this.data.blockEditErrors || {}) };
+    if (errors.gender) { delete errors.gender; this.setData({ blockEditErrors: errors }); }
+    this.setData({ 'blockEditForm.gender': value });
+  },
+  onBlockBirthDateChange(e) {
+    const value = (e.detail && e.detail.value) || '';
+    const errors = { ...(this.data.blockEditErrors || {}) };
+    if (errors.birthDate) { delete errors.birthDate; this.setData({ blockEditErrors: errors }); }
+    this.setData({ 'blockEditForm.birthDate': value });
+  },
+  onBlockCancel() {
+    this.setData({ moduleEditDialogVisible: false, moduleEditBlock: '', blockEditForm: {}, blockEditErrors: {} });
+  },
+  async onBlockSave() {
+    if (!this.patientKey) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    const block = this.data.moduleEditBlock;
+    if (!block) return;
+    const f = this.data.blockEditForm || {};
+    let updates = {};
+    const validate = this._validateBlockForm(block, f);
+    if (!validate.valid) {
+      this.setData({ blockEditErrors: validate.errors || {} });
+      const first = validate.message || '请完善必填项';
+      wx.showToast({ icon: 'none', title: first });
+      return;
+    }
+    if (block === 'basic') {
+      if (!f.patientName) { wx.showToast({ icon: 'none', title: '请输入姓名' }); return; }
+      if (!f.idNumber) { wx.showToast({ icon: 'none', title: '请输入证件号码' }); return; }
+      updates = {
+        patientName: f.patientName,
+        gender: f.gender,
+        birthDate: f.birthDate,
+        idType: f.idType,
+        idNumber: f.idNumber,
+        phone: f.phone,
+        nativePlace: f.nativePlace,
+        ethnicity: f.ethnicity,
+      };
+    } else if (block === 'contact') {
+      if (!f.address) { wx.showToast({ icon: 'none', title: '请输入家庭地址' }); return; }
+      updates = {
+        address: f.address,
+        backupContact: f.backupContact,
+        backupPhone: f.backupPhone,
+        fatherInfo: f.fatherInfo,
+        motherInfo: f.motherInfo,
+        guardianInfo: f.guardianInfo,
+      };
+    } else if (block === 'economic') {
+      updates = { familyEconomy: f.familyEconomy };
+    }
+    wx.showLoading({ title: '保存中', mask: true });
+    try {
+      const res = await wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'updatePatient', patientKey: this.patientKey, patientUpdates: updates, audit: { message: `就地编辑: ${block}` } } });
+      const result = res && res.result;
+      if (!result || result.success === false) {
+        const err = (result && result.error) || {};
+        throw new Error(err.message || '保存失败');
+      }
+      // 局部更新 patient 与对应显示块，避免整页刷新
+      const current = this.data.patient || {};
+      const nextPatient = { ...current, ...updates };
+      const patch = { patient: nextPatient, moduleEditDialogVisible: false, moduleEditBlock: '', blockEditForm: {} };
+      patch.patientHeaderMeta = this._buildHeaderMeta(nextPatient);
+      if (block === 'basic') {
+        patch.basicInfo = this._rebuildBasicInfoDisplay(nextPatient, this.data.basicInfo);
+      } else if (block === 'contact') {
+        patch.familyInfo = this._rebuildContactInfoDisplay(nextPatient, this.data.familyInfo);
+      } else if (block === 'economic') {
+        patch.economicInfo = this._rebuildEconomicInfoDisplay(nextPatient, this.data.economicInfo);
+      }
+      this.setData(patch);
+      this._showInlineToast('已保存', 'success');
+    } catch (error) {
+      this._showInlineToast((error && error.message) || '保存失败', 'error');
+    } finally {
+      wx.hideLoading();
+    }
+  },
+  _validateBlockForm(block, f = {}) {
+    const errors = {};
+    let first = '';
+    const setErr = (k, msg) => { errors[k] = msg; if (!first) first = msg; };
+    const isMobile = v => /^1[3-9]\d{9}$/.test(v || '');
+    const isIdCard = v => /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[0-9Xx]$/.test((v||'').trim());
+    if (block === 'basic') {
+      if (!f.patientName || !String(f.patientName).trim()) setErr('patientName', '请输入姓名');
+      if (!f.gender) setErr('gender', '请选择性别');
+      if (!f.birthDate) setErr('birthDate', '请选择出生日期');
+      if (!f.idNumber || !String(f.idNumber).trim()) setErr('idNumber', '请输入证件号码');
+      if ((!f.idType || f.idType === '身份证') && f.idNumber && !isIdCard(f.idNumber)) setErr('idNumber', '身份证号码格式不正确');
+      if (f.phone && !isMobile(f.phone)) setErr('phone', '手机号码格式不正确');
+      // 出生日期不能晚于今天
+      if (f.birthDate) {
+        const d = new Date(f.birthDate); const now = new Date();
+        if (Number.isNaN(d.getTime()) || d > now) setErr('birthDate', '出生日期不合法');
+      }
+    } else if (block === 'contact') {
+      if (!f.address || !String(f.address).trim()) setErr('address', '请输入家庭地址');
+      if (f.backupPhone && !isMobile(f.backupPhone)) setErr('backupPhone', '备用联系电话格式不正确');
+    } else if (block === 'economic') {
+      // 经济情况可为空
+    }
+    return { valid: Object.keys(errors).length === 0, errors, message: first };
+  },
+  _showInlineToast(text, type = 'success') {
+    try { if (this._inlineToastTimer) { clearTimeout(this._inlineToastTimer); this._inlineToastTimer = null; } } catch (e) {}
+    this.setData({ inlineToastVisible: true, inlineToastText: String(text || ''), inlineToastType: type });
+    this._inlineToastTimer = setTimeout(() => {
+      this.setData({ inlineToastVisible: false });
+      this._inlineToastTimer = null;
+    }, 1800);
+  },
+  _rebuildBasicInfoDisplay(patient, prev = []) {
+    const map = new Map(prev.map(it => [it && it.label, it]));
+    const setVal = (label, value) => {
+      const v = (value === undefined || value === null) ? '' : String(value);
+      map.set(label, { label, value: v });
+    };
+    setVal('姓名', patient.patientName || '');
+    setVal('性别', patient.gender || '');
+    setVal('出生日期', patient.birthDate || '');
+    setVal('身份证号', patient.idNumber || '');
+    setVal('籍贯', patient.nativePlace || '');
+    setVal('民族', patient.ethnicity || '');
+    // 主要照护人保持原有（如存在）
+    return Array.from(map.values()).filter(Boolean);
+  },
+  _rebuildContactInfoDisplay(patient, prev = []) {
+    const map = new Map(prev.map(it => [it && it.label, it]));
+    const setVal = (label, value) => {
+      const v = (value === undefined || value === null) ? '' : String(value);
+      map.set(label, { label, value: v });
+    };
+    setVal('家庭地址', patient.address || '');
+    // 备用联系人/电话若当前列表没有条目，不强制新增，避免版式突变
+    if (map.has('备用联系人')) setVal('备用联系人', patient.backupContact || '');
+    if (map.has('备用联系电话')) setVal('备用联系电话', patient.backupPhone || '');
+    setVal('父亲联系方式', patient.fatherInfo || '');
+    setVal('母亲联系方式', patient.motherInfo || '');
+    setVal('其他监护人', patient.guardianInfo || '');
+    return Array.from(map.values()).filter(Boolean);
+  },
+  _rebuildEconomicInfoDisplay(patient, prev = []) {
+    const map = new Map(prev.map(it => [it && it.label, it]));
+    const setVal = (label, value) => {
+      const v = (value === undefined || value === null) ? '' : String(value);
+      map.set(label, { label, value: v });
+    };
+    setVal('家庭经济情况', patient.familyEconomy || '');
+    return Array.from(map.values()).filter(Boolean);
+  },
+
+  // 入住记录 — 添加
+  onAddIntakeRecord() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    this.setData({
+      recordEditDialogVisible: true,
+      recordEditSubmitting: false,
+      recordEditForm: {
+        id: '',
+        intakeDate: `${y}-${m}-${d}`,
+        intakeTime: `${hh}:${mm}`,
+        checkoutDate: '',
+        checkoutTime: '',
+        hospital: '',
+        diagnosis: '',
+        doctor: '',
+        symptoms: '',
+        treatmentProcess: '',
+        followUpPlan: '',
+      },
+    });
+  },
+
+  // 入住记录 — 编辑
+  onEditIntakeRecord(e) {
+    const id = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.id) || '';
+    if (!id) return;
+    const record = (this.data.visibleIntakeRecords || []).find(r => r.intakeId === id);
+    if (!record) return;
+    const intakeTs = Number(record.intakeTime || (record.intakeInfo && record.intakeInfo.intakeTime) || 0) || 0;
+    const checkoutTs = Number(record.checkoutAt || (record.intakeInfo && record.intakeInfo.checkoutAt) || 0) || 0;
+    const toDate = ts => {
+      const d = new Date(ts);
+      if (!Number.isFinite(d.getTime())) return '';
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yy}-${mm}-${dd}`;
+    };
+    const toTime = ts => {
+      const d = new Date(ts);
+      if (!Number.isFinite(d.getTime())) return '';
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    };
+    this.setData({
+      recordEditDialogVisible: true,
+      recordEditSubmitting: false,
+      recordEditForm: {
+        id,
+        intakeDate: intakeTs ? toDate(intakeTs) : '',
+        intakeTime: intakeTs ? toTime(intakeTs) : '',
+        checkoutDate: checkoutTs ? toDate(checkoutTs) : '',
+        checkoutTime: checkoutTs ? toTime(checkoutTs) : '',
+        hospital: record.hospital || (record.intakeInfo && record.intakeInfo.hospital) || '',
+        diagnosis: record.diagnosis || (record.intakeInfo && record.intakeInfo.diagnosis) || '',
+        doctor: record.doctor || (record.intakeInfo && record.intakeInfo.doctor) || '',
+        symptoms: record.symptomDetailDisplay || (record.intakeInfo && record.intakeInfo.symptoms) || '',
+        treatmentProcess: record.treatmentProcessDisplay || (record.intakeInfo && record.intakeInfo.treatmentProcess) || '',
+        followUpPlan: record.followUpPlan || (record.intakeInfo && record.intakeInfo.followUpPlan) || '',
+      },
+    });
+  },
+  onRecordEditCancel() { if (!this.data.recordEditSubmitting) this.setData({ recordEditDialogVisible: false }); },
+  onRecordIntakeDateChange(e) { this.setData({ 'recordEditForm.intakeDate': (e.detail && e.detail.value) || '' }); },
+  onRecordIntakeTimeChange(e) { this.setData({ 'recordEditForm.intakeTime': (e.detail && e.detail.value) || '' }); },
+  onRecordCheckoutDateChange(e) { this.setData({ 'recordEditForm.checkoutDate': (e.detail && e.detail.value) || '' }); },
+  onRecordCheckoutTimeChange(e) { this.setData({ 'recordEditForm.checkoutTime': (e.detail && e.detail.value) || '' }); },
+  onRecordFieldInput(e) {
+    const field = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.field;
+    const value = (e.detail && e.detail.value) || '';
+    if (!field) return;
+    this.setData({ [`recordEditForm.${field}`]: value });
+  },
+  async onRecordEditConfirm() {
+    if (this.data.recordEditSubmitting) return;
+    const form = this.data.recordEditForm || {};
+    const toTs = (dateStr, timeStr) => {
+      if (!dateStr) return null;
+      const t = `${dateStr}T${(timeStr || '00:00')}:00`;
+      const ts = Date.parse(t);
+      return Number.isFinite(ts) ? ts : null;
+    };
+    const intakeTs = toTs(form.intakeDate, form.intakeTime);
+    const checkoutTs = toTs(form.checkoutDate, form.checkoutTime);
+    if (!intakeTs) {
+      wx.showToast({ icon: 'none', title: '请完善入住时间' });
+      return;
+    }
+    if (checkoutTs && checkoutTs < intakeTs) {
+      wx.showToast({ icon: 'none', title: '离开时间不能早于入住时间' });
+      return;
+    }
+    this.setData({ recordEditSubmitting: true });
+    try {
+      const payload = {
+        action: 'updateIntakeRecord',
+        patientKey: this.patientKey,
+        intakeId: form.id || undefined,
+        intakeTime: intakeTs,
+        checkoutAt: checkoutTs || undefined,
+        hospital: form.hospital,
+        diagnosis: form.diagnosis,
+        doctor: form.doctor,
+        symptoms: form.symptoms,
+        treatmentProcess: form.treatmentProcess,
+        followUpPlan: form.followUpPlan,
+      };
+      const res = await wx.cloud.callFunction({ name: 'patientIntake', data: payload });
+      if (res && res.result && res.result.success === false) {
+        const err = res.result.error || {};
+        throw new Error(err.message || '保存失败');
+      }
+      const data = (res && res.result && res.result.data) || {};
+      const nextPatient = { ...(this.data.patient || {}) };
+      if (data && typeof data.admissionCount === 'number') {
+        nextPatient.admissionCount = data.admissionCount;
+      }
+      // 关闭对话框并局部刷新记录列表
+      this.setData({ recordEditDialogVisible: false, recordEditSubmitting: false, patient: nextPatient });
+      await this.refreshIntakeRecordsPartial();
+      wx.showToast({ icon: 'success', title: '已保存' });
+    } catch (error) {
+      this.setData({ recordEditSubmitting: false });
+      wx.showToast({ icon: 'none', title: (error && error.message) || '保存失败' });
+    }
+  },
+  async onDeleteIntakeRecord(e) {
+    const id = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.id) || '';
+    if (!id) return;
+    const res = await wx.showModal({ title: '确认删除', content: '删除后不可恢复，是否继续？', confirmText: '删除', cancelText: '取消' });
+    if (!res.confirm) return;
+    try {
+      const resp = await wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'deleteIntakeRecord', patientKey: this.patientKey, intakeId: id } });
+      if (resp && resp.result && resp.result.success === false) {
+        const err = resp.result.error || {};
+        throw new Error(err.message || '删除失败');
+      }
+      const data = (resp && resp.result && resp.result.data) || {};
+      const nextPatient = { ...(this.data.patient || {}) };
+      if (data && typeof data.admissionCount === 'number') {
+        nextPatient.admissionCount = data.admissionCount;
+      }
+      this.setData({ patient: nextPatient });
+      await this.refreshIntakeRecordsPartial();
+      wx.showToast({ icon: 'success', title: '已删除' });
+    } catch (error) {
+      wx.showToast({ icon: 'none', title: (error && error.message) || '删除失败' });
+    }
+  },
+  async refreshIntakeRecordsPartial() {
+    try {
+      const res = await wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'listIntakeRecords', patientKey: this.patientKey, limit: 50 } });
+      const data = (res && res.result && res.result.data) || {};
+      const items = Array.isArray(data.items) ? data.items : [];
+      const serverRecords = items.map(mapIntakeRecordForDisplay).filter(Boolean).filter(shouldDisplayIntakeRecord);
+      const currentOrder = this.data.recordsSortOrder || 'desc';
+      const sorted = sortIntakeRecords(serverRecords, currentOrder);
+      this.allIntakeRecordsSource = serverRecords;
+      this.setData({
+        visibleIntakeRecords: sorted,
+        intakeRecordCount: data.count !== undefined ? Number(data.count) : sorted.length,
+      });
+    } catch (error) {
+      // 如果拉取失败，不影响主流程
+    }
+  },
+
+  onStatusDialogClose() {
+    if (this.data.statusDialogSubmitting) return;
+    this.resetStatusDialog();
+  },
+  onStatusOptionSelect(event) {
+    if (this.data.statusDialogSubmitting) return;
+    const value = (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.value) || '';
+    if (!value) return;
+    this.setData({ 'statusDialogForm.value': value });
+  },
+  onStatusNoteInput(event) {
+    const value = (event.detail && event.detail.value) || '';
+    this.setData({ 'statusDialogForm.note': value });
+  },
+  onStatusDialogCancel() {
+    if (this.data.statusDialogSubmitting) return;
+    this.resetStatusDialog();
+  },
+  async onStatusDialogConfirm() {
+    if (this.data.statusDialogSubmitting) return;
+    const value = normalizeString(this.data.statusDialogForm && this.data.statusDialogForm.value);
+    if (!value) {
+      wx.showToast({ icon: 'none', title: '请选择状态' });
+      return;
+    }
+    const note = normalizeString(this.data.statusDialogForm && this.data.statusDialogForm.note);
+    this.setData({ statusDialogSubmitting: true });
+    wx.showLoading({ title: '处理中', mask: true });
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: { action: 'updateCareStatus', patientKey: this.patientKey, status: value, note },
+      });
+      const payload = (res && res.result && res.result.data) || {};
+      this.applyStatusChangeResult({
+        careStatus: value,
+        note,
+        statusAdjustedAt: Number(payload.statusAdjustedAt) || Date.now(),
+        checkoutAt: Number(payload.checkoutAt) || null,
+      });
+      wx.showToast({ icon: 'success', title: '已更新' });
+    } catch (error) {
+      logger.error('detail updateCareStatus failed', error);
+      const message = normalizeString((error && (error.message || error.errMsg)) || '更新失败');
+      wx.showToast({ icon: 'none', title: message.length > 14 ? `${message.slice(0, 13)}...` : message });
+    } finally {
+      wx.hideLoading();
+      this.setData({ statusDialogSubmitting: false });
+      this.resetStatusDialog();
+    }
+  },
+  resetStatusDialog() {
+    this.setData({
+      statusDialogVisible: false,
+      statusDialogSubmitting: false,
+      statusDialogPatient: null,
+      statusDialogForm: { value: '', note: '' },
+    });
+  },
+
+  applyStatusChangeResult({ careStatus, note, statusAdjustedAt, checkoutAt }) {
+    const current = this.data.patient || {};
+    const nextStatus = normalizeString(careStatus) || 'pending';
+    const display = formatCareStatusLabel(nextStatus) || current.statusDisplay || '';
+    const statusClass = resolveStatusClass(nextStatus || display);
+    const nextPatient = {
+      ...current,
+      careStatus: nextStatus,
+      status: nextStatus,
+      statusDisplay: display,
+      statusClass,
+      manualStatusUpdatedAt: statusAdjustedAt,
+    };
+    if (nextStatus === 'discharged') {
+      nextPatient.checkoutAt = checkoutAt || statusAdjustedAt;
+    } else {
+      if (nextPatient.checkoutAt) delete nextPatient.checkoutAt;
+      if (nextPatient.checkoutReason) delete nextPatient.checkoutReason;
+      if (nextPatient.checkoutNote) delete nextPatient.checkoutNote;
+    }
+    if (note) {
+      nextPatient.manualStatusNote = note;
+    } else if (nextPatient.manualStatusNote) {
+      delete nextPatient.manualStatusNote;
+    }
+    this.setData({ patient: nextPatient });
+    // 通知列表页刷新
+    try {
+      wx.setStorageSync(PATIENT_LIST_DIRTY_KEY, {
+        timestamp: Date.now(),
+        patientKey: this.patientKey,
+        updates: {
+          careStatus: nextStatus,
+          manualStatusNote: note,
+          manualStatusUpdatedAt: statusAdjustedAt,
+          checkoutAt: nextStatus === 'discharged' ? (checkoutAt || statusAdjustedAt) : null,
+        },
+      });
+    } catch (e) {
+      // ignore
+    }
   },
 
   onLoad(options) {
@@ -624,8 +1238,9 @@ Page({
 
       const latestIntakeRaw = detailData.latestIntake || null;
       const operationLogs = (detailData.operationLogs || []).map(log => ({
-        ...log,
         timeText: formatDateTime(log.createdAt),
+        operatorName: normalizeString(log.operatorName) || normalizeString(log.operatorId) || '',
+        message: normalizeString(log.message) || '操作',
       }));
 
       const currentOrder = this.data.recordsSortOrder || 'desc';
@@ -833,6 +1448,7 @@ Page({
       }
 
       const patientInfoForDisplay = Object.keys(patientDisplay).length ? patientDisplay : null;
+      const headerMeta = patientInfoForDisplay ? this._buildHeaderMeta(patientInfoForDisplay) : '';
 
       const resolvedCount = Number.isFinite(serverCount)
         ? serverCount
@@ -842,6 +1458,7 @@ Page({
         {
           loading: false,
           patient: patientInfoForDisplay,
+          patientHeaderMeta: headerMeta,
           basicInfo: basicInfoDisplay,
           familyInfo: familyInfoDisplay,
           economicInfo: economicInfoDisplay,
@@ -908,260 +1525,6 @@ Page({
     });
   },
 
-  getFieldConfig(key) {
-    return getFieldConfigUtil(key);
-  },
-
-  validateField(key, value, form) {
-    return validateFieldUtil(key, value, form);
-  },
-
-  validateAllFields(form) {
-    return validateAllFieldsUtil(form);
-  },
-
-  updateEditFormValue(key, value) {
-    const newForm = {
-      ...this.data.editForm,
-      [key]: value,
-    };
-    const newErrors = { ...this.data.editErrors };
-    const message = this.validateField(key, value, newForm);
-    if (message) {
-      newErrors[key] = message;
-    } else {
-      delete newErrors[key];
-    }
-    const dirty = detectFormChanges(newForm, this.originalEditForm);
-    const config = this.getFieldConfig(key);
-    const pickerIndexUpdates = {};
-    if (config && config.type === 'picker' && Array.isArray(config.options)) {
-      const index = config.options.indexOf(value);
-      pickerIndexUpdates[`editPickerIndex.${key}`] = index >= 0 ? index : 0;
-    }
-    this.setData({
-      editForm: newForm,
-      editErrors: newErrors,
-      editDirty: dirty,
-      editCanSave: dirty && Object.keys(newErrors).length === 0,
-      ...pickerIndexUpdates,
-    });
-
-    if (wx.disableAlertBeforeUnload) {
-      wx.disableAlertBeforeUnload();
-    }
-  },
-
-  onEditFieldInput(event) {
-    const key = event.currentTarget.dataset.key;
-    const value = event.detail.value;
-    if (!key) {
-      return;
-    }
-    this.updateEditFormValue(key, value);
-  },
-
-  onPickerChange(event) {
-    const key = event.currentTarget.dataset.key;
-    const options = event.currentTarget.dataset.options || [];
-    const index = Number(event.detail.value);
-    if (!key || !Array.isArray(options)) {
-      return;
-    }
-    const selected = options[index] || options[0] || '';
-    this.updateEditFormValue(key, selected);
-  },
-
-  onDatePickerChange(event) {
-    const key = event.currentTarget.dataset.key;
-    if (!key) {
-      return;
-    }
-    const value = event.detail.value;
-    this.updateEditFormValue(key, value);
-  },
-
-  onNarrativeInput(event) {
-    const key = event.currentTarget.dataset.key;
-    const value = event.detail.value;
-    this.updateEditFormValue(key || 'narrative', value);
-  },
-
-  onEditStart() {
-    if (this.data.editMode) {
-      return;
-    }
-
-    // 如果原始editForm为空或缺少关键数据，重新构建
-    let form = cloneForm(this.originalEditForm || {});
-    if (!form.patientName && this.data.patient) {
-      form = buildEditForm({}, {}, this.data.patient);
-      this.originalEditForm = cloneForm(form);
-    }
-
-    this.mediaInitialized = false;
-    this.setData({
-      editMode: true,
-      editForm: form,
-      editErrors: {},
-      editDirty: false,
-      editCanSave: false,
-      editPickerIndex: buildPickerIndexMap(form),
-    });
-  },
-
-  resetEditState() {
-    const form = cloneForm(this.originalEditForm || {});
-    if (wx.disableAlertBeforeUnload) {
-      wx.disableAlertBeforeUnload();
-    }
-    this.setData({
-      editMode: false,
-      saving: false,
-      editForm: form,
-      editErrors: {},
-      editDirty: false,
-      editCanSave: false,
-      editPickerIndex: buildPickerIndexMap(form),
-    });
-  },
-
-  async onEditCancel() {
-    if (!this.data.editMode) {
-      return;
-    }
-    if (this.data.editDirty) {
-      const res = await wx.showModal({
-        title: '放弃修改',
-        content: '当前修改尚未保存，确认要放弃吗？',
-        confirmText: '放弃',
-        cancelText: '继续编辑',
-      });
-      if (!res.confirm) {
-        return;
-      }
-    }
-    this.resetEditState();
-  },
-
-  async onSaveTap() {
-    if (this.data.saving) {
-      return;
-    }
-    const form = this.data.editForm || {};
-    const errors = this.validateAllFields(form);
-    const hasErrors = Object.keys(errors).length > 0;
-    const dirty = detectFormChanges(form, this.originalEditForm);
-
-    if (hasErrors) {
-      this.setData({
-        editErrors: errors,
-        editDirty: dirty,
-        editCanSave: false,
-      });
-      wx.showToast({ icon: 'none', title: '请修正校验错误后再保存' });
-      return;
-    }
-
-    if (!dirty) {
-      this.setData({ editDirty: false, editCanSave: false });
-      wx.showToast({ icon: 'none', title: '没有需要保存的修改' });
-      return;
-    }
-
-    this.setData({
-      saving: true,
-      editErrors: {},
-      editDirty: dirty,
-      editCanSave: true,
-      lastSaveError: null,
-    });
-
-    try {
-      const changedFields = collectChangedFormKeys(form, this.originalEditForm || {});
-      const payload = {
-        action: 'updatePatient',
-        patientKey: this.patientKey,
-        patientUpdates: {
-          patientName: form.patientName,
-          idType: form.idType,
-          idNumber: form.idNumber,
-          gender: form.gender,
-          birthDate: form.birthDate,
-          phone: form.phone,
-          address: form.address,
-          backupContact: form.backupContact,
-          backupPhone: form.backupPhone,
-          lastIntakeNarrative: form.narrative,
-        },
-        audit: {
-          message: '住户详情页内联编辑',
-          changes: changedFields,
-        },
-      };
-
-      const intakeDocId = form.intakeDocId || form.intakeId;
-      if (intakeDocId) {
-        payload.intakeUpdates = {
-          intakeId: intakeDocId,
-          expectedUpdatedAt: form.intakeUpdatedAt,
-          basicInfo: {
-            patientName: form.patientName,
-            idType: form.idType,
-            idNumber: form.idNumber,
-            gender: form.gender,
-            birthDate: form.birthDate,
-            phone: form.phone,
-          },
-          contactInfo: {
-            address: form.address,
-            backupContact: form.backupContact,
-            backupPhone: form.backupPhone,
-          },
-          intakeInfo: {
-            intakeTime: toTimestampFromDateInput(form.intakeTime) || undefined,
-            followUpPlan: form.followUpPlan,
-            situation: form.narrative,
-          },
-          medicalHistory: Array.isArray(form.medicalHistory) ? form.medicalHistory : undefined,
-          attachments: Array.isArray(form.attachments) ? form.attachments : undefined,
-        };
-      }
-
-      const res = await wx.cloud.callFunction({
-        name: 'patientIntake',
-        data: payload,
-      });
-
-      const result = (res && res.result) || {};
-      if (!result.success) {
-        const error = result.error || {};
-        if (error.code === 'VERSION_CONFLICT' || error.code === 'INTAKE_VERSION_CONFLICT') {
-          wx.showModal({
-            title: '数据已更新',
-            content: '当前资料已被其他人更新，请刷新后重试。',
-            showCancel: false,
-          });
-        } else if (error.code === 'NO_CHANGES') {
-          wx.showToast({ icon: 'none', title: '没有检测到变更' });
-        } else {
-          wx.showToast({ icon: 'none', title: error.message || '保存失败' });
-        }
-        this.setData({ saving: false, lastSaveError: error || null });
-        return;
-      }
-
-      wx.showToast({ icon: 'success', title: '保存成功' });
-      this.updateDetailSummary(form);
-      this.markPatientListDirty(form);
-      this.resetEditState();
-      await this.fetchPatientDetail();
-    } catch (error) {
-      logger.error('update patient failed', error);
-      wx.showToast({ icon: 'none', title: (error && error.message) || '保存失败，请稍后再试' });
-      this.setData({ saving: false, lastSaveError: error || null });
-    }
-  },
 
   markPatientListDirty(form) {
     const flag = {
@@ -1236,6 +1599,7 @@ Page({
 
     this.setData({
       patient: nextPatient,
+      patientHeaderMeta: this._buildHeaderMeta(nextPatient),
       basicInfo: nextBasicInfo,
       familyInfo: nextFamilyInfo,
     });

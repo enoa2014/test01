@@ -43,6 +43,7 @@
     <view class="patient-header">
       <view class="patient-name-row">
         <text class="patient-detail-name">{{patient.patientName || ''}}</text>
+        <text wx:if="{{patientHeaderMeta}}" class="patient-detail-meta">{{patientHeaderMeta}}</text>
       </view>
 
       <!-- 运营指标卡片网格 -->
