@@ -51,6 +51,12 @@
   - 组件与设计系统对齐：design/ui-refactor/components.md
   - 变更记录与度量：design/ui-refactor/changelog.md
 
+## 架构与数据（Architecture）
+- 技术栈与目录：architecture/tech-stack.md、architecture/source-tree.md
+- 数据模型（Schema 草案）：database-schema.md
+- 云函数架构：cloud-function-architecture.md
+- API 参考（草案）：api-reference.md
+
 ## 归档（Archives）
 - 备份占位
   - backup-01：archives/backups/backup-01.md
