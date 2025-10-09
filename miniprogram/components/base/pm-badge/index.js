@@ -21,6 +21,10 @@ Component({
       type: String,
       value: 'primary',
     },
+    variant: {
+      type: String,
+      value: 'soft', // solid | soft | outline
+    },
     size: {
       type: String,
       value: 'medium',
@@ -40,11 +44,15 @@ Component({
   },
   data: {
     styleType: 'primary',
+    styleVariant: 'soft',
     displayCount: '',
   },
   observers: {
     type(newType) {
       this.setData({ styleType: this._normalizeType(newType) });
+    },
+    variant(newVariant) {
+      this.setData({ styleVariant: this._normalizeVariant(newVariant) });
     },
     count() {
       this._syncCount();
@@ -55,14 +63,28 @@ Component({
   },
   lifetimes: {
     attached() {
-      this.setData({ styleType: this._normalizeType(this.data.type) });
+      this.setData({
+        styleType: this._normalizeType(this.data.type),
+        styleVariant: this._normalizeVariant(this.data.variant),
+      });
       this._syncCount();
     },
   },
   methods: {
     _normalizeType(type) {
+      const map = {
+        default: 'secondary',
+        info: 'secondary',
+      };
+      const normalized = (type && String(type).toLowerCase()) || 'primary';
+      const mapped = map[normalized] || normalized;
       const allowed = ['primary', 'success', 'warning', 'danger', 'secondary'];
-      return allowed.includes(type) ? type : 'primary';
+      return allowed.includes(mapped) ? mapped : 'primary';
+    },
+    _normalizeVariant(variant) {
+      const v = (variant && String(variant).toLowerCase()) || 'soft';
+      const allowed = ['solid', 'soft', 'outline'];
+      return allowed.includes(v) ? v : 'soft';
     },
     _syncCount() {
       const { count, max } = this.data;

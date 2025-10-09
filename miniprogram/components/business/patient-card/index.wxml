@@ -55,13 +55,14 @@
         >
         <text wx:if="{{ageText}}" class="patient-card__age">{{ageText}}</text>
       </view>
-      <view wx:if="{{badges && badges.length}}" class="patient-card__badges">
+      <view wx:if="{{computedBadges && computedBadges.length}}" class="patient-card__badges">
         <pm-badge
-          wx:for="{{badges}}"
+          wx:for="{{computedBadges}}"
           wx:key="text"
           class="patient-card__badge patient-card__badge--{{item.type || 'default'}}"
           text="{{item.text}}"
           type="{{item.type || 'default'}}"
+          variant="{{item.variant || 'soft'}}"
           size="small"
         />
       </view>

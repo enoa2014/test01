@@ -1,5 +1,5 @@
 <view
-  class="pm-badge pm-badge--type-{{styleType}} pm-badge--size-{{size}} {{dotted ? 'pm-badge--dotted' : ''}} {{block ? 'pm-badge--block' : ''}}"
+  class="pm-badge pm-badge--type-{{styleType}} pm-badge--variant-{{styleVariant}} pm-badge--size-{{size}} {{dotted ? 'pm-badge--dotted' : ''}} {{block ? 'pm-badge--block' : ''}}"
 >
   <block wx:if="{{useSlot}}">
     <slot></slot>

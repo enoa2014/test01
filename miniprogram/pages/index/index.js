@@ -368,7 +368,7 @@ function generatePatientBadges({ careStatus, riskLevel, admissionCount }) {
   } else if (careStatus === 'pending') {
     badges.push({ text: '随访', type: 'warning' });
   } else if (careStatus === 'discharged') {
-    badges.push({ text: '已离开', type: 'default' });
+    badges.push({ text: '已离开', type: 'secondary' });
   }
   if (riskLevel === 'high') {
     badges.push({ text: '需复查', type: 'danger' });
@@ -377,7 +377,7 @@ function generatePatientBadges({ careStatus, riskLevel, admissionCount }) {
   }
   const count = Number(admissionCount || 0);
   if (count > 0) {
-    badges.push({ text: `入住 ${count} 次`, type: 'info' });
+    badges.push({ text: `入住 ${count} 次`, type: 'secondary' });
   }
   return badges;
 }

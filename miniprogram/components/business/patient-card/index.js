@@ -123,6 +123,7 @@ Component({
     statusIcon: null,
     isSwiping: false,
     isLongPressing: false,
+    computedBadges: [],
   },
   lifetimes: {
     attached() {
@@ -231,6 +232,8 @@ Component({
 
       const hasActions = Array.isArray(this.data.actions) && this.data.actions.length > 0;
 
+      const computedBadges = this.computeBadges(Array.isArray(this.data.badges) ? this.data.badges : []);
+
       this.setData({
         avatarText,
         avatarBackground,
@@ -244,7 +247,27 @@ Component({
         hasActions,
         statusIndicator,
         statusIcon,
+        computedBadges,
       });
+    },
+    computeBadges(badges) {
+      const mapType = t => {
+        const s = (t || '').toLowerCase();
+        if (s === 'info' || s === 'default') return 'secondary';
+        return s || 'secondary';
+      };
+      const decideVariant = (badge) => {
+        if (badge && badge.variant) return badge.variant;
+        if (badge && badge._type === 'media') return 'soft';
+        const t = mapType(badge && badge.type);
+        if (t === 'success' || t === 'warning' || t === 'danger') return 'solid';
+        return 'outline';
+      };
+      return badges.map(b => ({
+        ...b,
+        type: mapType(b.type),
+        variant: decideVariant(b),
+      }));
     },
     handleCardTap() {
       if (!this.data.clickable) {

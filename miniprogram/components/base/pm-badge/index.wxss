@@ -10,6 +10,8 @@
   min-width: 32rpx;
   padding: 0 var(--space-2);
   font-size: var(--text-xs);
+  border: 1rpx solid transparent;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
 .pm-badge--block {
@@ -47,9 +49,8 @@
 
 /* P2-1: 提升 warning 徽章对比度 */
 .pm-badge--type-warning {
-  background: var(--color-warning-light);
-  color: var(--color-warning-dark);
-  border: 1rpx solid var(--color-warning);
+  background: var(--color-warning);
+  color: var(--color-bg-primary);
 }
 
 .pm-badge--type-danger {
@@ -61,6 +62,23 @@
   background: var(--color-info);
   color: var(--color-bg-primary);
 }
+
+/* Variants */
+.pm-badge--variant-solid { box-shadow: var(--shadow-xs, none); }
+
+.pm-badge--variant-soft { border-color: var(--color-border-secondary, transparent); }
+.pm-badge--type-primary.pm-badge--variant-soft { background: var(--color-primary-light, rgba(51,102,255,0.16)); color: var(--color-primary); }
+.pm-badge--type-success.pm-badge--variant-soft { background: var(--color-success-light, rgba(34,197,94,0.16)); color: var(--color-success); }
+.pm-badge--type-warning.pm-badge--variant-soft { background: var(--color-warning-light, rgba(250,204,21,0.22)); color: var(--color-warning-dark, #a16207); border-color: var(--color-warning, #f59e0b); }
+.pm-badge--type-danger.pm-badge--variant-soft { background: var(--color-danger-light, rgba(239,68,68,0.16)); color: var(--color-danger); }
+.pm-badge--type-secondary.pm-badge--variant-soft { background: var(--color-info-light, rgba(59,130,246,0.16)); color: var(--color-info); }
+
+.pm-badge--variant-outline { background: transparent !important; }
+.pm-badge--type-primary.pm-badge--variant-outline { color: var(--color-primary); border-color: var(--color-primary); }
+.pm-badge--type-success.pm-badge--variant-outline { color: var(--color-success); border-color: var(--color-success); }
+.pm-badge--type-warning.pm-badge--variant-outline { color: var(--color-warning, #f59e0b); border-color: var(--color-warning, #f59e0b); }
+.pm-badge--type-danger.pm-badge--variant-outline { color: var(--color-danger); border-color: var(--color-danger); }
+.pm-badge--type-secondary.pm-badge--variant-outline { color: var(--color-info); border-color: var(--color-info); }
 
 .pm-badge--dotted {
   width: 16rpx;
