@@ -59,6 +59,29 @@
           <text class="summary-card__desc">{{item.description}}</text>
         </view>
       </view>
+      <!-- 全局筛选条：时间范围 + 状态 -->
+      <view class="filter-bar">
+        <view class="chips chips--time">
+          <view class="chip {{timeRange==='last30'?'active':''}}" data-value="last30" bindtap="onTimeChipTap">近30天</view>
+          <view class="chip {{timeRange==='month'?'active':''}}" data-value="month" bindtap="onTimeChipTap">本月</view>
+          <view class="chip {{timeRange==='year'?'active':''}}" data-value="year" bindtap="onTimeChipTap">本年</view>
+          <view class="chip {{timeRange==='all'?'active':''}}" data-value="all" bindtap="onTimeChipTap">全部</view>
+        </view>
+        <view class="chips chips--status">
+          <view class="chip {{statusFilter==='all'?'active':''}}" data-value="all" bindtap="onStatusChipTap">全部</view>
+          <view class="chip {{statusFilter==='in_care'?'active':''}}" data-value="in_care" bindtap="onStatusChipTap">在住</view>
+          <view class="chip {{statusFilter==='pending'?'active':''}}" data-value="pending" bindtap="onStatusChipTap">待入住</view>
+          <view class="chip {{statusFilter==='discharged'?'active':''}}" data-value="discharged" bindtap="onStatusChipTap">已离开</view>
+        </view>
+        <pm-button
+          wx:if="{{!isDefaultFilter}}"
+          class="filter-clear"
+          text="清除筛选"
+          size="small"
+          type="ghost"
+          bindtap="onClearFilters"
+        />
+      </view>
       <view class="summary-actions">
         <pm-button
           class="summary-action-button"
@@ -90,11 +113,29 @@
       wx:for="{{panels}}"
       wx:key="title"
       wx:for-index="panelIndex"
+      id="panel-{{item.panelKey}}"
     >
       <view class="panel-header">
         <view class="panel-title-group">
           <text class="panel-title">{{item.title}}</text>
           <text wx:if="{{item.totalCount}}" class="panel-total">共 {{item.totalCount}} 人</text>
+        </view>
+        <!-- 月份面板显示迷你趋势 -->
+        <view wx:if="{{item.panelKey==='month' && item.trend && item.trend.points && item.trend.points.length}}" class="mini-trend">
+          <view class="mini-trend-bars">
+            <view
+              class="mini-trend-bar"
+              wx:for="{{item.trend.points}}"
+              wx:for-item="point"
+              wx:key="label"
+              style="height: {{Math.max(8, Math.min(100, point.ratio))}}rpx"
+            >
+              <text class="mini-trend-dot" />
+            </view>
+          </view>
+          <view class="mini-trend-labels">
+            <text wx:for="{{item.trend.points}}" wx:for-item="point" wx:key="label">{{point.label.substr(5)}}</text>
+          </view>
         </view>
         <view class="panel-mode-switch" wx:if="{{panelDisplayModes.length > 1}}">
           <view
@@ -110,8 +151,12 @@
             {{mode.label}}
           </view>
         </view>
+        <view class="panel-collapse-toggle" data-panel-key="{{item.panelKey}}" bindtap="onPanelCollapseToggle">
+          <text>{{ panelCollapsed[item.panelKey] ? '展开' : '收起' }}</text>
+          <text class="collapse-icon">{{ panelCollapsed[item.panelKey] ? '▸' : '▾' }}</text>
+        </view>
       </view>
-      <block wx:if="{{item.stats && item.stats.length}}">
+      <block wx:if="{{(!panelCollapsed[item.panelKey]) && item.stats && item.stats.length}}">
         <block wx:if="{{(panelViewModes[item.panelKey] || 'cards') === 'cards'}}">
           <scroll-view scroll-x enable-flex="true" enhanced="true" class="stat-scroll">
             <pm-card

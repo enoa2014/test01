@@ -58,6 +58,12 @@ const PANEL_DISPLAY_MODES = [
   { id: 'pie', label: '圆饼图' },
 ];
 
+// Storage keys for state persistence
+const STORAGE_KEYS = {
+  filters: 'analysis_filters',
+  collapsed: 'analysis_panel_collapsed',
+};
+
 function safeString(value) {
   if (value === undefined || value === null) {
     return '';
@@ -461,6 +467,27 @@ function buildAgePanel(patients) {
   };
 }
 
+function buildStatusPanel(patients) {
+  const groups = { '在住': [], '待入住/随访': [], '已离开': [] };
+  (patients || []).forEach(item => {
+    const status = normalizeCareStatus(item.careStatus);
+    const ref = getPatientRef(item);
+    if (status === 'in_care') groups['在住'].push(ref);
+    else if (status === 'discharged') groups['已离开'].push(ref);
+    else groups['待入住/随访'].push(ref);
+  });
+  const panel = buildGroupPanel('状态分布', groups, {
+    panelKey: 'status',
+    sortByValueDesc: true,
+    buildFilter: label => {
+      if (label === '在住') return createStatFilterPayload('in_care');
+      if (label === '已离开') return createStatFilterPayload('discharged');
+      return createStatFilterPayload('pending');
+    },
+  });
+  return panel;
+}
+
 function buildGroupPanel(title, groups, options = {}) {
   const {
     emptyText = '暂无数据',
@@ -468,23 +495,51 @@ function buildGroupPanel(title, groups, options = {}) {
     sortByValueDesc = true,
     panelKey = null,
     buildFilter = null,
+    topN = 8,
+    aggregateOthers = true,
   } = options;
 
-  const stats = Object.keys(groups)
-    .map(label => {
-      const stat = toStat(label, groups[label]);
-      if (!stat) {
-        return null;
-      }
+  const entries = Object.keys(groups || {}).map(label => ({ label, patients: groups[label] || [] }));
+  if (!entries.length) {
+    return { title, panelKey, stats: [], totalCount: 0, emptyText };
+  }
+
+  // 排序（先按数量）
+  if (sortByValueDesc) {
+    entries.sort((a, b) => (b.patients.length - a.patients.length));
+  }
+
+  // Top-N + 其他
+  let selected = entries;
+  if (Number.isFinite(topN) && topN > 0 && entries.length > topN) {
+    const top = entries.slice(0, topN);
+    if (aggregateOthers) {
+      const pooled = entries.slice(topN).reduce((acc, e) => acc.concat(e.patients), []);
+      if (pooled.length) top.push({ label: '其他', patients: pooled });
+    }
+    selected = top;
+  }
+
+  if (sortByLabel === 'asc') {
+    selected.sort((a, b) => String(a.label).localeCompare(String(b.label)));
+  } else if (sortByLabel === 'desc') {
+    selected.sort((a, b) => String(b.label).localeCompare(String(a.label)));
+  }
+
+  const stats = selected
+    .map(entry => {
+      const stat = toStat(entry.label, entry.patients);
+      if (!stat) return null;
       if (typeof buildFilter === 'function') {
-        stat.filter = buildFilter(label, stat);
+        const filter = buildFilter(entry.label, stat);
+        if (filter) stat.filter = filter;
       }
       if (!stat.hint) {
-        if (panelKey === 'nativePlace' && isUnknownLabel(label)) {
+        if (panelKey === 'nativePlace' && isUnknownLabel(entry.label)) {
           stat.hint = '籍贯缺失的住户，建议补录信息。';
-        } else if (panelKey === 'hospital' && isUnknownLabel(label)) {
+        } else if (panelKey === 'hospital' && isUnknownLabel(entry.label)) {
           stat.hint = '缺少医院记录，建议核对住户档案。';
-        } else if (panelKey === 'doctor' && isUnknownLabel(label)) {
+        } else if (panelKey === 'doctor' && isUnknownLabel(entry.label)) {
           stat.hint = '缺少医生记录，可回列表补齐。';
         }
       }
@@ -492,35 +547,9 @@ function buildGroupPanel(title, groups, options = {}) {
     })
     .filter(Boolean);
 
-  if (sortByLabel === 'asc') {
-    stats.sort((a, b) => {
-      const aUnknown = isUnknownLabel(a.label);
-      const bUnknown = isUnknownLabel(b.label);
-      if (aUnknown && !bUnknown) return 1;
-      if (!aUnknown && bUnknown) return -1;
-      return a.label > b.label ? 1 : -1;
-    });
-  } else if (sortByLabel === 'desc') {
-    stats.sort((a, b) => {
-      const aUnknown = isUnknownLabel(a.label);
-      const bUnknown = isUnknownLabel(b.label);
-      if (aUnknown && !bUnknown) return 1;
-      if (!aUnknown && bUnknown) return -1;
-      return a.label > b.label ? -1 : 1;
-    });
-  } else if (sortByValueDesc) {
-    stats.sort((a, b) => b.count - a.count);
-  }
-
   const decorated = decorateStatCards(stats);
   const { stats: enhancedStats, totalCount } = enhanceStatsForVisualization(decorated);
-  return {
-    title,
-    panelKey,
-    stats: enhancedStats,
-    totalCount,
-    emptyText,
-  };
+  return { title, panelKey, stats: enhancedStats, totalCount, emptyText };
 }
 
 function buildDataQualityPanel(patients) {
@@ -578,6 +607,9 @@ function buildDataQualityPanel(patients) {
     }
   });
 
+  // 按问题人数降序展示，突出优先修复项
+  stats.sort((a, b) => (b.count || 0) - (a.count || 0));
+
   if (!stats.length) {
     return null;
   }
@@ -590,6 +622,44 @@ function buildDataQualityPanel(patients) {
     totalCount,
     emptyText: '暂无数据缺失问题',
   };
+}
+
+// 构建月份面板，并生成最近6个月迷你趋势
+function buildMonthPanel(patients) {
+  const groups = {};
+  (patients || []).forEach(item => {
+    const label = getMonthLabel(item);
+    const ref = getPatientRef(item);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(ref);
+  });
+  const panel = buildGroupPanel('按入住月份分析', groups, {
+    emptyText: '暂无入住数据',
+    sortByLabel: 'asc',
+    panelKey: 'month',
+    buildFilter: label => {
+      const range = deriveMonthRange(label);
+      if (!range) return null;
+      return createAdvancedFilterPayload({ dateRange: range }, `${label} 入住`, { keepStatFilter: false });
+    },
+  });
+
+  const now = new Date();
+  const labels = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    labels.push(`${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}`);
+  }
+  const statMap = new Map();
+  (panel.stats || []).forEach(s => {
+    const key = safeString(s.label);
+    if (!key || key.includes('未知')) return;
+    statMap.set(key, s.count || 0);
+  });
+  const points = labels.map(l => ({ label: l, value: statMap.get(l) || 0 }));
+  const max = points.reduce((m, p) => (p.value > m ? p.value : m), 0) || 1;
+  panel.trend = { points: points.map(p => ({ ...p, ratio: Math.round((p.value / max) * 100) })) };
+  return panel;
 }
 
 function getMonthLabel(item) {
@@ -627,6 +697,7 @@ Page({
     themeClass: themeManager.resolveThemeClass(INITIAL_THEME_KEY),
     loading: true,
     error: '',
+    patientsSource: [],
     patients: [],
     panels: [],
     summaryStats: {
@@ -641,6 +712,11 @@ Page({
     panelViewModes: {},
     activeSummaryFilter: 'all',
     selection: createSelectionState(),
+    // 全局筛选
+    timeRange: 'all', // all | last30 | month | year
+    statusFilter: 'all', // all | in_care | pending | discharged
+    isDefaultFilter: true,
+    panelCollapsed: {},
   },
 
   onLoad() {
@@ -653,6 +729,21 @@ Page({
     this.eventChannel =
       typeof this.getOpenerEventChannel === 'function' ? this.getOpenerEventChannel() : null;
     this.pendingPieRenders = new Set();
+    // 读取持久化筛选/折叠状态
+    try {
+      const savedFilters = wx.getStorageSync(STORAGE_KEYS.filters) || null;
+      if (savedFilters && typeof savedFilters === 'object') {
+        const { timeRange, statusFilter } = savedFilters;
+        if (timeRange) this.setData({ timeRange });
+        if (statusFilter) this.setData({ statusFilter });
+      }
+    } catch (e) {}
+    try {
+      const savedCollapsed = wx.getStorageSync(STORAGE_KEYS.collapsed) || null;
+      if (savedCollapsed && typeof savedCollapsed === 'object') {
+        this.setData({ panelCollapsed: savedCollapsed });
+      }
+    } catch (e) {}
     this.fetchPatients();
   },
 
@@ -660,6 +751,10 @@ Page({
     if (this.themeUnsubscribe) {
       this.themeUnsubscribe();
       this.themeUnsubscribe = null;
+    }
+    if (this.panelObserver) {
+      try { this.panelObserver.disconnect(); } catch (e) {}
+      this.panelObserver = null;
     }
   },
 
@@ -679,7 +774,7 @@ Page({
         data: { action: 'list' },
       });
       const sourcePatients = res?.result?.patients || [];
-      const patients = sourcePatients.map(item => {
+      const patientsMapped = sourcePatients.map(item => {
         const latestAdmissionDateFormatted = formatDate(
           item.latestAdmissionDate || item.firstAdmissionDate
         );
@@ -719,25 +814,7 @@ Page({
           contacts,
         };
       });
-
-      const panels = this.buildPanels(patients);
-      const summaryStats = calculateSummaryStats(patients);
-      const summaryCards = buildSummaryCards(summaryStats);
-      const panelViewModes = this.computePanelViewModes(panels);
-
-      this.setData(
-        {
-          patients,
-          panels,
-          summaryStats,
-          summaryCards,
-          panelViewModes,
-          loading: false,
-        },
-        () => {
-          this.schedulePieRenderForActiveModes(panelViewModes);
-        }
-      );
+      this.setData({ patientsSource: patientsMapped }, () => this.applyFiltersAndBuild());
     } catch (error) {
       logger.error('Failed to load analysis data', error);
       this.setData({
@@ -747,7 +824,50 @@ Page({
     }
   },
 
+  // 过滤 + 构建
+  applyFiltersAndBuild() {
+    const source = this.data.patientsSource || [];
+    const filtered = this.filterPatientsByCurrentFilters(source);
+    const panels = this.buildPanels(filtered);
+    const summaryStats = calculateSummaryStats(filtered);
+    const summaryCards = buildSummaryCards(summaryStats);
+    const panelViewModes = this.computePanelViewModes(panels);
+    const isDefault = this.data.timeRange === 'all' && this.data.statusFilter === 'all';
+    const panelCollapsed = this.computeDefaultCollapsed(panels);
+    this.setData({ patients: filtered, panels, summaryStats, summaryCards, panelViewModes, loading: false, isDefaultFilter: isDefault, panelCollapsed }, () => {
+      this.schedulePieRenderForActiveModes(panelViewModes);
+      this.observePanels();
+    });
+  },
+
+  filterPatientsByCurrentFilters(patients) {
+    const time = this.data.timeRange || 'all';
+    const status = this.data.statusFilter || 'all';
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+    const day30 = now.getTime() - 30 * MS_PER_DAY;
+
+    const matchTime = ts => {
+      if (!Number.isFinite(ts) || ts <= 0) return time === 'all';
+      if (time === 'all') return true;
+      if (time === 'last30') return ts >= day30;
+      if (time === 'month') return ts >= startOfMonth;
+      if (time === 'year') return ts >= startOfYear;
+      return true;
+    };
+
+    return (patients || []).filter(p => {
+      const ts = Number(p.latestAdmissionTimestamp || 0);
+      const timeOk = matchTime(ts);
+      if (!timeOk) return false;
+      if (status === 'all') return true;
+      return normalizeCareStatus(p.careStatus) === status;
+    });
+  },
+
   buildPanels(patients) {
+    const statusPanel = buildStatusPanel(patients);
     const agePanel = buildAgePanel(patients);
 
     const genderGroups = {};
@@ -790,29 +910,7 @@ Page({
       },
     });
 
-    const monthGroups = {};
-    patients.forEach(item => {
-      const label = getMonthLabel(item);
-      const ref = getPatientRef(item);
-      if (!monthGroups[label]) {
-        monthGroups[label] = [];
-      }
-      monthGroups[label].push(ref);
-    });
-    const monthPanel = buildGroupPanel('按入住月份分析', monthGroups, {
-      emptyText: '暂无入住数据',
-      sortByLabel: 'asc',
-      panelKey: 'month',
-      buildFilter: label => {
-        const range = deriveMonthRange(label);
-        if (!range) {
-          return null;
-        }
-        return createAdvancedFilterPayload({ dateRange: range }, `${label} 入住`, {
-          keepStatFilter: false,
-        });
-      },
-    });
+    const monthPanel = buildMonthPanel(patients);
 
     const resolveAdmissionYear = patient => {
       const timestamp = Number(patient.latestAdmissionTimestamp || 0);
@@ -898,23 +996,40 @@ Page({
     const dataQualityPanel = buildDataQualityPanel(patients);
 
     const panels = [];
-    if (dataQualityPanel) {
-      panels.push(dataQualityPanel);
-    }
+    if (statusPanel) panels.push(statusPanel);
+    if (dataQualityPanel) panels.push(dataQualityPanel);
     panels.push(agePanel, genderPanel, placePanel, monthPanel, yearPanel, hospitalPanel, doctorPanel);
     return panels;
+  },
+
+  computeDefaultCollapsed(panels) {
+    const defaults = { hospital: true, doctor: true };
+    const previous = this.data && this.data.panelCollapsed ? this.data.panelCollapsed : {};
+    const result = { ...previous };
+    (panels || []).forEach(p => {
+      const key = p && (p.panelKey || p.title);
+      if (!key) return;
+      if (!(key in result)) {
+        result[key] = Boolean(defaults[key]) || false;
+      }
+    });
+    return result;
   },
 
   computePanelViewModes(panels) {
     const previous = this.data.panelViewModes || {};
     const next = {};
+    const preferred = stats => {
+      const n = (stats || []).length;
+      if (!n) return 'cards';
+      if (n <= 5) return 'pie';
+      return 'bars';
+    };
     (panels || []).forEach(panel => {
       const key = panel && (panel.panelKey || panel.title);
-      if (!key) {
-        return;
-      }
+      if (!key) return;
       const prevMode = previous[key];
-      next[key] = this.isSupportedPanelMode(prevMode) ? prevMode : 'cards';
+      next[key] = this.isSupportedPanelMode(prevMode) ? prevMode : preferred(panel.stats);
     });
     return next;
   },
@@ -946,6 +1061,33 @@ Page({
       this.renderPieChart(panelKey);
       this.pendingPieRenders.delete(panelKey);
     });
+  },
+
+  // 面板懒观察：仅在进入视口时才调度饼图渲染
+  observePanels() {
+    if (!this.data || !Array.isArray(this.data.panels)) return;
+    if (this.panelObserver) {
+      try { this.panelObserver.disconnect(); } catch (e) {}
+      this.panelObserver = null;
+    }
+    try {
+      const observer = wx.createIntersectionObserver && wx.createIntersectionObserver(this, { observeAll: true });
+      if (!observer) return;
+      this.panelObserver = observer;
+      (this.data.panels || []).forEach(panel => {
+        const key = panel && (panel.panelKey || panel.title);
+        if (!key) return;
+        observer.relativeToViewport({ top: 0, bottom: 0 }).observe(`#panel-${key}`, res => {
+          if (!res || res.intersectionRatio <= 0) return;
+          const mode = (this.data.panelViewModes || {})[key] || 'cards';
+          if (mode === 'pie') {
+            this.schedulePieRender(key);
+          }
+        });
+      });
+    } catch (e) {
+      // ignore observer failures
+    }
   },
 
   renderPieChart(panelKey) {
@@ -1043,6 +1185,21 @@ Page({
     });
   },
 
+  onPanelCollapseToggle(event) {
+    const key = event.currentTarget.dataset.panelKey;
+    if (!key) return;
+    const current = this.data.panelCollapsed || {};
+    const next = { ...current, [key]: !current[key] };
+    this.setData({ panelCollapsed: next }, () => {
+      // 当展开且模式为饼图时，确保渲染
+      if (!next[key]) {
+        const mode = (this.data.panelViewModes || {})[key] || 'cards';
+        if (mode === 'pie') this.schedulePieRender(key);
+      }
+      try { wx.setStorageSync(STORAGE_KEYS.collapsed, next); } catch (e) {}
+    });
+  },
+
   onSummaryCardTap(event) {
     const filterId = event.currentTarget.dataset.filter;
     if (!filterId) {
@@ -1137,6 +1294,39 @@ Page({
       return;
     }
     this.setData({ selection: createSelectionState() });
+  },
+
+  // 全局筛选交互
+  onTimeChipTap(event) {
+    const value = event.currentTarget.dataset.value;
+    if (!value || value === this.data.timeRange) return;
+    this.setData({ timeRange: value }, () => {
+      this.applyFiltersAndBuild();
+      this.persistFilters();
+    });
+  },
+  onStatusChipTap(event) {
+    const value = event.currentTarget.dataset.value;
+    if (!value || value === this.data.statusFilter) return;
+    this.setData({ statusFilter: value }, () => {
+      this.applyFiltersAndBuild();
+      this.persistFilters();
+    });
+  },
+  onClearFilters() {
+    this.setData({ timeRange: 'all', statusFilter: 'all' }, () => {
+      this.applyFiltersAndBuild();
+      this.persistFilters();
+    });
+  },
+
+  persistFilters() {
+    try {
+      wx.setStorageSync(STORAGE_KEYS.filters, {
+        timeRange: this.data.timeRange,
+        statusFilter: this.data.statusFilter,
+      });
+    } catch (e) {}
   },
 
   onSelectionItemTap(event) {

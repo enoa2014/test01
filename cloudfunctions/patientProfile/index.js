@@ -618,16 +618,12 @@ async function fetchPatientsFromCache(options = {}) {
 
       const cacheHasNativePlace =
         Array.isArray(cached && cached.patients) &&
-        cached.patients.every(item =>
-          item && Object.prototype.hasOwnProperty.call(item, 'nativePlace')
-        );
+        cached.patients.every(item => item && Object.prototype.hasOwnProperty.call(item, 'nativePlace'));
+      const cacheHasContacts =
+        Array.isArray(cached && cached.patients) &&
+        cached.patients.every(item => item && Object.prototype.hasOwnProperty.call(item, 'familyContacts'));
 
-      if (
-        cached &&
-        cacheAge < PATIENT_LIST_CACHE_TTL &&
-        Array.isArray(cached.patients) &&
-        cacheHasNativePlace
-      ) {
+      if (cached && cacheAge < PATIENT_LIST_CACHE_TTL && Array.isArray(cached.patients) && cacheHasNativePlace && cacheHasContacts) {
         const slice = cached.patients.slice(0, limit);
         const totalCount = cached.totalCount !== undefined ? cached.totalCount : slice.length;
         const hasMore = cached.hasMore !== undefined ? cached.hasMore : totalCount > slice.length;
@@ -710,6 +706,17 @@ async function buildPatientsFromDatabase(options = {}) {
       address: 1,
       backupContact: 1,
       backupPhone: 1,
+      // lightweight contacts for analysis data quality
+      familyContacts: 1,
+      fatherInfo: 1,
+      motherInfo: 1,
+      otherGuardian: 1,
+      fatherContactName: 1,
+      fatherContactPhone: 1,
+      motherContactName: 1,
+      motherContactPhone: 1,
+      guardianContactName: 1,
+      guardianContactPhone: 1,
       nativePlace: 1,
       ethnicity: 1,
       recordKey: 1,
@@ -836,6 +843,58 @@ async function buildPatientsFromDatabase(options = {}) {
     const backupContact = doc.backupContact || data.backupContact || '';
     const backupPhone = doc.backupPhone || data.backupPhone || '';
 
+    // Build light-weight familyContacts for list (deduped minimal set)
+    const contactKeySet = new Set();
+    const contactsLight = [];
+    const pushContact = (name, phone, role) => {
+      const n = normalizeValue(name);
+      const p = normalizeValue(phone);
+      if (!n && !p) {
+        return;
+      }
+      const key = `${n.toLowerCase()}|${p}`;
+      if (contactKeySet.has(key)) {
+        return;
+      }
+      contactKeySet.add(key);
+      contactsLight.push({ role: normalizeValue(role) || 'other', name: n, phone: p });
+    };
+
+    if (Array.isArray(doc.familyContacts)) {
+      doc.familyContacts.forEach(c => {
+        if (!c || typeof c !== 'object') return;
+        pushContact(c.name || c.raw, c.phone, c.role);
+      });
+    }
+
+    // explicit pairs
+    pushContact(doc.fatherContactName, doc.fatherContactPhone, 'father');
+    pushContact(doc.motherContactName, doc.motherContactPhone, 'mother');
+    pushContact(doc.guardianContactName, doc.guardianContactPhone, 'other');
+    // backup as valid contact
+    pushContact(backupContact, backupPhone, 'backup');
+
+    // parse raw guardian fields if present
+    const tryParseRaw = (raw, role) => {
+      const normalized = normalizeValue(raw);
+      if (!normalized) return;
+      try {
+        const parsed = parseFamilyContact(normalized, role);
+        if (parsed) {
+          pushContact(parsed.name, parsed.phone, role);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    tryParseRaw(doc.fatherInfo, 'father');
+    tryParseRaw(doc.motherInfo, 'mother');
+    tryParseRaw(doc.otherGuardian, 'other');
+
+    const FAMILY_CONTACTS_LIMIT = 5;
+    const familyContacts = contactsLight.slice(0, FAMILY_CONTACTS_LIMIT);
+    const contactCount = familyContacts.filter(c => normalizeValue(c.name) && normalizeValue(c.phone)).length;
+
     const nativePlace = normalizeValue(
       pickValue(doc.nativePlace, data.nativePlace, nestedData.nativePlace)
     );
@@ -879,6 +938,9 @@ async function buildPatientsFromDatabase(options = {}) {
       address,
       backupContact,
       backupPhone,
+      familyContacts,
+      hasValidContact: contactCount > 0,
+      contactCount,
       nativePlace,
       ethnicity,
       excelImportOrder,

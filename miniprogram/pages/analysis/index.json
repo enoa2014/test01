@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "住户分析",
   "usingComponents": {
-    "pm-card": "/components/base/pm-card/index"
+    "pm-card": "/components/base/pm-card/index",
+    "pm-button": "/components/base/pm-button/index"
   }
 }
