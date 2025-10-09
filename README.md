@@ -193,4 +193,9 @@ npm run database:verify
 3. **云函数部署**：确保 `readExcel` 和 `patientProfile` 云函数已部署最新版本
 4. **缓存清理**：运行 `npm run database:verify` 检查数据状态
 
-详细的操作指南请参阅：[docs/database-reinit-guide.md](docs/database-reinit-guide.md)
+详细的操作指南请参阅：docs/database-reinit-guide.md
+
+更多文档请参阅：docs/README.md（总览）与 docs/TOC.md（导航）。
+### 文档相关命令
+
+- `npm run docs:links`：本地检查 `docs/` 下 Markdown 的相对链接（不接入 CI，仅供本地自查）。
