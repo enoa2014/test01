@@ -1297,11 +1297,8 @@ Page({
         }
         let contacts = this.ensureContactsArray(formData.contacts);
 
-        const derivedFromFields = this.buildContactsFromFields(formData);
-        if (derivedFromFields.length) {
-          const synced = this.updateFormData({ contacts: derivedFromFields });
-          contacts = this.ensureContactsArray(synced.contacts);
-        }
+        // 仅在所有联系人都是占位空项时，才尝试根据其他字段自动推导联系人，
+        // 避免用户新增的空白联系人被自动清理
         const placeholderOnly = contacts.every(contact => {
           if (!contact || typeof contact !== 'object') {
             return true;
@@ -1322,7 +1319,8 @@ Page({
             return !!name || !!phoneDigits;
           });
           if (hasDerivedData) {
-            contacts = derived;
+            const synced = this.updateFormData({ contacts: derived });
+            contacts = this.ensureContactsArray(synced.contacts);
           }
         }
         const hasValidContacts =
@@ -1851,17 +1849,21 @@ Page({
     const cleanedFormData = { ...finalFormData };
     delete cleanedFormData.extraContacts;
 
+    // 规范：将入住日期同步为时间戳写入 formData.intakeTime，便于服务端统一读取
+    const selectedAdmissionDate = finalFormData.admissionDate || this.data.today;
+    const selectedIntakeTs = selectedAdmissionDate
+      ? new Date(selectedAdmissionDate).getTime()
+      : Date.now();
+    cleanedFormData.intakeTime = selectedIntakeTs;
+
     const submitData = {
       action: mode === 'create' ? 'createPatient' : 'submit',
       patientKey: isEditingExisting ? patientKey : null,
       isEditingExisting, // 传递标志给服务端
       formData: cleanedFormData,
       uploadedFiles: [],
-      admissionDate: finalFormData.admissionDate || this.data.today,
-      intakeTimestamp:
-        finalFormData.admissionDate
-          ? new Date(finalFormData.admissionDate).getTime()
-          : Date.now(),
+      admissionDate: selectedAdmissionDate,
+      intakeTimestamp: selectedIntakeTs,
       timestamp: Date.now(),
     };
 

@@ -1073,6 +1073,26 @@ async function handleSubmitIntake(event) {
         baseFirstDate !== null ? baseFirstDate : toNumber(patientRecord.firstAdmissionDate);
       const normalizedFirstAdmissionDate = fallbackFirstDate !== null ? fallbackFirstDate : now;
 
+      // 解析入住时间（优先表单内的 intakeTime，其次事件级的 intakeTimestamp，再次 admissionDate 文本）
+      const formIntakeNum = Number(formData.intakeTime);
+      let normalizedIntakeTime = Number.isFinite(formIntakeNum) ? formIntakeNum : null;
+      if (!Number.isFinite(normalizedIntakeTime)) {
+        const eventIntakeNum = Number(event && event.intakeTimestamp);
+        if (Number.isFinite(eventIntakeNum)) {
+          normalizedIntakeTime = eventIntakeNum;
+        }
+      }
+      if (!Number.isFinite(normalizedIntakeTime)) {
+        const dateText = normalizeString(formData.admissionDate) || normalizeString(event && event.admissionDate);
+        const parsed = dateText ? Date.parse(dateText) : NaN;
+        if (Number.isFinite(parsed)) {
+          normalizedIntakeTime = parsed;
+        }
+      }
+      if (!Number.isFinite(normalizedIntakeTime)) {
+        normalizedIntakeTime = now;
+      }
+
       const patientUpdateData = {
         patientName: formData.patientName,
         idType: formData.idType || '身份证',
@@ -1085,15 +1105,15 @@ async function handleSubmitIntake(event) {
         backupPhone: formData.backupPhone || '',
         lastIntakeNarrative: formData.situation,
         admissionCount: newAdmissionCount,
-        latestAdmissionDate: now,
+        latestAdmissionDate: normalizedIntakeTime,
         updatedAt: now,
         careStatus: 'in_care',
         checkoutAt: _.remove(),
         checkoutReason: _.remove(),
         checkoutNote: _.remove(),
         'data.admissionCount': newAdmissionCount,
-        'data.latestAdmissionDate': now,
-        'data.latestAdmissionTimestamp': now,
+        'data.latestAdmissionDate': normalizedIntakeTime,
+        'data.latestAdmissionTimestamp': normalizedIntakeTime,
         'data.firstAdmissionDate': normalizedFirstAdmissionDate,
         'data.updatedAt': now,
       };
@@ -1116,7 +1136,116 @@ async function handleSubmitIntake(event) {
       });
     } else {
       // 创建新患者
-      finalPatientKey = generatePatientKey();
+      // 去重：如已存在相同身份证号(优先)或(姓名+身份证号)的患者，则复用该档案
+      let existingPatientDoc = null;
+      try {
+        const normalizedIdNo = normalizeString(formData.idNumber);
+        if (normalizedIdNo) {
+          const byIdRes = await transaction
+            .collection(PATIENTS_COLLECTION)
+            .where({ idNumber: normalizedIdNo })
+            .limit(1)
+            .get();
+          if (byIdRes && Array.isArray(byIdRes.data) && byIdRes.data.length) {
+            existingPatientDoc = byIdRes.data[0];
+          }
+        }
+        if (!existingPatientDoc && formData.patientName) {
+          const byNameIdRes = await transaction
+            .collection(PATIENTS_COLLECTION)
+            .where({ patientName: formData.patientName, idNumber: normalizeString(formData.idNumber) })
+            .limit(1)
+            .get();
+          if (byNameIdRes && Array.isArray(byNameIdRes.data) && byNameIdRes.data.length) {
+            existingPatientDoc = byNameIdRes.data[0];
+          }
+        }
+      } catch (dupCheckError) {
+        console.warn('[patientIntake] duplicate check failed', dupCheckError);
+      }
+
+      // 解析入住时间（参见上分支逻辑）
+      const formIntakeNum = Number(formData.intakeTime);
+      let normalizedIntakeTime = Number.isFinite(formIntakeNum) ? formIntakeNum : null;
+      if (!Number.isFinite(normalizedIntakeTime)) {
+        const eventIntakeNum = Number(event && event.intakeTimestamp);
+        if (Number.isFinite(eventIntakeNum)) {
+          normalizedIntakeTime = eventIntakeNum;
+        }
+      }
+      if (!Number.isFinite(normalizedIntakeTime)) {
+        const dateText = normalizeString(formData.admissionDate) || normalizeString(event && event.admissionDate);
+        const parsed = dateText ? Date.parse(dateText) : NaN;
+        if (Number.isFinite(parsed)) {
+          normalizedIntakeTime = parsed;
+        }
+      }
+      if (!Number.isFinite(normalizedIntakeTime)) {
+        normalizedIntakeTime = now;
+      }
+
+      if (existingPatientDoc && existingPatientDoc._id) {
+        // 视为“已有患者新增入住”。
+        finalPatientKey = existingPatientDoc._id;
+
+        const toNumber = value => {
+          const num = Number(value);
+          return Number.isFinite(num) ? num : null;
+        };
+        const dataSnapshot = existingPatientDoc.data || {};
+        const baseCount = toNumber(existingPatientDoc.admissionCount);
+        const fallbackCount = baseCount !== null ? baseCount : toNumber(dataSnapshot.admissionCount);
+        const effectiveCount = fallbackCount !== null ? fallbackCount : 0;
+        const newAdmissionCount = effectiveCount + 1;
+        const baseFirstDate = toNumber(dataSnapshot.firstAdmissionDate);
+        const fallbackFirstDate =
+          baseFirstDate !== null ? baseFirstDate : toNumber(existingPatientDoc.firstAdmissionDate);
+        const normalizedFirstAdmissionDate =
+          fallbackFirstDate !== null ? fallbackFirstDate : normalizedIntakeTime;
+
+        const patientUpdateData = {
+          patientName: formData.patientName,
+          idType: formData.idType || '身份证',
+          idNumber: formData.idNumber,
+          gender: formData.gender,
+          birthDate: formData.birthDate,
+          phone: formData.phone || '',
+          address: formData.address,
+          backupContact: formData.backupContact || '',
+          backupPhone: formData.backupPhone || '',
+          lastIntakeNarrative: formData.situation,
+          admissionCount: newAdmissionCount,
+          latestAdmissionDate: normalizedIntakeTime,
+          updatedAt: now,
+          careStatus: 'in_care',
+          checkoutAt: _.remove(),
+          checkoutReason: _.remove(),
+          checkoutNote: _.remove(),
+          'data.admissionCount': newAdmissionCount,
+          'data.latestAdmissionDate': normalizedIntakeTime,
+          'data.latestAdmissionTimestamp': normalizedIntakeTime,
+          'data.firstAdmissionDate': normalizedFirstAdmissionDate,
+          'data.updatedAt': now,
+        };
+        if (normalizedVisitHospital) {
+          patientUpdateData.latestHospital = normalizedVisitHospital;
+          patientUpdateData['data.latestHospital'] = normalizedVisitHospital;
+        }
+        if (normalizedHospitalDiagnosis) {
+          patientUpdateData.latestDiagnosis = normalizedHospitalDiagnosis;
+          patientUpdateData['data.latestDiagnosis'] = normalizedHospitalDiagnosis;
+        }
+        if (normalizedAttendingDoctor) {
+          patientUpdateData.latestDoctor = normalizedAttendingDoctor;
+          patientUpdateData['data.latestDoctor'] = normalizedAttendingDoctor;
+        }
+
+        await transaction.collection(PATIENTS_COLLECTION).doc(finalPatientKey).update({
+          data: patientUpdateData,
+        });
+      } else {
+        // 真正创建新档案
+        finalPatientKey = generatePatientKey();
 
       patientRecord = {
         patientName: formData.patientName,
@@ -1133,15 +1262,15 @@ async function handleSubmitIntake(event) {
         latestDiagnosis: normalizedHospitalDiagnosis || '',
         latestDoctor: normalizedAttendingDoctor || '',
         admissionCount: 1,
-        firstAdmissionDate: now,
-        latestAdmissionDate: now,
+        firstAdmissionDate: normalizedIntakeTime,
+        latestAdmissionDate: normalizedIntakeTime,
         createdAt: now,
         updatedAt: now,
         data: {
           admissionCount: 1,
-          firstAdmissionDate: now,
-          latestAdmissionDate: now,
-          latestAdmissionTimestamp: now,
+          firstAdmissionDate: normalizedIntakeTime,
+          latestAdmissionDate: normalizedIntakeTime,
+          latestAdmissionTimestamp: normalizedIntakeTime,
           updatedAt: now,
           latestHospital: normalizedVisitHospital || '',
           latestDiagnosis: normalizedHospitalDiagnosis || '',
@@ -1157,12 +1286,29 @@ async function handleSubmitIntake(event) {
         hasSituation: Boolean(formData.situation),
         admissionCount: patientRecord.admissionCount,
       });
+      }
     }
 
     // 创建入住记录
-    const intakeTimeValue = Number(formData.intakeTime);
-
-    const normalizedIntakeTime = Number.isFinite(intakeTimeValue) ? intakeTimeValue : now;
+    // 解析入住时间（与上方保持一致）
+    const formIntakeNumForRecord = Number(formData.intakeTime);
+    let normalizedIntakeTime = Number.isFinite(formIntakeNumForRecord) ? formIntakeNumForRecord : null;
+    if (!Number.isFinite(normalizedIntakeTime)) {
+      const eventIntakeNum = Number(event && event.intakeTimestamp);
+      if (Number.isFinite(eventIntakeNum)) {
+        normalizedIntakeTime = eventIntakeNum;
+      }
+    }
+    if (!Number.isFinite(normalizedIntakeTime)) {
+      const dateText = normalizeString(formData.admissionDate) || normalizeString(event && event.admissionDate);
+      const parsed = dateText ? Date.parse(dateText) : NaN;
+      if (Number.isFinite(parsed)) {
+        normalizedIntakeTime = parsed;
+      }
+    }
+    if (!Number.isFinite(normalizedIntakeTime)) {
+      normalizedIntakeTime = now;
+    }
 
     const intakeRecord = {
       patientKey: finalPatientKey,
@@ -1243,11 +1389,17 @@ async function handleSubmitIntake(event) {
       data: intakeRecord,
     });
 
+    // 回传用于前端立即更新的关键字段
     return {
       patientKey: finalPatientKey,
       intakeId,
       patientName: formData.patientName,
-      intakeTime: now,
+      intakeTime: normalizedIntakeTime,
+      admissionCount: isEditingExisting ? (newAdmissionCount) : 1,
+      latestAdmissionDate: normalizedIntakeTime,
+      firstAdmissionDate: isEditingExisting
+        ? (normalizedFirstAdmissionDate)
+        : normalizedIntakeTime,
     };
   });
 
@@ -1333,11 +1485,14 @@ async function handleUpdatePatient(event = {}) {
       'idNumber',
       'gender',
       'birthDate',
+      'nativePlace',
+      'ethnicity',
       'phone',
       'address',
       'backupContact',
       'backupPhone',
       'lastIntakeNarrative',
+      'familyEconomy',
       'fatherInfo',
       'fatherContactName',
       'fatherContactPhone',
@@ -1625,6 +1780,300 @@ async function handleCheckoutPatient(event = {}) {
   };
 }
 
+// 更新或创建入住记录（用于办理入住/离开，基于条目操作）
+async function handleUpdateIntakeRecord(event = {}) {
+  const patientKey = normalizeString(event.patientKey);
+  if (!patientKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少患者标识');
+  }
+  await ensureCollection(PATIENTS_COLLECTION);
+  await ensureCollection(PATIENT_INTAKE_COLLECTION);
+
+  const wxContext = cloud.getWXContext();
+  const operatorId = normalizeString(
+    event.operatorId || event.operatorOpenId || (wxContext && wxContext.OPENID) || ''
+  );
+  const operatorName = normalizeString(event.operatorName || event.operator || '');
+
+  const intakeIdInput = normalizeString(event.intakeId || (event.intake && event.intake.intakeId));
+  const intakeTimeInput = Number(event.intakeTime || (event.intake && event.intake.intakeTime));
+  const checkoutAtInput = Number(event.checkoutAt || (event.intake && event.intake.checkoutAt));
+  const hospitalInput = normalizeString(event.hospital || (event.intake && event.intake.hospital));
+  const diagnosisInput = normalizeString(event.diagnosis || (event.intake && event.intake.diagnosis));
+  const doctorInput = normalizeString(event.doctor || (event.intake && event.intake.doctor));
+  const symptomsInput = normalizeString(event.symptoms || (event.intake && event.intake.symptoms));
+  const treatmentProcessInput = normalizeString(
+    event.treatmentProcess || (event.intake && event.intake.treatmentProcess)
+  );
+  const followUpPlanInput = normalizeString(
+    event.followUpPlan || (event.intake && event.intake.followUpPlan)
+  );
+  const note = normalizeString(event.note || (event.intake && event.intake.note));
+  const reason = normalizeString(event.reason || (event.intake && event.intake.reason));
+  const now = Date.now();
+
+  let intakeRecord = null;
+  let createdNew = false;
+  let targetIntakeId = intakeIdInput;
+
+  // 读取患者档案，便于新建条目时补全基本信息
+  let patientDoc = null;
+  try {
+    const snapshot = await db.collection(PATIENTS_COLLECTION).doc(patientKey).get();
+    patientDoc = snapshot && snapshot.data ? snapshot.data : null;
+  } catch (e) {
+    // ignore
+  }
+
+  if (targetIntakeId) {
+    // 读取既有记录
+    const res = await db.collection(PATIENT_INTAKE_COLLECTION).doc(targetIntakeId).get();
+    if (res && res.data) {
+      intakeRecord = res.data;
+      if (normalizeString(intakeRecord.patientKey) !== patientKey) {
+        throw makeError('INTAKE_PATIENT_MISMATCH', '入住条目不属于该住户');
+      }
+    } else {
+      throw makeError('INTAKE_NOT_FOUND', '入住条目不存在');
+    }
+  } else {
+    // 创建新条目（办理入住）
+    targetIntakeId = generateIntakeId();
+    const basicInfo = patientDoc
+      ? {
+          patientName: patientDoc.patientName || '',
+          idType: patientDoc.idType || '身份证',
+          idNumber: patientDoc.idNumber || '',
+          gender: patientDoc.gender || '',
+          birthDate: patientDoc.birthDate || '',
+          phone: patientDoc.phone || '',
+        }
+      : {};
+
+    const initialIntakeTime = Number.isFinite(intakeTimeInput) ? intakeTimeInput : now;
+    const newRecord = {
+      _id: targetIntakeId,
+      intakeId: targetIntakeId,
+      patientKey,
+      patientName: (patientDoc && patientDoc.patientName) || '',
+      status: 'submitted',
+      basicInfo,
+      contactInfo: {
+        address: (patientDoc && patientDoc.address) || '',
+        backupContact: (patientDoc && patientDoc.backupContact) || '',
+        backupPhone: (patientDoc && patientDoc.backupPhone) || '',
+      },
+      intakeInfo: {
+        intakeTime: initialIntakeTime,
+      },
+      intakeTime: initialIntakeTime,
+      metadata: {
+        source: 'manual-intake',
+        submittedAt: now,
+        lastModifiedAt: now,
+        operatorId: operatorId || '',
+        operatorName: operatorName || '',
+      },
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.collection(PATIENT_INTAKE_COLLECTION).doc(targetIntakeId).set({ data: newRecord });
+    createdNew = true;
+    intakeRecord = newRecord;
+  }
+
+  // 校验：若传入 checkoutAt，则不得早于（本次最终的）入住时间
+  if (Number.isFinite(checkoutAtInput)) {
+    const effectiveIntakeTime = Number.isFinite(intakeTimeInput)
+      ? intakeTimeInput
+      : Number(
+          (intakeRecord && (intakeRecord.intakeTime || (intakeRecord.intakeInfo && intakeRecord.intakeInfo.intakeTime)))
+        );
+    if (!Number.isFinite(effectiveIntakeTime)) {
+      throw makeError('MISSING_INTAKE_TIME', '未找到该条目的入住时间，请先设置入住时间');
+    }
+    if (checkoutAtInput < effectiveIntakeTime) {
+      throw makeError('INVALID_CHECKOUT_TIME', '离开时间不能早于入住时间');
+    }
+  }
+
+  // 构建更新
+  const updates = { updatedAt: now, 'metadata.lastModifiedAt': now };
+  if (Number.isFinite(intakeTimeInput)) {
+    updates['intakeInfo.intakeTime'] = intakeTimeInput;
+    updates.intakeTime = intakeTimeInput;
+  }
+  if (Number.isFinite(checkoutAtInput)) {
+    updates['intakeInfo.checkoutAt'] = checkoutAtInput;
+    updates.checkoutAt = checkoutAtInput;
+
+    // 计算本次入住时长（天/小时）
+    const startTs = Number(
+      (updates.intakeTime !== undefined ? updates.intakeTime : intakeRecord.intakeTime) ||
+        (intakeRecord.intakeInfo && intakeRecord.intakeInfo.intakeTime)
+    );
+    if (Number.isFinite(startTs) && checkoutAtInput > startTs) {
+      const diffMs = checkoutAtInput - startTs;
+      const DAY = 24 * 60 * 60 * 1000;
+      const HOUR = 60 * 60 * 1000;
+      if (diffMs >= DAY) {
+        const days = Math.floor(diffMs / DAY);
+        updates['intakeInfo.durationText'] = `${days}天`;
+      } else {
+        const hours = Math.max(1, Math.ceil(diffMs / HOUR));
+        updates['intakeInfo.durationText'] = `${hours}小时`;
+      }
+    }
+  } else if (intakeRecord && intakeRecord.intakeInfo && intakeRecord.intakeInfo.checkoutAt) {
+    // 若取消传 checkoutAt，不移除原字段
+  }
+
+  if (note) {
+    updates['intakeInfo.note'] = note;
+  }
+  if (reason) {
+    updates['intakeInfo.reason'] = reason;
+  }
+
+  // 医疗与就诊信息更新
+  const medicalPayload = {};
+  if (hospitalInput) {
+    updates['intakeInfo.hospital'] = hospitalInput;
+    updates.hospital = hospitalInput;
+    medicalPayload.hospital = hospitalInput;
+  }
+  if (diagnosisInput) {
+    updates['intakeInfo.diagnosis'] = diagnosisInput;
+    updates.diagnosis = diagnosisInput;
+    medicalPayload.diagnosis = diagnosisInput;
+  }
+  if (doctorInput) {
+    updates['intakeInfo.doctor'] = doctorInput;
+    updates.doctor = doctorInput;
+    medicalPayload.doctor = doctorInput;
+  }
+  if (symptomsInput) {
+    updates['intakeInfo.symptoms'] = symptomsInput;
+    updates.symptoms = symptomsInput;
+    medicalPayload.symptoms = symptomsInput;
+  }
+  if (treatmentProcessInput) {
+    updates['intakeInfo.treatmentProcess'] = treatmentProcessInput;
+    updates.treatmentProcess = treatmentProcessInput;
+    medicalPayload.treatmentProcess = treatmentProcessInput;
+  }
+  if (followUpPlanInput) {
+    updates['intakeInfo.followUpPlan'] = followUpPlanInput;
+    updates.followUpPlan = followUpPlanInput;
+    medicalPayload.followUpPlan = followUpPlanInput;
+  }
+
+  await db.collection(PATIENT_INTAKE_COLLECTION).doc(targetIntakeId).update({ data: updates });
+
+  // 同步患者聚合（次数/最近时间）
+  let summary = null;
+  try {
+    summary = await syncPatientAggregates(patientKey, { forceSummary: true });
+  } catch (e) {
+    console.warn('syncPatientAggregates after updateIntakeRecord failed', patientKey, e);
+  }
+
+  // 操作日志
+  const actionLabel = Number.isFinite(checkoutAtInput)
+    ? 'intake-checkout'
+    : (createdNew ? 'intake-create' : 'intake-update');
+  const message = Number.isFinite(checkoutAtInput)
+    ? '办理离开（基于入住条目）'
+    : (createdNew ? '办理入住（创建条目）' : '办理入住（修改条目）');
+  await writePatientOperationLog({
+    patientKey,
+    action: actionLabel,
+    operatorId: operatorId || '',
+    operatorName: operatorName || '',
+    message,
+    changes: ['intake'],
+    extra: {
+      intakeId: targetIntakeId,
+      intakeTime: Number.isFinite(intakeTimeInput)
+        ? intakeTimeInput
+        : intakeRecord.intakeTime || (intakeRecord.intakeInfo && intakeRecord.intakeInfo.intakeTime),
+      checkoutAt: Number.isFinite(checkoutAtInput) ? checkoutAtInput : undefined,
+      note,
+      reason,
+    },
+  });
+
+  const resPayload = {
+    intakeId: targetIntakeId,
+    intakeTime:
+      (updates.intakeTime !== undefined ? updates.intakeTime : intakeRecord.intakeTime) || null,
+    checkoutAt: Number.isFinite(checkoutAtInput) ? checkoutAtInput : null,
+  };
+  if (summary && typeof summary === 'object') {
+    resPayload.admissionCount = summary.count;
+    resPayload.latestAdmissionDate = summary.latestTimestamp || null;
+    resPayload.firstAdmissionDate = summary.earliestTimestamp || null;
+  }
+
+  return { success: true, data: resPayload };
+}
+
+// 删除入住记录条目
+async function handleDeleteIntakeRecord(event = {}) {
+  const patientKey = normalizeString(event.patientKey);
+  const intakeId = normalizeString(event.intakeId);
+  if (!patientKey || !intakeId) {
+    throw makeError('INVALID_PARAMS', '缺少住户或入住条目标识');
+  }
+  await ensureCollection(PATIENT_INTAKE_COLLECTION);
+  await ensureCollection(PATIENTS_COLLECTION);
+
+  // 校验归属
+  let found = null;
+  try {
+    const snapshot = await db.collection(PATIENT_INTAKE_COLLECTION).doc(intakeId).get();
+    found = snapshot && snapshot.data ? snapshot.data : null;
+  } catch (e) {
+    // ignore
+  }
+  if (!found || normalizeString(found.patientKey) !== patientKey) {
+    throw makeError('INTAKE_NOT_FOUND', '未找到该入住条目');
+  }
+
+  await db.collection(PATIENT_INTAKE_COLLECTION).doc(intakeId).remove();
+
+  // 日志
+  const wxContext = cloud.getWXContext();
+  await writePatientOperationLog({
+    patientKey,
+    action: 'intake-delete',
+    operatorId: (wxContext && wxContext.OPENID) || '',
+    operatorName: '',
+    message: '删除入住条目',
+    changes: ['intake'],
+    extra: { intakeId },
+  });
+
+  // 同步聚合
+  let summary = null;
+  try {
+    summary = await syncPatientAggregates(patientKey, { forceSummary: true });
+  } catch (e) {
+    console.warn('syncPatientAggregates after deleteIntakeRecord failed', patientKey, e);
+  }
+
+  return {
+    success: true,
+    data: {
+      intakeId,
+      patientKey,
+      admissionCount: summary && summary.count,
+      latestAdmissionDate: summary && summary.latestTimestamp,
+      firstAdmissionDate: summary && summary.earliestTimestamp,
+    },
+  };
+}
 async function handleManualStatusUpdate(event = {}) {
   const patientKey = normalizeString(event.patientKey);
   if (!patientKey) {
@@ -1902,8 +2351,14 @@ exports.main = async event => {
         return await handleUpdatePatient(event);
       case 'checkoutPatient':
         return await handleCheckoutPatient(event);
+      case 'updateIntakeRecord':
+        return await handleUpdateIntakeRecord(event);
       case 'updateCareStatus':
         return await handleManualStatusUpdate(event);
+      case 'updateIntakeRecord':
+        return await handleUpdateIntakeRecord(event);
+      case 'deleteIntakeRecord':
+        return await handleDeleteIntakeRecord(event);
       case 'getConfig':
         return await handleGetConfig(event);
       case 'cleanupDrafts':

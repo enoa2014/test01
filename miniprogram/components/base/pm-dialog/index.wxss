@@ -56,10 +56,13 @@
   font-size: var(--text-base);
   line-height: 1.6;
   overflow: hidden;
+  flex: 1;
+  min-height: 0; /* 允许在 flex 容器内正确滚动 */
 }
 
 .pm-dialog__body--scrollable {
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pm-dialog__content {

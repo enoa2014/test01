@@ -2,6 +2,8 @@
   "navigationBarTitleText": "住户详情",
   "usingComponents": {
     "pm-input": "/components/base/pm-input/index",
-    "pm-card": "/components/base/pm-card/index"
+    "pm-card": "/components/base/pm-card/index",
+    "pm-button": "/components/base/pm-button/index",
+    "pm-dialog": "/components/base/pm-dialog/index"
   }
 }

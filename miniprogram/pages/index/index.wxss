@@ -759,6 +759,40 @@
   padding-top: var(--space-3);
 }
 
+/* 通用弹窗主体和列表 */
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.intake-select-list {
+  display: flex;
+  flex-direction: column;
+}
+.intake-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+.intake-select-item:last-child {
+  border-bottom: none;
+}
+.intake-select-title {
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+}
+.intake-select-status {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
 .status-dialog__body {
   display: flex;
   flex-direction: column;

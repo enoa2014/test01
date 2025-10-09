@@ -701,6 +701,17 @@ Page({
     },
     checkoutErrors: {},
     checkoutPatient: null,
+    // 入住/离开按条目选择与办理
+    intakeSelectVisible: false,
+    intakeSelectLoading: false,
+    intakeSelectMode: '', // 'checkin' | 'checkout'
+    intakeSelectPatient: null,
+    intakeSelectRecords: [], // {id,title,checkedOut}
+    intakeSelectError: '',
+    selectedIntakeId: '',
+    checkinDialogVisible: false,
+    checkinSubmitting: false,
+    checkinForm: { date: '', time: '', timestamp: null },
     statusDialogVisible: false,
     statusDialogSubmitting: false,
     statusDialogOptions: [
@@ -2830,58 +2841,140 @@ Page({
     });
   },
   startIntakeForPatient(patient) {
-    const key = this.resolvePatientKey(patient);
-    if (!key) {
-      wx.showToast({ icon: 'none', title: '缺少住户标识' });
-      return;
-    }
-    const patientId = patient.patientKey || patient.key || key;
-    const recordKey = patient.recordKey || key;
-    let url = `/pages/patient-intake/wizard/wizard?patientKey=${encodeURIComponent(patientId)}`;
-    if (recordKey && recordKey !== patientId) {
-      url += `&recordKey=${encodeURIComponent(recordKey)}`;
-    }
-    if (this.data && this.data.testCaptureNavigation) {
-      this.setData({ testLastNavigation: url });
-      return;
-    }
-    wx.navigateTo({ url });
+    // 新规则：先选择/创建入住条目
+    this.openIntakeSelection(patient, 'checkin');
   },
   handlePatientCheckout(patient) {
-    if (this.data.checkoutDialogVisible || this.data.checkoutSubmitting) {
-      return;
-    }
+    if (this.data.checkoutDialogVisible || this.data.checkoutSubmitting) return;
+    this.openIntakeSelection(patient, 'checkout');
+  },
+  async openIntakeSelection(patient, mode) {
     const key = this.resolvePatientKey(patient);
     if (!key) {
-      if (this.data && this.data.testCaptureToast) {
-        this.setData({ testLastToast: '缺少住户标识' });
-      }
       wx.showToast({ icon: 'none', title: '缺少住户标识' });
       return;
     }
-    const targetPatient = {
-      patientKey: key,
-      patientName: safeString((patient && (patient.patientName || patient.name)) || ''),
-      admissionCount: Number((patient && patient.admissionCount) || 0) || 0,
-      latestAdmissionTimestamp: Number((patient && patient.latestAdmissionTimestamp) || 0) || 0,
-      careStatus: patient && patient.careStatus,
-    };
-    const now = Date.now();
-    const defaultDate = formatDate(now);
-    const defaultTime = formatTimeString(now);
     this.setData({
-      checkoutDialogVisible: true,
-      checkoutPatient: targetPatient,
-      checkoutForm: {
-        reason: '',
-        note: '',
-        timestamp: now,
-        date: defaultDate,
-        time: defaultTime,
-        dateTimeDisplay: formatDateTime(now),
-      },
-      checkoutErrors: {},
+      intakeSelectVisible: true,
+      intakeSelectLoading: true,
+      intakeSelectMode: mode,
+      intakeSelectPatient: patient,
+      intakeSelectError: '',
+      intakeSelectRecords: [],
+      selectedIntakeId: '',
     });
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: { action: 'listIntakeRecords', patientKey: key, limit: 50 },
+      });
+      const items = (res && res.result && res.result.data && res.result.data.items) || [];
+      const list = items.map(item => {
+        const id = item.intakeId || item._id || '';
+        const intakeInfo = item.intakeInfo || {};
+        const ts = Number(item.intakeTime || intakeInfo.intakeTime || 0) || 0;
+        const outTs = Number(item.checkoutAt || intakeInfo.checkoutAt || 0) || 0;
+        const startText = ts ? formatDateTime(ts) : '未记录入住时间';
+        const endText = outTs ? formatDateTime(outTs) : '';
+        const title = endText ? `${startText} ~ ${endText}` : startText;
+        return { id, title, checkedOut: Boolean(outTs) };
+      });
+      this.setData({ intakeSelectRecords: list.slice(0, 50) });
+    } catch (error) {
+      this.setData({ intakeSelectError: (error && (error.message || error.errMsg)) || '加载失败' });
+    }
+    this.setData({ intakeSelectLoading: false });
+  },
+  onIntakeSelectCancel() {
+    this.setData({
+      intakeSelectVisible: false,
+      intakeSelectLoading: false,
+      intakeSelectMode: '',
+      intakeSelectPatient: null,
+      intakeSelectRecords: [],
+      intakeSelectError: '',
+      selectedIntakeId: '',
+    });
+  },
+  onIntakeSelectCreate() {
+    if (this.data.intakeSelectMode !== 'checkin') {
+      wx.showToast({ icon: 'none', title: '请选择条目办理离开' });
+      return;
+    }
+    this.setData({
+      intakeSelectVisible: false,
+      checkinDialogVisible: true,
+      checkinSubmitting: false,
+      checkinForm: { date: '', time: '', timestamp: null },
+    });
+  },
+  onIntakeSelectChoose(event) {
+    const id = (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id) || '';
+    if (!id) return;
+    const mode = this.data.intakeSelectMode;
+    this.setData({ selectedIntakeId: id, intakeSelectVisible: false });
+    if (mode === 'checkin') {
+      this.setData({ checkinDialogVisible: true, checkinSubmitting: false, checkinForm: { date: '', time: '', timestamp: null } });
+    } else if (mode === 'checkout') {
+      const now = Date.now();
+      this.setData({
+        checkoutDialogVisible: true,
+        checkoutSubmitting: false,
+        checkoutPatient: this.data.intakeSelectPatient,
+        checkoutForm: {
+          reason: '',
+          note: '',
+          timestamp: now,
+          date: formatDate(now),
+          time: formatTimeString(now),
+          dateTimeDisplay: formatDateTime(now),
+        },
+      });
+    }
+  },
+  onCheckinDateChange(e) {
+    const value = (e && e.detail && e.detail.value) || '';
+    this.setData({ 'checkinForm.date': value });
+  },
+  onCheckinTimeChange(e) {
+    const value = (e && e.detail && e.detail.value) || '';
+    this.setData({ 'checkinForm.time': value });
+  },
+  async onCheckinConfirmTap() {
+    if (this.data.checkinSubmitting) return;
+    const patient = this.data.intakeSelectPatient;
+    const patientKey = this.resolvePatientKey(patient);
+    const ts = buildTimestampFromDateTime(this.data.checkinForm.date, this.data.checkinForm.time);
+    const intakeId = this.data.selectedIntakeId || '';
+    if (!patientKey) {
+      wx.showToast({ icon: 'none', title: '缺少住户标识' });
+      return;
+    }
+    if (!ts) {
+      wx.showToast({ icon: 'none', title: '请选择入住时间' });
+      return;
+    }
+    this.setData({ checkinSubmitting: true });
+    wx.showLoading({ title: '办理中', mask: true });
+    try {
+      await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: { action: 'updateIntakeRecord', patientKey, intakeId, intakeTime: ts },
+      });
+      wx.showToast({ icon: 'success', title: intakeId ? '已更新' : '已创建' });
+      this.setData({ checkinDialogVisible: false, checkinSubmitting: false, selectedIntakeId: '', intakeSelectPatient: null });
+      this.fetchPatients({ silent: true, forceRefresh: true, page: 0 });
+    } catch (error) {
+      this.setData({ checkinSubmitting: false });
+      const message = safeString((error && (error.message || error.errMsg)) || '办理失败');
+      wx.showToast({ icon: 'none', title: message.length > 14 ? `${message.slice(0, 13)}...` : message });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+  onCheckinCancelTap() {
+    if (this.data.checkinSubmitting) return;
+    this.setData({ checkinDialogVisible: false, selectedIntakeId: '', intakeSelectPatient: null });
   },
   onCheckoutDialogClose() {
     if (this.data.checkoutSubmitting) {
@@ -2960,14 +3053,23 @@ Page({
     wx.showLoading({ title: '办理中', mask: true });
     let checkoutData = null;
     try {
-      checkoutData = await callPatientIntake('checkoutPatient', {
-        patientKey,
-        checkout: {
-          reason,
+      const intakeId = this.data.selectedIntakeId || '';
+      if (!intakeId) {
+        wx.showToast({ icon: 'none', title: '请先选择入住条目' });
+        return;
+      }
+      const resp = await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: {
+          action: 'updateIntakeRecord',
+          patientKey,
+          intakeId,
+          checkoutAt: effectiveTimestamp,
           note,
-          timestamp: effectiveTimestamp,
+          reason,
         },
       });
+      checkoutData = (resp && resp.result && resp.result.data) || {};
     } catch (error) {
       wx.hideLoading();
       this.setData({ checkoutSubmitting: false });
@@ -3003,6 +3105,7 @@ Page({
     this.setData({
       checkoutDialogVisible: false,
       checkoutPatient: null,
+      selectedIntakeId: '',
       checkoutForm: {
         reason: '',
         note: '',
