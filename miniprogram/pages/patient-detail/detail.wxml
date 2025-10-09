@@ -53,6 +53,7 @@
           bindlongpress="onStatusLongPress"
           bindtap="onStatusLongPress"
         >
+          <view class="metric-card__tool" bindtap="onStatusLongPress">调整</view>
           <view class="metric-card__icon"
             >{{patient.statusClass === 'in-care' ? '🏠' : patient.statusClass === 'pending' ? '⏳' :
             patient.statusClass === 'checked-out' ? '👋' : '📋'}}</view
@@ -172,9 +173,7 @@
                       >{{item.statusDisplay}}</text
                     >
                     <text class="duration-badge" wx:if="{{item.durationDisplay}}">· {{item.durationDisplay}}</text>
-                    <text class="record-expand-icon"
-                      >{{recordsExpanded[item.intakeId] ? '收起 ▲' : '展开 ▼'}}</text
-                    >
+                    <text class="record-expand-icon {{recordsExpanded[item.intakeId] ? 'expanded' : ''}}">▶</text>
                   </view>
                 </view>
 
@@ -386,29 +385,27 @@
                   <text class="media-card__meta">上传人：{{item.uploaderDisplay}}</text>
                 </view>
                 <view slot="footer" class="media-card__footer">
-                  <view
-                    class="media-card__button {{item.downloading ? 'loading' : ''}}"
-                    role="button"
-                    hover-class="hover"
+                  <pm-button
+                    size="small"
+                    type="default"
+                    text="{{item.downloading ? '下载中…' : '下载'}}"
+                    loading="{{item.downloading}}"
                     aria-label="{{item.downloading ? '下载中' : '下载'}} {{item.displayName}}"
                     data-id="{{item.id}}"
                     data-index="{{index}}"
-                    catchtap="onImageDownloadTap"
-                  >
-                    {{item.downloading ? '下载中…' : '下载'}}
-                  </view>
-                  <view
-                    class="media-card__button danger {{item.deleting ? 'loading' : ''}}"
-                    role="button"
-                    hover-class="hover"
+                    bind:tap="onImageDownloadTap"
+                  />
+                  <pm-button
+                    size="small"
+                    type="danger"
+                    text="{{item.deleting ? '处理中…' : '删除'}}"
+                    loading="{{item.deleting}}"
                     aria-label="{{item.deleting ? '处理中' : '删除'}} {{item.displayName}}"
                     data-id="{{item.id}}"
                     data-index="{{index}}"
                     data-category="image"
-                    catchtap="onDeleteMediaTap"
-                  >
-                    {{item.deleting ? '处理中…' : '删除'}}
-                  </view>
+                    bind:tap="onDeleteMediaTap"
+                  />
                 </view>
               </pm-card>
             </view>
@@ -457,29 +454,27 @@
               <view class="media-cell time">{{item.uploadedAtText}}</view>
               <view class="media-cell uploader">{{item.uploaderDisplay}}</view>
               <view class="media-cell actions">
-                <view
-                  class="doc-action-button {{item.downloading ? 'loading' : ''}}"
-                  role="button"
-                  hover-class="hover"
+                <pm-button
+                  size="small"
+                  type="default"
+                  text="{{item.downloading ? '下载中…' : '下载'}}"
+                  loading="{{item.downloading}}"
                   aria-label="{{item.downloading ? '下载中' : '下载'}} {{item.displayName}}"
                   data-id="{{item.id}}"
                   data-index="{{index}}"
-                  catchtap="onDocumentDownloadTap"
-                >
-                  {{item.downloading ? '下载中…' : '下载'}}
-                </view>
-                <view
-                  class="doc-action-button danger {{item.deleting ? 'loading' : ''}}"
-                  role="button"
-                  hover-class="hover"
+                  bind:tap="onDocumentDownloadTap"
+                />
+                <pm-button
+                  size="small"
+                  type="danger"
+                  text="{{item.deleting ? '处理中…' : '删除'}}"
+                  loading="{{item.deleting}}"
                   aria-label="{{item.deleting ? '处理中' : '删除'}} {{item.displayName}}"
                   data-id="{{item.id}}"
                   data-index="{{index}}"
                   data-category="document"
-                  catchtap="onDeleteMediaTap"
-                >
-                  {{item.deleting ? '处理中…' : '删除'}}
-                </view>
+                  bind:tap="onDeleteMediaTap"
+                />
               </view>
             </view>
           </view>
@@ -625,31 +620,33 @@
   >
     <scroll-view scroll-y class="dialog-scroll">
     <view wx:if="{{moduleEditBlock==='basic'}}">
-      <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" data-field="patientName" bind:input="onBlockFieldInput" />
+      <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" error="{{blockEditErrors.patientName}}" data-field="patientName" bind:input="onBlockFieldInput" />
       <view class="form-group">
         <label class="form-label required">性别</label>
         <radio-group class="radio-group" bindchange="onBlockGenderChange">
           <radio value="男" checked="{{blockEditForm.gender==='男'}}">男</radio>
           <radio value="女" checked="{{blockEditForm.gender==='女'}}">女</radio>
         </radio-group>
+        <view wx:if="{{blockEditErrors.gender}}" class="field-error">{{blockEditErrors.gender}}</view>
       </view>
       <view class="form-group">
         <label class="form-label required">出生日期</label>
         <picker mode="date" value="{{blockEditForm.birthDate}}" bindchange="onBlockBirthDateChange">
           <view class="picker-display">{{blockEditForm.birthDate || '请选择出生日期'}}</view>
         </picker>
+        <view wx:if="{{blockEditErrors.birthDate}}" class="field-error">{{blockEditErrors.birthDate}}</view>
       </view>
       <pm-input label="证件类型" value="{{blockEditForm.idType}}" data-field="idType" bind:input="onBlockFieldInput" />
-      <pm-input label="证件号码" required="{{true}}" value="{{blockEditForm.idNumber}}" data-field="idNumber" bind:input="onBlockFieldInput" />
-      <pm-input label="联系电话" value="{{blockEditForm.phone}}" data-field="phone" bind:input="onBlockFieldInput" />
+      <pm-input label="证件号码" required="{{true}}" value="{{blockEditForm.idNumber}}" error="{{blockEditErrors.idNumber}}" data-field="idNumber" bind:input="onBlockFieldInput" />
+      <pm-input label="联系电话" value="{{blockEditForm.phone}}" error="{{blockEditErrors.phone}}" data-field="phone" bind:input="onBlockFieldInput" />
       <pm-input label="籍贯" value="{{blockEditForm.nativePlace}}" data-field="nativePlace" bind:input="onBlockFieldInput" />
       <pm-input label="民族" value="{{blockEditForm.ethnicity}}" data-field="ethnicity" bind:input="onBlockFieldInput" />
     </view>
 
     <view wx:elif="{{moduleEditBlock==='contact'}}">
-      <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" data-field="address" bind:input="onBlockFieldInput" />
+      <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" error="{{blockEditErrors.address}}" data-field="address" bind:input="onBlockFieldInput" />
       <pm-input label="备用联系人" value="{{blockEditForm.backupContact}}" data-field="backupContact" bind:input="onBlockFieldInput" />
-      <pm-input label="备用联系电话" value="{{blockEditForm.backupPhone}}" data-field="backupPhone" bind:input="onBlockFieldInput" />
+      <pm-input label="备用联系电话" value="{{blockEditForm.backupPhone}}" error="{{blockEditErrors.backupPhone}}" data-field="backupPhone" bind:input="onBlockFieldInput" />
       <pm-input label="父亲联系方式" value="{{blockEditForm.fatherInfo}}" data-field="fatherInfo" bind:input="onBlockFieldInput" />
       <pm-input label="母亲联系方式" value="{{blockEditForm.motherInfo}}" data-field="motherInfo" bind:input="onBlockFieldInput" />
       <pm-input label="其他监护人" value="{{blockEditForm.guardianInfo}}" data-field="guardianInfo" bind:input="onBlockFieldInput" />
