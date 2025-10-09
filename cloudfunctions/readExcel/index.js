@@ -21,6 +21,7 @@ const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 const PATIENTS_COLLECTION = 'patients';
 const PATIENT_INTAKE_COLLECTION = 'patient_intake_records';
 const RAW_COLLECTION = 'excel_raw_records';
+const PATIENT_OPERATION_LOGS_COLLECTION = 'patient_operation_logs';
 
 // Excel文件ID（从环境变量获取）
 const EXCEL_FILE_ID = process.env.EXCEL_FILE_ID;
@@ -431,6 +432,12 @@ async function resetPatientDataCollections() {
       error
     );
   }
+}
+
+// 清空操作日志集合
+async function clearOperationLogs() {
+  await ensureCollectionExists(db, PATIENT_OPERATION_LOGS_COLLECTION);
+  await clearCollection(db.collection(PATIENT_OPERATION_LOGS_COLLECTION));
 }
 
 // 移除集合中不在保留列表内的文档
@@ -1189,6 +1196,23 @@ exports.main = async (event = {}) => {
         totalPatients: summaries.length,
         sync,
         aggregateRefresh,
+      };
+    }
+
+    // 重置操作：清空患者数据与操作日志
+    if (event.action === 'resetAll' || event.action === 'reset') {
+      await resetPatientDataCollections();
+      await clearOperationLogs();
+      return {
+        action: 'resetAll',
+        success: true,
+        cleared: {
+          patients: PATIENTS_COLLECTION,
+          intake: PATIENT_INTAKE_COLLECTION,
+          cache: CACHE_COLLECTION,
+          operationLogs: PATIENT_OPERATION_LOGS_COLLECTION,
+        },
+        timestamp: Date.now(),
       };
     }
 

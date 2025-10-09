@@ -88,6 +88,8 @@
     "database:reinit": "node scripts/database-reinit.js",
     "database:backup": "node scripts/database-reinit.js --backup",
     "database:verify": "node scripts/database-reinit.js --verify-only",
+    "database:reset:readexcel": "node scripts/reset-via-readexcel.js",
+    "database:find-duplicates": "node scripts/find-duplicate-patients.js",
     "test:cleanup-verify": "node scripts/e2e/verify-cleanup.js",
     "test:cleanup": "node scripts/e2e/verify-cleanup.js --cleanup"
   }
