@@ -1329,6 +1329,7 @@ Page({
   buildMediaBadge(summary) {
     if (!summary) return null;
     const count = Number(summary.totalCount || 0);
+    if (count <= 0) return null;
     const updatedAt = Number(summary.updatedAt || 0);
     const timeText = updatedAt ? formatTimeString(updatedAt) : '';
     const text = timeText ? `附件 ${count} · ${timeText}` : `附件 ${count}`;
