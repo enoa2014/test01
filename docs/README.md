@@ -16,5 +16,4 @@
 - 变更决策（ADR）：`docs/decisions/`
 - 归档与历史材料：`docs/archives/`
 
-详细导航请查看：`docs/TOC.md`。
-
+详细导航请查看：TOC.md。

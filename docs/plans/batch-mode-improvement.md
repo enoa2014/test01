@@ -389,7 +389,7 @@ async handleBatchRemind() {
 
 - **原因**: PatientCard 组件使用 `bindtap`,无法阻止事件冒泡
 - **修复**: 将 `bindtap="handleActionTap"` 改为 `catchtap="handleActionTap"`
-- **影响文件**: [miniprogram/components/business/patient-card/index.wxml:54](miniprogram/components/business/patient-card/index.wxml#L54)
+- **影响文件**: [miniprogram/components/business/patient-card/index.wxml:54](../../miniprogram/components/business/patient-card/index.wxml#L54)
 
 ---
 

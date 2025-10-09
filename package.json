@@ -92,6 +92,7 @@
     "database:normalize-from-raw": "node scripts/normalize-from-raw.js",
     "database:find-duplicates": "node scripts/find-duplicate-patients.js",
     "test:cleanup-verify": "node scripts/e2e/verify-cleanup.js",
-    "test:cleanup": "node scripts/e2e/verify-cleanup.js --cleanup"
+    "test:cleanup": "node scripts/e2e/verify-cleanup.js --cleanup",
+    "docs:links": "node scripts/docs-check-links.js README.md"
   }
 }

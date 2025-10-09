@@ -1,8 +1,8 @@
 # 患者列表页重构总结报告
 
 > **重构时间**: 2025-10-02
-> **基于分析**: index-page-ui-analysis-v2.md (真机截图深度分析)
-> **设计参考**: docs/page-designs/patient-list-redesign.md
+> **基于分析**: ../../ux-analysis/index-page/analysis-v2.md (真机截图深度分析)
+> **设计参考**: ../../page-designs/patient-list-redesign.md
 
 ---
 
@@ -418,11 +418,11 @@ showPatientActionSheet(); // 显示患者操作菜单
 
 ## 📚 相关文档
 
-- [真机截图深度分析](./index-page-ui-analysis-v2.md)
-- [患者列表设计规范](./docs/page-designs/patient-list-redesign.md)
-- [设计令牌规范](./docs/design-system/design-tokens-spec.md)
-- [PatientCard 组件文档](./docs/business-components/patient-card.md)
-- [SmartSearchBar 组件文档](./docs/business-components/smart-search-bar.md)
+- [真机截图深度分析](../../ux-analysis/index-page/analysis-v2.md)
+- [患者列表设计规范](../../page-designs/patient-list-redesign.md)
+- [设计令牌规范](../../design-system/design-tokens-spec.md)
+- [PatientCard 组件文档](../../business-components/patient-card.md)
+- [SmartSearchBar 组件文档](../../business-components/smart-search-bar.md)
 
 ---
 

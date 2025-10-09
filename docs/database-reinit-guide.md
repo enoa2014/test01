@@ -674,9 +674,9 @@ _______________
 ## 📚 相关文档
 
 - [项目README](../README.md)
-- [云函数架构说明](../cloudfunctions/README.md)
-- [数据库设计文档](./database-schema.md)
-- [API接口文档](./api-reference.md)
+- [云函数架构说明](cloud-function-architecture.md)
+- 数据库设计文档（待补充）
+- API 接口文档（待补充）
 
 ---
 

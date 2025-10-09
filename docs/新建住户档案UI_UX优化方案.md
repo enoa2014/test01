@@ -10,7 +10,7 @@
 
 ### 2.1 现有流程架构
 
-基于 [pages/patient-intake/wizard/wizard.wxml](miniprogram/pages/patient-intake/wizard/wizard.wxml) 的五步骤向导：
+基于 [pages/patient-intake/wizard/wizard.wxml](../miniprogram/pages/patient-intake/wizard/wizard.wxml) 的五步骤向导：
 
 ```
 步骤1：基础信息 (姓名、证件类型、证件号码、性别、出生日期、联系电话)
@@ -1293,7 +1293,7 @@ migrateContactData(oldFormData) {
 | 文件路径 | 修改内容 |
 |---------|---------|
 | `miniprogram/pages/patient-intake/wizard/wizard.js` | 身份证解析、多联系人管理、步骤调整 |
-| `miniprogram/pages/patient-intake/wizard/wizard.wxml` | 字段锁定UI、联系人列表视图 |
+| `../miniprogram/pages/patient-intake/wizard/wizard.wxml` | 字段锁定UI、联系人列表视图 |
 | `miniprogram/pages/patient-intake/wizard/wizard.wxss` | 新增样式（锁定字段、联系人卡片） |
 | `scripts/migrate-contacts.js` | 联系人数据迁移脚本 |
 

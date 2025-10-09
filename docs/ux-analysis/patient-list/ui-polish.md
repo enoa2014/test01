@@ -422,10 +422,10 @@ if (latestDoctor) tags.push(latestDoctor);
 
 ## 📚 相关文档
 
-- [批量模式改进总结](./batch-mode-improvement.md)
-- [患者列表重构总结](./index-refactor-summary.md)
-- [真机UI分析 v2.0](./index-page-ui-analysis-v2.md)
-- [设计令牌规范](./docs/design-system/design-tokens-spec.md)
+- [批量模式改进总结](../../plans/batch-mode-improvement.md)
+- [患者列表重构总结](../../design/ui-refactor/changelog.md)
+- [真机UI分析 v2.0](../index-page/analysis-v2.md)
+- [设计令牌规范](../../design-system/design-tokens-spec.md)
 
 ---
 

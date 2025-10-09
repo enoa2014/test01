@@ -20,8 +20,8 @@
 
 **代码位置**:
 
-- 查看模式: [detail.wxml:197-221](miniprogram/pages/patient-detail/detail.wxml#L197-L221)
-- 编辑模式: [detail.wxml:28-194](miniprogram/pages/patient-detail/detail.wxml#L28-L194)
+- 查看模式: [detail.wxml:197-221](../../miniprogram/pages/patient-detail/detail.wxml#L197-L221)
+- 编辑模式: [detail.wxml:28-194](../../miniprogram/pages/patient-detail/detail.wxml#L28-L194)
 
 **改进建议**:
 
@@ -41,7 +41,7 @@
 **影响等级**: 🟡 中
 **影响范围**: 编辑效率、数据完整性
 
-**代码位置**: [detail.js:97-99](miniprogram/pages/patient-detail/detail.js#L97-L99)
+**代码位置**: [detail.js:97-99](../../miniprogram/pages/patient-detail/detail.js#L97-L99)
 
 **改进建议**:
 
@@ -57,8 +57,8 @@
 
 **问题描述**:
 
-- **离开确认逻辑不一致**: 代码中实现了 `wx.enableAlertBeforeUnload` 离开提示([detail.js:686-692](miniprogram/pages/patient-detail/detail.js#L686-L692)),但微信小程序环境中该API支持度有限,实际可能无法触发。
-- **放弃编辑需二次确认**: 用户点击"放弃"按钮后还需再次确认([detail.js:774-783](miniprogram/pages/patient-detail/detail.js#L774-L783)),操作路径过长。
+ - **离开确认逻辑不一致**: 代码中实现了 `wx.enableAlertBeforeUnload` 离开提示([detail.js:686-692](../../miniprogram/pages/patient-detail/detail.js#L686-L692)),但微信小程序环境中该API支持度有限,实际可能无法触发。
+ - **放弃编辑需二次确认**: 用户点击"放弃"按钮后还需再次确认([detail.js:774-783](../../miniprogram/pages/patient-detail/detail.js#L774-L783)),操作路径过长。
 - **保存按钮禁用时缺少反馈**: 当表单有校验错误时,保存按钮仅变灰(`disabled`类),未主动提示错误原因,用户需自行查找红色错误提示。
 
 **影响等级**: 🔴 高
@@ -66,9 +66,9 @@
 
 **代码位置**:
 
-- 离开确认: [detail.js:686-692](miniprogram/pages/patient-detail/detail.js#L686-L692)
-- 放弃确认: [detail.js:774-783](miniprogram/pages/patient-detail/detail.js#L774-L783)
-- 保存按钮: [detail.wxml:15-19](miniprogram/pages/patient-detail/detail.wxml#L15-L19)
+- 离开确认: [detail.js:686-692](../../miniprogram/pages/patient-detail/detail.js#L686-L692)
+- 放弃确认: [detail.js:774-783](../../miniprogram/pages/patient-detail/detail.js#L774-L783)
+- 保存按钮: [detail.wxml:15-19](../../miniprogram/pages/patient-detail/detail.wxml#L15-L19)
 
 **改进建议**:
 
@@ -89,7 +89,7 @@
 **影响等级**: 🟡 中
 **影响范围**: 历史记录查找效率
 
-**代码位置**: [detail.wxml:223-285](miniprogram/pages/patient-detail/detail.wxml#L223-L285)
+**代码位置**: [detail.wxml:223-285](../../miniprogram/pages/patient-detail/detail.wxml#L223-L285)
 
 **改进建议**:
 
@@ -105,7 +105,7 @@
 
 **问题描述**:
 
-- **编辑提示不明显**: 进入编辑模式后,仅顶部有一行灰色提示文字"未保存的修改离开页面将丢失,请完成校验后点击保存"([detail.wxml:23-25](miniprogram/pages/patient-detail/detail.wxml#L23-L25)),无背景色或边框突出,用户易忽略。
+ - **编辑提示不明显**: 进入编辑模式后,仅顶部有一行灰色提示文字"未保存的修改离开页面将丢失,请完成校验后点击保存"([detail.wxml:23-25](../../miniprogram/pages/patient-detail/detail.wxml#L23-L25)),无背景色或边框突出,用户易忽略。
 - **字段间距过小**: 编辑表单中相邻输入框间距为 `var(--space-2)`(约16rpx),在小屏设备上易误触。
 - **必填字段无统一视觉标识**: 仅部分字段通过校验错误提示告知必填,用户事后才知道,建议前置标识。
 
@@ -114,8 +114,8 @@
 
 **代码位置**:
 
-- 编辑提示: [detail.wxml:23-25](miniprogram/pages/patient-detail/detail.wxml#L23-L25)
-- 表单样式: [detail.wxss:75-85](miniprogram/pages/patient-detail/detail.wxss#L75-L85)
+- 编辑提示: [detail.wxml:23-25](../../miniprogram/pages/patient-detail/detail.wxml#L23-L25)
+- 表单样式: [detail.wxss:75-85](../../miniprogram/pages/patient-detail/detail.wxss#L75-L85)
 
 **改进建议**:
 
@@ -138,8 +138,8 @@
 
 **代码位置**:
 
-- 媒体区域: [detail.wxml:298-463](miniprogram/pages/patient-detail/detail.wxml#L298-L463)
-- 配额显示: [detail.wxml:313-322](miniprogram/pages/patient-detail/detail.wxml#L313-L322)
+- 媒体区域: [detail.wxml:298-463](../../miniprogram/pages/patient-detail/detail.wxml#L298-L463)
+- 配额显示: [detail.wxml:313-322](../../miniprogram/pages/patient-detail/detail.wxml#L313-L322)
 
 **改进建议**:
 
@@ -163,8 +163,8 @@
 
 **代码位置**:
 
-- 入住记录渲染: [detail.wxml:235-284](miniprogram/pages/patient-detail/detail.wxml#L235-L284)
-- 媒体Tab切换: [detail.js:1199-1208](miniprogram/pages/patient-detail/detail.js#L1199-L1208)
+- 入住记录渲染: [detail.wxml:235-284](../../miniprogram/pages/patient-detail/detail.wxml#L235-L284)
+- 媒体Tab切换: [detail.js:1199-1208](../../miniprogram/pages/patient-detail/detail.js#L1199-L1208)
 
 **改进建议**:
 
@@ -185,8 +185,8 @@
 
 **代码位置**:
 
-- 字段校验: [detail.js:659-693](miniprogram/pages/patient-detail/detail.js#L659-L693)
-- 错误展示: [detail.wxml:46-48](miniprogram/pages/patient-detail/detail.wxml#L46-L48)
+ - 字段校验: [detail.js:659-693](../../miniprogram/pages/patient-detail/detail.js#L659-L693)
+ - 错误展示: [detail.wxml:46-48](../../miniprogram/pages/patient-detail/detail.wxml#L46-L48)
 
 **改进建议**:
 

@@ -3,11 +3,11 @@
 > **版本**: 2.0（基于设计令牌、业务组件、设计文档重新评估）
 > **参考文档**:
 >
-> - `docs/design-system/design-tokens-spec.md` - 设计令牌规范
-> - `docs/page-designs/patient-list-redesign.md` - 列表页设计方案
-> - `docs/business-components/patient-card.md` - PatientCard 组件规范
-> - `docs/business-components/smart-search-bar.md` - SmartSearchBar 组件规范
-> - `docs/components/component-usage-analysis.md` - 已有组件清单
+> - `../../design-system/design-tokens-spec.md` - 设计令牌规范
+> - `../../page-designs/patient-list-redesign.md` - 列表页设计方案
+> - `../../business-components/patient-card.md` - PatientCard 组件规范
+> - `../../business-components/smart-search-bar.md` - SmartSearchBar 组件规范
+> - `../../components/component-usage-analysis.md` - 已有组件清单
 
 ---
 
@@ -106,7 +106,7 @@
 
 ### 2. 圆角令牌规范化
 
-根据 [圆角令牌使用指南](docs/design-system/radius-usage-guide.md):
+根据 [圆角令牌使用指南](../../design-system/radius-usage-guide.md):
 
 | 组件类型           | 推荐圆角                      | 说明          |
 | ------------------ | ----------------------------- | ------------- |
@@ -221,7 +221,7 @@
 
 #### PatientCard 组件集成
 
-根据 [PatientCard 规范](docs/business-components/patient-card.md)，组件支持三种模式：
+根据 [PatientCard 规范](../../business-components/patient-card.md)，组件支持三种模式：
 
 **模式选择**:
 
@@ -406,7 +406,7 @@ Page({
 
 #### SmartSearchBar 集成
 
-根据 [SmartSearchBar 规范](docs/business-components/smart-search-bar.md):
+根据 [SmartSearchBar 规范](../../business-components/smart-search-bar.md):
 
 **WXML**:
 
