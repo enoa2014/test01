@@ -194,8 +194,14 @@
 /* 运营指标卡片网格 - 参考列表页统计卡片 */
 .patient-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160rpx, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
+}
+
+/* 让指标卡左右边缘与下方信息卡片对齐（抵消 header 内边距） */
+.patient-header .patient-metrics-grid {
+  margin-left: calc(-1 * var(--space-4));
+  margin-right: calc(-1 * var(--space-4));
 }
 
 /* 信息卡片编辑工具 */
