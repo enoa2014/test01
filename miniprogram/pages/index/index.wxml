@@ -96,19 +96,15 @@
           size="small"
           type="primary"
           ghost="{{!batchMode}}"
-          icon-only="{{cardDensityMode === 'compact'}}"
           aria-label="{{batchMode ? '退出多选模式' : '开启多选模式'}}"
           bindtap="onToggleBatchMode"
         />
         <pm-button
           class="toolbar-action"
           text="查看分析"
-          icon="📊"
           size="small"
           type="primary"
           ghost="{{true}}"
-          icon-only="{{cardDensityMode === 'compact'}}"
-          aria-label="打开分析页"
           bindtap="onAnalysisTap"
         />
       </view>
