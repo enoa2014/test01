@@ -166,6 +166,23 @@ Day 2
 
 ---
 
+## 进展记录（持续更新）
+
+更新时间：2025-10-09
+
+已完成（代码已提交至 `miniprogram/pages/patient-detail/`）
+- [x] 状态卡支持点按打开状态弹窗（同时保留长按）
+- [x] `.detail-scroll` 增加安全区底部内边距（`env(safe-area-inset-bottom)`）
+- [x] 媒体区“下载/删除”按钮补充 `role="button"`、`hover-class` 与 `aria-label`，并统一最小高度 ≥72rpx
+- [x] `media-tabs` 增加 `role="tablist"`，单个 Tab 增加 `role="tab"` 与 `aria-selected`；排序按钮增加按压反馈与 `aria-label`
+- [x] 图片/文档为空时，增加轻量空状态与“上传”主按钮 CTA
+
+待办/建议（下一步）
+- [ ] 将媒体区自定义按钮替换为 `pm-button size="small"` 以完全统一视觉与交互
+- [ ] 在状态卡右上角补充“调整”微文案/图标，进一步提升可发现性
+- [ ] 时间轴“展开/收起”使用旋转图标替代文字，收敛视觉噪声
+- [ ] 必填字段的就地错误提示接入 `pm-input` 的 `error`/`helper`
+
 ## 变更影响面
 
 - UI 视觉与交互统一度提升，风险低、回归点集中在 `patient-detail` 页面与媒体操作。

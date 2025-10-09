@@ -1,4 +1,8 @@
 ﻿<view class="theme-root detail-container {{themeClass}}">
+  <!-- 轻提示条 -->
+  <view wx:if="{{inlineToastVisible}}" class="inline-toast {{inlineToastType}}">
+    <text>{{inlineToastText}}</text>
+  </view>
   <!-- P0-4: 骨架屏加载状态 -->
   <view wx:if="{{loading}}" class="detail-skeleton">
     <!-- 头部骨架 -->
@@ -38,16 +42,16 @@
   <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
     <view class="patient-header">
       <view class="patient-name-row">
-        <text class="patient-detail-name"
-          >{{editMode ? editForm.patientName : (patient.patientName || '')}}</text
-        >
+        <text class="patient-detail-name">{{patient.patientName || ''}}</text>
       </view>
 
       <!-- 运营指标卡片网格 -->
-      <view wx:if="{{!editMode && patient}}" class="patient-metrics-grid">
+      <view wx:if="{{patient}}" class="patient-metrics-grid">
         <view
           wx:if="{{patient.status}}"
           class="metric-card metric-card--status status-{{patient.statusClass || 'unknown'}}"
+          bindlongpress="onStatusLongPress"
+          bindtap="onStatusLongPress"
         >
           <view class="metric-card__icon"
             >{{patient.statusClass === 'in-care' ? '🏠' : patient.statusClass === 'pending' ? '⏳' :
@@ -68,216 +72,21 @@
         </view>
       </view>
 
-      <!-- 编辑工具栏独立一行 -->
-      <view class="edit-toolbar-row">
-        <pm-button
-          wx:if="{{!editMode}}"
-          text="编辑资料"
-          type="primary"
-          size="medium"
-          bindtap="onEditStart"
-        />
-        <block wx:else>
-          <pm-button text="取消" type="ghost" size="medium" bindtap="onEditCancel" />
-          <pm-button
-            text="暂存"
-            type="secondary"
-            size="medium"
-            disabled="{{!editDirty}}"
-            bindtap="onSaveDraft"
-          />
-          <pm-button
-            text="{{saving ? '保存中…' : '保存'}}"
-            type="primary"
-            size="medium"
-            loading="{{saving}}"
-            disabled="{{!editCanSave || saving}}"
-            bindtap="onSaveTap"
-          />
-        </block>
-      </view>
+      <!-- 移除顶栏“编辑资料”按钮，改用模块内编辑入口/长按 -->
 
-      <view wx:if="{{editMode}}" class="edit-mode-banner">
-        <text class="edit-mode-icon">✏️</text>
-        <text class="edit-mode-text">编辑模式:修改后请点击"保存"按钮</text>
-      </view>
+      
     </view>
 
-    <view wx:if="{{editMode}}" class="form-section">
-      <text class="form-section-title">基本信息</text>
-      <block wx:for="{{patientFieldConfig}}" wx:key="key">
-        <block wx:if="{{item.type === 'picker'}}">
-          <view class="form-field">
-            <text class="field-label">{{item.label}}</text>
-            <picker
-              mode="selector"
-              range="{{item.options}}"
-              value="{{editPickerIndex[item.key] || 0}}"
-              data-key="{{item.key}}"
-              data-options="{{item.options}}"
-              bindchange="onPickerChange"
-            >
-              <view class="picker-value"
-                >{{editForm[item.key] || item.options[0] || '请选择'}}</view
-              >
-            </picker>
-            <text wx:if="{{editErrors[item.key]}}" class="field-error"
-              >{{editErrors[item.key]}}</text
-            >
-          </view>
-        </block>
-        <block wx:elif="{{item.type === 'date'}}">
-          <view class="form-field">
-            <text class="field-label">{{item.label}}</text>
-            <picker
-              mode="date"
-              value="{{editForm[item.key]}}"
-              data-key="{{item.key}}"
-              bindchange="onDatePickerChange"
-            >
-              <view class="picker-value">{{editForm[item.key] || '请选择日期'}}</view>
-            </picker>
-            <text wx:if="{{editErrors[item.key]}}" class="field-error"
-              >{{editErrors[item.key]}}</text
-            >
-          </view>
-        </block>
-        <block wx:elif="{{item.type === 'textarea'}}">
-          <pm-input
-            label="{{item.label}}"
-            type="textarea"
-            value="{{editForm[item.key]}}"
-            placeholder="请输入{{item.label}}"
-            data-key="{{item.key}}"
-            bindinput="onEditFieldInput"
-            error="{{editErrors[item.key] || ''}}"
-            clearable="{{false}}"
-            textarea-auto-height="{{item.autoHeight}}"
-            label-position="top"
-            block="{{true}}"
-          ></pm-input>
-        </block>
-        <block wx:else>
-          <pm-input
-            label="{{item.label}}"
-            value="{{editForm[item.key]}}"
-            placeholder="请输入{{item.label}}"
-            type="{{item.keyboard === 'number' ? 'number' : 'text'}}"
-            data-key="{{item.key}}"
-            bindinput="onEditFieldInput"
-            error="{{editErrors[item.key] || ''}}"
-            clearable="{{true}}"
-            label-position="top"
-            block="{{true}}"
-          ></pm-input>
-        </block>
-      </block>
-
-      <text class="form-section-title">联系信息</text>
-      <block wx:for="{{contactFieldConfig}}" wx:key="key">
-        <block wx:if="{{item.type === 'textarea'}}">
-          <pm-input
-            label="{{item.label}}"
-            type="textarea"
-            value="{{editForm[item.key]}}"
-            placeholder="请输入{{item.label}}"
-            data-key="{{item.key}}"
-            bindinput="onEditFieldInput"
-            error="{{editErrors[item.key] || ''}}"
-            clearable="{{false}}"
-            textarea-auto-height="{{item.autoHeight}}"
-            label-position="top"
-            block="{{true}}"
-          ></pm-input>
-        </block>
-        <block wx:else>
-          <pm-input
-            label="{{item.label}}"
-            value="{{editForm[item.key]}}"
-            placeholder="请输入{{item.label}}"
-            type="{{item.keyboard === 'number' ? 'number' : 'text'}}"
-            data-key="{{item.key}}"
-            bindinput="onEditFieldInput"
-            error="{{editErrors[item.key] || ''}}"
-            clearable="{{true}}"
-            label-position="top"
-            block="{{true}}"
-          ></pm-input>
-        </block>
-      </block>
-
-      <text class="form-section-title">入住补充信息</text>
-      <block wx:for="{{intakeFieldConfig}}" wx:key="key">
-        <block wx:if="{{item.type === 'date'}}">
-          <view class="form-field">
-            <text class="field-label">{{item.label}}</text>
-            <picker
-              mode="date"
-              value="{{editForm[item.key]}}"
-              data-key="{{item.key}}"
-              bindchange="onDatePickerChange"
-            >
-              <view class="picker-value">{{editForm[item.key] || '请选择日期'}}</view>
-            </picker>
-            <text wx:if="{{editErrors[item.key]}}" class="field-error"
-              >{{editErrors[item.key]}}</text
-            >
-          </view>
-        </block>
-        <block wx:elif="{{item.type === 'textarea'}}">
-          <block wx:if="{{item.key === 'narrative'}}">
-            <pm-input
-              label="{{item.label}}"
-              type="textarea"
-              value="{{editForm[item.key]}}"
-              placeholder="请输入{{item.label}}"
-              data-key="{{item.key}}"
-              bindinput="onNarrativeInput"
-              error="{{editErrors[item.key] || ''}}"
-              clearable="{{false}}"
-              textarea-auto-height="{{item.autoHeight}}"
-              label-position="top"
-              block="{{true}}"
-            ></pm-input>
-          </block>
-          <block wx:else>
-            <pm-input
-              label="{{item.label}}"
-              type="textarea"
-              value="{{editForm[item.key]}}"
-              placeholder="请输入{{item.label}}"
-              data-key="{{item.key}}"
-              bindinput="onEditFieldInput"
-              error="{{editErrors[item.key] || ''}}"
-              clearable="{{false}}"
-              textarea-auto-height="{{item.autoHeight}}"
-              label-position="top"
-              block="{{true}}"
-            ></pm-input>
-          </block>
-        </block>
-        <block wx:else>
-          <pm-input
-            label="{{item.label}}"
-            value="{{editForm[item.key]}}"
-            placeholder="请输入{{item.label}}"
-            data-key="{{item.key}}"
-            bindinput="onEditFieldInput"
-            error="{{editErrors[item.key] || ''}}"
-            clearable="{{true}}"
-            label-position="top"
-            block="{{true}}"
-          ></pm-input>
-        </block>
-      </block>
-    </view>
-
-    <block wx:if="{{!editMode}}">
+    
+    
       <!-- P1: 信息区域卡片化 -->
       <view class="info-card-grid">
-        <view class="info-card info-card--basic" wx:if="{{basicInfo.length}}">
+        <view class="info-card info-card--basic" wx:if="{{basicInfo.length}}" bindlongpress="onModuleLongPress" data-block="basic">
           <view class="info-card-header">
             <text class="info-card-title">👤 住户基本信息</text>
+            <view class="info-card__tools">
+              <text class="info-card__edit" bindtap="onEditStart" data-block="basic">编辑</text>
+            </view>
           </view>
           <view class="info-card-body">
             <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
@@ -287,9 +96,12 @@
           </view>
         </view>
 
-        <view class="info-card info-card--contact" wx:if="{{familyInfo.length}}">
+        <view class="info-card info-card--contact" wx:if="{{familyInfo.length}}" bindlongpress="onModuleLongPress" data-block="contact">
           <view class="info-card-header">
             <text class="info-card-title">📞 联系信息</text>
+            <view class="info-card__tools">
+              <text class="info-card__edit" bindtap="onEditStart" data-block="contact">编辑</text>
+            </view>
           </view>
           <view class="info-card-body">
             <view class="info-row" wx:for="{{familyInfo}}" wx:key="label">
@@ -299,9 +111,12 @@
           </view>
         </view>
 
-        <view class="info-card info-card--economic" wx:if="{{economicInfo.length}}">
+        <view class="info-card info-card--economic" wx:if="{{economicInfo.length}}" bindlongpress="onModuleLongPress" data-block="economic">
           <view class="info-card-header">
             <text class="info-card-title">💰 经济情况</text>
+            <view class="info-card__tools">
+              <text class="info-card__edit" bindtap="onEditStart" data-block="economic">编辑</text>
+            </view>
           </view>
           <view class="info-card-body">
             <view class="info-row" wx:for="{{economicInfo}}" wx:key="label">
@@ -311,7 +126,7 @@
           </view>
         </view>
       </view>
-    </block>
+    
 
     <!-- 入住记录 -->
     <view
@@ -319,27 +134,44 @@
       wx:if="{{intakeRecordCount || visibleIntakeRecords.length}}"
     >
       <view class="section-header section-header--sub">
-        <text class="section-title">入住记录历史（{{intakeRecordCount}}条）</text>
-        <view
-          class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}"
-          bindtap="onToggleRecordsSort"
-        >
-          <text class="sort-icon">{{recordsSortOrder === 'desc' ? '▼' : '▲'}}</text>
-          <text class="sort-text">{{recordsSortOrder === 'desc' ? '最新在前' : '最早在前'}}</text>
+        <view class="records-row">
+          <text class="section-title">入住记录（{{intakeRecordCount}}条）</text>
+        </view>
+        <view class="records-controls">
+          <view
+            class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}"
+            hover-class="hover"
+            aria-label="切换排序为{{recordsSortOrder === 'desc' ? '最早' : '最新'}}"
+            bindtap="onToggleRecordsSort"
+          >
+            <text class="sort-icon">{{recordsSortOrder === 'desc' ? '▼' : '▲'}}</text>
+            <text class="sort-text">{{recordsSortOrder === 'desc' ? '最新' : '最早'}}</text>
+          </view>
+          <pm-button
+            type="primary"
+            size="small"
+            text="添加"
+            bindtap="onAddIntakeRecord"
+          />
         </view>
       </view>
-      <view wx:if="{{visibleIntakeRecords.length}}">
+      <view wx:if="{{visibleIntakeRecords.length}}" class="timeline">
         <block wx:for="{{visibleIntakeRecords}}" wx:key="intakeId">
-          <view class="intake-record-item">
+          <view class="timeline-row">
+            <view class="timeline-dot"></view>
+            <view class="intake-record-item">
             <view class="record-header-main" bindtap="onToggleRecordExpand" data-id="{{item.intakeId}}">
               <view class="record-title-row">
                 <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
+                <text class="record-time-sep">→</text>
+                <text class="record-time checkout">{{item.checkoutDisplay}}</text>
                 <view class="record-expand-control">
                   <text
                       class="record-status"
-                      wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交'}}"
+                      wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交' && item.statusDisplay !== '系统导入'}}"
                       >{{item.statusDisplay}}</text
                     >
+                    <text class="duration-badge" wx:if="{{item.durationDisplay}}">· {{item.durationDisplay}}</text>
                     <text class="record-expand-icon"
                       >{{recordsExpanded[item.intakeId] ? '收起 ▲' : '展开 ▼'}}</text
                     >
@@ -357,6 +189,10 @@
               </view>
 
               <view wx:if="{{recordsExpanded[item.intakeId]}}" class="record-details">
+                <view class="record-actions">
+                  <text class="record-action" bindtap="onEditIntakeRecord" data-id="{{item.intakeId}}">编辑</text>
+                  <text class="record-action danger" bindtap="onDeleteIntakeRecord" data-id="{{item.intakeId}}">删除</text>
+                </view>
                 <view
                   class="record-section"
                   wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
@@ -373,6 +209,14 @@
                   <view class="record-field" wx:if="{{item.doctorDisplay}}">
                     <text class="field-label">医生姓名：</text>
                     <text class="field-value">{{item.doctorDisplay}}</text>
+                  </view>
+                </view>
+
+                <view class="record-section" wx:if="{{item.durationDisplay}}">
+                  <text class="record-section-title">时长</text>
+                  <view class="record-field">
+                    <text class="field-label">本次入住：</text>
+                    <text class="field-value">{{item.durationDisplay}}</text>
                   </view>
                 </view>
 
@@ -404,20 +248,28 @@
                 </view>
               </view>
             </view>
-          </block>
+          </view>
+        </block>
       </view>
       <view wx:else class="records-placeholder">暂无入住记录</view>
     </view>
 
     <view class="operation-log-section" wx:if="{{operationLogs.length}}">
-      <text class="section-title">操作日志</text>
-      <view class="operation-log-item" wx:for="{{operationLogs}}" wx:key="index">
-        <view class="log-header">
-          <text class="log-time">{{item.timeText || ''}}</text>
-          <text class="log-operator">{{item.operatorName || '未知操作人'}}</text>
+      <view class="section-header section-header--sub" bindtap="onToggleOperationLogs">
+        <text class="section-title">操作日志（{{operationLogs.length}}条）</text>
+        <view class="record-expand-control">
+          <text class="record-expand-icon">{{operationLogsCollapsed ? '展开 ▼' : '收起 ▲'}}</text>
         </view>
-        <text class="log-message">{{item.message || '更新住户资料'}}</text>
       </view>
+      <block wx:if="{{!operationLogsCollapsed}}">
+        <view class="operation-log-item" wx:for="{{operationLogs}}" wx:key="index">
+          <view class="log-header">
+            <text class="log-time">{{item.timeText || ''}}</text>
+            <text class="log-operator">{{item.operatorName || '未知操作人'}}</text>
+          </view>
+          <text class="log-message">{{item.message || '更新住户资料'}}</text>
+        </view>
+      </block>
     </view>
 
     <view class="media-section">
@@ -470,16 +322,22 @@
                 </view>
               </view>
             </view>
-            <view class="media-tabs">
+            <view class="media-tabs" role="tablist">
               <view
                 class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}"
                 data-tab="images"
+                role="tab"
+                aria-selected="{{media.tab === 'images'}}"
+                hover-class="hover"
                 bindtap="onMediaTabChange"
                 >照片墙</view
               >
               <view
                 class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}"
                 data-tab="documents"
+                role="tab"
+                aria-selected="{{media.tab === 'documents'}}"
+                hover-class="hover"
                 bindtap="onMediaTabChange"
                 >文档列表</view
               >
@@ -530,6 +388,9 @@
                 <view slot="footer" class="media-card__footer">
                   <view
                     class="media-card__button {{item.downloading ? 'loading' : ''}}"
+                    role="button"
+                    hover-class="hover"
+                    aria-label="{{item.downloading ? '下载中' : '下载'}} {{item.displayName}}"
                     data-id="{{item.id}}"
                     data-index="{{index}}"
                     catchtap="onImageDownloadTap"
@@ -538,6 +399,9 @@
                   </view>
                   <view
                     class="media-card__button danger {{item.deleting ? 'loading' : ''}}"
+                    role="button"
+                    hover-class="hover"
+                    aria-label="{{item.deleting ? '处理中' : '删除'}} {{item.displayName}}"
                     data-id="{{item.id}}"
                     data-index="{{index}}"
                     data-category="image"
@@ -549,7 +413,16 @@
               </pm-card>
             </view>
           </view>
-          <view wx:if="{{!media.images.length}}" class="placeholder">暂无图片资料</view>
+          <view wx:if="{{!media.images.length}}" class="media-empty-state">
+            <view class="media-empty-icon">🖼️</view>
+            <view class="media-empty-text">暂无图片资料</view>
+            <pm-button
+              text="上传图片"
+              type="primary"
+              size="small"
+              bindtap="onUploadImagesTap"
+            />
+          </view>
         </view>
 
         <view wx:elif="{{media.tab === 'documents'}}">
@@ -586,6 +459,9 @@
               <view class="media-cell actions">
                 <view
                   class="doc-action-button {{item.downloading ? 'loading' : ''}}"
+                  role="button"
+                  hover-class="hover"
+                  aria-label="{{item.downloading ? '下载中' : '下载'}} {{item.displayName}}"
                   data-id="{{item.id}}"
                   data-index="{{index}}"
                   catchtap="onDocumentDownloadTap"
@@ -594,6 +470,9 @@
                 </view>
                 <view
                   class="doc-action-button danger {{item.deleting ? 'loading' : ''}}"
+                  role="button"
+                  hover-class="hover"
+                  aria-label="{{item.deleting ? '处理中' : '删除'}} {{item.displayName}}"
                   data-id="{{item.id}}"
                   data-index="{{index}}"
                   data-category="document"
@@ -604,11 +483,188 @@
               </view>
             </view>
           </view>
-          <view wx:if="{{!media.documents.length}}" class="placeholder">暂无文档资料</view>
+          <view wx:if="{{!media.documents.length}}" class="media-empty-state">
+            <view class="media-empty-icon">📄</view>
+            <view class="media-empty-text">暂无文档资料</view>
+            <pm-button
+              text="上传文档"
+              type="primary"
+              size="small"
+              bindtap="onUploadDocumentsTap"
+            />
+          </view>
         </view>
       </block>
     </view>
   </scroll-view>
+
+  <!-- 状态调整对话框（与列表页一致） -->
+  <pm-dialog
+    visible="{{statusDialogVisible}}"
+    title="调整状态"
+    confirm-type="primary"
+    cancel-text=""
+    confirm-text=""
+    close-on-confirm="{{false}}"
+    close-on-cancel="{{!statusDialogSubmitting}}"
+    show-close="{{!statusDialogSubmitting}}"
+    mask-closable="{{!statusDialogSubmitting}}"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    bind:close="onStatusDialogClose"
+  >
+    <view class="status-dialog__body">
+      <view class="status-dialog__summary" wx:if="{{statusDialogPatient}}">
+        <text class="status-dialog__name">{{statusDialogPatient.patientName || '该住户'}}</text>
+        <text class="status-dialog__desc">选择新的住户状态，便于列表展示一致。</text>
+      </view>
+      <view class="status-dialog__options">
+        <view
+          wx:for="{{statusDialogOptions}}"
+          wx:key="id"
+          class="status-dialog__option {{statusDialogForm.value === item.id ? 'status-dialog__option--active' : ''}}"
+          bindtap="onStatusOptionSelect"
+          data-value="{{item.id}}"
+        >
+          <view class="status-dialog__option-main">
+            <text class="status-dialog__option-radio">{{statusDialogForm.value === item.id ? '●' : '○'}}</text>
+            <text class="status-dialog__option-label">{{item.label}}</text>
+          </view>
+          <text class="status-dialog__option-tip" wx:if="{{item.id === 'in_care'}}">用于正在小家入住的住户</text>
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'pending'}}">待入住房、随访等状态</text>
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'discharged'}}">已办理离开或转出</text>
+        </view>
+      </view>
+      <pm-input
+        label="备注"
+        type="textarea"
+        placeholder="可选，说明状态调整原因"
+        value="{{statusDialogForm.note}}"
+        maxlength="120"
+        textarea-auto-height="{{true}}"
+        disabled="{{statusDialogSubmitting}}"
+        bind:input="onStatusNoteInput"
+      />
+    </view>
+    <view slot="footer" class="status-dialog__footer">
+      <pm-button
+        text="取消"
+        type="ghost"
+        size="medium"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogCancel"
+      />
+      <pm-button
+        text="{{statusDialogSubmitting ? '处理中...' : '确认调整'}}"
+        type="primary"
+        size="medium"
+        loading="{{statusDialogSubmitting}}"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogConfirm"
+      />
+    </view>
+  </pm-dialog>
+
+  <!-- 入住条目编辑对话框 -->
+  <pm-dialog
+    visible="{{recordEditDialogVisible}}"
+    title="编辑入住记录"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    scrollable="{{true}}"
+    close-on-cancel="{{!recordEditSubmitting}}"
+    show-close="{{!recordEditSubmitting}}"
+    bind:close="onRecordEditCancel"
+  >
+    <scroll-view scroll-y class="dialog-scroll">
+    <view class="checkout-dialog__datetime">
+      <text class="checkout-dialog__field-label">入住时间</text>
+      <view class="checkout-dialog__datetime-row">
+        <picker mode="date" value="{{recordEditForm.intakeDate}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordIntakeDateChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.intakeDate || '选择日期'}}</view>
+        </picker>
+        <picker mode="time" value="{{recordEditForm.intakeTime}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordIntakeTimeChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.intakeTime || '选择时间'}}</view>
+        </picker>
+      </view>
+    </view>
+    <view class="checkout-dialog__datetime">
+      <text class="checkout-dialog__field-label">离开时间（可选）</text>
+      <view class="checkout-dialog__datetime-row">
+        <picker mode="date" value="{{recordEditForm.checkoutDate}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordCheckoutDateChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.checkoutDate || '选择日期'}}</view>
+        </picker>
+        <picker mode="time" value="{{recordEditForm.checkoutTime}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordCheckoutTimeChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.checkoutTime || '选择时间'}}</view>
+        </picker>
+      </view>
+    </view>
+    <pm-input label="就诊医院" value="{{recordEditForm.hospital}}" bind:input="onRecordFieldInput" data-field="hospital" />
+    <pm-input label="医院诊断" value="{{recordEditForm.diagnosis}}" bind:input="onRecordFieldInput" data-field="diagnosis" />
+    <pm-input label="医生姓名" value="{{recordEditForm.doctor}}" bind:input="onRecordFieldInput" data-field="doctor" />
+    <pm-input label="症状详情" type="textarea" value="{{recordEditForm.symptoms}}" bind:input="onRecordFieldInput" data-field="symptoms" />
+    <pm-input label="医治过程" type="textarea" value="{{recordEditForm.treatmentProcess}}" bind:input="onRecordFieldInput" data-field="treatmentProcess" />
+    <pm-input label="后续治疗安排" type="textarea" value="{{recordEditForm.followUpPlan}}" bind:input="onRecordFieldInput" data-field="followUpPlan" />
+    </scroll-view>
+    <view slot="footer" class="checkout-dialog__footer">
+      <pm-button text="取消" type="ghost" size="medium" disabled="{{recordEditSubmitting}}" bindtap="onRecordEditCancel" />
+      <pm-button text="保存" type="primary" size="medium" loading="{{recordEditSubmitting}}" disabled="{{recordEditSubmitting}}" bindtap="onRecordEditConfirm" />
+    </view>
+  </pm-dialog>
+
+  <!-- 模块编辑对话框（基本/联系/经济） -->
+  <pm-dialog
+    visible="{{moduleEditDialogVisible}}"
+    title="编辑信息"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    scrollable="{{true}}"
+    close-on-cancel="{{true}}"
+    show-close="{{true}}"
+    bind:close="onBlockCancel"
+  >
+    <scroll-view scroll-y class="dialog-scroll">
+    <view wx:if="{{moduleEditBlock==='basic'}}">
+      <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" data-field="patientName" bind:input="onBlockFieldInput" />
+      <view class="form-group">
+        <label class="form-label required">性别</label>
+        <radio-group class="radio-group" bindchange="onBlockGenderChange">
+          <radio value="男" checked="{{blockEditForm.gender==='男'}}">男</radio>
+          <radio value="女" checked="{{blockEditForm.gender==='女'}}">女</radio>
+        </radio-group>
+      </view>
+      <view class="form-group">
+        <label class="form-label required">出生日期</label>
+        <picker mode="date" value="{{blockEditForm.birthDate}}" bindchange="onBlockBirthDateChange">
+          <view class="picker-display">{{blockEditForm.birthDate || '请选择出生日期'}}</view>
+        </picker>
+      </view>
+      <pm-input label="证件类型" value="{{blockEditForm.idType}}" data-field="idType" bind:input="onBlockFieldInput" />
+      <pm-input label="证件号码" required="{{true}}" value="{{blockEditForm.idNumber}}" data-field="idNumber" bind:input="onBlockFieldInput" />
+      <pm-input label="联系电话" value="{{blockEditForm.phone}}" data-field="phone" bind:input="onBlockFieldInput" />
+      <pm-input label="籍贯" value="{{blockEditForm.nativePlace}}" data-field="nativePlace" bind:input="onBlockFieldInput" />
+      <pm-input label="民族" value="{{blockEditForm.ethnicity}}" data-field="ethnicity" bind:input="onBlockFieldInput" />
+    </view>
+
+    <view wx:elif="{{moduleEditBlock==='contact'}}">
+      <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" data-field="address" bind:input="onBlockFieldInput" />
+      <pm-input label="备用联系人" value="{{blockEditForm.backupContact}}" data-field="backupContact" bind:input="onBlockFieldInput" />
+      <pm-input label="备用联系电话" value="{{blockEditForm.backupPhone}}" data-field="backupPhone" bind:input="onBlockFieldInput" />
+      <pm-input label="父亲联系方式" value="{{blockEditForm.fatherInfo}}" data-field="fatherInfo" bind:input="onBlockFieldInput" />
+      <pm-input label="母亲联系方式" value="{{blockEditForm.motherInfo}}" data-field="motherInfo" bind:input="onBlockFieldInput" />
+      <pm-input label="其他监护人" value="{{blockEditForm.guardianInfo}}" data-field="guardianInfo" bind:input="onBlockFieldInput" />
+    </view>
+
+    <view wx:elif="{{moduleEditBlock==='economic'}}">
+      <pm-input label="家庭经济情况" type="textarea" value="{{blockEditForm.familyEconomy}}" data-field="familyEconomy" bind:input="onBlockFieldInput" />
+    </view>
+    </scroll-view>
+
+    <view slot="footer" class="checkout-dialog__footer">
+      <pm-button text="取消" type="ghost" size="medium" bindtap="onBlockCancel" />
+      <pm-button text="保存" type="primary" size="medium" bindtap="onBlockSave" />
+    </view>
+  </pm-dialog>
 
   <view wx:if="{{textPreview.visible}}" class="text-preview-mask" catchtouchmove="noop">
     <view class="text-preview-dialog">
