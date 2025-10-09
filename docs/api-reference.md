@@ -56,9 +56,18 @@ wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'list', pageSize
 - `createPatient`：创建患者（表单）
   - 入参：`{ formData: {...见源码必填校验...} }`
   - 出参：`{ success: true, data: { patientKey, intakeId? } }`
-- `saveDraft`/`getDraft`：草稿保存/获取
+- `saveDraft`：保存草稿
+  - 入参：`{ draftId?: string, formData: {...} }`
+  - 出参：`{ success: true, data: { draftId, expiresAt } }`
+- `getDraft`：获取草稿
+  - 入参：`{ draftId: string }`
+  - 出参：`{ success: true, data: { formData, expiresAt } }`
 - `submit`：提交入住（表单）
+  - 入参：`{ formData: {...} }`
+  - 出参：`{ success: true, data: { patientKey, intakeId } }`
 - `updatePatient`：更新患者（编辑资料）
+  - 入参：`{ patientKey: string, formData: {...}, audit?: { operatorId?, operatorName?, message?, extra? } }`
+  - 出参：`{ success: true, data: { patientUpdated: boolean, intakeUpdated: boolean, updatedAt } }`
 - `updateIntakeRecord`：新增/更新入住条目
   - 入参（部分）：`{ patientKey: string, intakeId?: string, intakeTime?: number, checkoutAt?: number, hospital?, diagnosis?, doctor?, ... }`
   - 出参：`{ success: true, data: { intakeId, intakeTime, checkoutAt?, admissionCount?, latestAdmissionDate? } }`
@@ -69,12 +78,73 @@ wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'list', pageSize
 - `updateCareStatus`：手动调整住户状态
   - 入参：`{ patientKey: string, careStatus: 'in_care'|'pending'|'discharged', note?: string, operatorId?: string, operatorName?: string }`
 - `getConfig`：入住配置
+  - 入参：`{}`；出参包含 `situationConfig` 与 `uploadConfig`
 - `cleanupDrafts`：清理过期草稿
+  - 入参：`{}`；出参包含 `deletedCount`
 - `syncFromExcel`：调用 readExcel 同步
+  - 入参：`{ syncBatchId?: string, forceRefresh?: boolean }`
 ## patientMedia（附件/媒体）
 - 动作：`summary`、`prepareUpload`、`completeUpload`、`list`、`delete`、`download`、`preview`、`previewTxt`、`checkAccess`、`cleanupIntakeFiles`
-- 典型入参：`{ patientKey, type?: 'image'|'doc', fileId?, mediaId?, uploadToken?... }`
-- 返回：各动作返回对应的列表、访问令牌、或操作结果；详情见源码 `cloudfunctions/patientMedia/index.js`
+
+### summary
+- 入参：`{ patientKey: string }`
+- 出参：`{ success: true, data: { totalCount: number, totalBytes: number, updatedAt: number } }`
+
+### prepareUpload（预检与配额校验）
+- 入参：`{ patientKey: string, fileName: string, sizeBytes: number, mimeType?: string, fileUuid?: string }`
+- 校验：单文件 ≤ 10MB，配额剩余数量/容量充足
+- 出参（节选）：
+  - `data.cloudPath`/`storagePath`：建议的云路径
+  - `data.fileUuid`、`data.uploadId`：本次上传标识
+  - `data.thumbPath`（图片）与 `data.quota`（配额摘要）
+
+### completeUpload（入库与生成缩略图）
+- 入参：`{ patientKey: string, fileUuid: string, fileId|fileID: string, fileName?: string, displayName?: string, storagePath?: string, category?: string, intakeId?: string }`
+- 逻辑：校验空文件/大小/重复（hash 去重）；图片生成缩略图；入库并更新配额
+- 出参：`{ success: true, data: { media: Media, quota } }`
+
+### list（按患者列出媒体）
+- 入参：`{ patientKey: string }`
+- 出参：`{ success: true, data: { images: Media[], documents: Media[], quota } }`
+
+### delete（删除单个媒体）
+- 入参：`{ mediaId: string }`
+- 出参：`{ success: true, data: { quota, deletedAt } }`
+
+### download（生成带 Content-Disposition 的下载链接）
+- 入参：`{ mediaId: string }`
+- 出参：`{ success: true, data: { url: string, expiresAt: number } }`
+
+### preview（图片预览）
+- 入参：`{ mediaId: string, variant?: 'thumb'|'origin' }`
+- 出参：`{ success: true, data: { url: string, expiresAt: number } }`
+
+### previewTxt（TXT 在线预览）
+- 入参：`{ mediaId: string }`
+- 限制：文件 ≤ 1MB 且 `mimeType === 'text/plain'`
+- 出参：`{ success: true, data: { content: string, length: number } }`
+
+### checkAccess（鉴权探测）
+- 入参：`{}`（需具备相应权限）
+- 出参：`{ success: true, data: { allowed: true, adminId } }`
+
+### cleanupIntakeFiles（按入住记录批量清理）
+- 入参：`{ intakeId: string }`
+- 出参：`{ success: true, data: { deletedCount: number } }`
+
+示例：
+```js
+// 预检与上传
+const prep = await wx.cloud.callFunction({
+  name: 'patientMedia',
+  data: { action: 'prepareUpload', patientKey, fileName, sizeBytes }
+});
+// 上传至 prep.result.data.cloudPath 后，调用 complete
+await wx.cloud.callFunction({
+  name: 'patientMedia',
+  data: { action: 'completeUpload', patientKey, fileUuid: prep.result.data.fileUuid, fileID }
+});
+```
 
 ## patientService（聚合服务）
 - 说明：代理到 `patientProfile` 并扩展 `fullDetail`
