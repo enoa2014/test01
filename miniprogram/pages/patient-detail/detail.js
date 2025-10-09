@@ -35,7 +35,6 @@ const {
 } = require('./data-mappers.js');
 
 const { getDefaultQuota, makeQuotaPayload, createMediaService } = require('./media-service.js');
-const { formatAge } = require('../../utils/date.js');
 
 const PATIENT_CACHE_KEY = 'patient_list_cache';
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
@@ -362,7 +361,6 @@ Page({
     loading: true,
     error: '',
     patient: null,
-    patientHeaderMeta: '',
     basicInfo: [],
     familyInfo: [],
     economicInfo: [],
@@ -448,20 +446,7 @@ Page({
     inlineToastText: '',
     inlineToastType: 'success', // success | error
   },
-  _buildHeaderMeta(fromPatient) {
-    const p = fromPatient || {};
-    const parts = [];
-    const gender = normalizeString(p.gender);
-    if (gender) parts.push(gender);
-    const ageText = formatAge(p.birthDate) || '';
-    if (ageText) parts.push(ageText);
-    const id = normalizeString(p.idNumber);
-    if (id) {
-      const tail = String(id).slice(-4);
-      if (tail) parts.push(`尾号${tail}`);
-    }
-    return parts.join(' · ');
-  },
+  
 
   handleThemeChange(theme) {
     this.setData({
@@ -634,7 +619,6 @@ Page({
       const current = this.data.patient || {};
       const nextPatient = { ...current, ...updates };
       const patch = { patient: nextPatient, moduleEditDialogVisible: false, moduleEditBlock: '', blockEditForm: {} };
-      patch.patientHeaderMeta = this._buildHeaderMeta(nextPatient);
       if (block === 'basic') {
         patch.basicInfo = this._rebuildBasicInfoDisplay(nextPatient, this.data.basicInfo);
       } else if (block === 'contact') {
@@ -1448,7 +1432,6 @@ Page({
       }
 
       const patientInfoForDisplay = Object.keys(patientDisplay).length ? patientDisplay : null;
-      const headerMeta = patientInfoForDisplay ? this._buildHeaderMeta(patientInfoForDisplay) : '';
 
       const resolvedCount = Number.isFinite(serverCount)
         ? serverCount
@@ -1458,7 +1441,6 @@ Page({
         {
           loading: false,
           patient: patientInfoForDisplay,
-          patientHeaderMeta: headerMeta,
           basicInfo: basicInfoDisplay,
           familyInfo: familyInfoDisplay,
           economicInfo: economicInfoDisplay,
@@ -1599,7 +1581,6 @@ Page({
 
     this.setData({
       patient: nextPatient,
-      patientHeaderMeta: this._buildHeaderMeta(nextPatient),
       basicInfo: nextBasicInfo,
       familyInfo: nextFamilyInfo,
     });

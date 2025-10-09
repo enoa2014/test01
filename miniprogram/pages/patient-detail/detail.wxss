@@ -189,11 +189,7 @@
   color: var(--color-text-primary);
 }
 
-.patient-detail-meta {
-  margin-left: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
+
 
 /* 运营指标卡片网格 - 参考列表页统计卡片 */
 .patient-metrics-grid {
