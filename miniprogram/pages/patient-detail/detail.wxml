@@ -43,7 +43,6 @@
     <view class="patient-header">
       <view class="patient-name-row">
         <text class="patient-detail-name">{{patient.patientName || ''}}</text>
-        <text wx:if="{{patientHeaderMeta}}" class="patient-detail-meta">{{patientHeaderMeta}}</text>
       </view>
 
       <!-- 运营指标卡片网格 -->
@@ -54,7 +53,6 @@
           bindlongpress="onStatusLongPress"
           bindtap="onStatusLongPress"
         >
-          <view class="metric-card__tool" bindtap="onStatusLongPress">调整</view>
           <view class="metric-card__icon"
             >{{patient.statusClass === 'in-care' ? '🏠' : patient.statusClass === 'pending' ? '⏳' :
             patient.statusClass === 'checked-out' ? '👋' : '📋'}}</view
@@ -174,7 +172,7 @@
                       >{{item.statusDisplay}}</text
                     >
                     <text class="duration-badge" wx:if="{{item.durationDisplay}}">· {{item.durationDisplay}}</text>
-                    <text class="record-expand-icon {{recordsExpanded[item.intakeId] ? 'expanded' : ''}}">▶</text>
+                    <text class="record-expand-icon">{{recordsExpanded[item.intakeId] ? '▲' : '▼'}}</text>
                   </view>
                 </view>
 

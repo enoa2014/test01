@@ -474,10 +474,10 @@
 .records-controls { display: flex; align-items: center; gap: var(--space-3); }
 
 /* 时间轴样式 */
-.timeline { position: relative; border-left: 2rpx solid var(--color-border-secondary); margin-left: 20rpx; }
+.timeline { position: relative; border-left: none; margin-left: 0; }
 .timeline-row { position: relative; display: flex; align-items: flex-start; }
-.timeline-dot { position: absolute; left: -7rpx; top: 22rpx; width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 0 2rpx var(--color-bg-primary); }
-.timeline-row .intake-record-item { margin-left: 12rpx; }
+.timeline-dot { display: none; }
+.timeline-row .intake-record-item { margin-left: 0; width: 100%; }
 
 .records-placeholder {
   padding: var(--space-3);
@@ -1091,14 +1091,6 @@
   background: var(--bg-info-soft);
   border-radius: var(--radius-sm);
   transition: var(--transition-base);
-}
-
-.record-expand-icon {
-  display: inline-block;
-  transform: rotate(0deg);
-}
-.record-expand-icon.expanded {
-  transform: rotate(90deg);
 }
 
 .record-preview {
