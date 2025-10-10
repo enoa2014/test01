@@ -23,6 +23,7 @@ const PATIENT_INTAKE_COLLECTION = 'patient_intake_records';
 const PATIENT_MEDIA_COLLECTION = 'patient_media';
 const PATIENT_MEDIA_QUOTA_COLLECTION = 'patient_media_quota';
 const PATIENT_OPERATION_LOGS_COLLECTION = 'patient_operation_logs';
+const ADMINS_COLLECTION = 'admins';
 const PATIENT_CACHE_DOC_ID = 'patients_summary_cache';
 const PATIENT_LIST_CACHE_TTL = 5 * 60 * 1000;
 const DEFAULT_PATIENT_LIST_LIMIT = 80;
@@ -98,6 +99,494 @@ function prefer() {
     }
   }
   return '';
+}
+
+const DEFAULT_CARE_STATUS = 'in_care';
+const ALLOWED_GENDERS = new Set(['男', '女', '其他']);
+
+function escapeRegExp(input = '') {
+  return String(input).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeIdNumber(value) {
+  const normalized = normalizeSpacing(value);
+  return normalized ? normalized.toUpperCase() : '';
+}
+
+function normalizePhoneNumber(value) {
+  const normalized = normalizeSpacing(value);
+  if (!normalized) {
+    return '';
+  }
+  return normalized.replace(/[-\s]+/g, '');
+}
+
+function buildContactList(payload = {}) {
+  const contacts = [];
+  const seen = new Set();
+  const pushContact = (role, name, phone) => {
+    const normalizedName = normalizeSpacing(name);
+    const normalizedPhone = normalizePhoneNumber(phone);
+    if (!normalizedName && !normalizedPhone) {
+      return;
+    }
+    const key = `${role}|${normalizedName.toLowerCase()}|${normalizedPhone}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    contacts.push({
+      role,
+      name: normalizedName,
+      phone: normalizedPhone,
+    });
+  };
+
+  pushContact('father', payload.fatherContactName, payload.fatherContactPhone);
+  pushContact('mother', payload.motherContactName, payload.motherContactPhone);
+  pushContact('guardian', payload.guardianContactName, payload.guardianContactPhone);
+  pushContact('backup', payload.backupContact, payload.backupPhone);
+
+  return contacts;
+}
+
+function resolveAuthContext(event = {}) {
+  let wxContext = {};
+  let tcContext = {};
+  try {
+    wxContext = typeof cloud.getWXContext === 'function' ? cloud.getWXContext() : {};
+  } catch (error) {
+    wxContext = {};
+  }
+  try {
+    tcContext = typeof cloud.getTencentCloudContext === 'function' ? cloud.getTencentCloudContext() : {};
+  } catch (error) {
+    tcContext = {};
+  }
+
+  const userInfo = (event && typeof event === 'object' && event.userInfo) || {};
+
+  const customUserId = normalizeSpacing(
+    userInfo.customUserId ||
+      userInfo.customUserID ||
+      userInfo.uid ||
+      wxContext.customUserId ||
+      wxContext.CUSTOM_USER_ID ||
+      tcContext.customUserId ||
+      tcContext.CUSTOM_USER_ID
+  );
+
+  const openId = normalizeSpacing(
+    userInfo.openId ||
+      userInfo.OPENID ||
+      wxContext.OPENID ||
+      wxContext.openId ||
+      tcContext.OPENID ||
+      tcContext.openId
+  );
+
+  const unionId = normalizeSpacing(
+    userInfo.unionId ||
+      userInfo.UNIONID ||
+      wxContext.UNIONID ||
+      wxContext.unionId ||
+      tcContext.UNIONID ||
+      tcContext.unionId
+  );
+
+  return {
+    customUserId,
+    openId,
+    unionId,
+    userInfo,
+    wxContext,
+    tcContext,
+  };
+}
+
+async function requireAdmin(event = {}) {
+  const authContext = resolveAuthContext(event);
+  const adminId = authContext.customUserId;
+  if (!adminId) {
+    throw makeError('FORBIDDEN', '当前用户未登录或权限不足');
+  }
+
+  await ensureCollectionExists(db, ADMINS_COLLECTION);
+
+  let adminDoc = null;
+  try {
+    const docRes = await db.collection(ADMINS_COLLECTION).doc(adminId).get();
+    if (docRes && docRes.data) {
+      adminDoc = docRes.data;
+    }
+  } catch (error) {
+    const code = error && (error.errCode !== undefined ? error.errCode : error.code);
+    if (
+      code !== 'DOCUMENT_NOT_FOUND' &&
+      code !== 'DATABASE_DOCUMENT_NOT_EXIST' &&
+      code !== -1
+    ) {
+      console.warn('requireAdmin direct lookup failed', adminId, error);
+    }
+  }
+
+  if (!adminDoc) {
+    try {
+      const res = await db
+        .collection(ADMINS_COLLECTION)
+        .where({ _id: adminId })
+        .limit(1)
+        .get();
+      if (res && Array.isArray(res.data) && res.data.length) {
+        adminDoc = res.data[0];
+      }
+    } catch (error) {
+      console.warn('requireAdmin fallback lookup failed', adminId, error);
+    }
+  }
+
+  if (!adminDoc || adminDoc.status === 'disabled') {
+    throw makeError('FORBIDDEN', '当前账号未授权或已被禁用');
+  }
+
+  return {
+    adminId,
+    adminDoc,
+    authContext,
+  };
+}
+
+function generatePatientKey(seed) {
+  const normalized = normalizeSpacing(seed)
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 12)
+    .toLowerCase();
+  const base = normalized || 'patient';
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 6);
+  return `pat_${base}_${timestamp}${random}`;
+}
+
+function sanitizePatientPayload(input = {}, options = {}) {
+  const fillDefaults = !!options.fillDefaults;
+  const payload = {};
+
+  const hasOwn = key => Object.prototype.hasOwnProperty.call(input, key);
+  const pick = keys => {
+    for (let i = 0; i < keys.length; i += 1) {
+      if (hasOwn(keys[i])) {
+        return input[keys[i]];
+      }
+    }
+    return input[keys[0]];
+  };
+
+  const assign = (targetKey, keys, normalizer = normalizeSpacing) => {
+    const list = Array.isArray(keys) ? keys : [keys];
+    const provided = list.some(hasOwn);
+    if (!provided && !fillDefaults) {
+      return;
+    }
+    const raw = pick(list);
+    const normalized = normalizer(raw);
+    payload[targetKey] = normalized;
+  };
+
+  assign('patientKey', ['patientKey', '_id']);
+  assign('recordKey', ['recordKey']);
+  assign('patientName', ['patientName', 'name']);
+
+  const genderProvided = hasOwn('gender') || hasOwn('sex');
+  if (genderProvided || fillDefaults) {
+    const rawGender = pick(['gender', 'sex']);
+    const genderLabel = mapGenderLabel(rawGender);
+    const resolvedGender = genderLabel ? (ALLOWED_GENDERS.has(genderLabel) ? genderLabel : '其他') : '';
+    payload.gender = resolvedGender;
+    payload.genderLabel = resolvedGender;
+  }
+
+  assign('birthDate', ['birthDate', 'birth_day', 'birthDay']);
+  assign('nativePlace', ['nativePlace', 'placeOfOrigin', 'birthPlace']);
+  assign('ethnicity', ['ethnicity']);
+  assign('idType', ['idType', 'identityType']);
+  assign('idNumber', ['idNumber', 'idCardNumber', 'idNo'], normalizeIdNumber);
+  assign('phone', ['phone', 'mobile', 'telephone'], normalizePhoneNumber);
+  assign('address', ['address', 'homeAddress', 'nativePlaceAddress']);
+  assign('backupContact', ['backupContact', 'emergencyContact']);
+  assign('backupPhone', ['backupPhone', 'emergencyPhone'], normalizePhoneNumber);
+  assign('fatherContactName', ['fatherContactName', 'fatherName']);
+  assign('fatherContactPhone', ['fatherContactPhone', 'fatherPhone'], normalizePhoneNumber);
+  assign('motherContactName', ['motherContactName', 'motherName']);
+  assign('motherContactPhone', ['motherContactPhone', 'motherPhone'], normalizePhoneNumber);
+  assign('guardianContactName', ['guardianContactName', 'guardianName', 'otherGuardian']);
+  assign('guardianContactPhone', ['guardianContactPhone', 'guardianPhone'], normalizePhoneNumber);
+  assign('summaryCaregivers', ['summaryCaregivers', 'caregivers']);
+  assign('checkoutAt', ['checkoutAt', 'dischargeAt']);
+  assign('checkoutReason', ['checkoutReason']);
+  assign('checkoutNote', ['checkoutNote']);
+  assign('createdFrom', ['createdFrom']);
+
+  const careStatusProvided = hasOwn('careStatus');
+  if (careStatusProvided || fillDefaults) {
+    payload.careStatus = normalizeSpacing(input.careStatus) || DEFAULT_CARE_STATUS;
+  }
+
+  if (fillDefaults) {
+    const ensureKeys = [
+      'patientKey',
+      'recordKey',
+      'patientName',
+      'gender',
+      'genderLabel',
+      'birthDate',
+      'nativePlace',
+      'ethnicity',
+      'idType',
+      'idNumber',
+      'phone',
+      'address',
+      'backupContact',
+      'backupPhone',
+      'fatherContactName',
+      'fatherContactPhone',
+      'motherContactName',
+      'motherContactPhone',
+      'guardianContactName',
+      'guardianContactPhone',
+      'summaryCaregivers',
+      'careStatus',
+      'checkoutAt',
+      'checkoutReason',
+      'checkoutNote',
+      'createdFrom',
+    ];
+    ensureKeys.forEach(key => {
+      if (payload[key] === undefined) {
+        if (key === 'careStatus') {
+          payload[key] = DEFAULT_CARE_STATUS;
+        } else if (key === 'createdFrom') {
+          payload[key] = 'web-admin';
+        } else {
+          payload[key] = '';
+        }
+      }
+    });
+  }
+
+  const phones = new Set();
+  [
+    payload.phone,
+    payload.backupPhone,
+    payload.fatherContactPhone,
+    payload.motherContactPhone,
+    payload.guardianContactPhone,
+  ].forEach(value => {
+    const normalized = normalizePhoneNumber(value);
+    if (normalized) {
+      phones.add(normalized);
+    }
+  });
+  payload.phones = Array.from(phones);
+
+  if (fillDefaults && !payload.createdFrom) {
+    payload.createdFrom = 'web-admin';
+  }
+
+  return payload;
+}
+
+function pickExistingField(doc, field, fallbacks = []) {
+  if (!doc) {
+    return '';
+  }
+  const candidates = [field, ...fallbacks];
+  for (let i = 0; i < candidates.length; i += 1) {
+    const key = candidates[i];
+    if (!key) {
+      continue;
+    }
+    const segments = key.split('.');
+    let cursor = doc;
+    let valid = true;
+    for (let j = 0; j < segments.length; j += 1) {
+      if (cursor && typeof cursor === 'object' && segments[j] in cursor) {
+        cursor = cursor[segments[j]];
+      } else {
+        valid = false;
+        break;
+      }
+    }
+    if (valid) {
+      const normalized = normalizeSpacing(cursor);
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+  return '';
+}
+
+function gatherExistingPhones(doc) {
+  if (!doc) {
+    return [];
+  }
+  const phones = new Set();
+  const add = value => {
+    const normalized = normalizePhoneNumber(value);
+    if (normalized) {
+      phones.add(normalized);
+    }
+  };
+
+  add(doc.phone);
+  add(doc.backupPhone);
+  add(doc.fatherContactPhone);
+  add(doc.motherContactPhone);
+  add(doc.guardianContactPhone);
+
+  if (doc.data) {
+    add(doc.data.phone);
+    add(doc.data.backupPhone);
+    add(doc.data.fatherContactPhone);
+    add(doc.data.motherContactPhone);
+    add(doc.data.guardianContactPhone);
+  }
+
+  if (Array.isArray(doc.familyContacts)) {
+    doc.familyContacts.forEach(contact => {
+      if (!contact || typeof contact !== 'object') {
+        return;
+      }
+      add(contact.phone);
+    });
+  }
+
+  return Array.from(phones);
+}
+
+function validatePatientPayload(payload, options = {}) {
+  const errors = [];
+  const isUpdate = !!options.isUpdate;
+  const existing = options.existing || null;
+
+  const effectiveName =
+    payload.patientName || (isUpdate ? pickExistingField(existing, 'patientName', ['data.patientName']) : '');
+  if (!effectiveName) {
+    errors.push('住户姓名不能为空');
+  }
+
+  const effectiveGender =
+    payload.gender || (isUpdate ? pickExistingField(existing, 'gender', ['data.gender']) : '');
+  if (!effectiveGender) {
+    errors.push('请提供性别');
+  } else if (!ALLOWED_GENDERS.has(mapGenderLabel(effectiveGender) || effectiveGender)) {
+    errors.push('性别取值不合法');
+  }
+
+  const effectiveIdNumber =
+    payload.idNumber !== undefined && payload.idNumber !== ''
+      ? payload.idNumber
+      : normalizeIdNumber(pickExistingField(existing, 'idNumber', ['data.idNumber']));
+
+  const effectivePhones = new Set(payload.phones || []);
+  if (isUpdate) {
+    gatherExistingPhones(existing).forEach(phone => effectivePhones.add(phone));
+  }
+  const hasContact = effectiveIdNumber || effectivePhones.size > 0;
+  if (!hasContact) {
+    errors.push('请至少提供证件号或一个联系电话');
+  }
+
+  const effectiveNativePlace =
+    payload.nativePlace || pickExistingField(existing, 'nativePlace', ['data.nativePlace']);
+  const effectiveAddress = payload.address || pickExistingField(existing, 'address', ['data.address']);
+  if (!effectiveNativePlace && !effectiveAddress) {
+    errors.push('请填写籍贯或常住地址');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+async function findDuplicatePatient({ idNumber, patientName, phones = [], excludeId }) {
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
+
+  if (idNumber) {
+    try {
+      const res = await db
+        .collection(PATIENTS_COLLECTION)
+        .where(_.or([{ idNumber }, { 'data.idNumber': idNumber }]))
+        .limit(1)
+        .get();
+      if (res && Array.isArray(res.data) && res.data.length) {
+        const doc = res.data[0];
+        if (!excludeId || doc._id !== excludeId) {
+          return { reason: 'ID_NUMBER', doc };
+        }
+      }
+    } catch (error) {
+      console.warn('findDuplicatePatient by idNumber failed', error);
+    }
+  }
+
+  const normalizedName = normalizeSpacing(patientName);
+  if (normalizedName && Array.isArray(phones) && phones.length) {
+    const nameCondition = _.or([
+      { patientName: normalizedName },
+      { 'data.patientName': normalizedName },
+    ]);
+    for (let i = 0; i < phones.length; i += 1) {
+      const phone = normalizePhoneNumber(phones[i]);
+      if (!phone) {
+        continue;
+      }
+      try {
+        const res = await db
+          .collection(PATIENTS_COLLECTION)
+          .where(
+            _.and([
+              nameCondition,
+              _.or([
+                { phone },
+                { backupPhone: phone },
+                { fatherContactPhone: phone },
+                { motherContactPhone: phone },
+                { guardianContactPhone: phone },
+                { 'data.phone': phone },
+                { 'data.backupPhone': phone },
+              ]),
+            ])
+          )
+          .limit(1)
+          .get();
+        if (res && Array.isArray(res.data) && res.data.length) {
+          const doc = res.data[0];
+          if (!excludeId || doc._id !== excludeId) {
+            return { reason: 'CONTACT', doc };
+          }
+        }
+      } catch (error) {
+        console.warn('findDuplicatePatient by phone failed', phone, error);
+      }
+    }
+  }
+
+  return null;
+}
+
+function hasActiveFilters(filters = {}) {
+  if (!filters || typeof filters !== 'object') {
+    return false;
+  }
+  return Object.keys(filters).some(key => {
+    const value = filters[key];
+    if (value === undefined || value === null) {
+      return false;
+    }
+    return normalizeSpacing(value) !== '';
+  });
 }
 
 function buildPatientDocFromSnapshot(snapshot) {
@@ -600,6 +1089,9 @@ async function fetchPatientsFromCache(options = {}) {
   const page = Math.max(Number(options && options.page) || 0, 0);
   const includeTotal = !!(options && options.includeTotal);
   const rawLimit = Number(options && options.limit);
+  const keyword = normalizeSpacing(options && options.keyword);
+  const filters =
+    options && options.filters && typeof options.filters === 'object' ? options.filters : {};
   const limit = Math.max(
     1,
     Math.min(
@@ -607,7 +1099,7 @@ async function fetchPatientsFromCache(options = {}) {
       MAX_PATIENT_LIST_LIMIT
     )
   );
-  const eligibleForCache = !forceRefresh && page === 0;
+  const eligibleForCache = !forceRefresh && page === 0 && !keyword && !hasActiveFilters(filters);
 
   if (eligibleForCache) {
     try {
@@ -647,9 +1139,11 @@ async function fetchPatientsFromCache(options = {}) {
     page,
     limit,
     includeTotal,
+    keyword,
+    filters,
   });
 
-  if (page === 0) {
+  if (page === 0 && !keyword && !hasActiveFilters(filters)) {
     try {
       await ensureCollectionExists(db, EXCEL_CACHE_COLLECTION);
       await db
@@ -686,12 +1180,80 @@ async function buildPatientsFromDatabase(options = {}) {
     )
   );
   const includeTotal = !!(options && options.includeTotal);
+  const keyword = normalizeSpacing(options && options.keyword);
+  const filters =
+    options && options.filters && typeof options.filters === 'object' ? options.filters : {};
 
   const skip = page * limit;
 
-  const res = await db
-    .collection(PATIENTS_COLLECTION)
-    .orderBy('data.updatedAt', 'desc')
+  let query = db.collection(PATIENTS_COLLECTION);
+
+  const conditions = [];
+
+  if (keyword) {
+    try {
+      const regex = db.RegExp({ regexp: escapeRegExp(keyword), options: 'i' });
+      conditions.push(
+        _.or([
+          { patientName: regex },
+          { 'data.patientName': regex },
+          { idNumber: regex },
+          { 'data.idNumber': regex },
+          { phone: regex },
+          { 'data.phone': regex },
+          { backupPhone: regex },
+          { 'data.backupPhone': regex },
+          { recordKey: regex },
+          { patientKey: regex },
+        ])
+      );
+    } catch (error) {
+      console.warn('关键字正则构建失败，回退为模糊匹配', keyword, error);
+    }
+  }
+
+  const genderFilter = normalizeSpacing(filters.gender);
+  if (genderFilter) {
+    const genderLabel = mapGenderLabel(genderFilter) || genderFilter;
+    const normalizedGender = ALLOWED_GENDERS.has(genderLabel) ? genderLabel : genderFilter;
+    conditions.push(
+      _.or([{ gender: normalizedGender }, { 'data.gender': normalizedGender }])
+    );
+  }
+
+  const careStatusFilter = normalizeSpacing(filters.careStatus);
+  if (careStatusFilter) {
+    conditions.push(
+      _.or([{ careStatus: careStatusFilter }, { 'data.careStatus': careStatusFilter }])
+    );
+  }
+
+  const nativePlaceFilter = normalizeSpacing(filters.nativePlace);
+  if (nativePlaceFilter) {
+    try {
+      const nativeRegex = db.RegExp({ regexp: escapeRegExp(nativePlaceFilter), options: 'i' });
+      conditions.push(
+        _.or([
+          { nativePlace: nativeRegex },
+          { address: nativeRegex },
+          { 'data.nativePlace': nativeRegex },
+          { 'data.address': nativeRegex },
+        ])
+      );
+    } catch (error) {
+      console.warn('籍贯筛选正则构建失败', nativePlaceFilter, error);
+    }
+  }
+
+  if (conditions.length === 1) {
+    query = query.where(conditions[0]);
+  } else if (conditions.length > 1) {
+    query = query.where(_.and(conditions));
+  }
+
+  const listQuery = query.orderBy('data.updatedAt', 'desc').orderBy('updatedAt', 'desc');
+
+  const res = await listQuery
     .skip(skip)
     .limit(limit)
     .field({
@@ -964,18 +1526,17 @@ async function buildPatientsFromDatabase(options = {}) {
   });
 
   let totalCount = summaries.length;
-  if (!includeTotal && page > 0) {
-    totalCount = skip + summaries.length;
-  }
   if (includeTotal) {
     try {
-      const countRes = await db.collection(PATIENTS_COLLECTION).count();
+      const countRes = await query.count();
       if (countRes && typeof countRes.total === 'number') {
         totalCount = countRes.total;
       }
     } catch (error) {
-      console.warn('Failed to count patient summaries', error);
+      console.warn('Failed to count patient summaries with filters', error);
     }
+  } else if (page > 0) {
+    totalCount = skip + summaries.length;
   }
 
   let hasMore = docs.length === limit;
@@ -1319,24 +1880,19 @@ async function invalidatePatientListCache() {
   }
 }
 
-async function writeDeletionLog(patientDoc, summary, operator) {
+async function writePatientOperationLog(entry = {}) {
   try {
     await ensureCollectionExists(db, PATIENT_OPERATION_LOGS_COLLECTION);
-    await db.collection(PATIENT_OPERATION_LOGS_COLLECTION).add({
-      data: {
-        patientKey: patientDoc && patientDoc._id,
-        type: 'delete',
-        createdAt: Date.now(),
-        createdBy: operator || '',
-        metadata: {
-          patientName: patientDoc && patientDoc.patientName,
-          recordKey: patientDoc && patientDoc.recordKey,
-          removed: summary,
-        },
-      },
-    });
+    const data = {
+      patientKey: normalizeSpacing(entry.patientKey),
+      type: normalizeSpacing(entry.type) || 'unknown',
+      createdAt: Date.now(),
+      createdBy: normalizeSpacing(entry.createdBy),
+      metadata: entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {},
+    };
+    await db.collection(PATIENT_OPERATION_LOGS_COLLECTION).add({ data });
   } catch (error) {
-    console.warn('记录住户删除日志失败', patientDoc && patientDoc._id, error);
+    console.warn('记录住户操作日志失败', entry && entry.patientKey, error);
   }
 }
 
@@ -1358,8 +1914,17 @@ async function fetchPatientDetailByKey(recordKey) {
   const tryAssignPatientDoc = async queryPromise => {
     try {
       const snapshot = await queryPromise;
-      if (snapshot && snapshot.data && snapshot.data.length) {
-        const doc = snapshot.data[0];
+      if (!snapshot) {
+        return;
+      }
+      const rawData = snapshot.data;
+      const candidates = Array.isArray(rawData)
+        ? rawData
+        : rawData && typeof rawData === 'object'
+          ? [rawData]
+          : [];
+      if (candidates.length) {
+        const doc = candidates[0];
         const docId = doc._id || doc.id || doc.patientKey || normalizedKey;
         patientDoc = { _id: docId, ...doc };
         if (Array.isArray(patientDoc.excelRecordKeys)) {
@@ -1867,6 +2432,13 @@ async function handleGetPatientsList(event = {}) {
   const page = Math.max(Number(event && event.page) || 0, 0);
   const pageSize = Number(event && event.pageSize);
   const includeTotal = !!(event && event.includeTotal);
+  const keyword = normalizeSpacing(event.keyword || event.search || '');
+  const rawFilters = (event && event.filters && typeof event.filters === 'object' && event.filters) || {};
+  const filters = {
+    gender: normalizeSpacing(event.gender || rawFilters.gender || ''),
+    careStatus: normalizeSpacing(event.careStatus || rawFilters.careStatus || ''),
+    nativePlace: normalizeSpacing(event.nativePlace || rawFilters.nativePlace || ''),
+  };
 
   try {
     const result = await fetchPatientsFromCache({
@@ -1874,6 +2446,8 @@ async function handleGetPatientsList(event = {}) {
       page,
       limit: pageSize,
       includeTotal,
+      keyword,
+      filters,
     });
 
     return {
@@ -2132,30 +2706,30 @@ async function handleExportPatients(event = {}) {
 
 // Handle patient detail request
 async function handleGetPatientDetail(event) {
-  const { key } = event;
+  const candidateKey = normalizeSpacing(event.key || event.patientKey || event.recordKey);
 
-  if (!key) {
+  if (!candidateKey) {
     throw makeError('INVALID_PATIENT_KEY', 'Missing patient identifier');
   }
 
   try {
-    const patientDetail = await fetchPatientDetailByKey(key);
+    const patientDetail = await fetchPatientDetailByKey(candidateKey);
     return {
       success: true,
       ...patientDetail,
     };
   } catch (error) {
     if (error && error.code === 'PATIENT_NOT_FOUND') {
-      const fallbackDetail = await fetchFallbackPatientDetail(key);
+      const fallbackDetail = await fetchFallbackPatientDetail(candidateKey);
       if (fallbackDetail) {
-        console.warn('patientProfile detail fallback to patients collection', key);
+        console.warn('patientProfile detail fallback to patients collection', candidateKey);
         return {
           success: true,
           ...fallbackDetail,
         };
       }
     }
-    console.error('Failed to load patient detail', key, error);
+    console.error('Failed to load patient detail', candidateKey, error);
     if (error && error.code) {
       throw error;
     }
@@ -2163,7 +2737,356 @@ async function handleGetPatientDetail(event) {
   }
 }
 
+async function handleCreatePatient(event = {}) {
+  const admin = await requireAdmin(event);
+  const payloadSource =
+    (event && typeof event.data === 'object' && event.data) ||
+    (event && typeof event.patient === 'object' && event.patient) ||
+    {};
+  const payload = sanitizePatientPayload(payloadSource, { fillDefaults: true });
+
+  const validation = validatePatientPayload(payload, { isUpdate: false });
+  if (!validation.valid) {
+    throw makeError('INVALID_INPUT', validation.errors.join('；'));
+  }
+
+  await ensureCollectionExists(db, PATIENTS_COLLECTION);
+
+  const duplicate = await findDuplicatePatient({
+    idNumber: payload.idNumber,
+    patientName: payload.patientName,
+    phones: payload.phones,
+  });
+  if (duplicate) {
+    throw makeError('DUPLICATE_PATIENT', '已存在相同住户档案，请检查证件号或联系方式', {
+      duplicateKey: duplicate.doc && (duplicate.doc.patientKey || duplicate.doc._id),
+      reason: duplicate.reason,
+    });
+  }
+
+  const patientKey = payload.patientKey || generatePatientKey(payload.patientName || 'resident');
+  const recordKey = payload.recordKey || patientKey;
+  const now = Date.now();
+  const careStatus = payload.careStatus || DEFAULT_CARE_STATUS;
+
+  const document = {
+    patientKey,
+    recordKey,
+    key: recordKey,
+    patientName: payload.patientName,
+    gender: payload.gender,
+    genderLabel: payload.gender,
+    birthDate: payload.birthDate,
+    nativePlace: payload.nativePlace || payload.address,
+    ethnicity: payload.ethnicity,
+    idType: payload.idType || '',
+    idNumber: payload.idNumber,
+    phone: payload.phone,
+    address: payload.address || payload.nativePlace,
+    backupContact: payload.backupContact,
+    backupPhone: payload.backupPhone,
+    fatherContactName: payload.fatherContactName,
+    fatherContactPhone: payload.fatherContactPhone,
+    motherContactName: payload.motherContactName,
+    motherContactPhone: payload.motherContactPhone,
+    guardianContactName: payload.guardianContactName,
+    guardianContactPhone: payload.guardianContactPhone,
+    summaryCaregivers: payload.summaryCaregivers,
+    careStatus,
+    checkoutAt: payload.checkoutAt,
+    checkoutReason: payload.checkoutReason,
+    checkoutNote: payload.checkoutNote,
+    admissionCount: 0,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: admin.adminId,
+    updatedBy: admin.adminId,
+    source: payload.createdFrom || 'web-admin',
+  };
+
+  const familyContacts = buildContactList(document);
+  if (familyContacts.length) {
+    document.familyContacts = familyContacts;
+  }
+
+  document.data = {
+    patientName: document.patientName,
+    gender: document.gender,
+    birthDate: document.birthDate,
+    nativePlace: document.nativePlace,
+    ethnicity: document.ethnicity,
+    idType: document.idType,
+    idNumber: document.idNumber,
+    phone: document.phone,
+    address: document.address,
+    backupContact: document.backupContact,
+    backupPhone: document.backupPhone,
+    fatherContactName: document.fatherContactName,
+    fatherContactPhone: document.fatherContactPhone,
+    motherContactName: document.motherContactName,
+    motherContactPhone: document.motherContactPhone,
+    guardianContactName: document.guardianContactName,
+    guardianContactPhone: document.guardianContactPhone,
+    summaryCaregivers: document.summaryCaregivers,
+    careStatus: document.careStatus,
+    checkoutAt: document.checkoutAt,
+    checkoutReason: document.checkoutReason,
+    checkoutNote: document.checkoutNote,
+    createdAt: now,
+    updatedAt: now,
+    updatedBy: admin.adminId,
+  };
+
+  document.metadata = {
+    createdAt: now,
+    updatedAt: now,
+    createdBy: admin.adminId,
+    updatedBy: admin.adminId,
+    createdFrom: payload.createdFrom || 'web-admin',
+    lastOperation: 'create',
+  };
+
+  try {
+    await db.collection(PATIENTS_COLLECTION).doc(patientKey).set({ data: document });
+  } catch (error) {
+    const code = error && (error.errCode !== undefined ? error.errCode : error.code);
+    if (code === 'DOCUMENT_ALREADY_EXISTS' || code === -502001) {
+      throw makeError('DUPLICATE_PATIENT', '住户编号冲突，请稍后重试', { patientKey });
+    }
+    throw makeError('CREATE_PATIENT_FAILED', '创建住户失败', { error: error && error.message });
+  }
+
+  await invalidatePatientListCache();
+
+  await writePatientOperationLog({
+    patientKey,
+    type: 'create',
+    createdBy: admin.adminId,
+    metadata: {
+      patientName: document.patientName,
+      careStatus: document.careStatus,
+    },
+  });
+
+  return {
+    success: true,
+    patientKey,
+    createdAt: now,
+  };
+}
+
+async function handleUpdatePatient(event = {}) {
+  const admin = await requireAdmin(event);
+  const patchSource =
+    (event && typeof event.patch === 'object' && event.patch) ||
+    (event && typeof event.data === 'object' && event.data) ||
+    {};
+  const payload = sanitizePatientPayload(patchSource, { fillDefaults: false });
+
+  const candidateKey = normalizeSpacing(
+    event.patientKey || event.recordKey || payload.patientKey || patchSource.patientKey || patchSource._id
+  );
+  if (!candidateKey) {
+    throw makeError('INVALID_PATIENT_KEY', '缺少住户标识');
+  }
+
+  const patientDoc = await fetchPatientDocByKey(candidateKey);
+  if (!patientDoc || !patientDoc._id) {
+    throw makeError('PATIENT_NOT_FOUND', '未找到对应的住户档案');
+  }
+
+  const patientKey = patientDoc._id;
+
+  const validation = validatePatientPayload(payload, { isUpdate: true, existing: patientDoc });
+  if (!validation.valid) {
+    throw makeError('INVALID_INPUT', validation.errors.join('；'));
+  }
+
+  const nextName =
+    payload.patientName || pickExistingField(patientDoc, 'patientName', ['data.patientName']);
+  const currentIdNumber = normalizeIdNumber(
+    pickExistingField(patientDoc, 'idNumber', ['data.idNumber'])
+  );
+  const shouldCheckDuplicate =
+    (payload.idNumber !== undefined && payload.idNumber !== currentIdNumber) ||
+    (Array.isArray(payload.phones) && payload.phones.length > 0);
+
+  if (shouldCheckDuplicate) {
+    const duplicate = await findDuplicatePatient({
+      idNumber:
+        payload.idNumber !== undefined && payload.idNumber !== '' ? payload.idNumber : undefined,
+      patientName: nextName,
+      phones: payload.phones,
+      excludeId: patientKey,
+    });
+    if (duplicate) {
+      throw makeError('DUPLICATE_PATIENT', '更新后的信息与现有住户冲突', {
+        duplicateKey: duplicate.doc && (duplicate.doc.patientKey || duplicate.doc._id),
+        reason: duplicate.reason,
+      });
+    }
+  }
+
+  const updateData = {};
+  const changeSet = {};
+  const now = Date.now();
+
+  const recordChange = (field, nextValue, options = {}) => {
+    if (nextValue === undefined) {
+      return;
+    }
+    const previous = pickExistingField(patientDoc, field, [`data.${field}`]);
+    const mirror = options.mirror !== false;
+    const normalized =
+      options.normalize === 'phone'
+        ? normalizePhoneNumber(nextValue)
+        : options.normalize === 'idNumber'
+          ? normalizeIdNumber(nextValue)
+          : nextValue;
+    updateData[field] = normalized;
+    if (mirror) {
+      updateData[`data.${field}`] = normalized;
+    }
+    changeSet[field] = { previous, next: normalized };
+  };
+
+  recordChange('patientName', payload.patientName);
+  if (payload.gender !== undefined) {
+    const genderValue = ALLOWED_GENDERS.has(payload.gender)
+      ? payload.gender
+      : mapGenderLabel(payload.gender) || '其他';
+    recordChange('gender', genderValue);
+    recordChange('genderLabel', genderValue, { mirror: false });
+    updateData['data.genderLabel'] = genderValue;
+  }
+  recordChange('birthDate', payload.birthDate);
+  recordChange('nativePlace', payload.nativePlace);
+  recordChange('ethnicity', payload.ethnicity);
+  recordChange('idType', payload.idType);
+  recordChange('idNumber', payload.idNumber, { normalize: 'idNumber' });
+  recordChange('phone', payload.phone, { normalize: 'phone' });
+  recordChange('address', payload.address);
+  recordChange('backupContact', payload.backupContact);
+  recordChange('backupPhone', payload.backupPhone, { normalize: 'phone' });
+  recordChange('fatherContactName', payload.fatherContactName);
+  recordChange('fatherContactPhone', payload.fatherContactPhone, { normalize: 'phone' });
+  recordChange('motherContactName', payload.motherContactName);
+  recordChange('motherContactPhone', payload.motherContactPhone, { normalize: 'phone' });
+  recordChange('guardianContactName', payload.guardianContactName);
+  recordChange('guardianContactPhone', payload.guardianContactPhone, { normalize: 'phone' });
+  recordChange('summaryCaregivers', payload.summaryCaregivers);
+  recordChange('careStatus', payload.careStatus);
+  recordChange('checkoutAt', payload.checkoutAt);
+  recordChange('checkoutReason', payload.checkoutReason);
+  recordChange('checkoutNote', payload.checkoutNote);
+
+  if (payload.createdFrom !== undefined) {
+    updateData['metadata.createdFrom'] = payload.createdFrom;
+    changeSet.createdFrom = {
+      previous: pickExistingField(patientDoc, 'metadata.createdFrom', ['metadata.createdFrom']),
+      next: payload.createdFrom,
+    };
+  }
+
+  const contactFields = [
+    'backupContact',
+    'backupPhone',
+    'fatherContactName',
+    'fatherContactPhone',
+    'motherContactName',
+    'motherContactPhone',
+    'guardianContactName',
+    'guardianContactPhone',
+  ];
+  const contactUpdated = contactFields.some(field => payload[field] !== undefined);
+  if (contactUpdated) {
+    const contactSnapshot = {
+      backupContact:
+        payload.backupContact !== undefined
+          ? payload.backupContact
+          : pickExistingField(patientDoc, 'backupContact', ['data.backupContact']),
+      backupPhone:
+        payload.backupPhone !== undefined
+          ? normalizePhoneNumber(payload.backupPhone)
+          : normalizePhoneNumber(pickExistingField(patientDoc, 'backupPhone', ['data.backupPhone'])),
+      fatherContactName:
+        payload.fatherContactName !== undefined
+          ? payload.fatherContactName
+          : pickExistingField(patientDoc, 'fatherContactName', ['data.fatherContactName']),
+      fatherContactPhone:
+        payload.fatherContactPhone !== undefined
+          ? normalizePhoneNumber(payload.fatherContactPhone)
+          : normalizePhoneNumber(
+              pickExistingField(patientDoc, 'fatherContactPhone', ['data.fatherContactPhone'])
+            ),
+      motherContactName:
+        payload.motherContactName !== undefined
+          ? payload.motherContactName
+          : pickExistingField(patientDoc, 'motherContactName', ['data.motherContactName']),
+      motherContactPhone:
+        payload.motherContactPhone !== undefined
+          ? normalizePhoneNumber(payload.motherContactPhone)
+          : normalizePhoneNumber(
+              pickExistingField(patientDoc, 'motherContactPhone', ['data.motherContactPhone'])
+            ),
+      guardianContactName:
+        payload.guardianContactName !== undefined
+          ? payload.guardianContactName
+          : pickExistingField(patientDoc, 'guardianContactName', ['data.guardianContactName']),
+      guardianContactPhone:
+        payload.guardianContactPhone !== undefined
+          ? normalizePhoneNumber(payload.guardianContactPhone)
+          : normalizePhoneNumber(
+              pickExistingField(patientDoc, 'guardianContactPhone', ['data.guardianContactPhone'])
+            ),
+    };
+
+    const nextContacts = buildContactList(contactSnapshot);
+    updateData.familyContacts = nextContacts;
+    updateData['data.familyContacts'] = nextContacts;
+    changeSet.familyContacts = {
+      previous: Array.isArray(patientDoc.familyContacts) ? patientDoc.familyContacts : [],
+      next: nextContacts,
+    };
+  }
+
+  updateData.updatedAt = now;
+  updateData.updatedBy = admin.adminId;
+  updateData['data.updatedAt'] = now;
+  updateData['data.updatedBy'] = admin.adminId;
+  updateData['metadata.updatedAt'] = now;
+  updateData['metadata.updatedBy'] = admin.adminId;
+  updateData['metadata.lastOperation'] = 'update';
+  updateData['metadata.lastOperator'] = admin.adminId;
+
+  try {
+    await db.collection(PATIENTS_COLLECTION).doc(patientKey).update({ data: updateData });
+  } catch (error) {
+    throw makeError('UPDATE_PATIENT_FAILED', '更新住户失败', { error: error && error.message });
+  }
+
+  await invalidatePatientListCache();
+
+  await writePatientOperationLog({
+    patientKey,
+    type: 'update',
+    createdBy: admin.adminId,
+    metadata: {
+      patientName: nextName,
+      changedFields: Object.keys(changeSet),
+      changeSet,
+    },
+  });
+
+  return {
+    success: true,
+    patientKey,
+    updatedAt: now,
+  };
+}
+
 async function handleDeletePatient(event = {}) {
+  const admin = await requireAdmin(event);
   const patientKeyInput = event.patientKey;
   const recordKeyInput = event.recordKey;
 
@@ -2171,8 +3094,11 @@ async function handleDeletePatient(event = {}) {
     throw makeError('INVALID_PATIENT_KEY', '缺少住户标识');
   }
 
-  const context = cloud.getWXContext();
-  const operator = event.operator || context.OPENID || context.UNIONID || 'mini-program';
+  const operator =
+    event.operator ||
+    admin.authContext.customUserId ||
+    admin.authContext.openId ||
+    'web-admin';
 
   const lookup = await findPatientDocForDeletion({
     patientKey: patientKeyInput,
@@ -2207,7 +3133,16 @@ async function handleDeletePatient(event = {}) {
     mediaQuota: mediaSummary.quotaRemoved,
   };
 
-  await writeDeletionLog(patientDoc, removalSummary, operator);
+  await writePatientOperationLog({
+    patientKey: patientDoc && patientDoc._id,
+    type: 'delete',
+    createdBy: operator,
+    metadata: {
+      removed: removalSummary,
+      patientName: patientDoc && patientDoc.patientName,
+      recordKey: patientDoc && patientDoc.recordKey,
+    },
+  });
 
   return {
     success: true,
@@ -2226,6 +3161,10 @@ exports.main = async event => {
         return await handleGetPatientsList(event);
       case 'detail':
         return await handleGetPatientDetail(event);
+      case 'create':
+        return await handleCreatePatient(event);
+      case 'update':
+        return await handleUpdatePatient(event);
       case 'delete':
         return await handleDeletePatient(event);
       case 'export':

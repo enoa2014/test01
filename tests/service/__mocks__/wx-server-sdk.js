@@ -8,8 +8,12 @@
 const clone = value =>
   value === undefined || value === null ? value : JSON.parse(JSON.stringify(value));
 
+const normalizeConditionList = args => (Array.isArray(args[0]) ? args[0] : Array.from(args));
+
 const command = {
-  or: (...conditions) => ({ __cmd: 'or', conditions }),
+  or: (...conditions) => ({ __cmd: 'or', conditions: normalizeConditionList(conditions) }),
+  and: (...conditions) => ({ __cmd: 'and', conditions: normalizeConditionList(conditions) }),
+  in: values => ({ __cmd: 'in', value: Array.isArray(values) ? values : [values] }),
   exists: flag => ({ __cmd: 'exists', flag }),
   eq: value => ({ __cmd: 'eq', value }),
   inc: value => ({ __cmd: 'inc', value }),
@@ -21,6 +25,12 @@ const ensureCollection = name => {
   }
   return state.collections.get(name);
 };
+
+const createRegExpCondition = ({ regexp, options }) => ({
+  __cmd: 'regex',
+  regexp: typeof regexp === 'string' ? regexp : '',
+  options: options || '',
+});
 
 const applyUpdateValue = (current, update) => {
   if (update && typeof update === 'object' && update.__cmd === 'inc') {
@@ -75,29 +85,79 @@ const applyUpdate = (existing, patch) => {
   return result;
 };
 
-const matchesCondition = (docValue, condition) => {
-  if (condition && typeof condition === 'object' && condition.__cmd) {
-    switch (condition.__cmd) {
-      case 'exists':
-        return condition.flag
-          ? docValue !== undefined && docValue !== null
-          : docValue === undefined || docValue === null;
-      case 'eq':
-        return docValue === condition.value;
-      case 'or':
-        return condition.conditions.some(item => matchesCondition(docValue, item));
-      default:
-        return false;
+const getNestedValue = (doc, path) => {
+  if (!path) {
+    return undefined;
+  }
+  const parts = path.split('.');
+  let cursor = doc;
+  for (let i = 0; i < parts.length; i += 1) {
+    if (cursor && typeof cursor === 'object' && parts[i] in cursor) {
+      cursor = cursor[parts[i]];
+    } else {
+      return undefined;
     }
   }
-  return docValue === condition;
+  return cursor;
 };
 
 const matchesQuery = (doc, query) => {
   if (!query) {
     return true;
   }
-  return Object.entries(query).every(([key, condition]) => matchesCondition(doc[key], condition));
+
+  const evaluateCondition = (condition, keyPath) => {
+    if (!condition) {
+      return true;
+    }
+    if (condition && typeof condition === 'object' && condition.__cmd) {
+      switch (condition.__cmd) {
+        case 'or':
+          return condition.conditions.some(item => matchesQuery(doc, item));
+        case 'and':
+          return condition.conditions.every(item => matchesQuery(doc, item));
+        case 'in': {
+          const value = getNestedValue(doc, keyPath);
+          return condition.value.includes(value);
+        }
+        case 'exists': {
+          const value = getNestedValue(doc, keyPath);
+          return condition.flag
+            ? value !== undefined && value !== null
+            : value === undefined || value === null;
+        }
+        case 'eq': {
+          const value = getNestedValue(doc, keyPath);
+          return value === condition.value;
+        }
+        case 'regex': {
+          const value = getNestedValue(doc, keyPath);
+          if (typeof value !== 'string') {
+            return false;
+          }
+          try {
+            const regex = new RegExp(condition.regexp || '', condition.options || '');
+            return regex.test(value);
+          } catch (error) {
+            return false;
+          }
+        }
+        default:
+          return true;
+      }
+    }
+    if (condition && typeof condition === 'object' && !Array.isArray(condition)) {
+      return matchesQuery(doc, condition);
+    }
+    const value = getNestedValue(doc, keyPath);
+    return value === condition;
+  };
+
+  if (query && typeof query === 'object' && query.__cmd) {
+    return evaluateCondition(query);
+  }
+
+  return Object.entries(query).every(([key, condition]) => evaluateCondition(condition, key));
 };
 
 const createDocInterface = (name, id) => ({
@@ -131,31 +191,81 @@ const createDocInterface = (name, id) => ({
   },
 });
 
-const sortDocs = (docs, order) => {
-  if (!order) {
+const sortDocs = (docs, orders) => {
+  if (!orders || (Array.isArray(orders) && orders.length === 0)) {
     return docs;
   }
-  const { field, direction } = order;
-  const factor = direction === 'desc' ? -1 : 1;
+  const list = Array.isArray(orders) ? orders : [orders];
   return docs.sort((a, b) => {
-    const av = a[field] ?? 0;
-    const bv = b[field] ?? 0;
-    if (av === bv) {
-      return 0;
+    for (let i = 0; i < list.length; i += 1) {
+      const { field, direction } = list[i];
+      const factor = direction === 'desc' ? -1 : 1;
+      const av = getNestedValue(a, field) ?? 0;
+      const bv = getNestedValue(b, field) ?? 0;
+      if (av === bv) {
+        continue;
+      }
+      return av > bv ? factor : -factor;
     }
-    return av > bv ? factor : -factor;
+    return 0;
   });
 };
 
-const createQueryInterface = (name, filter = null, order = null, limitValue = Infinity) => ({
+const createQueryInterface = (
+  name,
+  {
+    filter = null,
+    order = [],
+    limitValue = Infinity,
+    skipValue = 0,
+    fieldProjection = null,
+  } = {}
+) => ({
   where(newFilter) {
-    return createQueryInterface(name, newFilter, order, limitValue);
+    return createQueryInterface(name, {
+      filter: newFilter,
+      order,
+      limitValue,
+      skipValue,
+      fieldProjection,
+    });
   },
   orderBy(field, direction) {
-    return createQueryInterface(name, filter, { field, direction }, limitValue);
+    const nextOrder = Array.isArray(order) ? [...order, { field, direction }] : [{ field, direction }];
+    return createQueryInterface(name, {
+      filter,
+      order: nextOrder,
+      limitValue,
+      skipValue,
+      fieldProjection,
+    });
   },
   limit(value) {
-    return createQueryInterface(name, filter, order, value);
+    return createQueryInterface(name, {
+      filter,
+      order,
+      limitValue: value,
+      skipValue,
+      fieldProjection,
+    });
+  },
+  skip(value) {
+    return createQueryInterface(name, {
+      filter,
+      order,
+      limitValue,
+      skipValue: value || 0,
+      fieldProjection,
+    });
+  },
+  field(projection) {
+    return createQueryInterface(name, {
+      filter,
+      order,
+      limitValue,
+      skipValue,
+      fieldProjection: projection,
+    });
   },
   async get() {
     const collection = ensureCollection(name);
@@ -164,8 +274,19 @@ const createQueryInterface = (name, filter = null, order = null, limitValue = In
       docs = docs.filter(doc => matchesQuery(doc, filter));
     }
     docs = sortDocs(docs, order);
+    if (skipValue) {
+      docs = docs.slice(skipValue);
+    }
     docs = docs.slice(0, limitValue);
     return { data: docs };
+  },
+  async count() {
+    const collection = ensureCollection(name);
+    let docs = Array.from(collection.values()).map(doc => clone(doc));
+    if (filter) {
+      docs = docs.filter(doc => matchesQuery(doc, filter));
+    }
+    return { total: docs.length };
   },
   async remove() {
     const collection = ensureCollection(name);
@@ -193,7 +314,10 @@ const collectionInterface = name => {
     where: query.where,
     orderBy: query.orderBy,
     limit: query.limit,
+     skip: query.skip,
+     field: query.field,
     get: query.get,
+     count: query.count,
     remove: query.remove,
   };
 };
@@ -209,6 +333,7 @@ const transactionInterface = {
 
 const db = {
   command,
+  RegExp: createRegExpCondition,
   collection: name => collectionInterface(name),
   async runTransaction(handler) {
     return handler(transactionInterface);

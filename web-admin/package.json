@@ -1,0 +1,31 @@
+{
+  "name": "web-admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "serve": "node server.js",
+    "package:win": "node scripts/package-win.cjs"
+  },
+  "dependencies": {
+    "@cloudbase/js-sdk": "^2.15.1",
+    "finalhandler": "^1.2.0",
+    "mime": "^3.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "serve-static": "^1.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "pkg": "^5.8.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8"
+  }
+}
