@@ -171,3 +171,18 @@ const d = await wx.cloud.callFunction({ name: 'patientIntake', data: { action: '
 | `uploadConfig.maxFileSize` | number | 单文件大小上限（MB） |
 | `uploadConfig.maxCount` | number | 单次/总量上限（见实现） |
 | `uploadConfig.allowedTypes` | string | 允许类型描述 |
+
+### 草稿 TTL 与清理
+- TTL 来源：`getDraft/saveDraft` 返回的 `expiresAt`（ms）；过期草稿可由服务端按 `expiresAt < now` 清理
+- 清理动作：`cleanupDrafts`
+  - 入参：`{}`
+  - 返回：`{ success: true, data: { deletedCount, cleanupTime } }`
+- 建议：
+  - TTL 取值与业务流程匹配（如 7–14 天），避免长期占用存储
+  - 草稿不应存放敏感信息的完整明文（如证件照、完整证件号），必要时脱敏/截断
+
+示例：
+```js
+// 定期清理过期草稿（仅限有权限的后台/管理端调用）
+await wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'cleanupDrafts' } });
+```

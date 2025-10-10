@@ -45,6 +45,16 @@
     { success: true, fileID: 'cloud://.../patient-report-...xlsx', exported: 12, missingKeys: [] }
     ```
 
+### UI 与安全建议（delete / export）
+- 删除（delete）
+  - 二次确认：弹窗明确提示影响范围（档案、入住记录、Excel 记录、媒体文件与配额）
+  - 记录审计：传入 `operator` 或在服务端获取上下文写入操作日志
+  - 回滚策略：删除为不可逆操作，建议先导出备份或限制为管理员角色
+- 导出（export）
+  - 权限控制：仅限具备导出权限的用户；敏感字段脱敏（如身份证、手机号）
+  - 有效期：导出文件 fileID 仅在受控环境可访问，下载链接应使用临时 URL
+  - 选择范围：支持按单个 patientKey 或列表；缺失键通过 `missingKeys` 返回
+
 示例：
 ```js
 wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'list', pageSize: 20 } })
