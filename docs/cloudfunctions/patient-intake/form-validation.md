@@ -120,3 +120,54 @@ wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'checkoutPatient'
 ```js
 wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'updateCareStatus', patientKey, careStatus: 'discharged', note: '家属申请' } });
 ```
+
+---
+
+## 草稿与配置
+
+### saveDraft / getDraft（草稿保存与获取）
+
+- saveDraft 入参：`{ draftId?: string, formData: {...} }`
+- saveDraft 返回：`{ success: true, data: { draftId: string, expiresAt: number } }`
+- getDraft 入参：`{ draftId: string }`
+- getDraft 返回：`{ success: true, data: { formData: {...}, expiresAt: number } }`
+
+字段表（节选）：
+
+| 字段 | 方向 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `draftId` | in/out | 否 | 草稿标识；不传则创建新的草稿 ID |
+| `formData` | in/out | 是 | 表单对象，结构同 createPatient/updatePatient |
+| `expiresAt` | out | 是 | 过期时间戳（ms）；过期草稿会被清理 |
+
+示例：
+```js
+const save = await wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'saveDraft', formData } });
+const d = await wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'getDraft', draftId: save.result.data.draftId } });
+```
+
+### getConfig（入住配置）
+
+- 入参：`{}`
+- 返回：
+  ```json
+  {
+    "success": true,
+    "data": {
+      "situationConfig": { "minLength": 0, "maxLength": 500, "keywords": ["..."], "example": "..." },
+      "uploadConfig": { "maxFileSize": 10, "maxCount": 5, "allowedTypes": "JPG、PNG、PDF、Word、Excel等" }
+    }
+  }
+  ```
+
+字段表（节选）：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `situationConfig.minLength` | number | 情况说明最小长度（默认 0） |
+| `situationConfig.maxLength` | number | 情况说明最大长度（默认 500） |
+| `situationConfig.keywords` | string[] | 关键词建议（可用于提示） |
+| `situationConfig.example` | string | 示例文案 |
+| `uploadConfig.maxFileSize` | number | 单文件大小上限（MB） |
+| `uploadConfig.maxCount` | number | 单次/总量上限（见实现） |
+| `uploadConfig.allowedTypes` | string | 允许类型描述 |

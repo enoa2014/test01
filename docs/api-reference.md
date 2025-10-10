@@ -11,15 +11,39 @@
 - `action: 'list'`
   - 入参：`{ page?: number, pageSize?: number, includeTotal?: boolean, forceRefresh?: boolean }`
   - 出参：`{ success: true, patients: Patient[], totalCount: number, hasMore: boolean, nextPage?: number }`
+  - 示例：
+    ```js
+    // 请求
+    wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'list', page: 0, pageSize: 20, includeTotal: true } })
+    // 返回（节选）
+    {
+      success: true,
+      patients: [{ patientName: '张三', admissionCount: 3, latestAdmissionTimestamp: 1758326400000, latestDiagnosis: '急性支气管炎', latestHospital: '北京儿童医院' }],
+      totalCount: 69, hasMore: true, nextPage: 1
+    }
+    ```
 - `action: 'detail'`
   - 入参：`{ key: string }`
   - 出参：`{ success: true, patient: {...}, records: [...], ... }`（详情含最新聚合字段，如 `latestAdmissionTimestamp`）
+  - 示例：
+    ```js
+    wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'detail', key: 'ZhangSan-2010-01-01-M' } })
+    // 返回（节选）
+    { success: true, patient: { patientName: '张三', admissionCount: 3 }, records: [{ hospital: '北京儿童医院', diagnosis: '...' }] }
+    ```
 - `action: 'delete'`
   - 入参：`{ patientKey?: string, recordKey?: string, operator?: string }`（二选一提供标识）
   - 出参：`{ success: true, patientKey: string, removed: { patient, intakeRecords, excelRecords, mediaRecords, mediaFiles, mediaQuota } }`
 - `action: 'export'`
   - 入参：`{ patientKeys?: string[], patientKey?: string, patientSnapshots?: { key/patientKey/recordKey,... }[] }`
   - 出参：`{ success: true, fileID: string, exported: number, missingKeys: string[] }`（云存储 xlsx 文件）
+  - 示例：
+    ```js
+    // 批量导出
+    wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'export', patientKeys: ['key1','key2'] } })
+    // 返回
+    { success: true, fileID: 'cloud://.../patient-report-...xlsx', exported: 12, missingKeys: [] }
+    ```
 
 示例：
 ```js
@@ -153,6 +177,17 @@ await wx.cloud.callFunction({
 ## 统一错误处理
 - 客户端：检测 `res.result?.success === false`，使用 `wx.showToast` 或 `pm-dialog` 展示 `error.message`
 - 服务端：抛错统一包装 `{ success: false, error: { code, message, details? } }`
+
+### 常见错误码（patientProfile 节选）
+- `UNSUPPORTED_ACTION`：未支持的操作
+- `LIST_FAILED`：列表加载失败
+- `DETAIL_FAILED`：详情加载失败
+- `INVALID_PATIENT_KEY` / `PATIENT_NOT_FOUND`：无效或不存在的住户标识
+- `DELETE_PATIENT_FAILED`：删除住户档案失败
+- `EXPORT_NO_KEYS`：导出时未提供任何住户 key
+- `EXPORT_NO_DATA`：未找到可导出的档案
+- `EXPORT_TEMPLATE_MISSING` / `EXPORT_TEMPLATE_INVALID`：导出模板缺失或无效
+- `EXPORT_UPLOAD_FAILED`：导出文件上传失败
 
 ## 数据模型（简要）
 详见：`./database-schema.md`
