@@ -57,6 +57,10 @@
 - 云函数架构：cloud-function-architecture.md
 - API 参考（草案）：api-reference.md
 
+## 云函数（Cloudfunctions）
+- 总览：cloud-function-architecture.md
+- 入住流程（表单校验）：cloudfunctions/patient-intake/form-validation.md
+
 ## 归档（Archives）
 - 备份占位
   - backup-01：archives/backups/backup-01.md
