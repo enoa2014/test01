@@ -1,5 +1,7 @@
 # 微信小程序患者档案管理系统视觉设计文档
 
+<!-- renamed to kebab-case (visual-design-doc.md) -->
+
 ## 文档信息
 
 - **项目名称**: 微信小程序患者档案管理系统重构

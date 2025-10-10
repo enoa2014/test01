@@ -95,6 +95,26 @@ wx.cloud.callFunction({ name: 'patientProfile', data: { action: 'list', pageSize
   - 出参：`{ success: true, data: { draftId, expiresAt } }`
 - `getDraft`：获取草稿
   - 入参：`{ draftId: string }`
+  - 出参：`{ success: true, data: { draftId, formData, expiresAt } }`
+- `submit`：提交入住（创建/更新并聚合）
+  - 入参：`{ formData: {...}, intakeTimestamp?: number }`
+  - 出参：`{ success: true, data: { patientKey, intakeId?, admissionCount, latestAdmissionDate } }`
+- `updatePatient`：更新患者基本信息
+  - 入参：`{ patientKey: string, formData: {...}, audit?: {...} }`
+- `checkoutPatient`：办理离开
+  - 入参：`{ patientKey: string, checkout: { reason?, note?, operatorId?, operatorName?, timestamp? } }`
+- `updateIntakeRecord`：新增/更新入住条目
+  - 入参：`{ patientKey: string, intakeId?, intakeTime?, hospital?, diagnosis?, doctor?, symptoms?, followUpPlan? }`
+- `deleteIntakeRecord`：删除条目
+  - 入参：`{ patientKey: string, intakeId: string }`
+- `getConfig`：获取入住配置
+  - 入参：`{}` → 出参：`{ success: true, data: {...} }`
+- `cleanupDrafts`：草稿清理
+  - 入参：`{}` → 出参：`{ success: true, data: { deleted: number } }`
+- `syncFromExcel`：与 Excel 记录聚合同步
+  - 入参：`{ patientKey: string, ... }`（由服务内部推断为主）
+- `getDraft`：获取草稿
+  - 入参：`{ draftId: string }`
   - 出参：`{ success: true, data: { formData, expiresAt } }`
 - `submit`：提交入住（表单）
   - 入参：`{ formData: {...} }`

@@ -17,7 +17,7 @@
 | 工具                | 定位              | 说明                                                            |
 | ------------------- | ----------------- | --------------------------------------------------------------- |
 | Node.js 18 LTS      | 运行时            | `.nvmrc` 暂未提供，文档约定使用 18.x                            |
-| pnpm / npm          | 包管理            | 推荐 `pnpm`（见 `docs/dev-environment/setup.md`），但兼容 `npm` |
+| npm / pnpm          | 包管理            | 默认使用 `npm`；如需可本地使用 `pnpm`（见 `docs/dev-environment/setup.md`） |
 | Jest                | 单元测试          | `tests/unit/jest.config.js` 配置覆盖率门槛 80%                  |
 | Husky + lint-staged | Git Hooks         | `prepare` 脚本安装；`pre-commit` 运行 lint/fix                  |
 | Commitlint          | 提交规范          | `commitlint.config.js` 约束 Conventional Commits                |
@@ -29,9 +29,9 @@
 
 | 项目              | 说明                                                                                                |
 | ----------------- | --------------------------------------------------------------------------------------------------- |
-| `cloudfunctions/` | 包含 `patientIntake`、`readExcel` 等云开发函数，采用 Node.js + 腾讯云 SDK (`@cloudbase/node-sdk`)。 |
-| API 协议          | `docs/api/business-components.md` 定义 REST 接口，与 Story 001.4 组件对齐。                         |
-| 审计/安全         | 统一返回结构 `{ code, message, data }`，支持 `Authorization`、`X-Tenant-Id` 等头部。                |
+| `cloudfunctions/` | 包含 `patientProfile`、`patientIntake`、`readExcel`、`patientMedia`、`patientService` 等，采用 Node.js + 腾讯云 SDK (`@cloudbase/node-sdk`)。 |
+| API 协议          | 小程序以云函数为主；`docs/api/business-components.md` 提供 REST 等效接口参考以便前后端对齐。            |
+| 审计/安全         | 云函数统一返回 `{ success, data }` 或 `{ success: false, error }`；若落地网关则采用 `{ code, message, data }` 协议。 |
 
 ## 4. 测试体系
 

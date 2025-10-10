@@ -23,7 +23,7 @@ root
 │   ├── readExcel/              # Excel数据初始化（重构，专注数据处理）
 │   ├── patientIntake/          # 患者入住管理
 │   ├── patientMedia/           # 患者媒体文件管理
-│   ├── dashboardService/       # 仪表板数据服务
+│   ├── patientService/         # 聚合/代理服务（委派到 patientProfile）
 │   └── helloWorld/             # 测试云函数
 ├── scripts/                     # 工程脚本（创建组件、同步配置、构建等）
 ├── tests/                       # 测试目录

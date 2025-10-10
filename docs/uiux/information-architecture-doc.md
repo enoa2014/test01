@@ -1,5 +1,7 @@
 # 微信小程序患者档案管理系统 - 信息架构文档
 
+<!-- renamed to kebab-case (information-architecture-doc.md) -->
+
 ## 文档概述
 
 ### 文档目的

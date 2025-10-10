@@ -10,7 +10,7 @@
 
 ### 2.1 现有流程架构
 
-基于 [pages/patient-intake/wizard/wizard.wxml](../miniprogram/pages/patient-intake/wizard/wizard.wxml) 的五步骤向导：
+基于 [pages/patient-intake/wizard/wizard.wxml](../../../miniprogram/pages/patient-intake/wizard/wizard.wxml) 的五步骤向导：
 
 ```
 步骤1：基础信息 (姓名、证件类型、证件号码、性别、出生日期、联系电话)

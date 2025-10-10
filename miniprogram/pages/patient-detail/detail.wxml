@@ -619,7 +619,7 @@
   >
     <scroll-view scroll-y class="dialog-scroll">
     <view wx:if="{{moduleEditBlock==='basic'}}">
-      <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" error="{{blockEditErrors.patientName}}" data-field="patientName" bind:input="onBlockFieldInput" />
+      <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" error="{{blockEditErrors.patientName || ''}}" data-field="patientName" bind:input="onBlockFieldInput" />
       <view class="form-group">
         <label class="form-label required">性别</label>
         <radio-group class="radio-group" bindchange="onBlockGenderChange">
@@ -636,16 +636,16 @@
         <view wx:if="{{blockEditErrors.birthDate}}" class="field-error">{{blockEditErrors.birthDate}}</view>
       </view>
       <pm-input label="证件类型" value="{{blockEditForm.idType}}" data-field="idType" bind:input="onBlockFieldInput" />
-      <pm-input label="证件号码" required="{{true}}" value="{{blockEditForm.idNumber}}" error="{{blockEditErrors.idNumber}}" data-field="idNumber" bind:input="onBlockFieldInput" />
-      <pm-input label="联系电话" value="{{blockEditForm.phone}}" error="{{blockEditErrors.phone}}" data-field="phone" bind:input="onBlockFieldInput" />
+      <pm-input label="证件号码" required="{{true}}" value="{{blockEditForm.idNumber}}" error="{{blockEditErrors.idNumber || ''}}" data-field="idNumber" bind:input="onBlockFieldInput" />
+      <pm-input label="联系电话" value="{{blockEditForm.phone}}" error="{{blockEditErrors.phone || ''}}" data-field="phone" bind:input="onBlockFieldInput" />
       <pm-input label="籍贯" value="{{blockEditForm.nativePlace}}" data-field="nativePlace" bind:input="onBlockFieldInput" />
       <pm-input label="民族" value="{{blockEditForm.ethnicity}}" data-field="ethnicity" bind:input="onBlockFieldInput" />
     </view>
 
     <view wx:elif="{{moduleEditBlock==='contact'}}">
-      <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" error="{{blockEditErrors.address}}" data-field="address" bind:input="onBlockFieldInput" />
+      <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" error="{{blockEditErrors.address || ''}}" data-field="address" bind:input="onBlockFieldInput" />
       <pm-input label="备用联系人" value="{{blockEditForm.backupContact}}" data-field="backupContact" bind:input="onBlockFieldInput" />
-      <pm-input label="备用联系电话" value="{{blockEditForm.backupPhone}}" error="{{blockEditErrors.backupPhone}}" data-field="backupPhone" bind:input="onBlockFieldInput" />
+      <pm-input label="备用联系电话" value="{{blockEditForm.backupPhone}}" error="{{blockEditErrors.backupPhone || ''}}" data-field="backupPhone" bind:input="onBlockFieldInput" />
       <pm-input label="父亲联系方式" value="{{blockEditForm.fatherInfo}}" data-field="fatherInfo" bind:input="onBlockFieldInput" />
       <pm-input label="母亲联系方式" value="{{blockEditForm.motherInfo}}" data-field="motherInfo" bind:input="onBlockFieldInput" />
       <pm-input label="其他监护人" value="{{blockEditForm.guardianInfo}}" data-field="guardianInfo" bind:input="onBlockFieldInput" />

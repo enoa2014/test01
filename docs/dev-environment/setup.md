@@ -11,7 +11,7 @@
 | 工具           | 版本建议   | 用途                     |
 | -------------- | ---------- | ------------------------ |
 | Node.js        | 18 LTS     | 运行脚本、打包与测试     |
-| pnpm           | 8.x        | 工作区依赖管理（推荐）   |
+| pnpm           | 8.x        | 可选包管理器（本仓库默认使用 npm）   |
 | 微信开发者工具 | 最新稳定版 | 运行与调试小程序         |
 | Git            | 2.40+      | 版本控制                 |
 | VS Code        | 最新稳定版 | 推荐编辑器，配套插件如下 |
@@ -41,17 +41,16 @@ root
 │   ├─ readExcel/               # Excel数据初始化 (重构)
 │   ├─ patientIntake/           # 患者入住管理
 │   ├─ patientMedia/            # 患者媒体文件管理
-│   ├─ dashboardService/        # 仪表板数据服务
+│   ├─ patientService/          # 聚合/代理服务（调用 patientProfile）
 │   └─ helloWorld/              # 测试云函数
 ├─ scripts/                     # 自定义构建、校验脚本
 ├─ tests/                       # 单元测试与端到端测试入口
-└─ package.json / pnpm-workspace.yaml
+└─ package.json
 ```
 
 ## 依赖管理
 
-- 使用 `pnpm install` 安装依赖，确保锁定版本一致性。
-- 项目需支持 `npm install` 作为 fallback，但默认文档、脚本以 `pnpm` 为准。
+- 本仓库默认使用 `npm install` 管理依赖；如需 `pnpm` 可本地自行使用（不提供 workspace 配置）。
 - 推荐引入以下依赖（若未存在于 package.json）：
   - `@wechat-miniprogram/miniprogram-simulate`：组件单元测试
   - `lint-staged`、`husky`：提交前校验
@@ -62,23 +61,15 @@ root
 
 ## 脚本约定
 
-在 `package.json` 中新增或确认以下脚本（示例）：
+本仓库可用脚本（节选，详情见根目录 package.json）：
 
-```json
-{
-  "scripts": {
-    "dev": "npm run build:dev", // 示例：结合微信开发者工具 CLI
-    "lint": "npm run lint:fix && npm run lint:style",
-    "lint:fix": "eslint --no-error-on-unmatched-pattern miniprogram/ cloudfunctions/ scripts/ --ext .js --fix",
-    "lint:style": "stylelint \"miniprogram/**/*.{wxss,css}\"",
-    "format": "prettier --write .",
-    "test": "npm run test:unit",
-    "test:unit": "jest --config tests/unit/jest.config.js",
-    "test:coverage": "jest --config tests/unit/jest.config.js --coverage",
-    "prepare": "husky install"
-  }
-}
-```
+- `npm run sync-config`：同步小程序与云开发配置（读取 .env）
+- `npm run tailwind:build`：生成 WXSS 资产
+- `npm run build:dev` / `npm run build:prod`：构建示例
+- `npm run lint` / `npm run lint:style` / `npm run lint:fix`
+- `npm run format` / `npm run format:check`
+- `npm run test:unit` / `npm run test:service` / `npm run test:e2e`
+- `npm run database:*`：数据库初始化/校验脚本
 
 ## 代码格式与校验
 
@@ -115,7 +106,7 @@ root
 
 ## 缓存与提速建议
 
-- 使用 `pnpm store path` + CI 缓存策略缩短安装时间。
+- 使用 Node 包缓存（如 GitHub Actions cache）缩短安装时间。
 - 在微信开发者工具中启用“增量编译”与“文件监听忽略 node_modules”。
 - 对频繁更新的模拟接口使用本地 `json-server` 或轻量 Node 服务，避免线上依赖。
 

@@ -1,5 +1,7 @@
 # 公益小家患者档案管理系统用户研究文档
 
+<!-- renamed to kebab-case (user-research-doc.md) -->
+
 ## 文档概览
 
 **项目名称**: 公益小家患者档案管理系统  

@@ -1,5 +1,7 @@
 # 微信小程序患者档案管理系统 - 交互设计文档
 
+<!-- renamed to kebab-case (interaction-design-doc.md) -->
+
 ## 文档概述
 
 ### 项目背景
