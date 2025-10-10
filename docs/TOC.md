@@ -60,6 +60,7 @@
 ## 云函数（Cloudfunctions）
 - 总览：cloud-function-architecture.md
 - 入住流程（表单校验）：cloudfunctions/patient-intake/form-validation.md
+ - 媒体与附件约束：cloudfunctions/patient-media/constraints.md
 
 ## 归档（Archives）
 - 备份占位

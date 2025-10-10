@@ -77,3 +77,46 @@ wx.cloud.callFunction({
 - 入参/出参与其他动作：`../../api-reference.md#patientintake`
 - 入住条目更新、离开、状态：参见 `updateIntakeRecord`、`checkoutPatient`、`updateCareStatus`
 
+---
+
+## 入住条目与状态操作
+
+### updateIntakeRecord（新增/更新入住条目）
+- 入参（部分）：
+  - `patientKey`（必填）
+  - `intakeId?`（可选；不传则创建、传入则更新该条目）
+  - `intakeTime?`（ms 时间戳）
+  - `checkoutAt?`（ms 时间戳；设置则表示离开时间）
+  - `hospital?`、`diagnosis?`、`doctor?`、`symptoms?`
+  - `treatmentProcess?`、`followUpPlan?`
+- 返回：`{ success: true, data: { intakeId, intakeTime, checkoutAt?, admissionCount?, latestAdmissionDate? } }`
+- 备注：创建/更新后会同步聚合（admissionCount/earliest/latest）
+
+示例：
+```js
+// 新增一条入住记录
+wx.cloud.callFunction({
+  name: 'patientIntake',
+  data: { action: 'updateIntakeRecord', patientKey, intakeTime: Date.now(), hospital: '北京儿童医院', diagnosis: '呼吸道感染' }
+});
+```
+
+### checkoutPatient（办理离开）
+- 入参：`{ patientKey, checkout: { reason?, note?, operatorId?, operatorName?, timestamp? } }`
+- 返回：`{ success: true, data: { patientKey, checkoutAt, reason, note } }`
+- 备注：写操作日志、更新聚合、可能影响 careStatus
+
+示例：
+```js
+wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'checkoutPatient', patientKey, checkout: { reason: '完成治疗', note: '转出', timestamp: Date.now() } } });
+```
+
+### updateCareStatus（手动调整住户状态）
+- 入参：`{ patientKey, careStatus: 'in_care'|'pending'|'discharged', note?, operatorId?, operatorName? }`
+- 返回：`{ success: true, data: { patientKey, careStatus, note, statusAdjustedAt, checkoutAt? } }`
+- 备注：当 `careStatus === 'discharged'` 时会写入 checkoutAt；写操作日志与同步缓存
+
+示例：
+```js
+wx.cloud.callFunction({ name: 'patientIntake', data: { action: 'updateCareStatus', patientKey, careStatus: 'discharged', note: '家属申请' } });
+```
