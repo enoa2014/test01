@@ -219,7 +219,7 @@ const PatientListPage: React.FC = () => {
           <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
             删除选中
           </button>
-          <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
+          <button className="primary-button" type="button" onClick={() => navigate('/intake')}>
             新增住户
           </button>
         </div>
