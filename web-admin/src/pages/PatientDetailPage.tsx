@@ -8,7 +8,7 @@ import MediaManager from '../components/MediaManager';
 const PatientDetailPage: React.FC = () => {
   const { patientKey = '' } = useParams();
   const navigate = useNavigate();
-  const { app, user } = useCloudbase();
+  const { app } = useCloudbase();
   const [detail, setDetail] = useState<PatientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,6 @@ const PatientDetailPage: React.FC = () => {
   }, [app, patientKey]);
 
   const patientName = detail?.patient?.patientName || '未命名';
-  const isAdmin = user?.role === 'admin';
 
   const renderInfoList = (title: string, items?: Array<{ label: string; value: string }>) => {
     if (!items || items.length === 0) {
@@ -74,14 +73,12 @@ const PatientDetailPage: React.FC = () => {
           <button className="secondary-button" onClick={() => navigate(-1)}>
             返回列表
           </button>
-          {isAdmin && (
-            <button
-              className="primary-button"
-              onClick={() => navigate(`/patients/${encodeURIComponent(patientKey)}/edit`)}
-            >
-              编辑资料
-            </button>
-          )}
+          <button
+            className="primary-button"
+            onClick={() => navigate(`/patients/${encodeURIComponent(patientKey)}/edit`)}
+          >
+            编辑资料
+          </button>
         </div>
         <h2>{patientName}</h2>
         {loading && <p>详情加载中...</p>}

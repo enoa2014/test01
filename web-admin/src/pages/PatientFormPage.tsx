@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createPatient, fetchPatientDetail, updatePatient } from '../api/patient';
 import { useCloudbase } from '../hooks/useCloudbase';
@@ -114,7 +114,7 @@ const PatientFormPage: React.FC<{ mode?: FormMode }> = ({ mode = 'create' }) => 
   const isCreate = mode === 'create';
   const { patientKey = '' } = useParams();
   const navigate = useNavigate();
-  const { app, user } = useCloudbase();
+  const { app } = useCloudbase();
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [loading, setLoading] = useState<boolean>(!isCreate);
@@ -152,13 +152,7 @@ const PatientFormPage: React.FC<{ mode?: FormMode }> = ({ mode = 'create' }) => 
     };
   }, [app, isCreate, patientKey]);
 
-  const isAdmin = useMemo(() => user?.role === 'admin', [user]);
-
-  useEffect(() => {
-    if (!isAdmin) {
-      setError('当前账号无权限编辑住户资料');
-    }
-  }, [isAdmin]);
+  // 所有登录用户同权限：不再区分管理员
 
   const handleChange = (field: keyof FormState) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -467,7 +461,7 @@ const PatientFormPage: React.FC<{ mode?: FormMode }> = ({ mode = 'create' }) => 
           </section>
 
           <div className="form-actions">
-            <button className="primary-button" type="submit" disabled={submitting || !isAdmin}>
+            <button className="primary-button" type="submit" disabled={submitting}>
               {submitting ? '保存中...' : '保存'}
             </button>
             <button className="secondary-button" type="button" onClick={handleCancel}>

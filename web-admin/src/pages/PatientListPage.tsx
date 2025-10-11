@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { fetchPatientList, deletePatient, exportPatients } from '../api/patient';
 import { useCloudbase } from '../hooks/useCloudbase';
 import { PatientSummary } from '../types/patient';
@@ -11,7 +11,6 @@ type TableRow = PatientSummary & { key: string };
 const PatientListPage: React.FC = () => {
   const { app, user } = useCloudbase();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<TableRow[]>([]);
@@ -22,14 +21,7 @@ const PatientListPage: React.FC = () => {
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [filters, setFilters] = useState({ gender: '', careStatus: '', nativePlace: '' });
 
-  const isAdmin = useMemo(() => user?.role === 'admin', [user]);
-
-  useEffect(() => {
-    if ((location.state as { error?: string })?.error === 'NO_ADMIN') {
-      setError('当前账号无权限执行该操作');
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  // 所有登录用户同权限：不再区分管理员
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedKeyword(keyword.trim()), 300);
@@ -117,7 +109,7 @@ const PatientListPage: React.FC = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (!app || !isAdmin) {
+    if (!app) {
       return;
     }
     if (selected.size === 0) {
@@ -224,16 +216,12 @@ const PatientListPage: React.FC = () => {
           <button className="secondary-button" type="button" onClick={handleExportSelected}>
             导出选中
           </button>
-          {isAdmin && (
-            <>
-              <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
-                删除选中
-              </button>
-              <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
-                新增住户
-              </button>
-            </>
-          )}
+          <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
+            删除选中
+          </button>
+          <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
+            新增住户
+          </button>
         </div>
       </div>
 
@@ -287,27 +275,23 @@ const PatientListPage: React.FC = () => {
                 >
                   查看
                 </button>
-                {isAdmin && (
-                  <button
-                    className="link-button"
-                    onClick={() =>
-                      navigate(
-                        `/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}/edit`
-                      )
-                    }
-                  >
-                    编辑
-                  </button>
-                )}
-                {isAdmin && (
-                  <button
-                    className="danger-button"
-                    type="button"
-                    onClick={() => handleDeleteSingle(row.patientKey || row.recordKey || '')}
-                  >
-                    删除
-                  </button>
-                )}
+                <button
+                  className="link-button"
+                  onClick={() =>
+                    navigate(
+                      `/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}/edit`
+                    )
+                  }
+                >
+                  编辑
+                </button>
+                <button
+                  className="danger-button"
+                  type="button"
+                  onClick={() => handleDeleteSingle(row.patientKey || row.recordKey || '')}
+                >
+                  删除
+                </button>
               </td>
             </tr>
           ))}

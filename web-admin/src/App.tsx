@@ -1,7 +1,6 @@
 import React from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from './routes/ProtectedRoute';
-import { AdminRoute } from './routes/AdminRoute';
 import LoginPage from './pages/LoginPage';
 import PatientListPage from './pages/PatientListPage';
 import PatientDetailPage from './pages/PatientDetailPage';
@@ -43,10 +42,8 @@ const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/patients" replace />} />
           <Route path="/patients" element={<PatientListPage />} />
           <Route path="/patients/:patientKey" element={<PatientDetailPage />} />
-          <Route element={<AdminRoute />}>
-            <Route path="/patients/new" element={<PatientFormPage mode="create" />} />
-            <Route path="/patients/:patientKey/edit" element={<PatientFormPage mode="edit" />} />
-          </Route>
+          <Route path="/patients/new" element={<PatientFormPage mode="create" />} />
+          <Route path="/patients/:patientKey/edit" element={<PatientFormPage mode="edit" />} />
         </Route>
         <Route path="*" element={<Navigate to="/patients" replace />} />
       </Routes>
