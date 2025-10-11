@@ -256,6 +256,19 @@ async function requireAdmin(event = {}) {
   };
 }
 
+// 所有已登录用户（自定义登录或小程序 openId）均可作为操作人
+async function requireUser(event = {}) {
+  const authContext = resolveAuthContext(event);
+  const userId =
+    normalizeSpacing(
+      (authContext && authContext.customUserId) || (authContext && authContext.openId)
+    ) || '';
+  if (!userId) {
+    throw makeError('UNAUTHORIZED', '当前用户未登录或凭据无效');
+  }
+  return { userId, authContext };
+}
+
 function generatePatientKey(seed) {
   const normalized = normalizeSpacing(seed)
     .replace(/[^a-zA-Z0-9]/g, '')
@@ -2464,6 +2477,8 @@ async function handleGetPatientsList(event = {}) {
 }
 
 async function handleExportPatients(event = {}) {
+  // 需要登录态，但不强制管理员
+  await requireUser(event);
   const rawKeys = [];
   if (Array.isArray(event.patientKeys)) {
     for (let i = 0; i < event.patientKeys.length; i += 1) {
@@ -2738,7 +2753,7 @@ async function handleGetPatientDetail(event) {
 }
 
 async function handleCreatePatient(event = {}) {
-  const admin = await requireAdmin(event);
+  const user = await requireUser(event);
   const payloadSource =
     (event && typeof event.data === 'object' && event.data) ||
     (event && typeof event.patient === 'object' && event.patient) ||
@@ -2799,8 +2814,8 @@ async function handleCreatePatient(event = {}) {
     admissionCount: 0,
     createdAt: now,
     updatedAt: now,
-    createdBy: admin.adminId,
-    updatedBy: admin.adminId,
+    createdBy: user.userId,
+    updatedBy: user.userId,
     source: payload.createdFrom || 'web-admin',
   };
 
@@ -2834,14 +2849,14 @@ async function handleCreatePatient(event = {}) {
     checkoutNote: document.checkoutNote,
     createdAt: now,
     updatedAt: now,
-    updatedBy: admin.adminId,
+    updatedBy: user.userId,
   };
 
   document.metadata = {
     createdAt: now,
     updatedAt: now,
-    createdBy: admin.adminId,
-    updatedBy: admin.adminId,
+    createdBy: user.userId,
+    updatedBy: user.userId,
     createdFrom: payload.createdFrom || 'web-admin',
     lastOperation: 'create',
   };
@@ -2861,7 +2876,7 @@ async function handleCreatePatient(event = {}) {
   await writePatientOperationLog({
     patientKey,
     type: 'create',
-    createdBy: admin.adminId,
+    createdBy: user.userId,
     metadata: {
       patientName: document.patientName,
       careStatus: document.careStatus,
@@ -2876,7 +2891,7 @@ async function handleCreatePatient(event = {}) {
 }
 
 async function handleUpdatePatient(event = {}) {
-  const admin = await requireAdmin(event);
+  const user = await requireUser(event);
   const patchSource =
     (event && typeof event.patch === 'object' && event.patch) ||
     (event && typeof event.data === 'object' && event.data) ||
@@ -3051,13 +3066,13 @@ async function handleUpdatePatient(event = {}) {
   }
 
   updateData.updatedAt = now;
-  updateData.updatedBy = admin.adminId;
+  updateData.updatedBy = user.userId;
   updateData['data.updatedAt'] = now;
-  updateData['data.updatedBy'] = admin.adminId;
+  updateData['data.updatedBy'] = user.userId;
   updateData['metadata.updatedAt'] = now;
-  updateData['metadata.updatedBy'] = admin.adminId;
+  updateData['metadata.updatedBy'] = user.userId;
   updateData['metadata.lastOperation'] = 'update';
-  updateData['metadata.lastOperator'] = admin.adminId;
+  updateData['metadata.lastOperator'] = user.userId;
 
   try {
     await db.collection(PATIENTS_COLLECTION).doc(patientKey).update({ data: updateData });
@@ -3070,7 +3085,7 @@ async function handleUpdatePatient(event = {}) {
   await writePatientOperationLog({
     patientKey,
     type: 'update',
-    createdBy: admin.adminId,
+    createdBy: user.userId,
     metadata: {
       patientName: nextName,
       changedFields: Object.keys(changeSet),
@@ -3086,7 +3101,7 @@ async function handleUpdatePatient(event = {}) {
 }
 
 async function handleDeletePatient(event = {}) {
-  const admin = await requireAdmin(event);
+  const user = await requireUser(event);
   const patientKeyInput = event.patientKey;
   const recordKeyInput = event.recordKey;
 
@@ -3094,11 +3109,7 @@ async function handleDeletePatient(event = {}) {
     throw makeError('INVALID_PATIENT_KEY', '缺少住户标识');
   }
 
-  const operator =
-    event.operator ||
-    admin.authContext.customUserId ||
-    admin.authContext.openId ||
-    'web-admin';
+  const operator = event.operator || user.userId || 'web-admin';
 
   const lookup = await findPatientDocForDeletion({
     patientKey: patientKeyInput,
