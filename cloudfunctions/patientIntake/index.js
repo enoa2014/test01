@@ -1852,7 +1852,6 @@ async function handleUpdateIntakeRecord(event = {}) {
 
     const initialIntakeTime = Number.isFinite(intakeTimeInput) ? intakeTimeInput : now;
     const newRecord = {
-      _id: targetIntakeId,
       intakeId: targetIntakeId,
       patientKey,
       patientName: (patientDoc && patientDoc.patientName) || '',

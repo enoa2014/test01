@@ -524,8 +524,6 @@ Page({
     } else if (block === 'contact') {
       form = {
         address: safe(patient.address),
-        backupContact: safe(patient.backupContact),
-        backupPhone: safe(patient.backupPhone),
         fatherInfo: safe(patient.fatherInfo),
         motherInfo: safe(patient.motherInfo),
         guardianInfo: safe(patient.guardianInfo),
@@ -598,8 +596,6 @@ Page({
       if (!f.address) { wx.showToast({ icon: 'none', title: '请输入家庭地址' }); return; }
       updates = {
         address: f.address,
-        backupContact: f.backupContact,
-        backupPhone: f.backupPhone,
         fatherInfo: f.fatherInfo,
         motherInfo: f.motherInfo,
         guardianInfo: f.guardianInfo,
@@ -654,7 +650,6 @@ Page({
       }
     } else if (block === 'contact') {
       if (!f.address || !String(f.address).trim()) setErr('address', '请输入家庭地址');
-      if (f.backupPhone && !isMobile(f.backupPhone)) setErr('backupPhone', '备用联系电话格式不正确');
     } else if (block === 'economic') {
       // 经济情况可为空
     }
@@ -684,19 +679,14 @@ Page({
     return Array.from(map.values()).filter(Boolean);
   },
   _rebuildContactInfoDisplay(patient, prev = []) {
-    const map = new Map(prev.map(it => [it && it.label, it]));
-    const setVal = (label, value) => {
-      const v = (value === undefined || value === null) ? '' : String(value);
-      map.set(label, { label, value: v });
-    };
-    setVal('家庭地址', patient.address || '');
-    // 备用联系人/电话若当前列表没有条目，不强制新增，避免版式突变
-    if (map.has('备用联系人')) setVal('备用联系人', patient.backupContact || '');
-    if (map.has('备用联系电话')) setVal('备用联系电话', patient.backupPhone || '');
-    setVal('父亲联系方式', patient.fatherInfo || '');
-    setVal('母亲联系方式', patient.motherInfo || '');
-    setVal('其他监护人', patient.guardianInfo || '');
-    return Array.from(map.values()).filter(Boolean);
+    // 与 XLSX 原始字段对齐：仅保留 家庭地址/父亲联系方式/母亲联系方式/其他监护人
+    const list = [];
+    const push = (label, value) => list.push({ label, value: value == null ? '' : String(value) });
+    push('家庭地址', patient.address || '');
+    push('父亲联系方式', patient.fatherInfo || '');
+    push('母亲联系方式', patient.motherInfo || '');
+    push('其他监护人', patient.guardianInfo || '');
+    return list;
   },
   _rebuildEconomicInfoDisplay(patient, prev = []) {
     const map = new Map(prev.map(it => [it && it.label, it]));
@@ -1189,12 +1179,6 @@ Page({
       }
       if (patientForEdit.address) {
         patientDisplay.address = patientForEdit.address;
-      }
-      if (patientForEdit.backupContact) {
-        patientDisplay.backupContact = patientForEdit.backupContact;
-      }
-      if (patientForEdit.backupPhone) {
-        patientDisplay.backupPhone = patientForEdit.backupPhone;
       }
       if (patientForEdit.lastIntakeNarrative) {
         patientDisplay.lastIntakeNarrative = patientForEdit.lastIntakeNarrative;

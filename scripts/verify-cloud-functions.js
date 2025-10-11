@@ -37,7 +37,7 @@ async function verifyDeployment() {
     console.log('✅ pages/index/index.js: readExcel → patientProfile');
     console.log('✅ pages/analysis/index.js: readExcel → patientProfile');
     console.log('✅ pages/patient-detail/detail.js: readExcel → patientProfile');
-    console.log('✅ pages/patient-intake/select/select.js: readExcel → patientProfile');
+    console.log('✅ pages/patient-intake/wizard/wizard.js: 创建住户向导已对齐 patientProfile');
 
     console.log('\n4. 数据流架构验证...');
     console.log('📊 新数据流:');
@@ -73,7 +73,7 @@ async function verifyDeployment() {
     console.log('  1. 在微信开发者工具中测试前端功能');
     console.log('  2. 验证患者列表和详情页面加载');
     console.log('  3. 确认数据分析功能正常');
-    console.log('  4. 测试入住选择功能');
+    console.log('  4. 测试创建住户向导与详情页新增入住');
     console.log('  5. 监控性能改进效果');
   } catch (error) {
     console.error('❌ 验证过程中出现错误:', error.message);

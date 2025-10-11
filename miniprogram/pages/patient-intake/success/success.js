@@ -162,16 +162,10 @@ Page({
     }
   },
 
-  // 继续添加患者
+  // 继续添加患者（统一走创建向导；不再进入“选择入住条目”）
   onAddAnother() {
-    if (this.data.mode === 'create') {
-      wx.redirectTo({
-        url: '/pages/patient-intake/wizard/wizard?mode=create',
-      });
-      return;
-    }
     wx.redirectTo({
-      url: '/pages/patient-intake/select/select',
+      url: '/pages/patient-intake/wizard/wizard?mode=create',
     });
   },
 

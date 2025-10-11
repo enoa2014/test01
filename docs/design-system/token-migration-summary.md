@@ -10,7 +10,7 @@
 | `pages/analysis/index`          | ✅           | 所有色彩来自令牌；遮罩使用 `--overlay-dim`。                             |
 | `pages/patient-detail/detail`   | ✅           | 历史记录提示、渐变按钮等改用 `--bg-*`、`--gradient-*`。                  |
 | `pages/patient-intake/wizard/*` | ✅           | 提示与遮罩使用 overlay/background 令牌，草稿弹窗采用 `--overlay-modal`。 |
-| `pages/patient-intake/select`   | ✅           | 搜索与提示区域使用令牌；副标题类调整为 `select-subtitle`。               |
+| （已移除）`pages/patient-intake/select` | — | 页面已下线，相关样式记录保留于历史条目。 |
 | `pages/patient-intake/success`  | ✅           | 卡片背景、按钮等全部引用令牌与渐变。                                     |
 | `pages/component-lab/index`     | ✅           | 激活态颜色、背景等改为令牌，辅助 Stylelint 流程演示。                    |
 

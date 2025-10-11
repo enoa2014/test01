@@ -60,11 +60,9 @@ Page({
       birthDate: '',
       phone: '',
       address: '',
-      backupContact: '',
-      backupPhone: '',
+      fatherInfo: '',
+      motherInfo: '',
       guardianInfo: '',
-      guardianContactName: '',
-      guardianContactPhone: '',
       admissionDate: '',
       situation: '',
       visitHospital: '',
@@ -73,9 +71,6 @@ Page({
       symptomDetail: '',
       treatmentProcess: '',
       followUpPlan: '',
-      contacts: [
-        { relationship: '', name: '', phone: '' },
-      ],
     },
 
     // 证件类型选项
@@ -83,10 +78,7 @@ Page({
     idTypeIndex: 0,
 
     // 校验错误
-    errors: {
-      contacts: [{}],
-    },
-    contactErrors: [{}],
+    errors: {},
 
     // 配置
     situationConfig: {
@@ -207,13 +199,7 @@ Page({
     });
   },
 
-  normalizePhoneDigits(value) {
-    const normalized = this.normalizeExcelSpacing(value);
-    if (!normalized) {
-      return '';
-    }
-    return normalized.replace(/\D+/g, '');
-  },
+  // 已移除多联系人逻辑
 
   isValidMobileNumber(value) {
     return /^1[3-9]\d{9}$/.test(value || '');
@@ -672,16 +658,7 @@ Page({
       const resolvedAdmissionDate =
         this.data.formData.admissionDate || this.data.today || this.formatDate(new Date());
 
-      const additionalContacts = [];
-      if (patientDocSource && Array.isArray(patientDocSource.familyContacts)) {
-        additionalContacts.push(...patientDocSource.familyContacts);
-      }
-      if (overviewDisplay && Array.isArray(overviewDisplay.familyContacts)) {
-        additionalContacts.push(...overviewDisplay.familyContacts);
-      }
-      if (intakePatientDoc && Array.isArray(intakePatientDoc.familyContacts)) {
-        additionalContacts.push(...intakePatientDoc.familyContacts);
-      }
+      // 联系方式按 Excel 字段预填：父亲联系方式/母亲联系方式/其他监护人
 
       const contactTextSources = [];
       const appendContactText = (text, relation) => {
@@ -705,13 +682,27 @@ Page({
       appendContactText(overviewDisplay.otherGuardian, '监护人');
       appendContactText(intakePatientDoc && intakePatientDoc.otherGuardian, '监护人');
 
-      const contacts = this.buildContactsFromFields({
-        backupContact: resolvedBackupContact,
-        backupPhone: resolvedBackupPhone,
-        additionalContacts,
-        existingContacts: this.data.formData.contacts,
-        additionalText: contactTextSources,
-      });
+      const resolvedFatherInfo =
+        this.data.formData.fatherInfo ||
+        this.normalizeExcelSpacing(patientDocSource.fatherInfo) ||
+        this.normalizeExcelSpacing(overviewDisplay.fatherInfo) ||
+        this.normalizeExcelSpacing(intakePatientDoc && intakePatientDoc.fatherInfo) ||
+        '';
+      const resolvedMotherInfo =
+        this.data.formData.motherInfo ||
+        this.normalizeExcelSpacing(patientDocSource.motherInfo) ||
+        this.normalizeExcelSpacing(overviewDisplay.motherInfo) ||
+        this.normalizeExcelSpacing(intakePatientDoc && intakePatientDoc.motherInfo) ||
+        '';
+      const resolvedGuardianInfo =
+        this.data.formData.guardianInfo ||
+        this.normalizeExcelSpacing(patientDocSource.guardianInfo) ||
+        this.normalizeExcelSpacing(overviewDisplay.guardianInfo) ||
+        this.normalizeExcelSpacing(intakePatientDoc && intakePatientDoc.guardianInfo) ||
+        this.normalizeExcelSpacing(patientDocSource.otherGuardian) ||
+        this.normalizeExcelSpacing(overviewDisplay.otherGuardian) ||
+        this.normalizeExcelSpacing(intakePatientDoc && intakePatientDoc.otherGuardian) ||
+        '';
 
       const nextFormData = {
         ...this.data.formData,
@@ -730,7 +721,9 @@ Page({
         treatmentProcess: resolvedTreatmentProcess,
         followUpPlan: resolvedFollowUpPlan,
         admissionDate: resolvedAdmissionDate,
-        contacts,
+        fatherInfo: resolvedFatherInfo,
+        motherInfo: resolvedMotherInfo,
+        guardianInfo: resolvedGuardianInfo,
       };
 
       const syncedForm = this.updateFormData(nextFormData);
@@ -849,426 +842,13 @@ Page({
     return '';
   },
 
-  ensureContactsArray(rawContacts = []) {
-    const list = Array.isArray(rawContacts) ? rawContacts : [];
-    const normalized = list
-      .filter(item => item && typeof item === 'object')
-      .map(item => ({
-        relationship: this.normalizeExcelSpacing(item.relationship) || '',
-        name: this.normalizeExcelSpacing(item.name) || '',
-        phone: this.normalizePhoneDigits(item.phone) || '',
-      }))
-      .slice(0, 5);
-    if (!normalized.length) {
-      normalized.push({ relationship: '', name: '', phone: '' });
-    }
-    return normalized;
-  },
-
-  buildContactErrorPlaceholders(length) {
-    const size = Math.max(1, Number(length) || 0);
-    return Array.from({ length: size }, () => ({}));
-  },
-
-  parseContactText(value) {
-    const text = this.normalizeExcelSpacing(value);
-    if (!text) {
-      return { relationship: '', name: '' };
-    }
-
-    const colonMatch = text.match(/^([^:：]{1,6})[:：](.+)$/);
-    if (colonMatch) {
-      const relation = this.normalizeExcelSpacing(colonMatch[1]);
-      const name = this.normalizeExcelSpacing(colonMatch[2]);
-      if (relation && name) {
-        return { relationship: relation, name };
-      }
-    }
-
-    const relationKeywords = /^(父亲|母亲|爷爷|奶奶|姥爷|姥姥|外公|外婆|叔叔|阿姨|哥哥|姐姐|弟弟|妹妹|监护人|照护人|联系人)/;
-    const blankIndex = text.indexOf(' ');
-    if (relationKeywords.test(text) && blankIndex > 0) {
-      const relation = text.slice(0, blankIndex);
-      const name = text.slice(blankIndex + 1).trim();
-      if (name) {
-        return { relationship: relation, name };
-      }
-    }
-
-    const parts = text.split(/\s+/);
-    if (parts.length >= 2 && parts[0].length <= 4 && relationKeywords.test(parts[0])) {
-      const relation = parts[0];
-      const name = parts.slice(1).join(' ').trim();
-      if (name) {
-        return { relationship: relation, name };
-      }
-    }
-
-    return { relationship: '', name: text };
-  },
-
-  formatContactDisplay(contact = {}) {
-    const relation = this.normalizeExcelSpacing(contact.relationship);
-    const name = this.normalizeExcelSpacing(contact.name);
-    if (!name) {
-      // 避免仅填写“关系”字段时同步到 legacy 紧急联系人姓名
-      return '';
-    }
-    return relation ? `${relation} ${name}` : name;
-  },
-
-  buildContactsFromFields(source = {}) {
-    const contacts = [];
-    const baseContacts = this.ensureContactsArray(source.contacts);
-    if (baseContacts.length) {
-      contacts.push(
-        ...baseContacts.map(item => ({
-          relationship: this.normalizeExcelSpacing(item.relationship) || '',
-          name: this.normalizeExcelSpacing(item.name) || '',
-          phone: this.normalizePhoneDigits(item.phone) || '',
-        }))
-      );
-    }
-
-    const normalizeRelationHint = value => {
-      const normalized = this.normalizeExcelSpacing(value);
-      if (!normalized) {
-        return '';
-      }
-      const lower = normalized.toLowerCase();
-      switch (lower) {
-        case 'mother':
-        case 'mom':
-        case '妈妈':
-        case '母亲':
-          return '母亲';
-        case 'father':
-        case 'dad':
-        case '爸爸':
-        case '父亲':
-          return '父亲';
-        case 'guardian':
-        case 'custodian':
-        case '监护人':
-          return '监护人';
-        case 'caregiver':
-        case '照护人':
-          return '照护人';
-        default:
-          return normalized;
-      }
-    };
-
-    const pushContact = (displayName, phone, options = {}) => {
-      const { fallbackRelation } = options;
-      const normalizedDisplay = this.normalizeExcelSpacing(displayName);
-      let normalizedPhone = this.normalizePhoneDigits(phone);
-      if (!normalizedDisplay && !normalizedPhone) {
-        return;
-      }
-      let parsedName = '';
-      if (!normalizedPhone) {
-        const parsed = this._parseContactInfo(normalizedDisplay);
-        if (parsed) {
-          normalizedPhone = this.normalizePhoneDigits(parsed.phone);
-          parsedName = this.normalizeExcelSpacing(parsed.name);
-        }
-      }
-      if (!normalizedPhone || normalizedPhone.length < 5) {
-        return;
-      }
-      const textForName = parsedName || normalizedDisplay || '';
-      const { relationship, name } = this.parseContactText(textForName);
-      const finalName = this.normalizeExcelSpacing(name || parsedName || normalizedDisplay || '');
-      const relationHint = normalizeRelationHint(fallbackRelation);
-      const finalRelationship =
-        relationship || relationHint || (finalName ? '联系人' : '');
-      contacts.push({
-        relationship: finalRelationship,
-        name: finalName,
-        phone: normalizedPhone,
-      });
-    };
-
-    const extraArrays = [];
-    if (Array.isArray(source.additionalContacts)) {
-      extraArrays.push(source.additionalContacts);
-    }
-    extraArrays.forEach(list => {
-      list.forEach(item => {
-        if (!item || typeof item !== 'object') {
-          return;
-        }
-        const name = item.name || item.raw || '';
-        const phone = item.phone || '';
-        const relation = item.role || '';
-        const relationHint = normalizeRelationHint(relation);
-        pushContact(this.normalizeExcelSpacing(name) || relationHint || relation, phone, {
-          fallbackRelation: relationHint || relation,
-        });
-      });
-    });
-
-    if (Array.isArray(source.additionalText)) {
-      source.additionalText.forEach(entry => {
-        if (!entry) {
-          return;
-        }
-        let relationHint = '';
-        let textValue = entry;
-        if (typeof entry === 'object') {
-          relationHint = entry.relation || entry.role || '';
-          textValue = entry.text || entry.value || entry.raw || '';
-        }
-        if (!textValue) {
-          return;
-        }
-        const segments = String(textValue)
-          .split(/[、;\n]/)
-          .map(item => item.trim())
-          .filter(Boolean);
-        segments.forEach(segment => {
-          pushContact(segment, '', { fallbackRelation: relationHint });
-        });
-      });
-    }
-
-    if (source.guardianContactName || source.guardianContactPhone) {
-      pushContact(
-        this.normalizeExcelSpacing(source.guardianContactName) || '',
-        source.guardianContactPhone || '',
-        { fallbackRelation: '监护人' }
-      );
-    }
-
-    const sanitized = contacts
-      .map(item => ({
-        relationship: this.normalizeExcelSpacing(item.relationship) || '',
-        name: this.normalizeExcelSpacing(item.name) || '',
-        phone: this.normalizePhoneDigits(item.phone) || '',
-      }))
-      .filter(item => item.phone && item.phone.length >= 5 && (item.name || item.relationship));
-
-    if (sanitized.length) {
-      const uniqueMap = new Map();
-      sanitized.forEach(contact => {
-        const key = `${contact.name}|${contact.phone}`;
-        if (!uniqueMap.has(key)) {
-          uniqueMap.set(key, contact);
-          return;
-        }
-        const existing = uniqueMap.get(key) || {};
-        const existingRelation = this.normalizeExcelSpacing(existing.relationship) || '';
-        const candidateRelation = this.normalizeExcelSpacing(contact.relationship) || '';
-        const existingIsGeneric = !existingRelation || existingRelation === '联系人';
-        const candidateIsGeneric = !candidateRelation || candidateRelation === '联系人';
-        const shouldReplace =
-          (!candidateIsGeneric && existingIsGeneric) ||
-          (candidateRelation.length > existingRelation.length && !candidateIsGeneric);
-        if (shouldReplace) {
-          uniqueMap.set(key, contact);
-        }
-      });
-      return Array.from(uniqueMap.values());
-    }
-
-    return this.ensureContactsArray(contacts);
-
-  },
-
-  syncContactsToFields(formData) {
-    const next = { ...formData };
-    const contacts = this.ensureContactsArray(next.contacts || []);
-    next.contacts = contacts;
-    const primary = contacts[0] || { relationship: '', name: '', phone: '' };
-    const secondary = contacts[1] || { relationship: '', name: '', phone: '' };
-    const primaryName = this.normalizeExcelSpacing(primary.name);
-    const primaryPhone = this.normalizePhoneDigits(primary.phone);
-    const primaryRelation = this.normalizeExcelSpacing(primary.relationship);
-
-    next.guardianContactName = primaryName;
-    next.guardianContactPhone = primaryPhone;
-    if (primaryName || primaryPhone) {
-      const relationForDisplay = primaryRelation || (primaryName ? '' : '联系人');
-      const displayLabel = this.formatContactDisplay({
-        relationship: relationForDisplay,
-        name: primaryName,
-      });
-      const infoParts = [];
-      if (displayLabel) {
-        infoParts.push(displayLabel);
-      } else if (relationForDisplay) {
-        infoParts.push(relationForDisplay);
-      }
-      if (primaryPhone) {
-        infoParts.push(primaryPhone);
-      }
-      next.guardianInfo = infoParts.join(' ').trim();
-    } else {
-      next.guardianInfo = '';
-    }
-
-    const normalizedBackupName = this.normalizeExcelSpacing(next.backupContact);
-    const normalizedBackupPhone = this.normalizePhoneDigits(next.backupPhone);
-    if (!normalizedBackupName && !normalizedBackupPhone && contacts.length > 1) {
-      next.backupContact = this.formatContactDisplay(secondary);
-      next.backupPhone = secondary.phone || '';
-    }
-    next.guardianInfo = next.guardianInfo || '';
-    if (contacts.length > 2) {
-      const extras = contacts.slice(2).map(item => {
-        const display = this.formatContactDisplay(item);
-        return [display, item.phone || ''].filter(Boolean).join(' ');
-      });
-      next.extraContacts = extras;
-    } else {
-      next.extraContacts = [];
-    }
-    return next;
-  },
-
   updateFormData(partialFormData = {}) {
     const merged = { ...this.data.formData, ...partialFormData };
-    const synced = this.syncContactsToFields(merged);
-    const existingContactErrors = Array.isArray(this.data.contactErrors)
-      ? this.data.contactErrors
-      : [];
-    const contactErrors = existingContactErrors.length === synced.contacts.length
-      ? existingContactErrors
-      : this.buildContactErrorPlaceholders(synced.contacts.length);
-    this.data.formData = synced;
-    this.data.contactErrors = contactErrors;
-    this.setData({
-      formData: synced,
-      'errors.contacts': contactErrors,
-      contactErrors,
-    });
-    return synced;
+    this.data.formData = merged;
+    this.setData({ formData: merged });
+    return merged;
   },
 
-  validateContacts(options = {}) {
-    const { updateState = true, showToast = false } = options;
-    let contacts = this.ensureContactsArray(this.data.formData.contacts);
-    contacts = contacts.filter(contact => contact && typeof contact === 'object');
-
-    const errors = contacts.map(() => ({}));
-    let valid = contacts.length > 0;
-    let firstMessage = '';
-
-    if (!contacts.length) {
-      valid = false;
-      errors[0] = {
-        relationship: '请添加至少一位联系人',
-        name: '请添加至少一位联系人',
-        phone: '请添加至少一位联系人',
-      };
-      firstMessage = '请添加至少一位联系人';
-    }
-
-    contacts.forEach((contact, index) => {
-      const entryErrors = {};
-      const relationship = this.normalizeExcelSpacing(contact.relationship);
-      const name = this.normalizeExcelSpacing(contact.name);
-      const phoneDigits = this.normalizePhoneDigits(contact.phone);
-
-      if (!relationship) {
-        entryErrors.relationship = '请输入关系';
-        if (!firstMessage) {
-          firstMessage = entryErrors.relationship;
-        }
-      }
-      if (!name) {
-        entryErrors.name = '请输入姓名';
-        if (!firstMessage) {
-          firstMessage = entryErrors.name;
-        }
-      }
-      if (!phoneDigits) {
-        entryErrors.phone = '请输入联系电话';
-        if (!firstMessage) {
-          firstMessage = entryErrors.phone;
-        }
-      } else if (!this.isValidMobileNumber(phoneDigits)) {
-        entryErrors.phone = '手机号码格式不正确';
-        if (!firstMessage) {
-          firstMessage = entryErrors.phone;
-        }
-      }
-
-      if (Object.keys(entryErrors).length) {
-        valid = false;
-      }
-      errors[index] = entryErrors;
-    });
-
-    if (updateState) {
-      this.setData({
-        'errors.contacts': errors,
-        contactErrors: errors,
-      });
-    }
-
-    if (!valid) {
-      logger.warn('[wizard] validateContacts invalid', {
-        contacts,
-        errors,
-        firstMessage,
-      });
-    }
-
-    if (!valid && showToast && firstMessage) {
-      wx.showToast({ icon: 'none', title: firstMessage, duration: 3000 });
-    }
-
-    return { valid, message: firstMessage, errors };
-  },
-
-  onContactFieldInput(event) {
-    const { index, field } = event.currentTarget.dataset;
-    const value = event.detail.value;
-    const contacts = this.ensureContactsArray(this.data.formData.contacts);
-    const contactIndex = Number(index);
-    if (!Number.isInteger(contactIndex) || contactIndex < 0 || contactIndex >= contacts.length) {
-      return;
-    }
-    const sanitizedValue = field === 'phone' ? value.replace(/\D+/g, '') : value;
-    contacts[contactIndex] = {
-      ...contacts[contactIndex],
-      [field]: sanitizedValue,
-    };
-    const synced = this.updateFormData({ contacts });
-    this.validateContacts({ updateState: true, showToast: false });
-    this.updateRequiredFields();
-    return synced;
-  },
-
-  addContact() {
-    const contacts = this.ensureContactsArray(this.data.formData.contacts);
-    if (contacts.length >= 5) {
-      wx.showToast({ icon: 'none', title: '最多添加5位联系人' });
-      return;
-    }
-    contacts.push({ relationship: '', name: '', phone: '' });
-    this.updateFormData({ contacts });
-    this.validateContacts({ updateState: true, showToast: false });
-    this.updateRequiredFields();
-  },
-
-  removeContact(event) {
-    const index = Number(event.currentTarget.dataset.index);
-    const contacts = this.ensureContactsArray(this.data.formData.contacts);
-    if (!Number.isInteger(index) || index < 0 || index >= contacts.length) {
-      return;
-    }
-    if (contacts.length <= 1) {
-      wx.showToast({ icon: 'none', title: '至少保留一位联系人' });
-      return;
-    }
-    contacts.splice(index, 1);
-    this.updateFormData({ contacts });
-    this.validateContacts({ updateState: true, showToast: false });
-    this.updateRequiredFields();
-  },
 
   // 更新必填项状态
   updateRequiredFields() {
@@ -1291,74 +871,9 @@ Page({
         break;
       }
       case 1: {
-        // 步骤2：联系人
+        // 步骤2：联系人（仅校验家庭地址；联系人清单已取消）
         if (!formData.address || !formData.address.trim()) {
-          requiredFields.push({ key: 'address', label: '常住地址' });
-        }
-        let contacts = this.ensureContactsArray(formData.contacts);
-
-        // 仅在所有联系人都是占位空项时，才尝试根据其他字段自动推导联系人，
-        // 避免用户新增的空白联系人被自动清理
-        const placeholderOnly = contacts.every(contact => {
-          if (!contact || typeof contact !== 'object') {
-            return true;
-          }
-          const relation = this.normalizeExcelSpacing(contact.relationship);
-          const name = this.normalizeExcelSpacing(contact.name);
-          const phoneDigits = this.normalizePhoneDigits(contact.phone);
-          return !relation && !name && !phoneDigits;
-        });
-        if (placeholderOnly) {
-          const derived = this.buildContactsFromFields(formData);
-          const hasDerivedData = derived.some(contact => {
-            if (!contact || typeof contact !== 'object') {
-              return false;
-            }
-            const name = this.normalizeExcelSpacing(contact.name);
-            const phoneDigits = this.normalizePhoneDigits(contact.phone);
-            return !!name || !!phoneDigits;
-          });
-          if (hasDerivedData) {
-            const synced = this.updateFormData({ contacts: derived });
-            contacts = this.ensureContactsArray(synced.contacts);
-          }
-        }
-        const hasValidContacts =
-          contacts.length > 0 &&
-          contacts.every(contact => {
-            if (!contact || typeof contact !== 'object') {
-              return false;
-            }
-            const relation = this.normalizeExcelSpacing(contact.relationship);
-            const name = this.normalizeExcelSpacing(contact.name);
-            const phoneDigits = this.normalizePhoneDigits(contact.phone);
-            if (!relation || !name || !phoneDigits) {
-              return false;
-            }
-            return this.isValidMobileNumber(phoneDigits);
-          });
-
-        const hasContactWithDigits = contacts.some(contact => {
-          if (!contact || typeof contact !== 'object') {
-            return false;
-          }
-          const name = this.normalizeExcelSpacing(contact.name);
-          const phoneDigits = this.normalizePhoneDigits(contact.phone);
-          return !!name && phoneDigits.length >= 5;
-        });
-
-        const contactRequirementSatisfied =
-          hasValidContacts || (this.data.isEditingExisting && hasContactWithDigits);
-
-        if (!contactRequirementSatisfied) {
-          requiredFields.push({ key: 'contacts', label: '联系人信息' });
-          if (
-            this.data.isEditingExisting &&
-            !this.data.contactStepRevealed &&
-            this.data.prefillCompleted
-          ) {
-            this.revealContactStepForManualInput();
-          }
+          requiredFields.push({ key: 'address', label: '家庭地址' });
         }
         break;
       }
@@ -1412,7 +927,7 @@ Page({
     { key: 'idNumber', label: '证件号码' },
     { key: 'gender', label: '性别' },
     { key: 'birthDate', label: '出生日期' },
-    { key: 'address', label: '常住地址' },
+    { key: 'address', label: '家庭地址' },
   ];
 
     const missing = [];
@@ -1425,40 +940,10 @@ Page({
       });
     }
 
-    const contacts = this.ensureContactsArray(formData.contacts);
-
     if (!formData.admissionDate) {
       missing.push({ key: 'admissionDate', label: '入住时间' });
     }
 
-    const hasValidContacts =
-      contacts.length > 0 &&
-      contacts.every(contact => {
-        if (!contact || typeof contact !== 'object') {
-          return false;
-        }
-        const relation = this.normalizeExcelSpacing(contact.relationship);
-        const name = this.normalizeExcelSpacing(contact.name);
-        const phoneDigits = this.normalizePhoneDigits(contact.phone);
-        return !!relation && !!name && this.isValidMobileNumber(phoneDigits);
-      });
-
-    const hasContactWithDigits = contacts.some(contact => {
-      if (!contact || typeof contact !== 'object') {
-        return false;
-      }
-      const name = this.normalizeExcelSpacing(contact.name);
-      const phoneDigits = this.normalizePhoneDigits(contact.phone);
-      return !!name && phoneDigits.length >= 5;
-    });
-
-    const contactRequirementSatisfied = !isEditingExisting
-      ? hasValidContacts
-      : hasValidContacts || hasContactWithDigits;
-
-    if (!contactRequirementSatisfied) {
-      missing.push({ key: 'contacts', label: '联系人信息' });
-    }
 
     if (this.data.mode === 'create' && missing.length) {
       logger.warn('[wizard] missing required fields in create mode', missing, formData);
@@ -1690,26 +1175,12 @@ Page({
         break;
       }
       case 1: {
-        // 步骤2：联系人
+        // 步骤2：联系人（仅校验家庭地址）
         if (!formData.address || !formData.address.trim()) {
-          errors.address = '请输入常住地址';
+          errors.address = '请输入家庭地址';
           isValid = false;
           if (!firstErrorMessage) {
             firstErrorMessage = errors.address;
-          }
-        }
-        const derivedFromFields = this.buildContactsFromFields(formData);
-        if (derivedFromFields.length) {
-          const synced = this.updateFormData({ contacts: derivedFromFields });
-          formData = synced;
-        }
-
-        const contactValidation = this.validateContacts({ updateState: true, showToast: false });
-        if (!contactValidation.valid) {
-          isValid = false;
-          errors.contacts = contactValidation.errors;
-          if (!firstErrorMessage) {
-            firstErrorMessage = contactValidation.message || '请完善联系人信息';
           }
         }
         break;
@@ -1730,10 +1201,6 @@ Page({
     }
     if (currentStep === 1) {
       errorUpdates['errors.address'] = errors.address || '';
-      if (errors.contacts) {
-        errorUpdates['errors.contacts'] = errors.contacts;
-        errorUpdates['contactErrors'] = errors.contacts;
-      }
     }
     if (Object.keys(errorUpdates).length) {
       this.setData(errorUpdates);
@@ -1830,23 +1297,17 @@ Page({
   async submitIntakeData() {
     const { formData, isEditingExisting, patientKey, mode } = this.data;
 
-    let finalFormData = this.syncContactsToFields({ ...formData });
+    let finalFormData = { ...formData };
     const guardianEntries = [];
     const normalizedGuardianInfo = this.normalizeExcelSpacing(finalFormData.guardianInfo);
     if (normalizedGuardianInfo) {
       guardianEntries.push(normalizedGuardianInfo);
     }
-    if (Array.isArray(finalFormData.extraContacts) && finalFormData.extraContacts.length) {
-      guardianEntries.push(
-        ...finalFormData.extraContacts
-          .map(entry => this.normalizeExcelSpacing(entry))
-          .filter(Boolean)
-      );
-    }
     finalFormData.guardianInfo = guardianEntries.join('；');
 
     // 构建提交数据
     const cleanedFormData = { ...finalFormData };
+    // 移除已废弃的扩展联系人映射
     delete cleanedFormData.extraContacts;
 
     // 规范：将入住日期同步为时间戳写入 formData.intakeTime，便于服务端统一读取

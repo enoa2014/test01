@@ -75,7 +75,7 @@ excel_records 集合
 | `pages/index/index.js`                  | `readExcel.list`   | `patientProfile.list`   | 主页患者列表 |
 | `pages/analysis/index.js`               | `readExcel.list`   | `patientProfile.list`   | 数据分析页面 |
 | `pages/patient-detail/detail.js`        | `readExcel.detail` | `patientProfile.detail` | 患者详情页面 |
-| `pages/patient-intake/select/select.js` | `readExcel.list`   | `patientProfile.list`   | 入住选择页面 |
+| （已移除）选择页                     | —                  | —                      | 已由创建向导替代 |
 
 ## 优势分析
 
@@ -119,7 +119,7 @@ excel_records 集合
 验证结果（节选）：
 1. ✅ 患者列表加载 - patientProfile.list 正常工作
 2. ✅ 患者详情查看 - patientProfile.detail 正常工作
-3. ✅ 入住选择功能 - 前端调用已更新
+3. ✅ 创建住户向导与详情页新增入住 - 前端调用已更新
 4. ✅ 数据同步流程 - readExcel 核心功能保留
 
 ## 注意事项
@@ -154,4 +154,3 @@ excel_records 集合
 ## 总结
 
 本次重构实现了云函数职责的清晰分离，提升了系统的可维护性和性能。新架构为未来的功能扩展和优化提供了良好的基础。
-

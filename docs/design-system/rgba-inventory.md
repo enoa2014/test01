@@ -16,7 +16,7 @@
 | ------------------------------------- | ------------------------------------ | -------------------- | -------- |
 | analysis/index.wxss:83                | Selection 蒙层 `rgba(17,24,39,0.45)` | `--overlay-dim`      |
 | patient-detail/detail.wxss:370        | 文本预览遮罩 `rgba(17,24,39,0.6)`    | `--overlay-strong`   |
-| patient-intake/select/select.wxss:255 | 详情确认弹窗背景 `rgba(0,0,0,0.45)`  | 复用 `--overlay-dim` |
+| （已移除）patient-intake/select/select.wxss | 历史：详情确认弹窗背景 | 复用 `--overlay-dim` |
 | patient-intake/wizard/wizard.wxss:512 | 草稿提示遮罩 `rgba(0,0,0,0.5)`       | `--overlay-strong`   |
 
 ## 3. 信息提示背景 / 高亮块
@@ -25,8 +25,7 @@
 | ------------------------------------------- | -------------------------------------- | ------------------- | -------- |
 | patient-detail/detail.wxss:166              | 蓝色提示条背景 `rgba(24,144,255,0.08)` | `--bg-info-soft`    |
 | patient-detail/detail.wxss:242              | 状态提示块 `rgba(24,144,255,0.08)`     | 同上                |
-| patient-intake/select/select.wxss:160       | 「新患者」徽标 `rgba(250,173,20,0.15)` | `--bg-warning-soft` |
-| patient-intake/select/select.wxss:326       | 确认弹窗提示 `rgba(24,144,255,0.08)`   | `--bg-info-soft`    |
+| （已移除）patient-intake/select/select.wxss | 历史：「新患者」徽标/确认提示         | `--bg-warning-soft` / `--bg-info-soft` |
 | patient-intake/wizard/wizard.wxss:242 / 422 | 情况提示块 `rgba(24,144,255,0.08)`     | `--bg-info-soft`    |
 
 ## 4. 渐变背景

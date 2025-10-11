@@ -53,7 +53,7 @@
 - 操作强调：使用 `pm-button` 风格按钮，下载/删除加图标与加载/禁用态。
 
 ### 录入流程（选择/向导/完成）
-- 选择页：输入高亮匹配，空态主按钮“创建新住户”（`miniprogram/pages/patient-intake/select/select.wxml:1`）。
+- 创建向导：通过“创建住户向导”完成基础身份与联系方式采集（已移除选择页，改为从列表页直接进入 `miniprogram/pages/patient-intake/wizard/wizard`）。
 - 向导页：逐项即时校验 + 顶部错误计数可跳转定位（`miniprogram/pages/patient-intake/wizard/wizard.wxml:35`）。
 - 完成页：明确主次 CTA（查看详情/继续添加/回列表），返回自动刷新列表。
 

@@ -154,73 +154,7 @@
   margin-bottom: 0;
 }
 
-.contacts-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
-}
-
-.contacts-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.contacts-title {
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
-}
-
-.contacts-subtitle {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
-
-.contact-item {
-  background-color: var(--color-bg-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  box-shadow: var(--shadow-xs);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.contact-item__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.contact-item__title {
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
-  color: var(--color-text-primary);
-}
-
-.contact-item__remove {
-  font-size: var(--text-sm);
-  color: var(--color-danger);
-}
-
-.contact-grid {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: var(--space-4);
-}
-
-@media (min-width: 600px) {
-  .contact-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.contacts-add {
-  display: flex;
-  justify-content: flex-start;
-}
+/* 已移除多联系人编辑 UI（contacts-section/contact-item 等） */
 
 .form-label {
   display: block;

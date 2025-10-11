@@ -129,10 +129,7 @@
     
 
     <!-- 入住记录 -->
-    <view
-      class="intake-records-section"
-      wx:if="{{intakeRecordCount || visibleIntakeRecords.length}}"
-    >
+    <view class="intake-records-section">
       <view class="section-header section-header--sub">
         <view class="records-row">
           <text class="section-title">入住记录（{{intakeRecordCount}}条）</text>
@@ -565,12 +562,11 @@
     title="编辑入住记录"
     use-slot="{{true}}"
     use-footer-slot="{{true}}"
-    scrollable="{{true}}"
     close-on-cancel="{{!recordEditSubmitting}}"
     show-close="{{!recordEditSubmitting}}"
     bind:close="onRecordEditCancel"
   >
-    <scroll-view scroll-y class="dialog-scroll">
+    <scroll-view scroll-y style="height: 60vh;">
     <view class="checkout-dialog__datetime">
       <text class="checkout-dialog__field-label">入住时间</text>
       <view class="checkout-dialog__datetime-row">
@@ -599,6 +595,7 @@
     <pm-input label="症状详情" type="textarea" value="{{recordEditForm.symptoms}}" bind:input="onRecordFieldInput" data-field="symptoms" />
     <pm-input label="医治过程" type="textarea" value="{{recordEditForm.treatmentProcess}}" bind:input="onRecordFieldInput" data-field="treatmentProcess" />
     <pm-input label="后续治疗安排" type="textarea" value="{{recordEditForm.followUpPlan}}" bind:input="onRecordFieldInput" data-field="followUpPlan" />
+    <view style="height: 200rpx;"></view>
     </scroll-view>
     <view slot="footer" class="checkout-dialog__footer">
       <pm-button text="取消" type="ghost" size="medium" disabled="{{recordEditSubmitting}}" bindtap="onRecordEditCancel" />
@@ -612,12 +609,11 @@
     title="编辑信息"
     use-slot="{{true}}"
     use-footer-slot="{{true}}"
-    scrollable="{{true}}"
     close-on-cancel="{{true}}"
     show-close="{{true}}"
     bind:close="onBlockCancel"
   >
-    <scroll-view scroll-y class="dialog-scroll">
+    <scroll-view scroll-y style="height: 60vh;">
     <view wx:if="{{moduleEditBlock==='basic'}}">
       <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" error="{{blockEditErrors.patientName || ''}}" data-field="patientName" bind:input="onBlockFieldInput" />
       <view class="form-group">
@@ -644,8 +640,6 @@
 
     <view wx:elif="{{moduleEditBlock==='contact'}}">
       <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" error="{{blockEditErrors.address || ''}}" data-field="address" bind:input="onBlockFieldInput" />
-      <pm-input label="备用联系人" value="{{blockEditForm.backupContact}}" data-field="backupContact" bind:input="onBlockFieldInput" />
-      <pm-input label="备用联系电话" value="{{blockEditForm.backupPhone}}" error="{{blockEditErrors.backupPhone || ''}}" data-field="backupPhone" bind:input="onBlockFieldInput" />
       <pm-input label="父亲联系方式" value="{{blockEditForm.fatherInfo}}" data-field="fatherInfo" bind:input="onBlockFieldInput" />
       <pm-input label="母亲联系方式" value="{{blockEditForm.motherInfo}}" data-field="motherInfo" bind:input="onBlockFieldInput" />
       <pm-input label="其他监护人" value="{{blockEditForm.guardianInfo}}" data-field="guardianInfo" bind:input="onBlockFieldInput" />
@@ -654,6 +648,7 @@
     <view wx:elif="{{moduleEditBlock==='economic'}}">
       <pm-input label="家庭经济情况" type="textarea" value="{{blockEditForm.familyEconomy}}" data-field="familyEconomy" bind:input="onBlockFieldInput" />
     </view>
+    <view style="height: 200rpx;"></view>
     </scroll-view>
 
     <view slot="footer" class="checkout-dialog__footer">

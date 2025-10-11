@@ -169,11 +169,11 @@
       </view>
     </view>
 
-    <!-- 第2步：家庭与联系人 -->
+    <!-- 第2步：家庭与联系人（与 Excel 字段一致） -->
     <view wx:if="{{currentStepData && currentStepData.key === 'contact'}}" class="form-section">
       <view class="form-group">
         <pm-input
-          label="常住地址"
+          label="家庭地址"
           required="{{true}}"
           type="textarea"
           value="{{formData.address}}"
@@ -188,87 +188,33 @@
           block="{{true}}"
         ></pm-input>
       </view>
-
-      <view class="contacts-section">
-        <view class="contacts-header">
-          <text class="contacts-title">联系人信息</text>
-          <text class="contacts-subtitle">至少 1 位，最多 5 位</text>
-        </view>
-
-        <view
-          class="contact-item"
-          wx:for="{{formData.contacts}}"
-          wx:key="index"
-        >
-          <view class="contact-item__header">
-            <text class="contact-item__title">联系人{{index + 1}}</text>
-            <text
-              wx:if="{{formData.contacts.length > 1}}"
-              class="contact-item__remove"
-              data-index="{{index}}"
-              bindtap="removeContact"
-            >移除</text>
-          </view>
-
-          <view class="contact-grid">
-            <pm-input
-              label="关系"
-              required="{{true}}"
-              value="{{item.relationship}}"
-              placeholder="如：父亲、母亲、照护人"
-              data-index="{{index}}"
-              data-field="relationship"
-              bindinput="onContactFieldInput"
-              error="{{contactErrors[index] ? contactErrors[index].relationship || '' : ''}}"
-              clearable="{{true}}"
-              label-position="top"
-              block="{{true}}"
-            ></pm-input>
-
-            <pm-input
-              label="姓名"
-              required="{{true}}"
-              value="{{item.name}}"
-              placeholder="请输入姓名"
-              data-index="{{index}}"
-              data-field="name"
-              bindinput="onContactFieldInput"
-              error="{{contactErrors[index] ? contactErrors[index].name || '' : ''}}"
-              clearable="{{true}}"
-              label-position="top"
-              block="{{true}}"
-            ></pm-input>
-
-            <pm-input
-              label="联系电话"
-              required="{{true}}"
-              value="{{item.phone}}"
-              placeholder="请输入11位手机号码"
-              type="number"
-              data-index="{{index}}"
-              data-field="phone"
-              bindinput="onContactFieldInput"
-              error="{{contactErrors[index] ? contactErrors[index].phone || '' : ''}}"
-              clearable="{{true}}"
-              label-position="top"
-              block="{{true}}"
-            ></pm-input>
-          </view>
-        </view>
-
-        <view
-          class="contacts-add"
-          wx:if="{{formData.contacts.length < 5}}"
-        >
-          <pm-button
-            type="ghost"
-            size="small"
-            icon="＋"
-            text="添加联系人"
-            bind:tap="addContact"
-          ></pm-button>
-        </view>
-      </view>
+      <pm-input
+        label="父亲联系方式"
+        value="{{formData.fatherInfo}}"
+        placeholder="姓名/电话（可选）"
+        data-field="fatherInfo"
+        bindinput="onInputChange"
+        label-position="top"
+        block="{{true}}"
+      ></pm-input>
+      <pm-input
+        label="母亲联系方式"
+        value="{{formData.motherInfo}}"
+        placeholder="姓名/电话（可选）"
+        data-field="motherInfo"
+        bindinput="onInputChange"
+        label-position="top"
+        block="{{true}}"
+      ></pm-input>
+      <pm-input
+        label="其他监护人"
+        value="{{formData.guardianInfo}}"
+        placeholder="姓名/电话（可选）"
+        data-field="guardianInfo"
+        bindinput="onInputChange"
+        label-position="top"
+        block="{{true}}"
+      ></pm-input>
 
     </view>
 
@@ -435,18 +381,20 @@
         <view class="review-group">
           <view class="group-title">联系信息</view>
           <view class="review-item">
-            <text class="item-label">常住地址：</text>
+            <text class="item-label">家庭地址：</text>
             <text class="item-value">{{formData.address}}</text>
           </view>
-          <view
-            class="review-item"
-            wx:for="{{formData.contacts}}"
-            wx:key="index"
-          >
-            <text class="item-label">联系人{{index + 1}}：</text>
-            <text class="item-value"
-              >{{item.relationship}} {{item.name}} {{item.phone}}</text
-            >
+          <view class="review-item" wx:if="{{formData.fatherInfo}}">
+            <text class="item-label">父亲联系方式：</text>
+            <text class="item-value">{{formData.fatherInfo}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.motherInfo}}">
+            <text class="item-label">母亲联系方式：</text>
+            <text class="item-value">{{formData.motherInfo}}</text>
+          </view>
+          <view class="review-item" wx:if="{{formData.guardianInfo}}">
+            <text class="item-label">其他监护人：</text>
+            <text class="item-value">{{formData.guardianInfo}}</text>
           </view>
         </view>
 
@@ -543,7 +491,7 @@
         loading="{{submitting}}"
         bind:tap="onSubmit"
         class="btn btn-success"
-        text="{{submitting ? '提交中...' : '完成入住'}}"
+        text="{{submitting ? '提交中...' : (mode === 'create' ? '创建住户' : '完成入住')}}"
       ></pm-button>
     </view>
   </view>

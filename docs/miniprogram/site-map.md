@@ -3,7 +3,7 @@
 状态：本文件为信息架构草案用于导航与规划；当前实际已实现的页面包含：
 - `/pages/index`（主页/住户列表）
 - `/pages/patient-detail`（患者详情）
-- `/pages/patient-intake/*`（入住选择/向导/成功页）
+- `/pages/patient-intake/*`（创建向导/成功页）
 - `/pages/analysis`（分析/演示页面）
 其余页面为规划项，后续按迭代补齐。
 

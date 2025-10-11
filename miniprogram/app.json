@@ -3,7 +3,6 @@
     "pages/index/index",
     "pages/analysis/index",
     "pages/patient-detail/detail",
-    "pages/patient-intake/select/select",
     "pages/patient-intake/wizard/wizard",
     "pages/patient-intake/success/success",
     "pages/component-lab/index"

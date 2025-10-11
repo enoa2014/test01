@@ -83,7 +83,7 @@ async function testFrontendIntegration() {
     console.log('   - index/index.js: readExcel → patientProfile');
     console.log('   - analysis/index.js: readExcel → patientProfile');
     console.log('   - patient-detail/detail.js: readExcel → patientProfile');
-    console.log('   - patient-intake/select/select.js: readExcel → patientProfile\n');
+    console.log('   - patient-intake/wizard/wizard.js: 创建住户向导对齐 patientProfile\n');
 
     console.log('2. 验证数据格式兼容性...');
     console.log('✅ 数据格式保持兼容');
@@ -96,7 +96,7 @@ async function testFrontendIntegration() {
     console.log('   - 主页患者列表显示');
     console.log('   - 数据分析统计功能');
     console.log('   - 患者详情查看');
-    console.log('   - 入住选择患者功能\n');
+    console.log('   - 创建住户向导与详情页新增入住\n');
 
     console.log('🎉 前端集成测试通过！');
   } catch (error) {

@@ -4,7 +4,7 @@
 
 | 组件      | 页面引用                                          | 备注/后续行动                                    |
 | --------- | ------------------------------------------------- | ------------------------------------------------ |
-| pm-button | `patient-intake/select`、`patient-intake/success` | 已推广，后续关注真机触摸反馈                     |
+| pm-button | `patient-intake/wizard`、`patient-intake/success` | 已推广，后续关注真机触摸反馈                     |
 | pm-input  | `patient-detail/detail`（表单）                   | 已迁移；需回归编辑/验证流程                      |
 | pm-card   | `analysis/index`、`patient-detail/detail` (media) | 已替换旧样式；关注组合 slot 使用                 |
 | pm-picker | Component Lab demo                                | 计划迁移到真实表单场景（患者证件、护理项目选择） |

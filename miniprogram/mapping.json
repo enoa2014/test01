@@ -432,10 +432,7 @@
       "components": ["SmartSearchBar", "FilterPanel", "PatientCard", "StatusTag", "LoadingSpinner"]
     },
 
-    "CheckinApply": {
-      "path": "/pages/checkin/apply",
-      "components": ["StepIndicator", "Card", "Input", "Button", "NavigationBar"]
-    },
+    
 
     "Analytics": {
       "path": "/pages/analytics/index",
