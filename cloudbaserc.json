@@ -15,6 +15,13 @@
       "runtime": "Nodejs16.13",
       "timeout": 20,
       "installDependency": true
+    },
+    {
+      "name": "patientProfile",
+      "dir": "cloudfunctions/patientProfile",
+      "runtime": "Nodejs16.13",
+      "timeout": 20,
+      "installDependency": true
     }
   ]
 }
