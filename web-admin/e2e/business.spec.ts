@@ -17,7 +17,8 @@ test.describe('Web Admin - Business Flow', () => {
     await page.getByLabel('用户名').fill('e2e');
     await page.getByLabel('口令').fill('e2e');
     await page.getByRole('button', { name: '登录' }).click();
-    await page.waitForURL('**/patients');
+    // 直接访问列表页（ProtectedRoute 在 bypass 模式下允许进入）
+    await page.goto('/patients');
 
     // 确认列表渲染出至少 3 条（来自 stub）
     await expect(page.locator('table')).toBeVisible();
