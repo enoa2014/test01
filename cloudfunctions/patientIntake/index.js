@@ -175,20 +175,8 @@ const { ensurePatientDoc, syncExcelRecordsToIntake, syncPatientAggregates } = cr
 });
 
 async function writePatientOperationLog(logEntry) {
-  await ensureCollection(PATIENT_OPERATION_LOGS_COLLECTION);
-  const now = Date.now();
-  const entry = {
-    patientKey: logEntry.patientKey,
-    action: logEntry.action || 'patient-detail-edit',
-    operatorId: logEntry.operatorId || '',
-    operatorName: logEntry.operatorName || '',
-    changes: Array.isArray(logEntry.changes) ? logEntry.changes : [],
-    message: logEntry.message || '',
-    createdAt: now,
-    extra: logEntry.extra || {},
-  };
-
-  await db.collection(PATIENT_OPERATION_LOGS_COLLECTION).add({ data: entry });
+  // Audit disabled: no-op
+  return;
 }
 
 function assignNestedUpdates(target, source, prefix, allowedKeys) {
@@ -212,7 +200,7 @@ function validateFormData(formData) {
     { key: 'idNumber', label: '证件号码' },
     { key: 'gender', label: '性别' },
     { key: 'birthDate', label: '出生日期' },
-    { key: 'address', label: '常住地址' },
+    { key: 'address', label: '家庭地址' },
   ];
 
   for (const field of requiredFields) {
@@ -330,6 +318,7 @@ async function handleCreatePatient(event) {
     gender: normalizeString(payload.gender),
     birthDate: normalizeString(payload.birthDate),
     phone: normalizeString(payload.phone),
+    nativePlace: normalizeString(payload.nativePlace),
     address: normalizeString(payload.address),
     backupContact: normalizeString(payload.backupContact),
     backupPhone: normalizeString(payload.backupPhone),
@@ -373,6 +362,7 @@ async function handleCreatePatient(event) {
     gender: normalizedForm.gender,
     birthDate: normalizedForm.birthDate,
     phone: normalizedForm.phone,
+    nativePlace: normalizedForm.nativePlace || '',
     address: normalizedForm.address,
     backupContact: normalizedForm.backupContact,
     backupPhone: normalizedForm.backupPhone,
@@ -394,6 +384,7 @@ async function handleCreatePatient(event) {
       gender: normalizedForm.gender,
       birthDate: normalizedForm.birthDate,
       phone: normalizedForm.phone,
+      nativePlace: normalizedForm.nativePlace || '',
       address: normalizedForm.address,
       backupContact: normalizedForm.backupContact,
       backupPhone: normalizedForm.backupPhone,

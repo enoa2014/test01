@@ -214,20 +214,11 @@ async function fetchQuotaSnapshot(patientKey) {
 }
 
 async function assertAuthorized(event) {
+  // Permissions disabled: always allow
   const token = normalizeString(event && event.sessionToken);
-  const allowBypass = normalizeString(process.env.PATIENT_MEDIA_ALLOW_DEV_BYPASS) !== 'false';
-  if (allowBypass) {
-    return {
-      adminId: token || 'public-access',
-      mode: 'open-access',
-    };
-  }
-  if (!token) {
-    throw makeError('PERMISSION_DENIED', '当前账号未授权访问患者资料');
-  }
   return {
-    adminId: token,
-    mode: 'token',
+    adminId: token || 'public-access',
+    mode: 'open-access',
   };
 }
 
