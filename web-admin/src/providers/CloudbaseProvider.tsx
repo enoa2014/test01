@@ -159,8 +159,12 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return DEFAULTS.envId ? tcb.init({ env: DEFAULTS.envId }) : null;
   });
   const [auth, setAuth] = useState<Auth | null>(null);
-  const [user, setUser] = useState<CloudbaseContextValue['user']>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<CloudbaseContextValue['user']>(
+    isE2ETestBypass
+      ? { uid: 'e2e-uid', username: 'e2e-admin', role: 'admin', ticketIssuedAt: Date.now() }
+      : null
+  );
+  const [loading, setLoading] = useState(!isE2ETestBypass);
 
   const initAuthForApp = useCallback(async (appInstance: CloudBase | null) => {
     if (!appInstance) {
