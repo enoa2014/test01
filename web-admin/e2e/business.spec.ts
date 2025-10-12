@@ -11,8 +11,12 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Web Admin - Business Flow', () => {
   test('login via bypass, filter list, edit status from list', async ({ page }) => {
-    // 进入首页，自动通过 ProtectedRoute 并重定向到 /patients
-    await page.goto('/');
+    // 走登录页 UI，确保用户态建立
+    await page.goto('/login');
+    await expect(page.getByRole('heading', { name: '管理员登录' })).toBeVisible();
+    await page.getByLabel('用户名').fill('e2e');
+    await page.getByLabel('口令').fill('e2e');
+    await page.getByRole('button', { name: '登录' }).click();
     await page.waitForURL('**/patients');
 
     // 确认列表渲染出至少 3 条（来自 stub）
@@ -43,4 +47,3 @@ test.describe('Web Admin - Business Flow', () => {
     await expect(statusCell.locator('.status-pill.gray')).toHaveText('已退住');
   });
 });
-
