@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { fetchPatientList, deletePatient, exportPatients } from '../api/patient';
 import { useCloudbase } from '../hooks/useCloudbase';
 import { PatientSummary } from '../types/patient';
-import '../styles/patient-list.css';
 type StatsData = { total: number; inCare: number; pending: number; discharged: number };
 import {
   AdvancedFilters,
@@ -237,78 +236,6 @@ const PatientListPage: React.FC = () => {
 
   // 视图模式（默认表格视图）
   const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
-
-  // 键盘快捷键支持
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + K 聚焦搜索框
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        const searchInput = document.querySelector('.search-input') as HTMLInputElement;
-        if (searchInput) {
-          searchInput.focus();
-        }
-      }
-
-      // Escape 清除搜索或关闭对话框
-      if (event.key === 'Escape') {
-        if (statusDialogVisible) {
-          setStatusDialogVisible(false);
-        } else if (filterPanelVisible) {
-          setFilterPanelVisible(false);
-        } else if (keyword) {
-          setKeyword('');
-        }
-      }
-
-      // Ctrl/Cmd + A 全选
-      if ((event.ctrlKey || event.metaKey) && event.key === 'a' && !event.shiftKey) {
-        const activeElement = document.activeElement;
-        const isInputField = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
-
-        if (!isInputField && rows.length > 0) {
-          event.preventDefault();
-          setSelected(new Set(rows.map(r => r.key)));
-        }
-      }
-
-      // Delete 删除选中项
-      if (event.key === 'Delete' && selected.size > 0 && !statusDialogVisible && !filterPanelVisible) {
-        const activeElement = document.activeElement;
-        const isInputField = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
-
-        if (!isInputField) {
-          event.preventDefault();
-          handleBulkDelete();
-        }
-      }
-
-      // 数字键快速切换状态筛选
-      if (event.key === '1') {
-        setActiveStatFilter('all');
-      } else if (event.key === '2') {
-        setActiveStatFilter('in_care');
-      } else if (event.key === '3') {
-        setActiveStatFilter('pending');
-      } else if (event.key === '4') {
-        setActiveStatFilter('discharged');
-      }
-
-      // T 切换视图
-      if (event.key === 't' && !event.ctrlKey && !event.metaKey) {
-        const activeElement = document.activeElement;
-        const isInputField = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
-
-        if (!isInputField) {
-          event.preventDefault();
-          setViewMode(prev => prev === 'card' ? 'table' : 'card');
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [statusDialogVisible, filterPanelVisible, keyword, displayPatients, selected]);
 
   // 搜索关键词防抖
   useEffect(() => {
@@ -811,168 +738,155 @@ const PatientListPage: React.FC = () => {
 
   // 渲染单个患者卡片
   const renderPatientCard = (row: TableRow) => {
+    const borderColor = row.cardStatus === 'success' ? '#10b981' : row.cardStatus === 'warning' ? '#f59e0b' : '#e5e7eb';
     const isSelected = selected.has(row.key);
 
     return (
       <div
         key={row.key}
-        className={`patient-card-enhanced ${isSelected ? 'selected' : ''}`}
+        style={{
+          background: 'white',
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 12,
+          border: `2px solid ${isSelected ? '#2563eb' : borderColor}`,
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}
         onClick={() => navigate(`/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`)}
       >
         {/* 头部 */}
-        <div className="patient-card-header">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <h4 style={{ fontSize: 20, fontWeight: 600, color: '#1f2937', margin: 0 }}>
-                  {row.patientName || '-'}
-                </h4>
-                <span style={{ fontSize: 15, color: '#6b7280', fontWeight: 500 }}>
-                  {row.gender} · {row.ageText}
-                </span>
-              </div>
-              {/* 徽章 */}
-              <div className="patient-badges">
-                {row.badges.map((badge, idx) => {
-                  const isStatusBadge = badge.text === '在住' || badge.text === '待入住' || badge.text === '已离开';
-                  const onClick = (e: React.MouseEvent) => {
-                    if (!isStatusBadge) return;
-                    e.stopPropagation();
-                    setStatusTargetKey(row.patientKey || row.recordKey || '');
-                    const next = (badge.text === '在住' ? 'in_care' : badge.text === '待入住' ? 'pending' : 'discharged') as 'in_care' | 'pending' | 'discharged';
-                    setStatusForm({ value: next, note: '' });
-                    setStatusDialogVisible(true);
-                  };
-                  return (
-                    <span
-                      key={idx}
-                      className={`badge-enhanced ${isStatusBadge ? 'clickable' : ''}`}
-                      onClick={onClick}
-                      style={{
-                        backgroundColor:
-                          badge.type === 'success' ? '#d1fae5' :
-                          badge.type === 'warning' ? '#fef3c7' :
-                          badge.type === 'danger' ? '#fee2e2' :
-                          badge.type === 'info' ? '#dbeafe' :
-                          badge.type === 'primary' ? '#dbeafe' :
-                          '#f3f4f6',
-                        color:
-                          badge.type === 'success' ? '#065f46' :
-                          badge.type === 'warning' ? '#92400e' :
-                          badge.type === 'danger' ? '#991b1b' :
-                          badge.type === 'info' ? '#1e40af' :
-                          badge.type === 'primary' ? '#1e40af' :
-                          '#374151',
-                      }}
-                      title={isStatusBadge ? '点击调整状态' : undefined}
-                    >
-                      {badge.text}
-                    </span>
-                  );
-                })}
-              </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 18, fontWeight: 600, color: '#1f2937' }}>
+                {row.patientName || '-'}
+              </span>
+              <span style={{ fontSize: 14, color: '#6b7280' }}>
+                {row.gender} · {row.ageText}
+              </span>
             </div>
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => {
-                e.stopPropagation();
-                toggleSelect(row.key);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ width: 20, height: 20, cursor: 'pointer', accentColor: '#2563eb' }}
-            />
+            {/* 徽章 */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {row.badges.map((badge, idx) => {
+                const isStatusBadge = badge.text === '在住' || badge.text === '待入住' || badge.text === '已离开';
+                const onClick = (e: React.MouseEvent) => {
+                  if (!isStatusBadge) return;
+                  e.stopPropagation();
+                  setStatusTargetKey(row.patientKey || row.recordKey || '');
+                  const next = (badge.text === '在住' ? 'in_care' : badge.text === '待入住' ? 'pending' : 'discharged') as 'in_care' | 'pending' | 'discharged';
+                  setStatusForm({ value: next, note: '' });
+                  setStatusDialogVisible(true);
+                };
+                return (
+                  <span
+                    key={idx}
+                    onClick={onClick}
+                    style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    backgroundColor:
+                      badge.type === 'success' ? '#d1fae5' :
+                      badge.type === 'warning' ? '#fef3c7' :
+                      badge.type === 'danger' ? '#fee2e2' :
+                      badge.type === 'info' ? '#dbeafe' :
+                      badge.type === 'primary' ? '#dbeafe' :
+                      '#f3f4f6',
+                    color:
+                      badge.type === 'success' ? '#065f46' :
+                      badge.type === 'warning' ? '#92400e' :
+                      badge.type === 'danger' ? '#991b1b' :
+                      badge.type === 'info' ? '#1e40af' :
+                      badge.type === 'primary' ? '#1e40af' :
+                      '#374151',
+                     cursor: isStatusBadge ? 'pointer' : 'default',
+                  }}
+                  title={isStatusBadge ? '点击调整状态' : undefined}
+                  >
+                    {badge.text}
+                  </span>
+                );
+              })}
+            </div>
           </div>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              toggleSelect(row.key);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 18, height: 18, cursor: 'pointer' }}
+          />
         </div>
 
-        {/* 主体内容 */}
-        <div className="patient-card-body">
-          {/* 最新事件 */}
-          <div style={{
-            marginBottom: 16,
-            padding: 16,
-            backgroundColor: '#f8fafc',
-            borderRadius: 8,
-            border: '1px solid #e2e8f0'
-          }}>
-            <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.5 }}>{row.latestEvent}</div>
-          </div>
+        {/* 最新事件 */}
+        <div style={{ marginBottom: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 }}>
+          <div style={{ fontSize: 14, color: '#4b5563' }}>{row.latestEvent}</div>
+        </div>
 
-          {/* 标签 */}
-          {row.tags && row.tags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-              {row.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 12px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    fontWeight: 500,
-                    border: '1px solid #e2e8f0',
-                  }}
-                >
-                  🏷️ {tag}
-                </span>
-              ))}
+        {/* 标签 */}
+        {row.tags && row.tags.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {row.tags.map((tag, idx) => (
+              <span
+                key={idx}
+                style={{
+                  display: 'inline-block',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  backgroundColor: '#f3f4f6',
+                  color: '#6b7280',
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* 快速信息 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
+          {row.nativePlace && (
+            <div style={{ fontSize: 13, color: '#6b7280' }}>
+              📍 {row.nativePlace}
             </div>
           )}
-
-          {/* 快速信息 */}
-          <div className="patient-meta">
-            {row.nativePlace && (
-              <div className="meta-item">
-                <span className="meta-icon">📍</span>
-                <span>{row.nativePlace}</span>
-              </div>
-            )}
-            {row.latestHospital && (
-              <div className="meta-item">
-                <span className="meta-icon">🏥</span>
-                <span>{row.latestHospital}</span>
-              </div>
-            )}
-            {row.phone && (
-              <div className="meta-item">
-                <span className="meta-icon">📞</span>
-                <span>{row.phone}</span>
-              </div>
-            )}
-            {row.idNumber && (
-              <div className="meta-item">
-                <span className="meta-icon">🆔</span>
-                <span>{row.idNumber.slice(-4)}</span>
-              </div>
-            )}
-          </div>
+          {row.latestHospital && (
+            <div style={{ fontSize: 13, color: '#6b7280' }}>
+              🏥 {row.latestHospital}
+            </div>
+          )}
         </div>
 
         {/* 操作按钮 */}
-        <div className="patient-card-actions">
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
           <button
-            className="button-enhanced link-button"
+            className="link-button"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`);
             }}
-            style={{ flex: 1 }}
+            style={{ flex: 1, padding: '6px 12px', fontSize: 14 }}
           >
-            👁️ 查看详情
+            查看详情
           </button>
           <button
-            className="button-enhanced danger-button"
+            className="danger-button"
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               handleDeleteSingle(row.patientKey || row.recordKey || '');
             }}
+            style={{ padding: '6px 12px', fontSize: 14 }}
           >
-            🗑️ 删除
+            删除
           </button>
         </div>
       </div>
@@ -997,66 +911,118 @@ const PatientListPage: React.FC = () => {
   }, [advancedFilters]);
 
   return (
-    <div className="patient-list-container">
+    <div className="card">
       {/* 统计卡片 */}
-      <div className="stats-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
         <div
-          className={`stat-card ${activeStatFilter === 'all' ? 'active' : ''}`}
           onClick={() => handleStatFilterClick('all')}
+          style={{
+            padding: 16,
+            borderRadius: 8,
+            border: `2px solid ${activeStatFilter === 'all' ? '#2563eb' : '#e5e7eb'}`,
+            backgroundColor: activeStatFilter === 'all' ? '#eff6ff' : 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
         >
-          <div className="stat-number">{statsData.total}</div>
-          <div className="stat-label">全部住户</div>
+          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>全部住户</div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: '#1f2937' }}>{statsData.total}</div>
         </div>
 
         <div
-          className={`stat-card ${activeStatFilter === 'in_care' ? 'active' : ''}`}
           onClick={() => handleStatFilterClick('in_care')}
+          style={{
+            padding: 16,
+            borderRadius: 8,
+            border: `2px solid ${activeStatFilter === 'in_care' ? '#10b981' : '#e5e7eb'}`,
+            backgroundColor: activeStatFilter === 'in_care' ? '#ecfdf5' : 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
         >
-          <div className="stat-number" style={{ color: '#10b981' }}>{statsData.inCare}</div>
-          <div className="stat-label">在住</div>
+          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>在住</div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: '#10b981' }}>{statsData.inCare}</div>
         </div>
 
         <div
-          className={`stat-card ${activeStatFilter === 'pending' ? 'active' : ''}`}
           onClick={() => handleStatFilterClick('pending')}
+          style={{
+            padding: 16,
+            borderRadius: 8,
+            border: `2px solid ${activeStatFilter === 'pending' ? '#f59e0b' : '#e5e7eb'}`,
+            backgroundColor: activeStatFilter === 'pending' ? '#fffbeb' : 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
         >
-          <div className="stat-number" style={{ color: '#f59e0b' }}>{statsData.pending}</div>
-          <div className="stat-label">待入住</div>
+          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>待入住</div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: '#f59e0b' }}>{statsData.pending}</div>
         </div>
 
         <div
-          className={`stat-card ${activeStatFilter === 'discharged' ? 'active' : ''}`}
           onClick={() => handleStatFilterClick('discharged')}
+          style={{
+            padding: 16,
+            borderRadius: 8,
+            border: `2px solid ${activeStatFilter === 'discharged' ? '#6b7280' : '#e5e7eb'}`,
+            backgroundColor: activeStatFilter === 'discharged' ? '#f9fafb' : 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
         >
-          <div className="stat-number" style={{ color: '#6b7280' }}>{statsData.discharged}</div>
-          <div className="stat-label">已退住</div>
+          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>已退住</div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: '#6b7280' }}>{statsData.discharged}</div>
         </div>
       </div>
 
       {/* 搜索和筛选工具栏 */}
-      <div className="toolbar-enhanced">
-        <div className="toolbar-section left">
-          <div className="search-container">
-            <span className="search-icon">🔍</span>
+      <div className="toolbar" style={{ alignItems: 'flex-start' }}>
+        <div className="flex-row" style={{ flexWrap: 'wrap', gap: 12, flex: 1 }}>
+          {/* 搜索框 */}
+          <div style={{ position: 'relative', minWidth: 280 }}>
             <input
-              className="search-input"
               type="search"
-              placeholder="搜索姓名 / 证件号 / 电话 / 医院 / 诊断 (Ctrl+K)"
+              placeholder="搜索姓名 / 证件号 / 电话 / 医院 / 诊断"
               value={keyword}
               onChange={event => setKeyword(event.target.value)}
               onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
             />
             {/* 搜索建议下拉框 */}
             {showSuggestions && searchSuggestions.length > 0 && (
-              <div className="search-suggestions">
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: 4,
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 6,
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  maxHeight: 240,
+                  overflowY: 'auto',
+                  zIndex: 10,
+                }}
+              >
                 {searchSuggestions.map((suggestion, index) => (
                   <div
                     key={index}
-                    className="search-suggestion-item"
                     onClick={() => handleSuggestionClick(suggestion)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }}
                   >
-                    <span className="search-suggestion-icon">🔍</span>
                     {suggestion}
                   </div>
                 ))}
@@ -1064,61 +1030,44 @@ const PatientListPage: React.FC = () => {
             )}
           </div>
 
-          <div className="button-group">
-            <button
-              className={`button-enhanced ${hasActiveFilters ? 'primary-button' : 'secondary-button'}`}
-              type="button"
-              onClick={handleToggleAdvancedFilter}
-            >
-              高级筛选 {hasActiveFilters && `(已启用)`}
-            </button>
+          {/* 高级筛选按钮 */}
+          <button
+            className={hasActiveFilters ? 'primary-button' : 'secondary-button'}
+            type="button"
+            onClick={handleToggleAdvancedFilter}
+          >
+            高级筛选 {hasActiveFilters && `(已启用)`}
+          </button>
 
-            <button className="button-enhanced secondary-button" type="button" onClick={resetFilters}>
-              重置筛选
-            </button>
+          <button className="secondary-button" type="button" onClick={resetFilters}>
+            重置筛选
+          </button>
 
-            <button
-              className={`button-enhanced view-toggle ${viewMode === 'card' ? 'active' : ''}`}
-              type="button"
-              onClick={() => setViewMode('card')}
-            >
-              🎴 卡片视图
-            </button>
-
-            <button
-              className={`button-enhanced view-toggle ${viewMode === 'table' ? 'active' : ''}`}
-              type="button"
-              onClick={() => setViewMode('table')}
-            >
-              📋 表格视图
-            </button>
-          </div>
+          {/* 视图切换按钮 */}
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            {viewMode === 'card' ? '📋 表格视图' : '🎴 卡片视图'}
+          </button>
         </div>
 
-        <div className="toolbar-section right">
-          <div className="button-group">
-            <button className="button-enhanced secondary-button" type="button" onClick={() => loadPatients()} disabled={loading}>
-              {loading ? '刷新中...' : '🔄 刷新'}
-            </button>
-            <button className="button-enhanced secondary-button" type="button" onClick={handleExportSelected} disabled={selected.size === 0}>
-              📤 导出选中
-            </button>
-            <button className="button-enhanced secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
-              🗑️ 删除选中
-            </button>
-            <button className="button-enhanced primary-button" type="button" onClick={() => navigate('/patients/new')}>
-              ➕ 新增住户
-            </button>
-            <button
-              className="button-enhanced secondary-button"
-              type="button"
-              onClick={() => alert('快捷键：\n\nCtrl+K: 聚焦搜索\nEsc: 清除搜索/关闭对话框\nCtrl+A: 全选\nDelete: 删除选中\n1-4: 状态筛选\nT: 切换视图')}
-              style={{ padding: '10px 14px', minWidth: 'auto' }}
-              title="查看快捷键"
-            >
-              ⌨️
-            </button>
-          </div>
+        <div className="flex-row" style={{ flexWrap: 'wrap', gap: 12 }}>
+          <button className="secondary-button" type="button" onClick={() => loadPatients()} disabled={loading}>
+            {loading ? '刷新中...' : '刷新列表'}
+          </button>
+          {/* Excel 导入功能已移除 */}
+          <button className="secondary-button" type="button" onClick={handleExportSelected}>
+            导出选中
+          </button>
+          <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
+            删除选中
+          </button>
+          <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
+            新增住户
+          </button>
         </div>
       </div>
 
@@ -1126,19 +1075,17 @@ const PatientListPage: React.FC = () => {
 
       {/* 筛选摘要 */}
       {hasActiveFilters && (
-        <div className="filter-summary">
-          <span className="filter-summary-icon">🔎</span>
-          <span className="filter-summary-text">筛选条件：{summarizeFiltersForScheme(advancedFilters)}</span>
+        <div style={{ marginBottom: 12, padding: 8, backgroundColor: '#eff6ff', borderRadius: 6, fontSize: 14 }}>
+          <span style={{ color: '#2563eb', fontWeight: 500 }}>筛选条件：</span>
+          <span style={{ color: '#1f2937' }}>{summarizeFiltersForScheme(advancedFilters)}</span>
         </div>
       )}
 
-      <div className="list-info-bar">
-        <div className="list-info-text">
+      <div className="flex-row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
+        <span>
           显示 {rows.length} 条{patients.length !== rows.length && ` / 共 ${patients.length} 条`}
-        </div>
-        {selected.size > 0 && (
-          <div className="selected-count">已选择 {selected.size} 条</div>
-        )}
+        </span>
+        {selected.size > 0 && <span>已选择 {selected.size} 条</span>}
       </div>
 
       {error && <p className="error-text">{error}</p>}
@@ -1146,32 +1093,46 @@ const PatientListPage: React.FC = () => {
 
       {/* 骨架屏加载状态 */}
       {loading && rows.length === 0 ? (
-        <div className="loading-container">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton-card">
-              <div className="skeleton-row">
-                <div className="skeleton-text large"></div>
-                <div className="skeleton-text medium"></div>
+            <div
+              key={i}
+              style={{
+                background: 'white',
+                borderRadius: 12,
+                padding: 16,
+                border: '1px solid #e5e7eb',
+                animation: 'pulse 1.5s ease-in-out infinite',
+              }}
+            >
+              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                <div style={{ width: 100, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+                <div style={{ width: 60, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
               </div>
-              <div className="skeleton-text" style={{ width: '80%' }}></div>
-              <div className="skeleton-row">
-                <div className="skeleton-text medium"></div>
-                <div className="skeleton-text medium"></div>
-                <div className="skeleton-text small"></div>
+              <div style={{ width: '80%', height: 16, backgroundColor: '#f3f4f6', borderRadius: 4, marginBottom: 8 }} />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ width: 80, height: 24, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
+                <div style={{ width: 80, height: 24, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
               </div>
             </div>
           ))}
         </div>
       ) : rows.length === 0 ? (
         // 智能空状态
-        <div className="empty-state">
-          <div className="empty-state-icon">
+        <div style={{
+          textAlign: 'center',
+          padding: 60,
+          background: 'white',
+          borderRadius: 12,
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>
             {debouncedKeyword ? '🔍' : hasActiveFilters ? '🔎' : '📋'}
           </div>
-          <h3 className="empty-state-title">
+          <div style={{ fontSize: 18, fontWeight: 600, color: '#1f2937', marginBottom: 8 }}>
             {debouncedKeyword ? '未找到匹配的住户' : hasActiveFilters ? '无符合条件的住户' : '暂无住户档案'}
-          </h3>
-          <p className="empty-state-description">
+          </div>
+          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
             {debouncedKeyword
               ? `没有找到与"${debouncedKeyword}"相关的住户`
               : hasActiveFilters
@@ -1179,11 +1140,12 @@ const PatientListPage: React.FC = () => {
               : activeStatFilter !== 'all'
               ? '当前分类没有住户'
               : '点击右上角按钮添加第一位住户'}
-          </p>
+          </div>
           {(debouncedKeyword || hasActiveFilters) && (
             <button
-              className="button-enhanced secondary-button"
+              className="secondary-button"
               onClick={resetFilters}
+              style={{ marginTop: 8 }}
             >
               {debouncedKeyword ? '清除搜索' : '清除筛选'}
             </button>
@@ -1191,18 +1153,17 @@ const PatientListPage: React.FC = () => {
         </div>
       ) : viewMode === 'card' ? (
         // 卡片视图
-        <div className="cards-grid">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {rows.map(row => renderPatientCard(row))}
         </div>
       ) : (
         // 表格视图
-        <div className="table-container">
-          <table className="table-enhanced">
+        <div style={{ overflowX: 'auto' }}>
+          <table className="table">
             <thead>
               <tr>
                 <th style={{ width: 50, textAlign: 'center' }}>
                   <input
-                    className="table-checkbox"
                     type="checkbox"
                     checked={selected.size > 0 && selected.size === rows.length}
                     onChange={(e) => {
@@ -1212,6 +1173,7 @@ const PatientListPage: React.FC = () => {
                         setSelected(new Set());
                       }
                     }}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
                   />
                 </th>
                 <th style={{ minWidth: 120 }}>姓名</th>
@@ -1229,14 +1191,16 @@ const PatientListPage: React.FC = () => {
                 <tr key={row.key}>
                   <td style={{ textAlign: 'center' }}>
                     <input
-                      className="table-checkbox"
                       type="checkbox"
                       checked={selected.has(row.key)}
                       onChange={() => toggleSelect(row.key)}
+                      style={{ width: 16, height: 16, cursor: 'pointer' }}
                     />
                   </td>
-                  <td className="patient-name-cell">
-                    {row.patientName || '-'}
+                  <td>
+                    <div style={{ fontWeight: 600, color: '#1f2937' }}>
+                      {row.patientName || '-'}
+                    </div>
                   </td>
                   <td style={{ textAlign: 'center', color: '#6b7280' }}>
                     {row.gender || '-'}
@@ -1255,21 +1219,23 @@ const PatientListPage: React.FC = () => {
                     {row.admissionCount ?? '-'}
                   </td>
                   <td>
-                    <div className="patient-actions">
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                       <button
-                        className="button-enhanced link-button"
+                        className="link-button"
                         onClick={() =>
                           navigate(
                             `/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`
                           )
                         }
+                        style={{ fontSize: 14, padding: '6px 12px' }}
                       >
                         查看
                       </button>
                       <button
-                        className="button-enhanced danger-button"
+                        className="danger-button"
                         type="button"
                         onClick={() => handleDeleteSingle(row.patientKey || row.recordKey || '')}
+                        style={{ fontSize: 14, padding: '6px 12px' }}
                       >
                         删除
                       </button>
@@ -1285,31 +1251,52 @@ const PatientListPage: React.FC = () => {
       {/* 状态调整对话框 */}
       {statusDialogVisible && (
         <div
-          className="status-dialog-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
           onClick={() => !statusDialogSubmitting && setStatusDialogVisible(false)}
         >
           <div
-            className="status-dialog"
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 500,
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 600 }}>调整住户状态</h3>
-            <div style={{ fontSize: 15, color: '#6b7280', marginBottom: 20, lineHeight: 1.5 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600 }}>调整状态</h3>
+            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 12 }}>
               选择新的住户状态，便于列表展示一致。
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
               {STATUS_OPTIONS.map((option) => (
                 <div
                   key={option.id}
-                  className={`status-option ${statusForm.value === (option.id as any) ? 'selected' : ''}`}
                   onClick={() => !statusDialogSubmitting && setStatusForm({ ...statusForm, value: option.id as any })}
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    border: `2px solid ${statusForm.value === (option.id as any) ? '#3b82f6' : '#e5e7eb'}`,
+                    backgroundColor: statusForm.value === (option.id as any) ? '#eff6ff' : 'white',
+                    cursor: statusDialogSubmitting ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                  }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18, color: statusForm.value === (option.id as any) ? '#2563eb' : '#9ca3af' }}>
-                      {statusForm.value === (option.id as any) ? '●' : '○'}
-                    </span>
-                    <span style={{ fontWeight: 600, fontSize: 15 }}>{option.label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>{statusForm.value === (option.id as any) ? '●' : '○'}</span>
+                    <span style={{ fontWeight: 500, fontSize: 14 }}>{option.label}</span>
                   </div>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginLeft: 28, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4, marginLeft: 24 }}>
                     {option.id === 'in_care' && '用于正在小家入住的住户'}
                     {option.id === 'pending' && '待入住房、随访等状态'}
                     {option.id === 'discharged' && '已办理离开或转出'}
@@ -1317,8 +1304,8 @@ const PatientListPage: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 15, fontWeight: 600, marginBottom: 8, color: '#374151' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
                 备注（可选）
               </label>
               <textarea
@@ -1329,33 +1316,19 @@ const PatientListPage: React.FC = () => {
                 maxLength={120}
                 style={{
                   width: '100%',
-                  minHeight: 100,
-                  padding: 12,
-                  border: '2px solid #e5e7eb',
-                  borderRadius: 8,
+                  minHeight: 80,
+                  padding: 8,
+                  border: '1px solid #d1d5db',
+                  borderRadius: 6,
                   fontSize: 14,
-                  fontFamily: 'inherit',
-                  resize: 'vertical',
-                  transition: 'border-color 0.2s ease',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#2563eb';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e5e7eb';
-                  e.target.style.boxShadow = 'none';
                 }}
               />
-              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 6, textAlign: 'right' }}>
-                {statusForm.note.length}/120
-              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button className="button-enhanced secondary-button" onClick={() => setStatusDialogVisible(false)} disabled={statusDialogSubmitting}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button className="secondary-button" onClick={() => setStatusDialogVisible(false)} disabled={statusDialogSubmitting}>
                 取消
               </button>
-              <button className="button-enhanced primary-button" onClick={handleConfirmStatusChange} disabled={statusDialogSubmitting}>
+              <button className="primary-button" onClick={handleConfirmStatusChange} disabled={statusDialogSubmitting}>
                 {statusDialogSubmitting ? '处理中...' : '确认调整'}
               </button>
             </div>
