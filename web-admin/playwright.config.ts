@@ -1,6 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 // Playwright config for web-admin app
+const thisDir = path.dirname(fileURLToPath(new URL(import.meta.url)));
+
 export default defineConfig({
   testDir: 'e2e',
   timeout: 60_000,
@@ -20,7 +24,7 @@ export default defineConfig({
     command: 'npm run preview',
     port: 4173,
     reuseExistingServer: !process.env.CI,
-    cwd: __dirname,
+    cwd: thisDir,
     timeout: 120_000,
   },
   projects: [
@@ -38,4 +42,3 @@ export default defineConfig({
     },
   ],
 });
-
