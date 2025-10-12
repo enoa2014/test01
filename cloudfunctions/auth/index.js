@@ -81,17 +81,19 @@ function getCustomLoginCredentials() {
 }
 
 function createTicket(uid, opts = {}) {
-  const envId = getEnvId();
-  if (!envId) {
+  // Prefer explicit envId; gracefully fall back to current runtime env symbol
+  const resolvedEnvId = getEnvId();
+  const envOption = resolvedEnvId || (tcb && tcb.SYMBOL_CURRENT_ENV);
+  if (!envOption) {
+    // As a last resort, surface a clearer error instead of SDK's generic one
     throw makeError(
       'MISSING_ENV_ID',
-      '未检测到云环境 ID，请在函数环境变量中配置 CUSTOM_LOGIN_ENV_ID 或启用“当前环境”运行。'
+      '未检测到云环境 ID，请在函数环境变量中配置 CUSTOM_LOGIN_ENV_ID，或在函数设置中启用“当前环境”运行。'
     );
   }
   const { privateKeyId, privateKey } = getCustomLoginCredentials();
   const app = tcb.init({
-    // node-sdk expects `env`; use resolved envId for clarity
-    env: envId,
+    env: envOption,
     credentials: { privateKeyId, privateKey },
   });
   // expireIn: seconds until ticket expires; refresh: refresh TTL (seconds)
