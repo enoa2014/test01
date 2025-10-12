@@ -20,6 +20,11 @@ test.describe('Web Admin - Business Flow', () => {
     // 直接访问列表页（ProtectedRoute 在 bypass 模式下允许进入）
     await page.goto('/patients');
 
+    // 切换至表格视图（默认可能为卡片视图）
+    const toggleBtn = page.getByRole('button', { name: /表格视图/ });
+    if (await toggleBtn.isVisible()) {
+      await toggleBtn.click();
+    }
     // 确认列表渲染出至少 3 条（来自 stub）
     await expect(page.locator('table')).toBeVisible();
     const rows = page.locator('tbody tr');
