@@ -20,6 +20,7 @@ import {
   formatAge,
 } from '../shared/filters';
 import AdvancedFilterPanel from '../components/AdvancedFilterPanel';
+import '../styles/patient-list.css';
 
 const PAGE_SIZE = 100;
 const CACHE_KEY = 'patient_list_cache_web';
@@ -611,6 +612,16 @@ const PatientListPage: React.FC = () => {
     setActiveStatFilter(prevFilter => prevFilter === filter ? 'all' : filter);
   };
 
+  const summaryTiles = useMemo(
+    () => [
+      { id: 'all' as const, label: '全部住户', value: statsData.total, variant: 'primary' },
+      { id: 'in_care' as const, label: '在住', value: statsData.inCare, variant: 'success' },
+      { id: 'pending' as const, label: '待入住', value: statsData.pending, variant: 'warning' },
+      { id: 'discharged' as const, label: '已退住', value: statsData.discharged, variant: 'neutral' },
+    ],
+    [statsData]
+  );
+
   // 重置所有筛选
   const resetFilters = () => {
     setKeyword('');
@@ -744,11 +755,12 @@ const PatientListPage: React.FC = () => {
     return (
       <div
         key={row.key}
+        className="patient-card"
         style={{
           background: 'white',
           borderRadius: 12,
           padding: 16,
-          marginBottom: 12,
+          marginBottom: 0,
           border: `2px solid ${isSelected ? '#2563eb' : borderColor}`,
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
           cursor: 'pointer',
@@ -911,343 +923,278 @@ const PatientListPage: React.FC = () => {
   }, [advancedFilters]);
 
   return (
-    <div className="card">
-      {/* 统计卡片 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
-        <div
-          onClick={() => handleStatFilterClick('all')}
-          style={{
-            padding: 16,
-            borderRadius: 8,
-            border: `2px solid ${activeStatFilter === 'all' ? '#2563eb' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'all' ? '#eff6ff' : 'white',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>全部住户</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#1f2937' }}>{statsData.total}</div>
-        </div>
-
-        <div
-          onClick={() => handleStatFilterClick('in_care')}
-          style={{
-            padding: 16,
-            borderRadius: 8,
-            border: `2px solid ${activeStatFilter === 'in_care' ? '#10b981' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'in_care' ? '#ecfdf5' : 'white',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>在住</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#10b981' }}>{statsData.inCare}</div>
-        </div>
-
-        <div
-          onClick={() => handleStatFilterClick('pending')}
-          style={{
-            padding: 16,
-            borderRadius: 8,
-            border: `2px solid ${activeStatFilter === 'pending' ? '#f59e0b' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'pending' ? '#fffbeb' : 'white',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>待入住</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#f59e0b' }}>{statsData.pending}</div>
-        </div>
-
-        <div
-          onClick={() => handleStatFilterClick('discharged')}
-          style={{
-            padding: 16,
-            borderRadius: 8,
-            border: `2px solid ${activeStatFilter === 'discharged' ? '#6b7280' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'discharged' ? '#f9fafb' : 'white',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>已退住</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#6b7280' }}>{statsData.discharged}</div>
-        </div>
-      </div>
-
-      {/* 搜索和筛选工具栏 */}
-      <div className="toolbar" style={{ alignItems: 'flex-start' }}>
-        <div className="flex-row" style={{ flexWrap: 'wrap', gap: 12, flex: 1 }}>
-          {/* 搜索框 */}
-          <div style={{ position: 'relative', minWidth: 280 }}>
-            <input
-              type="search"
-              placeholder="搜索姓名 / 证件号 / 电话 / 医院 / 诊断"
-              value={keyword}
-              onChange={event => setKeyword(event.target.value)}
-              onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
-            />
-            {/* 搜索建议下拉框 */}
-            {showSuggestions && searchSuggestions.length > 0 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: 4,
-                  backgroundColor: 'white',
-                  border: '1px solid #d1d5db',
-                  borderRadius: 6,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  maxHeight: 240,
-                  overflowY: 'auto',
-                  zIndex: 10,
-                }}
+    <div className="patient-list-page">
+      <div className="patient-list-container">
+        <aside className="patient-list-sidebar">
+          <div className="patient-summary-grid">
+            {summaryTiles.map(tile => (
+              <button
+                key={tile.id}
+                type="button"
+                className={`patient-summary-card variant-${tile.variant} ${activeStatFilter === tile.id ? 'is-active' : ''}`}
+                onClick={() => handleStatFilterClick(tile.id)}
               >
-                {searchSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    style={{
-                      padding: '8px 12px',
-                      cursor: 'pointer',
-                      borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f3f4f6';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'white';
-                    }}
-                  >
-                    {suggestion}
-                  </div>
-                ))}
-              </div>
-            )}
+                <span className="patient-summary-label">{tile.label}</span>
+                <span className="patient-summary-value">{tile.value}</span>
+              </button>
+            ))}
           </div>
 
-          {/* 高级筛选按钮 */}
-          <button
-            className={hasActiveFilters ? 'primary-button' : 'secondary-button'}
-            type="button"
-            onClick={handleToggleAdvancedFilter}
-          >
-            高级筛选 {hasActiveFilters && `(已启用)`}
-          </button>
-
-          <button className="secondary-button" type="button" onClick={resetFilters}>
-            重置筛选
-          </button>
-
-          {/* 视图切换按钮 */}
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            {viewMode === 'card' ? '📋 表格视图' : '🎴 卡片视图'}
-          </button>
-        </div>
-
-        <div className="flex-row" style={{ flexWrap: 'wrap', gap: 12 }}>
-          <button className="secondary-button" type="button" onClick={() => loadPatients()} disabled={loading}>
-            {loading ? '刷新中...' : '刷新列表'}
-          </button>
-          {/* Excel 导入功能已移除 */}
-          <button className="secondary-button" type="button" onClick={handleExportSelected}>
-            导出选中
-          </button>
-          <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
-            删除选中
-          </button>
-          <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
-            新增住户
-          </button>
-        </div>
-      </div>
-
-      {/* Excel 导入输入已移除 */}
-
-      {/* 筛选摘要 */}
-      {hasActiveFilters && (
-        <div style={{ marginBottom: 12, padding: 8, backgroundColor: '#eff6ff', borderRadius: 6, fontSize: 14 }}>
-          <span style={{ color: '#2563eb', fontWeight: 500 }}>筛选条件：</span>
-          <span style={{ color: '#1f2937' }}>{summarizeFiltersForScheme(advancedFilters)}</span>
-        </div>
-      )}
-
-      <div className="flex-row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-        <span>
-          显示 {rows.length} 条{patients.length !== rows.length && ` / 共 ${patients.length} 条`}
-        </span>
-        {selected.size > 0 && <span>已选择 {selected.size} 条</span>}
-      </div>
-
-      {error && <p className="error-text">{error}</p>}
-      {message && <p className="success-text">{message}</p>}
-
-      {/* 骨架屏加载状态 */}
-      {loading && rows.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              style={{
-                background: 'white',
-                borderRadius: 12,
-                padding: 16,
-                border: '1px solid #e5e7eb',
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }}
-            >
-              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 100, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
-                <div style={{ width: 60, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+          <div className="patient-sidebar-section">
+            <div className="patient-sidebar-title">列表概览</div>
+            <div className="patient-sidebar-content">
+              <div className="patient-sidebar-row">
+                <span>当前显示</span>
+                <span>{rows.length} 条</span>
               </div>
-              <div style={{ width: '80%', height: 16, backgroundColor: '#f3f4f6', borderRadius: 4, marginBottom: 8 }} />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <div style={{ width: 80, height: 24, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
-                <div style={{ width: 80, height: 24, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
+              <div className="patient-sidebar-row">
+                <span>总档案</span>
+                <span>{patients.length} 条</span>
+              </div>
+              <div className="patient-sidebar-row">
+                <span>视图模式</span>
+                <span>{viewMode === 'card' ? '卡片' : '表格'}</span>
+              </div>
+              {selected.size > 0 && (
+                <div className="patient-sidebar-row is-accent">
+                  <span>已选</span>
+                  <span>{selected.size} 条</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="patient-sidebar-section">
+            <div className="patient-sidebar-title">筛选工具</div>
+            <div className="patient-sidebar-content">
+              <button
+                type="button"
+                className={`patient-sidebar-action ${hasActiveFilters ? 'is-active' : ''}`}
+                onClick={handleToggleAdvancedFilter}
+              >
+                {hasActiveFilters ? '已启用高级筛选' : '打开高级筛选'}
+              </button>
+              <button
+                type="button"
+                className="patient-sidebar-action"
+                onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+              >
+                {viewMode === 'card' ? '切换至表格视图' : '切换至卡片视图'}
+              </button>
+              <button type="button" className="patient-sidebar-link" onClick={resetFilters}>
+                重置筛选
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <section className="patient-list-main">
+          <div className="patient-toolbar">
+            <div className="patient-toolbar-main">
+              <div className="patient-search">
+                <input
+                  type="search"
+                  placeholder="搜索姓名 / 证件号 / 电话 / 医院 / 诊断"
+                  value={keyword}
+                  onChange={event => setKeyword(event.target.value)}
+                  onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                />
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div className="patient-search-suggestions">
+                    {searchSuggestions.map((suggestion, index) => (
+                      <button
+                        type="button"
+                        key={index}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="patient-search-suggestion"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="patient-toolbar-buttons">
+                <button
+                  className={hasActiveFilters ? 'primary-button' : 'secondary-button'}
+                  type="button"
+                  onClick={handleToggleAdvancedFilter}
+                >
+                  高级筛选 {hasActiveFilters && `(已启用)`}
+                </button>
+                <button className="secondary-button" type="button" onClick={resetFilters}>
+                  重置筛选
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        // 智能空状态
-        <div style={{
-          textAlign: 'center',
-          padding: 60,
-          background: 'white',
-          borderRadius: 12,
-          border: '1px solid #e5e7eb'
-        }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>
-            {debouncedKeyword ? '🔍' : hasActiveFilters ? '🔎' : '📋'}
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#1f2937', marginBottom: 8 }}>
-            {debouncedKeyword ? '未找到匹配的住户' : hasActiveFilters ? '无符合条件的住户' : '暂无住户档案'}
-          </div>
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-            {debouncedKeyword
-              ? `没有找到与"${debouncedKeyword}"相关的住户`
-              : hasActiveFilters
-              ? '当前筛选条件过于严格，请尝试调整筛选条件'
-              : activeStatFilter !== 'all'
-              ? '当前分类没有住户'
-              : '点击右上角按钮添加第一位住户'}
-          </div>
-          {(debouncedKeyword || hasActiveFilters) && (
-            <button
-              className="secondary-button"
-              onClick={resetFilters}
-              style={{ marginTop: 8 }}
-            >
-              {debouncedKeyword ? '清除搜索' : '清除筛选'}
-            </button>
-          )}
-        </div>
-      ) : viewMode === 'card' ? (
-        // 卡片视图
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {rows.map(row => renderPatientCard(row))}
-        </div>
-      ) : (
-        // 表格视图
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: 50, textAlign: 'center' }}>
-                  <input
-                    type="checkbox"
-                    checked={selected.size > 0 && selected.size === rows.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelected(new Set(rows.map(r => r.key)));
-                      } else {
-                        setSelected(new Set());
-                      }
-                    }}
-                    style={{ width: 16, height: 16, cursor: 'pointer' }}
-                  />
-                </th>
-                <th style={{ minWidth: 120 }}>姓名</th>
-                <th style={{ width: 60, textAlign: 'center' }}>性别</th>
-                <th style={{ width: 80 }}>年龄</th>
-                <th style={{ minWidth: 120 }}>籍贯</th>
-                <th style={{ width: 100 }}>状态</th>
-                <th style={{ minWidth: 160 }}>就诊医院</th>
-                <th style={{ width: 100, textAlign: 'center' }}>入住次数</th>
-                <th style={{ width: 180, textAlign: 'center' }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(row => (
-                <tr key={row.key}>
-                  <td style={{ textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(row.key)}
-                      onChange={() => toggleSelect(row.key)}
-                      style={{ width: 16, height: 16, cursor: 'pointer' }}
-                    />
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: '#1f2937' }}>
-                      {row.patientName || '-'}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'center', color: '#6b7280' }}>
-                    {row.gender || '-'}
-                  </td>
-                  <td style={{ color: '#6b7280' }}>
-                    {row.ageText}
-                  </td>
-                  <td style={{ color: '#6b7280' }}>
-                    {row.nativePlace || row.address || '-'}
-                  </td>
-                  <td>{statusLabel(row)}</td>
-                  <td style={{ color: '#6b7280' }}>
-                    {row.latestHospital || '-'}
-                  </td>
-                  <td style={{ textAlign: 'center', fontWeight: 600, color: '#1f2937' }}>
-                    {row.admissionCount ?? '-'}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                      <button
-                        className="link-button"
-                        onClick={() =>
-                          navigate(
-                            `/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`
-                          )
-                        }
-                        style={{ fontSize: 14, padding: '6px 12px' }}
-                      >
-                        查看
-                      </button>
-                      <button
-                        className="danger-button"
-                        type="button"
-                        onClick={() => handleDeleteSingle(row.patientKey || row.recordKey || '')}
-                        style={{ fontSize: 14, padding: '6px 12px' }}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
+            <div className="patient-toolbar-actions">
+              <button className="secondary-button" type="button" onClick={() => loadPatients()} disabled={loading}>
+                {loading ? '刷新中...' : '刷新列表'}
+              </button>
+              <button className="secondary-button" type="button" onClick={handleExportSelected}>
+                导出选中
+              </button>
+              <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
+                删除选中
+              </button>
+              <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
+                新增住户
+              </button>
+            </div>
+          </div>
+
+          {hasActiveFilters && (
+            <div className="patient-filter-summary">
+              <span className="patient-filter-label">筛选条件：</span>
+              <span>{summarizeFiltersForScheme(advancedFilters)}</span>
+            </div>
+          )}
+
+          <div className="patient-result-meta">
+            <span>
+              显示 {rows.length} 条{patients.length !== rows.length && ` / 共 ${patients.length} 条`}
+            </span>
+            {selected.size > 0 && <span>已选择 {selected.size} 条</span>}
+          </div>
+
+          {error && <p className="error-text">{error}</p>}
+          {message && <p className="success-text">{message}</p>}
+
+          {loading && rows.length === 0 ? (
+            <div className="patient-skeleton-list">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="patient-skeleton-item">
+                  <div className="patient-skeleton-line" />
+                  <div className="patient-skeleton-line short" />
+                  <div className="patient-skeleton-tags">
+                    <span />
+                    <span />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="patient-empty-state">
+              <div className="patient-empty-icon">
+                {debouncedKeyword ? '🔍' : hasActiveFilters ? '🔎' : '📋'}
+              </div>
+              <div className="patient-empty-title">
+                {debouncedKeyword ? '未找到匹配的住户' : hasActiveFilters ? '无符合条件的住户' : '暂无住户档案'}
+              </div>
+              <div className="patient-empty-description">
+                {debouncedKeyword
+                  ? `没有找到与"${debouncedKeyword}"相关的住户`
+                  : hasActiveFilters
+                  ? '当前筛选条件过于严格，请尝试调整筛选条件'
+                  : activeStatFilter !== 'all'
+                  ? '当前分类没有住户'
+                  : '点击右上角按钮添加第一位住户'}
+              </div>
+              {(debouncedKeyword || hasActiveFilters) && (
+                <button className="secondary-button" onClick={resetFilters}>
+                  {debouncedKeyword ? '清除搜索' : '清除筛选'}
+                </button>
+              )}
+            </div>
+          ) : viewMode === 'card' ? (
+            <div className="patient-card-grid">
+              {rows.map(row => renderPatientCard(row))}
+            </div>
+          ) : (
+            <div className="patient-table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 50, textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selected.size > 0 && selected.size === rows.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelected(new Set(rows.map(r => r.key)));
+                          } else {
+                            setSelected(new Set());
+                          }
+                        }}
+                        style={{ width: 16, height: 16, cursor: 'pointer' }}
+                      />
+                    </th>
+                    <th style={{ minWidth: 120 }}>姓名</th>
+                    <th style={{ width: 60, textAlign: 'center' }}>性别</th>
+                    <th style={{ width: 80 }}>年龄</th>
+                    <th style={{ minWidth: 120 }}>籍贯</th>
+                    <th style={{ width: 100 }}>状态</th>
+                    <th style={{ minWidth: 160 }}>就诊医院</th>
+                    <th style={{ width: 100, textAlign: 'center' }}>入住次数</th>
+                    <th style={{ width: 180, textAlign: 'center' }}>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(row => (
+                    <tr key={row.key}>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(row.key)}
+                          onChange={() => toggleSelect(row.key)}
+                          style={{ width: 16, height: 16, cursor: 'pointer' }}
+                        />
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: '#1f2937' }}>
+                          {row.patientName || '-'}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'center', color: '#6b7280' }}>
+                        {row.gender || '-'}
+                      </td>
+                      <td style={{ color: '#6b7280' }}>
+                        {row.ageText}
+                      </td>
+                      <td style={{ color: '#6b7280' }}>
+                        {row.nativePlace || row.address || '-'}
+                      </td>
+                      <td>{statusLabel(row)}</td>
+                      <td style={{ color: '#6b7280' }}>
+                        {row.latestHospital || '-'}
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 600, color: '#1f2937' }}>
+                        {row.admissionCount ?? '-'}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                          <button
+                            className="link-button"
+                            onClick={() =>
+                              navigate(
+                                `/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`
+                              )
+                            }
+                            style={{ fontSize: 14, padding: '6px 12px' }}
+                          >
+                            查看详情
+                          </button>
+                          <button
+                            className="danger-button"
+                            type="button"
+                            onClick={() => handleDeleteSingle(row.patientKey || row.recordKey || '')}
+                            style={{ fontSize: 14, padding: '6px 12px' }}
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
       {/* 状态调整对话框 */}
       {statusDialogVisible && (
         <div
