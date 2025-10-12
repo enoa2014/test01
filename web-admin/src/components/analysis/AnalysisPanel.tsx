@@ -300,9 +300,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         .analysis-panel {
           background: white;
           border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          margin-bottom: 24px;
+          padding: 24px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          height: 100%;
         }
 
         .panel-header {
@@ -412,7 +415,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         }
 
         .panel-content {
-          min-height: 100px;
+          min-height: 120px;
+          flex: 1;
         }
 
         .panel-placeholder {
@@ -423,14 +427,13 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         }
 
         .stats-scroll {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 16px;
-          overflow-x: auto;
-          padding-bottom: 8px;
+          width: 100%;
         }
 
         .stat-card {
-          flex: 0 0 180px;
           background: #f8f9fa;
           border-radius: 8px;
           padding: 16px;
@@ -491,6 +494,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           display: flex;
           flex-direction: column;
           gap: 12px;
+          width: 100%;
         }
 
         .stat-bar {
@@ -550,6 +554,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           gap: 24px;
           align-items: center;
           flex-wrap: wrap;
+          width: 100%;
         }
 
         .pie-chart-container {
@@ -631,8 +636,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             align-self: center;
           }
 
+          .panel-content {
+            display: block;
+          }
+
           .stats-scroll {
+            display: flex;
             gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
           }
 
           .stat-card {

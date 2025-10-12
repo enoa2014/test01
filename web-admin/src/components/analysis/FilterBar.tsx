@@ -78,25 +78,23 @@ const FilterBar: React.FC<FilterBarProps> = ({
           border-radius: 8px;
           padding: 20px;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          margin-bottom: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
 
         .filter-section {
           display: flex;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-
-        .filter-section:last-child {
-          margin-bottom: 0;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
         }
 
         .filter-label {
           font-size: 14px;
           font-weight: 500;
           color: #333;
-          margin-right: 12px;
-          min-width: 80px;
+          min-width: auto;
         }
 
         .chips {
@@ -135,7 +133,6 @@ const FilterBar: React.FC<FilterBarProps> = ({
         .filter-actions {
           display: flex;
           justify-content: flex-end;
-          margin-top: 8px;
         }
 
         .clear-button {
@@ -158,18 +155,17 @@ const FilterBar: React.FC<FilterBarProps> = ({
           background: #ffebee;
         }
 
-        @media (max-width: 768px) {
+        @media (min-width: 1280px) {
+          .filter-bar {
+            padding: 24px;
+          }
+
           .filter-section {
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 16px;
+            gap: 12px;
           }
+        }
 
-          .filter-label {
-            margin-bottom: 8px;
-            min-width: auto;
-          }
-
+        @media (max-width: 768px) {
           .chips {
             width: 100%;
           }
@@ -177,7 +173,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
           .chip {
             flex: 1;
             text-align: center;
-            min-width: 80px;
+            min-width: 96px;
+          }
+
+          .filter-actions {
+            justify-content: flex-start;
           }
         }
       `}</style>

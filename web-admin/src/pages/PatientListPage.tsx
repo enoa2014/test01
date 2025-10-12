@@ -853,11 +853,6 @@ const PatientListPage: React.FC = () => {
 
         {/* 快速信息 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
-          {row.phone && (
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              📱 {row.phone}
-            </div>
-          )}
           {row.nativePlace && (
             <div style={{ fontSize: 13, color: '#6b7280' }}>
               📍 {row.nativePlace}
@@ -1184,11 +1179,10 @@ const PatientListPage: React.FC = () => {
                 <th style={{ minWidth: 120 }}>姓名</th>
                 <th style={{ width: 60, textAlign: 'center' }}>性别</th>
                 <th style={{ width: 80 }}>年龄</th>
-                <th style={{ minWidth: 140 }}>联系电话</th>
                 <th style={{ minWidth: 120 }}>籍贯</th>
                 <th style={{ width: 100 }}>状态</th>
-                <th style={{ minWidth: 160 }}>最新医院</th>
-                <th style={{ width: 100, textAlign: 'center' }}>入院次数</th>
+                <th style={{ minWidth: 160 }}>就诊医院</th>
+                <th style={{ width: 100, textAlign: 'center' }}>入住次数</th>
                 <th style={{ width: 180, textAlign: 'center' }}>操作</th>
               </tr>
             </thead>
@@ -1213,9 +1207,6 @@ const PatientListPage: React.FC = () => {
                   </td>
                   <td style={{ color: '#6b7280' }}>
                     {row.ageText}
-                  </td>
-                  <td style={{ color: '#6b7280', fontFamily: 'monospace' }}>
-                    {row.phone || row.backupPhone || '-'}
                   </td>
                   <td style={{ color: '#6b7280' }}>
                     {row.nativePlace || row.address || '-'}

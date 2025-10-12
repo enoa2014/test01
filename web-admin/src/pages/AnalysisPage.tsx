@@ -304,48 +304,47 @@ const AnalysisPage: React.FC = () => {
   return (
     <div className="analysis-page">
       <div className="analysis-container">
-        {/* Header with summary cards */}
-        <div className="analysis-header">
-          <SummaryCards
-            cards={summaryCards}
-            activeFilter={activeSummaryFilter}
-            onCardClick={handleSummaryCardTap}
-            onNavigateToList={handleNavigateToList}
-          />
-
-          {/* Global filters */}
-          <FilterBar
-            timeRange={timeRange}
-            statusFilter={statusFilter}
-            isDefaultFilter={isDefaultFilter}
-            onTimeRangeChange={handleTimeRangeChange}
-            onStatusFilterChange={handleStatusFilterChange}
-            onClearFilters={handleClearFilters}
-          />
-
-          {/* Legend */}
-          <LegendPanel />
-        </div>
-
-        {/* Analysis panels */}
-        <div className="analysis-panels">
-          {panels.map((panel, panelIndex) => (
-            <AnalysisPanel
-              key={panel.panelKey || panel.title}
-              panel={panel}
-              panelIndex={panelIndex}
-              viewMode={panelViewModes[panel.panelKey || panel.title] || 'cards'}
-              isCollapsed={panelCollapsed[panel.panelKey || panel.title] || false}
-              displayModes={PANEL_DISPLAY_MODES}
-              onModeToggle={handlePanelModeToggle}
-              onCollapseToggle={handlePanelCollapseToggle}
-              onStatClick={handleStatTap}
+        <div className="analysis-layout">
+          <aside className="analysis-sidebar">
+            <SummaryCards
+              cards={summaryCards}
+              activeFilter={activeSummaryFilter}
+              onCardClick={handleSummaryCardTap}
+              onNavigateToList={handleNavigateToList}
             />
-          ))}
+
+            <FilterBar
+              timeRange={timeRange}
+              statusFilter={statusFilter}
+              isDefaultFilter={isDefaultFilter}
+              onTimeRangeChange={handleTimeRangeChange}
+              onStatusFilterChange={handleStatusFilterChange}
+              onClearFilters={handleClearFilters}
+            />
+
+            <LegendPanel />
+          </aside>
+
+          <section className="analysis-main">
+            <div className="analysis-panels">
+              {panels.map((panel, panelIndex) => (
+                <AnalysisPanel
+                  key={panel.panelKey || panel.title}
+                  panel={panel}
+                  panelIndex={panelIndex}
+                  viewMode={panelViewModes[panel.panelKey || panel.title] || 'cards'}
+                  isCollapsed={panelCollapsed[panel.panelKey || panel.title] || false}
+                  displayModes={PANEL_DISPLAY_MODES}
+                  onModeToggle={handlePanelModeToggle}
+                  onCollapseToggle={handlePanelCollapseToggle}
+                  onStatClick={handleStatTap}
+                />
+              ))}
+            </div>
+          </section>
         </div>
       </div>
 
-      {/* Selection modal */}
       {selection.visible && (
         <SelectionModal
           selection={selection}

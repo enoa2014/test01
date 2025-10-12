@@ -107,6 +107,17 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
           }
         }
 
+        @keyframes fadeIn {
+          from {
+            transform: translateY(8px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
         .selection-handle {
           width: 40px;
           height: 4px;
@@ -216,6 +227,29 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
 
         .selection-close-button:active {
           background: #eeeeee;
+        }
+
+        @media (min-width: 1024px) {
+          .selection-modal-backdrop {
+            align-items: center;
+            padding: 40px;
+          }
+
+          .selection-modal {
+            max-width: 720px;
+            max-height: 70vh;
+            border-radius: 16px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.25s ease-out;
+          }
+
+          .selection-handle {
+            display: none;
+          }
+
+          .selection-list {
+            max-height: none;
+          }
         }
 
         @media (max-width: 768px) {

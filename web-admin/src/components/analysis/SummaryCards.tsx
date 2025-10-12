@@ -38,14 +38,15 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
 
       <style jsx>{`
         .summary-cards-section {
-          margin-bottom: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
 
         .summary-cards-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 16px;
-          margin-bottom: 20px;
         }
 
         .summary-card {
@@ -117,6 +118,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
         .summary-actions {
           display: flex;
           justify-content: flex-end;
+          padding-top: 4px;
         }
 
         .secondary-button {
@@ -139,6 +141,26 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
           background: #eeeeee;
         }
 
+        @media (min-width: 1280px) {
+          .summary-card {
+            padding: 24px;
+          }
+
+          .summary-card-value {
+            font-size: 36px;
+          }
+
+          .summary-card-description {
+            font-size: 13px;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .summary-cards-grid {
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          }
+        }
+
         @media (max-width: 768px) {
           .summary-cards-grid {
             grid-template-columns: 1fr;
@@ -155,6 +177,10 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
 
           .summary-card-description {
             font-size: 11px;
+          }
+
+          .summary-actions {
+            justify-content: flex-start;
           }
         }
       `}</style>

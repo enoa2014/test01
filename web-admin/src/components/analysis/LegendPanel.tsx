@@ -64,7 +64,6 @@ const LegendPanel: React.FC = () => {
           border-radius: 8px;
           padding: 20px;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          margin-bottom: 24px;
         }
 
         .legend-header {
@@ -118,6 +117,12 @@ const LegendPanel: React.FC = () => {
           font-size: 12px;
           color: #666;
           line-height: 1.4;
+        }
+
+        @media (min-width: 1280px) {
+          .legend-panel {
+            padding: 24px;
+          }
         }
 
         @media (max-width: 768px) {
