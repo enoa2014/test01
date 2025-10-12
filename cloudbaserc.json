@@ -10,6 +10,17 @@
   "functionRoot": "./cloudfunctions",
   "functions": [
     {
+      "name": "auth",
+      "dir": "cloudfunctions/auth",
+      "runtime": "Nodejs16.13",
+      "timeout": 20,
+      "installDependency": true,
+      "envVariables": {
+        "TCB_CUSTOM_LOGIN_PRIVATE_KEY_ID": "38b3ef83-111e-4e78-8d7e-0b3f2bc25774",
+        "TCB_CUSTOM_LOGIN_PRIVATE_KEY": "-----BEGIN RSA PRIVATE KEY-----\\nMIICXAIBAAKBgQC4YdcLkyzzyYV+bIm5rkWAActau5iFtongBqNXj5r6xzdVfSoD\\nYy8er1moBuhQgAgoPNsCARvXDeFfr8qInOmLChgkjlVLRghQwn/enmQ37PWnj5rz\\nPFnbI3KwX8SDY70dSIGGObCYEg6zReKJCNqhtd+9oFPHoAPE7oRwFhnPKwIDAQAB\\nAoGARtn1+DEwa2erYAbWL59LfqJx4aZHuE4KEieK2elJfQdTeIrVu6J/51MraRlq\\naRCh0dB8ufryF0PysEHNWoytYwTF7+/9MUbCkm0g6kqsS1lLh1LjuUgGHCZx+2Ye\\nLagKhJ9q3FwidnL9a0knDzxdvfWrnPl8SjqEC7E3QNh8K7ECQQDg5ii8eJdKeMqy\\nukaFxnSYAyqvRByROCRCcETRRd3rflrE5mphKMRiPRBJpHBHryOmSElQ6kRR3zDA\\nRx1V0hP7AkEA0eFPHFEyGEy66M897FcNZ/UuL9joc0dyTsoIyekdpyBK4NkayeY4\\nyYDJ3gCKlQ1mSkAPoEpVX/r4RC/qGy8akQJAV5iNyUrW8oS1voNbMIOpqgOhvn4y\\nkT5qn777t7dnvmp9QMh8BHm27SZAXXw3ZrTsdJ56/AzCAh8foe0X1bhvQJADHUl\\nLvca1Bpp1bvHXynjn9ILxcdINN9+x3JyhxmRKwRdrW71ihpiMIO2d7jsgOBku++F\\nfewrmSDab6GwcaCgIQJBANEnsc/y9WXSvi4HMoMrwXwQ+I8I6zKjm2hjOam1UGZy\\nDs/y5r/ThY9/4NKZPpKBa6s7jC6LGysqKGUKlotFm1o=\\n-----END RSA PRIVATE KEY-----"
+      }
+    },
+    {
       "name": "patientIntake",
       "dir": "cloudfunctions/patientIntake",
       "runtime": "Nodejs16.13",
