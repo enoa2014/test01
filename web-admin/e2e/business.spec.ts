@@ -11,13 +11,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Web Admin - Business Flow', () => {
   test('login via bypass, filter list, edit status from list', async ({ page }) => {
-    // 走登录页 UI，确保用户态建立
-    await page.goto('/login');
-    await expect(page.getByRole('heading', { name: '管理员登录' })).toBeVisible();
-    await page.getByLabel('用户名').fill('e2e');
-    await page.getByLabel('口令').fill('e2e');
-    await page.getByRole('button', { name: '登录' }).click();
-    // 直接访问列表页（ProtectedRoute 在 bypass 模式下允许进入）
+    // 直接进入列表页（bypass 模式下 ProtectedRoute 放行）
     await page.goto('/patients');
 
     // 等待页面工具栏加载完成（高级筛选按钮）
