@@ -6,7 +6,7 @@ import PatientListPage from './pages/PatientListPage';
 import PatientDetailPage from './pages/PatientDetailPage';
 import PatientFormPage from './pages/PatientFormPage';
 import IntakeWizardPage from './pages/IntakeWizardPage';
-import EditWizardPage from './pages/EditWizardPage';
+import IntakeRecordsPage from './pages/IntakeRecordsPage';
 import { useCloudbase } from './hooks/useCloudbase';
 
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -45,7 +45,7 @@ const App: React.FC = () => {
           <Route path="/patients" element={<PatientListPage />} />
           <Route path="/patients/:patientKey" element={<PatientDetailPage />} />
           <Route path="/intake" element={<IntakeWizardPage />} />
-          <Route path="/patients/:patientKey/edit" element={<EditWizardPage />} />
+          <Route path="/patients/:patientKey/intakes" element={<IntakeRecordsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/patients" replace />} />
       </Routes>

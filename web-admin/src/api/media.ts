@@ -161,3 +161,26 @@ export async function getMediaPreviewUrl(
   return result.data;
 }
 
+type TxtPreviewResponse = {
+  success?: boolean;
+  data?: { content: string };
+  error?: { message?: string };
+};
+
+export async function getTxtPreview(
+  app: CloudBase,
+  patientKey: string,
+  sessionToken: string,
+  mediaId: string
+) {
+  const res = await app.callFunction({
+    name: FUNCTION_NAME,
+    data: { action: 'previewTxt', patientKey, sessionToken, mediaId }
+  });
+  const result = res.result as TxtPreviewResponse;
+  if (!result?.success || !result.data) {
+    throw new Error(result?.error?.message || '无法预览TXT文件');
+  }
+  return result.data;
+}
+

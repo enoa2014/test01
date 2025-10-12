@@ -1467,6 +1467,35 @@ Page({
     });
   },
 
+  // 解析联系人文本（供测试与历史数据清洗）
+  buildContactsFromFields(payload = {}) {
+    const list = [];
+    const seen = new Set();
+    const items = Array.isArray(payload.additionalText) ? payload.additionalText : [];
+    const parse = (text, relation) => {
+      const normalized = this.normalizeExcelSpacing(text);
+      if (!normalized) return null;
+      // 粗略解析：中文/英文姓名 + 空格 + 11位手机号
+      const m = normalized.match(/[\u4e00-\u9fa5A-Za-z·•\s]+\s+(1[3-9]\d{9})/);
+      if (!m) return null;
+      const name = this.normalizeExcelSpacing(normalized.replace(m[1], '').trim());
+      const phone = this.normalizeExcelSpacing(m[1]);
+      const rel = this.normalizeExcelSpacing(relation);
+      const key = `${name}|${phone}|${rel}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return { relationship: rel || '', name, phone };
+    };
+    items.forEach(item => {
+      if (!item) return;
+      const rel = item.relation || '';
+      const text = item.text || '';
+      const parsed = parse(text, rel);
+      if (parsed) list.push(parsed);
+    });
+    return list;
+  },
+
   async _autoFillEmergencyContactFromParents() {
     return null;
   },

@@ -1,4 +1,4 @@
-import { CloudBase } from '@cloudbase/js-sdk';
+import type { CloudBase } from '@cloudbase/js-sdk';
 import { PatientDetail, PatientFormPayload, PatientSummary } from '../types/patient';
 
 const PATIENT_PROFILE_FUNCTION = 'patientProfile';

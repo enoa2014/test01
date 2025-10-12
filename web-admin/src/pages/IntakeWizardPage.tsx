@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useCloudbase } from '../hooks/useCloudbase';
 import { intakeCreatePatient } from '../api/intake';
 
-type StepKey = 'identity' | 'contact' | 'situation' | 'review';
+type StepKey = 'identity' | 'contact' | 'review';
 
 const STEP_TITLES: Record<StepKey, string> = {
   identity: '基础身份',
   contact: '联系人',
-  situation: '情况说明',
   review: '核对提交',
 };
 
@@ -20,6 +19,7 @@ type FormState = {
   gender: string;
   birthDate: string;
   phone: string;
+  nativePlace: string;
   address: string;
   // 联系人
   fatherInfo: string;
@@ -33,15 +33,15 @@ type FormState = {
   guardianContactPhone: string;
   backupContact: string;
   backupPhone: string;
-  // 情况说明
+  // 情况说明（创建住户不填写医疗信息，仅保留入住时间）
   admissionDate: string;
-  situation: string;
-  visitHospital: string;
-  hospitalDiagnosis: string;
-  attendingDoctor: string;
-  symptomDetail: string;
-  treatmentProcess: string;
-  followUpPlan: string;
+  situation: string; // 未使用
+  visitHospital: string; // 未使用
+  hospitalDiagnosis: string; // 未使用
+  attendingDoctor: string; // 未使用
+  symptomDetail: string; // 未使用
+  treatmentProcess: string; // 未使用
+  followUpPlan: string; // 未使用
 };
 
 const DEFAULT_FORM: FormState = {
@@ -51,6 +51,7 @@ const DEFAULT_FORM: FormState = {
   gender: '',
   birthDate: '',
   phone: '',
+  nativePlace: '',
   address: '',
   fatherInfo: '',
   fatherContactName: '',
@@ -73,7 +74,7 @@ const DEFAULT_FORM: FormState = {
   followUpPlan: '',
 };
 
-const ALL_STEPS: StepKey[] = ['identity', 'contact', 'situation', 'review'];
+const ALL_STEPS: StepKey[] = ['identity', 'contact', 'review'];
 
 const IntakeWizardPage: React.FC = () => {
   const { app } = useCloudbase();
@@ -95,14 +96,17 @@ const IntakeWizardPage: React.FC = () => {
 
   const validateIdentity = (): string | null => {
     const name = form.patientName.trim();
+    const idType = form.idType.trim();
+    const idNumber = form.idNumber.trim();
     const gender = form.gender.trim();
-    const hasId = !!form.idNumber.trim();
-    const hasPhone = !!form.phone.trim();
+    const birthDate = form.birthDate.trim();
     const hasLoc = !!form.address.trim();
     if (!name) return '请填写姓名';
+    if (!idType) return '请选择证件类型';
+    if (!idNumber) return '请填写证件号码';
     if (!gender) return '请选择性别';
-    if (!hasId && !hasPhone) return '请至少填写证件号或联系电话';
-    if (!hasLoc) return '请填写住址';
+    if (!birthDate) return '请选择出生日期';
+    if (!hasLoc) return '请填写家庭地址';
     return null;
   };
 
@@ -113,16 +117,10 @@ const IntakeWizardPage: React.FC = () => {
     return null;
   };
 
-  const validateSituation = (): string | null => {
-    // 小程序允许空描述，这里保持一致
-    return null;
-  };
-
   const next = () => {
     let error: string | null = null;
     if (currentStep === 'identity') error = validateIdentity();
     if (currentStep === 'contact') error = validateContact();
-    if (currentStep === 'situation') error = validateSituation();
     if (error) {
       setErrors({ [currentStep]: error });
       return;
@@ -147,8 +145,14 @@ const IntakeWizardPage: React.FC = () => {
       setStepIndex(0);
       return;
     }
+    if (!form.admissionDate) {
+      setErrors({ review: '请选择入住时间' });
+      setStepIndex(2);
+      return;
+    }
     setSubmitting(true);
     try {
+      const intakeTimeTs = form.admissionDate ? Date.parse(form.admissionDate) : undefined;
       const { patientKey } = await intakeCreatePatient(app, {
         patientName: form.patientName.trim(),
         idType: form.idType || '身份证',
@@ -156,6 +160,7 @@ const IntakeWizardPage: React.FC = () => {
         gender: form.gender?.trim(),
         birthDate: form.birthDate?.trim(),
         phone: form.phone?.trim(),
+        nativePlace: form.nativePlace?.trim(),
         address: form.address?.trim(),
         backupContact: form.backupContact?.trim(),
         backupPhone: form.backupPhone?.trim(),
@@ -169,13 +174,7 @@ const IntakeWizardPage: React.FC = () => {
         guardianContactName: form.guardianContactName?.trim(),
         guardianContactPhone: form.guardianContactPhone?.trim(),
         admissionDate: form.admissionDate?.trim(),
-        situation: form.situation?.trim(),
-        visitHospital: form.visitHospital?.trim(),
-        hospitalDiagnosis: form.hospitalDiagnosis?.trim(),
-        attendingDoctor: form.attendingDoctor?.trim(),
-        symptomDetail: form.symptomDetail?.trim(),
-        treatmentProcess: form.treatmentProcess?.trim(),
-        followUpPlan: form.followUpPlan?.trim(),
+        ...(Number.isFinite(intakeTimeTs) ? { intakeTime: intakeTimeTs } : {}),
       });
       navigate(`/patients/${encodeURIComponent(patientKey || '')}`, { replace: true });
     } catch (err) {
@@ -242,8 +241,12 @@ const IntakeWizardPage: React.FC = () => {
               <label>联系电话</label>
               <input value={form.phone} onChange={setField('phone')} />
             </div>
-            <div className="form-field" style={{ gridColumn: '1 / span 2' }}>
-              <label>常住地址 *</label>
+            <div className="form-field">
+              <label>籍贯</label>
+              <input value={form.nativePlace} onChange={setField('nativePlace')} placeholder="省/市/县" />
+            </div>
+            <div className="form-field">
+              <label>家庭地址 *</label>
               <input value={form.address} onChange={setField('address')} />
             </div>
           </div>
@@ -304,44 +307,7 @@ const IntakeWizardPage: React.FC = () => {
         </section>
       )}
 
-      {currentStep === 'situation' && (
-        <section className="form-section">
-          <div className="form-grid">
-            <div className="form-field">
-              <label>就诊日期</label>
-              <input type="date" value={form.admissionDate} onChange={setField('admissionDate')} />
-            </div>
-            <div className="form-field">
-              <label>就诊医院</label>
-              <input value={form.visitHospital} onChange={setField('visitHospital')} />
-            </div>
-            <div className="form-field">
-              <label>主诊断</label>
-              <input value={form.hospitalDiagnosis} onChange={setField('hospitalDiagnosis')} />
-            </div>
-            <div className="form-field">
-              <label>主治医生</label>
-              <input value={form.attendingDoctor} onChange={setField('attendingDoctor')} />
-            </div>
-          </div>
-          <div className="form-field">
-            <label>情况说明</label>
-            <textarea rows={3} value={form.situation} onChange={setField('situation')} />
-          </div>
-          <div className="form-field">
-            <label>症状详情</label>
-            <textarea rows={3} value={form.symptomDetail} onChange={setField('symptomDetail')} />
-          </div>
-          <div className="form-field">
-            <label>治疗过程</label>
-            <textarea rows={3} value={form.treatmentProcess} onChange={setField('treatmentProcess')} />
-          </div>
-          <div className="form-field">
-            <label>随访计划</label>
-            <textarea rows={3} value={form.followUpPlan} onChange={setField('followUpPlan')} />
-          </div>
-        </section>
-      )}
+      {/* 新建住户不包含就医与病情，仅在核对步骤确认入住时间 */}
 
       {currentStep === 'review' && (
         <section className="form-section">
@@ -356,7 +322,8 @@ const IntakeWizardPage: React.FC = () => {
                 <li><strong>证件号码：</strong>{form.idNumber || '-'}</li>
                 <li><strong>出生日期：</strong>{form.birthDate || '-'}</li>
                 <li><strong>联系电话：</strong>{form.phone || '-'}</li>
-                <li><strong>住址：</strong>{form.address || '-'}</li>
+                <li><strong>籍贯：</strong>{form.nativePlace || '-'}</li>
+                <li><strong>家庭地址：</strong>{form.address || '-'}</li>
               </ul>
             </div>
             <div>
@@ -369,24 +336,10 @@ const IntakeWizardPage: React.FC = () => {
               </ul>
             </div>
           </div>
-          <div className="grid-two">
-            <div>
-              <h3>就诊与病情</h3>
-              <ul className="list">
-                <li><strong>就诊日期：</strong>{form.admissionDate || '-'}</li>
-                <li><strong>医院：</strong>{form.visitHospital || '-'}</li>
-                <li><strong>诊断：</strong>{form.hospitalDiagnosis || '-'}</li>
-                <li><strong>医生：</strong>{form.attendingDoctor || '-'}</li>
-              </ul>
-            </div>
-            <div>
-              <h3>补充说明</h3>
-              <ul className="list">
-                <li><strong>情况说明：</strong>{form.situation || '-'}</li>
-                <li><strong>症状详情：</strong>{form.symptomDetail || '-'}</li>
-                <li><strong>治疗过程：</strong>{form.treatmentProcess || '-'}</li>
-                <li><strong>随访计划：</strong>{form.followUpPlan || '-'}</li>
-              </ul>
+          <div className="form-grid" style={{ marginTop: 12 }}>
+            <div className="form-field">
+              <label>入住时间（必选）</label>
+              <input type="date" value={form.admissionDate} onChange={setField('admissionDate')} />
             </div>
           </div>
           {errors.review && <p className="error-text">{errors.review}</p>}
@@ -408,4 +361,3 @@ const IntakeWizardPage: React.FC = () => {
 };
 
 export default IntakeWizardPage;
-

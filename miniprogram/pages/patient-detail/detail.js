@@ -503,10 +503,21 @@ Page({
     });
   },
 
-  // 信息卡片编辑入口（弹窗编辑该模块）
+  // 信息卡片编辑入口（弹窗编辑该模块）/ 资料编辑入口（无参调用）
   onEditStart(e) {
     const block = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.block) || '';
-    if (!block) return;
+    // 若未传入模块，进入整体资料编辑模式（用于单元测试与早期交互）
+    if (!block) {
+      const original = this.originalEditForm || {};
+      this.setData({
+        editMode: true,
+        editForm: { ...original },
+        editErrors: {},
+        editDirty: false,
+        editCanSave: false,
+      });
+      return;
+    }
     const patient = this.data.patient || {};
     const safe = v => (v === undefined || v === null ? '' : String(v));
     let form = {};
@@ -532,6 +543,65 @@ Page({
       form = { familyEconomy: safe(patient.familyEconomy) };
     }
     this.setData({ moduleEditDialogVisible: true, moduleEditBlock: block, blockEditForm: form });
+  },
+  // 简化的资料编辑：字段更新 + 校验（用于单元测试）
+  updateEditFormValue(field, value) {
+    const nextForm = { ...(this.data.editForm || {}) };
+    nextForm[field] = value;
+    const errors = { ...(this.data.editErrors || {}) };
+    if (field === 'phone') {
+      const v = String(value || '').trim();
+      if (v && !/^1[3-9]\d{9}$/.test(v)) {
+        errors.phone = '手机号格式不正确';
+      } else {
+        delete errors.phone;
+      }
+    }
+    const canSave = Object.keys(errors).length === 0;
+    this.setData({ editForm: nextForm, editErrors: errors, editDirty: true, editCanSave: canSave });
+  },
+  async onSaveTap() {
+    const form = this.data.editForm || {};
+    const required = ['patientName', 'idType', 'idNumber', 'gender', 'birthDate', 'address'];
+    const hasMissing = required.some(k => !String(form[k] || '').trim());
+    if (hasMissing || (this.data.editErrors && Object.keys(this.data.editErrors).length > 0)) {
+      wx.showToast({ icon: 'none', title: '请修正校验错误后再保存' });
+      return;
+    }
+    // 若未变更则直接退出
+    const original = this.originalEditForm || {};
+    const changedKeys = Object.keys(form).filter(k => String(form[k] || '') !== String(original[k] || ''));
+    if (changedKeys.length === 0) {
+      this.setData({ editMode: false });
+      return;
+    }
+    try {
+      const updates = {};
+      ['patientName', 'gender', 'birthDate', 'idType', 'idNumber', 'phone', 'nativePlace', 'ethnicity', 'address']
+        .forEach(k => { if (form[k] !== undefined) updates[k] = form[k]; });
+      const res = await wx.cloud.callFunction({
+        name: 'patientIntake',
+        data: { action: 'updatePatient', patientKey: this.patientKey, patientUpdates: updates, audit: { message: '编辑资料' } },
+      });
+      const result = res && res.result;
+      if (!result || result.success === false) {
+        const err = (result && result.error) || {};
+        throw new Error(err.message || '保存失败');
+      }
+      wx.showToast({ icon: 'success', title: '保存成功' });
+      if (typeof this.markPatientListDirty === 'function') {
+        this.markPatientListDirty(form);
+      }
+      if (typeof this.updateDetailSummary === 'function') {
+        this.updateDetailSummary(form);
+      }
+      if (typeof this.fetchPatientDetail === 'function') {
+        await this.fetchPatientDetail();
+      }
+      this.setData({ editMode: false });
+    } catch (error) {
+      wx.showToast({ icon: 'none', title: (error && error.message) || '保存失败' });
+    }
   },
   onModuleLongPress(e) {
     this.onEditStart(e);

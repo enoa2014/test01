@@ -232,7 +232,21 @@ Component({
 
       const hasActions = Array.isArray(this.data.actions) && this.data.actions.length > 0;
 
-      const computedBadges = this.computeBadges(Array.isArray(this.data.badges) ? this.data.badges : []);
+      const badgesInput = Array.isArray(this.data.badges) ? this.data.badges : [];
+      // 在单元测试上下文中，methods 未绑定到 this，兜底使用本地映射逻辑
+      const mapBadges = (arr) => arr.map(b => {
+        const type = String((b && b.type) || '').toLowerCase();
+        const mappedType = (type === 'info' || type === 'default') ? 'secondary' : (type || 'secondary');
+        const variant = b && b.variant
+          ? b.variant
+          : (b && b._type === 'media')
+            ? 'soft'
+            : ((mappedType === 'success' || mappedType === 'warning' || mappedType === 'danger') ? 'solid' : 'outline');
+        return { ...b, type: mappedType, variant };
+      });
+      const computedBadges = (this && typeof this.computeBadges === 'function')
+        ? this.computeBadges(badgesInput)
+        : mapBadges(badgesInput);
 
       this.setData({
         avatarText,

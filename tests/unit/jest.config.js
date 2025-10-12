@@ -10,6 +10,8 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/miniprogram_npm/', '/tests/e2e/'],
   collectCoverageFrom: [
     'miniprogram/**/*.js',
+    'web-admin/src/**/*.ts',
+    'web-admin/src/**/*.tsx',
     '!miniprogram/app.js',
     '!miniprogram/config/**',
     '!miniprogram/**/*.test.js',
@@ -26,8 +28,9 @@ module.exports = {
     },
   },
   transform: {
-    '^.+\\.js$': 'babel-jest',
+    '^.+\\.(js|ts|tsx)$': 'babel-jest',
   },
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json'],
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: [path.join(projectRoot, 'tests', 'unit', 'setup.js')],
   moduleNameMapper: {

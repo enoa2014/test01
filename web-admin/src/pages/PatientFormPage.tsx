@@ -56,19 +56,37 @@ const formatDateForInput = (value?: string | number | null): string => {
   return '';
 };
 
+const valueByLabel = (
+  list: Array<{ label: string; value: string }> | undefined,
+  label: string
+): string => {
+  if (!Array.isArray(list)) return '';
+  const found = list.find(item => item && item.label === label);
+  return found && typeof found.value === 'string' ? found.value : '';
+};
+
 const mapDetailToForm = (detail: PatientDetail): FormState => {
   const patient = (detail && detail.patient) || {};
+  const basicInfo = detail && (detail.basicInfo as Array<{ label: string; value: string }>) || [];
+  const familyInfo = detail && (detail.familyInfo as Array<{ label: string; value: string }>) || [];
+
+  const genderFromBasic = valueByLabel(basicInfo, '性别');
+  const birthDateFromBasic = valueByLabel(basicInfo, '出生日期');
+  const idNumberFromBasic = valueByLabel(basicInfo, '身份证号');
+  const nativePlaceFromBasic = valueByLabel(basicInfo, '籍贯');
+  const ethnicityFromBasic = valueByLabel(basicInfo, '民族');
+  const addressFromFamily = valueByLabel(familyInfo, '家庭地址');
   return {
     ...DEFAULT_FORM,
     patientName: String(patient.patientName || ''),
-    gender: String(patient.gender || ''),
-    birthDate: formatDateForInput((patient as Record<string, unknown>).birthDate as string),
-    nativePlace: String((patient as Record<string, unknown>).nativePlace || ''),
-    ethnicity: String((patient as Record<string, unknown>).ethnicity || ''),
+    gender: String(genderFromBasic || (patient as Record<string, unknown>).gender || ''),
+    birthDate: formatDateForInput(birthDateFromBasic || ((patient as Record<string, unknown>).birthDate as string)),
+    nativePlace: String(nativePlaceFromBasic || (patient as Record<string, unknown>).nativePlace || ''),
+    ethnicity: String(ethnicityFromBasic || (patient as Record<string, unknown>).ethnicity || ''),
     idType: String((patient as Record<string, unknown>).idType || ''),
-    idNumber: String((patient as Record<string, unknown>).idNumber || ''),
+    idNumber: String(idNumberFromBasic || (patient as Record<string, unknown>).idNumber || ''),
     phone: String((patient as Record<string, unknown>).phone || ''),
-    address: String((patient as Record<string, unknown>).address || ''),
+    address: String(addressFromFamily || (patient as Record<string, unknown>).address || ''),
     backupContact: String((patient as Record<string, unknown>).backupContact || ''),
     backupPhone: String((patient as Record<string, unknown>).backupPhone || ''),
     fatherContactName: String((patient as Record<string, unknown>).fatherContactName || ''),
@@ -177,7 +195,7 @@ const PatientFormPage: React.FC<{ mode?: FormMode }> = ({ mode = 'create' }) => 
       return '请至少填写证件号或一条联系电话';
     }
     if (!hasLocation) {
-      return '请填写籍贯或常住地址';
+      return '请填写籍贯或家庭地址';
     }
     return null;
   };
@@ -282,7 +300,7 @@ const PatientFormPage: React.FC<{ mode?: FormMode }> = ({ mode = 'create' }) => 
                 />
               </div>
               <div className="form-field">
-                <label htmlFor="address">常住地址</label>
+                <label htmlFor="address">家庭地址</label>
                 <input
                   id="address"
                   type="text"
@@ -306,6 +324,19 @@ const PatientFormPage: React.FC<{ mode?: FormMode }> = ({ mode = 'create' }) => 
           <section className="form-section">
             <h3>身份与联系方式</h3>
             <div className="form-grid">
+              <div className="form-field">
+                <label htmlFor="idType">证件类型</label>
+                <select
+                  id="idType"
+                  value={form.idType || '身份证'}
+                  onChange={handleChange('idType')}
+                >
+                  <option value="身份证">身份证</option>
+                  <option value="护照">护照</option>
+                  <option value="军官证">军官证</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
               <div className="form-field">
                 <label htmlFor="idNumber">证件号码</label>
                 <input

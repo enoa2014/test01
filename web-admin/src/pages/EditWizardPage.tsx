@@ -4,12 +4,11 @@ import { useCloudbase } from '../hooks/useCloudbase';
 import { fetchPatientDetail, updatePatient } from '../api/patient';
 import type { PatientDetail } from '../types/patient';
 
-type StepKey = 'identity' | 'contact' | 'situation' | 'review';
+type StepKey = 'identity' | 'contact' | 'review';
 
 const STEP_TITLES: Record<StepKey, string> = {
   identity: '基础身份',
   contact: '联系人',
-  situation: '情况说明',
   review: '核对提交',
 };
 
@@ -34,11 +33,6 @@ type FormState = {
   backupContact: string;
   backupPhone: string;
   summaryCaregivers?: string;
-  // 状态与备注
-  careStatus: string;
-  checkoutAt?: string;
-  checkoutReason?: string;
-  checkoutNote?: string;
 };
 
 const DEFAULT_FORM: FormState = {
@@ -60,13 +54,8 @@ const DEFAULT_FORM: FormState = {
   backupContact: '',
   backupPhone: '',
   summaryCaregivers: '',
-  careStatus: 'in_care',
-  checkoutAt: '',
-  checkoutReason: '',
-  checkoutNote: '',
 };
-
-const ALL_STEPS: StepKey[] = ['identity', 'contact', 'situation', 'review'];
+const ALL_STEPS: StepKey[] = ['identity', 'contact', 'review'];
 
 const formatDateForInput = (value?: string | number | null): string => {
   if (value === undefined || value === null || value === '') return '';
@@ -83,19 +72,36 @@ const formatDateForInput = (value?: string | number | null): string => {
   return '';
 };
 
+const valueByLabel = (
+  list: Array<{ label: string; value: string }> | undefined,
+  label: string
+): string => {
+  if (!Array.isArray(list)) return '';
+  const found = list.find(item => item && item.label === label);
+  return found && typeof found.value === 'string' ? found.value : '';
+};
+
 const mapDetailToForm = (detail: PatientDetail): FormState => {
   const p = (detail && detail.patient) || ({} as Record<string, unknown>);
+  const basicInfo = (detail && (detail.basicInfo as Array<{ label: string; value: string }>)) || [];
+  const familyInfo = (detail && (detail.familyInfo as Array<{ label: string; value: string }>)) || [];
+  const genderFromBasic = valueByLabel(basicInfo, '性别');
+  const birthFromBasic = valueByLabel(basicInfo, '出生日期');
+  const idNumberFromBasic = valueByLabel(basicInfo, '身份证号');
+  const nativePlaceFromBasic = valueByLabel(basicInfo, '籍贯');
+  const ethnicityFromBasic = valueByLabel(basicInfo, '民族');
+  const addressFromFamily = valueByLabel(familyInfo, '家庭地址');
   return {
     ...DEFAULT_FORM,
     patientName: String(p.patientName || ''),
-    gender: String(p.gender || ''),
-    birthDate: formatDateForInput(p.birthDate as string),
-    nativePlace: String(p.nativePlace || ''),
-    ethnicity: String(p.ethnicity || ''),
+    gender: String(genderFromBasic || p.gender || ''),
+    birthDate: formatDateForInput(birthFromBasic || (p.birthDate as string)),
+    nativePlace: String(nativePlaceFromBasic || p.nativePlace || ''),
+    ethnicity: String(ethnicityFromBasic || p.ethnicity || ''),
     idType: String(p.idType || ''),
-    idNumber: String(p.idNumber || ''),
+    idNumber: String(idNumberFromBasic || p.idNumber || ''),
     phone: String(p.phone || ''),
-    address: String(p.address || ''),
+    address: String(addressFromFamily || p.address || ''),
     backupContact: String(p.backupContact || ''),
     backupPhone: String(p.backupPhone || ''),
     fatherContactName: String(p.fatherContactName || ''),
@@ -105,10 +111,6 @@ const mapDetailToForm = (detail: PatientDetail): FormState => {
     guardianContactName: String(p.guardianContactName || ''),
     guardianContactPhone: String(p.guardianContactPhone || ''),
     summaryCaregivers: String(p.summaryCaregivers || ''),
-    careStatus: String(p.careStatus || 'in_care'),
-    checkoutAt: formatDateForInput(p.checkoutAt as string),
-    checkoutReason: String(p.checkoutReason || ''),
-    checkoutNote: String(p.checkoutNote || ''),
   };
 };
 
@@ -162,11 +164,11 @@ const EditWizardPage: React.FC = () => {
     const gender = form.gender.trim();
     const hasId = !!form.idNumber.trim();
     const hasPhone = !!form.phone.trim();
-    const hasLoc = !!(form.nativePlace || form.address)?.toString().trim();
+    const hasAddress = !!(form.address || '').toString().trim();
     if (!name) return '请填写姓名';
     if (!gender) return '请选择性别';
     if (!hasId && !hasPhone) return '请至少填写证件号或一条联系电话';
-    if (!hasLoc) return '请填写籍贯或常住地址';
+    if (!hasAddress) return '请填写家庭地址';
     return null;
   };
 
@@ -175,15 +177,10 @@ const EditWizardPage: React.FC = () => {
     return null;
   };
 
-  const validateSituation = (): string | null => {
-    return null;
-  };
-
   const next = () => {
     let error: string | null = null;
     if (currentStep === 'identity') error = validateIdentity();
     if (currentStep === 'contact') error = validateContact();
-    if (currentStep === 'situation') error = validateSituation();
     if (error) {
       setErrors({ [currentStep]: error });
       return;
@@ -229,10 +226,7 @@ const EditWizardPage: React.FC = () => {
         guardianContactName: form.guardianContactName?.trim(),
         guardianContactPhone: form.guardianContactPhone?.trim(),
         summaryCaregivers: form.summaryCaregivers?.trim(),
-        careStatus: form.careStatus?.trim() || 'in_care',
-        checkoutAt: form.checkoutAt?.trim(),
-        checkoutReason: form.checkoutReason?.trim(),
-        checkoutNote: form.checkoutNote?.trim(),
+        // 状态相关信息由入住记录维护
       });
       navigate(`/patients/${encodeURIComponent(patientKey)}`, { replace: true });
     } catch (err) {
@@ -299,9 +293,13 @@ const EditWizardPage: React.FC = () => {
               <label>联系电话</label>
               <input value={form.phone} onChange={setField('phone')} />
             </div>
-            <div className="form-field" style={{ gridColumn: '1 / span 2' }}>
-              <label>籍贯 / 常住地址 *</label>
-              <input value={form.nativePlace || form.address} onChange={setField('nativePlace')} />
+            <div className="form-field">
+              <label>籍贯</label>
+              <input value={form.nativePlace || ''} onChange={setField('nativePlace')} placeholder="省/市/县" />
+            </div>
+            <div className="form-field">
+              <label>家庭地址 *</label>
+              <input value={form.address || ''} onChange={setField('address')} placeholder="详细地址" />
             </div>
           </div>
         </section>
@@ -346,34 +344,7 @@ const EditWizardPage: React.FC = () => {
         </section>
       )}
 
-      {currentStep === 'situation' && (
-        <section className="form-section">
-          <div className="form-grid">
-            <div className="form-field">
-              <label>在住状态</label>
-              <select value={form.careStatus} onChange={setField('careStatus')}>
-                <option value="in_care">在住</option>
-                <option value="discharged">已退住</option>
-                <option value="pending">待入驻</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label>退住时间</label>
-              <input type="date" value={form.checkoutAt || ''} onChange={setField('checkoutAt')} />
-            </div>
-          </div>
-          <div className="form-grid">
-            <div className="form-field">
-              <label>退住原因</label>
-              <input value={form.checkoutReason || ''} onChange={setField('checkoutReason')} />
-            </div>
-            <div className="form-field">
-              <label>备注</label>
-              <textarea rows={3} value={form.checkoutNote || ''} onChange={setField('checkoutNote')} />
-            </div>
-          </div>
-        </section>
-      )}
+      {/* 编辑资料不包含就医与病情 */}
 
       {currentStep === 'review' && (
         <section className="form-section">
@@ -388,7 +359,8 @@ const EditWizardPage: React.FC = () => {
                 <li><strong>证件号码：</strong>{form.idNumber || '-'}</li>
                 <li><strong>出生日期：</strong>{form.birthDate || '-'}</li>
                 <li><strong>联系电话：</strong>{form.phone || '-'}</li>
-                <li><strong>籍贯/地址：</strong>{form.nativePlace || form.address || '-'}</li>
+                <li><strong>籍贯：</strong>{form.nativePlace || '-'}</li>
+                <li><strong>家庭地址：</strong>{form.address || '-'}</li>
               </ul>
             </div>
             <div>
@@ -401,15 +373,7 @@ const EditWizardPage: React.FC = () => {
               </ul>
             </div>
           </div>
-          <div>
-            <h3>在住状态</h3>
-            <ul className="list">
-              <li><strong>状态：</strong>{form.careStatus}</li>
-              <li><strong>退住时间：</strong>{form.checkoutAt || '-'}</li>
-              <li><strong>退住原因：</strong>{form.checkoutReason || '-'}</li>
-              <li><strong>备注：</strong>{form.checkoutNote || '-'}</li>
-            </ul>
-          </div>
+            {/* 编辑资料不显示就医与病情 */}
           {errors.review && <p className="error-text">{errors.review}</p>}
         </section>
       )}
@@ -429,4 +393,3 @@ const EditWizardPage: React.FC = () => {
 };
 
 export default EditWizardPage;
-
