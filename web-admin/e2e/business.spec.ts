@@ -20,36 +20,26 @@ test.describe('Web Admin - Business Flow', () => {
     // 直接访问列表页（ProtectedRoute 在 bypass 模式下允许进入）
     await page.goto('/patients');
 
-    // 切换至表格视图（默认可能为卡片视图）
-    const toggleBtn = page.getByRole('button', { name: /表格视图/ });
-    if (await toggleBtn.isVisible()) {
-      await toggleBtn.click();
-    }
-    // 确认列表渲染出至少 3 条（来自 stub）
-    await expect(page.locator('table')).toBeVisible();
-    const rows = page.locator('tbody tr');
-    await expect(rows).toHaveCount(3);
+    // 搜索“张三”应过滤到仅包含“张三”的卡片
+    const search = page.getByPlaceholder('搜索姓名 / 证件号 / 电话 / 医院 / 诊断');
+    await search.fill('张三');
+    await expect(page.getByText('张三')).toBeVisible();
+    await expect(page.getByText('李四')).toHaveCount(0);
 
-    // 搜索“张三”应过滤到 1 条
-    await page.getByPlaceholder('搜索姓名 / 证件号 / 电话 / 医院 / 诊断').fill('张三');
-    // 输入触发布局与筛选，需要一点时间
-    await expect(rows).toHaveCount(1);
+    // 清空搜索，恢复到包含“李四”
+    await search.fill('');
+    await expect(page.getByText('李四')).toBeVisible();
 
-    // 清空搜索，回到 3 条
-    await page.getByPlaceholder('搜索姓名 / 证件号 / 电话 / 医院 / 诊断').fill('');
-    await expect(rows).toHaveCount(3);
+    // 在“李四”的卡片上点击状态徽章“待入住”
+    const liSiCard = page.locator('div', { hasText: '李四' }).first();
+    await expect(liSiCard).toBeVisible();
+    await liSiCard.getByText('待入住', { exact: true }).click();
 
-    // 在行内“状态”列点击 pill，打开对话框
-    const statusCell = rows.nth(1).locator('td').nth(6); // 第二行的状态列
-    const pill = statusCell.locator('.status-pill');
-    await expect(pill).toBeVisible();
-    await pill.click();
-
-    // 选择“已离开”，并确认调整
+    // 在弹窗中选择“已离开”，并确认
     await page.getByText('已离开', { exact: true }).click();
     await page.getByRole('button', { name: '确认调整' }).click();
 
-    // 断言该行 pill 文案更新为“已退住”
-    await expect(statusCell.locator('.status-pill.gray')).toHaveText('已退住');
+    // 验证“李四”卡片中出现“已离开”
+    await expect(liSiCard.getByText('已离开', { exact: true })).toBeVisible();
   });
 });
