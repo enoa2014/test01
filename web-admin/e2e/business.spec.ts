@@ -20,6 +20,9 @@ test.describe('Web Admin - Business Flow', () => {
     // 直接访问列表页（ProtectedRoute 在 bypass 模式下允许进入）
     await page.goto('/patients');
 
+    // 等待页面工具栏加载完成
+    await expect(page.getByRole('button', { name: '新增住户' })).toBeVisible();
+
     // 搜索“张三”应过滤到仅包含“张三”的卡片
     const search = page.getByPlaceholder('搜索姓名 / 证件号 / 电话 / 医院 / 诊断');
     await search.fill('张三');
