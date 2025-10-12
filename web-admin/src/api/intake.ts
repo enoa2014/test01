@@ -110,3 +110,40 @@ export async function deleteIntakeRecord(app: CloudBase, patientKey: string, int
     throw new Error(result?.error?.message || '删除入住记录失败');
   }
 }
+
+// 额外：获取患者详情（来源 patientIntake，用于补充 profile 不足）
+export async function getPatientIntakeDetail(app: CloudBase, patientKey: string, options?: { recordKey?: string; patientName?: string }) {
+  const res = await app.callFunction({
+    name: 'patientIntake',
+    data: {
+      action: 'getPatientDetail',
+      patientKey,
+      recordKey: options?.recordKey,
+      patientName: options?.patientName,
+    },
+  });
+  const result = res.result as { success?: boolean; data?: any; error?: { message?: string } };
+  if (!result?.success) {
+    throw new Error(result?.error?.message || '获取住户详情失败');
+  }
+  return result.data || {};
+}
+
+// 额外：获取完整入住记录（来源 patientIntake，优先使用 records 字段；若缺失则回退 listIntakeRecords）
+export async function getAllIntakeRecords(app: CloudBase, patientKey: string) {
+  try {
+    const res = await app.callFunction({
+      name: 'patientIntake',
+      data: { action: 'getAllIntakeRecords', patientKey },
+    });
+    const result = res.result as { success?: boolean; data?: { records?: any[]; items?: any[] } };
+    if (result?.success) {
+      const data = result.data || {};
+      return (Array.isArray(data.records) ? data.records : Array.isArray(data.items) ? data.items : []) as any[];
+    }
+  } catch (err) {
+    // ignore and fallback
+  }
+  // fallback to list
+  return await listIntakeRecords(app, patientKey);
+}

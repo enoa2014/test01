@@ -2089,6 +2089,9 @@ async function fetchFallbackPatientDetail(patientKey) {
       idNumber: patientDoc.idNumber || '',
       nativePlace: patientDoc.nativePlace || '',
       ethnicity: patientDoc.ethnicity || '',
+      careStatus: normalizeSpacing(
+        (patientDoc && (patientDoc.careStatus || (patientDoc.data && patientDoc.data.careStatus))) || ''
+      ),
       latestHospital: patientDoc.latestHospital || '',
       latestDoctor: patientDoc.latestDoctor || '',
       fatherInfo: contactToString(fallbackContacts.find(contact => contact.role === 'father')),
@@ -2255,21 +2258,30 @@ function formatPatientDetail(group, patientDoc) {
         formatGuardian(patientDoc.guardianContactName, patientDoc.guardianContactPhone)));
 
   const economicValue =
-    pickRecordValue(record => record.familyEconomy) || (patientDoc && patientDoc.familyEconomy);
+    (patientDoc && patientDoc.familyEconomy) || pickRecordValue(record => record.familyEconomy);
 
   const basicInfo = buildInfoList([
-    { label: '性别', value: group.gender || latest.gender },
-    { label: '出生日期', value: group.birthDate || latest.birthDate },
-    { label: '身份证号', value: group.idNumber || latest.idNumber },
-    { label: '籍贯', value: group.nativePlace || latest.nativePlace },
-    { label: '民族', value: group.ethnicity || latest.ethnicity },
+    { label: '性别', value: prefer(patientDoc && patientDoc.gender, group.gender, latest.gender) },
+    {
+      label: '出生日期',
+      value: prefer(patientDoc && patientDoc.birthDate, group.birthDate, latest.birthDate),
+    },
+    {
+      label: '身份证号',
+      value: prefer(patientDoc && patientDoc.idNumber, group.idNumber, latest.idNumber),
+    },
+    {
+      label: '籍贯',
+      value: prefer(patientDoc && patientDoc.nativePlace, group.nativePlace, latest.nativePlace),
+    },
+    { label: '民族', value: prefer(patientDoc && patientDoc.ethnicity, group.ethnicity, latest.ethnicity) },
     { label: '主要照护人', value: group.summaryCaregivers },
   ]);
 
   const familyInfo = buildInfoList([
     {
       label: '家庭地址',
-      value: pickRecordValue(record => record.address) || (patientDoc && patientDoc.address),
+      value: prefer(patientDoc && patientDoc.address, pickRecordValue(record => record.address)),
     },
     { label: '父亲联系方式', value: fatherInfoValue },
     { label: '母亲联系方式', value: motherInfoValue },
@@ -2366,12 +2378,15 @@ function formatPatientDetail(group, patientDoc) {
   return {
     patient: {
       key: group.key,
-      patientName: group.patientName,
-      gender: group.gender || latest.gender || '',
-      birthDate: group.birthDate || latest.birthDate || '',
-      idNumber: group.idNumber || latest.idNumber || '',
-      latestHospital: group.latestHospital,
-      latestDoctor: group.latestDoctor,
+      patientName: prefer(patientDoc && patientDoc.patientName, group.patientName) || '',
+      gender: prefer(patientDoc && patientDoc.gender, group.gender, latest.gender) || '',
+      birthDate: prefer(patientDoc && patientDoc.birthDate, group.birthDate, latest.birthDate) || '',
+      idNumber: prefer(patientDoc && patientDoc.idNumber, group.idNumber, latest.idNumber) || '',
+      nativePlace: prefer(patientDoc && patientDoc.nativePlace, group.nativePlace, latest.nativePlace) || '',
+      ethnicity: prefer(patientDoc && patientDoc.ethnicity, group.ethnicity, latest.ethnicity) || '',
+      careStatus: deriveCareStatus() || '',
+      latestHospital: prefer(patientDoc && patientDoc.latestHospital, group.latestHospital) || '',
+      latestDoctor: prefer(patientDoc && patientDoc.latestDoctor, group.latestDoctor) || '',
       fatherInfo: fatherInfoValue || '',
       motherInfo: motherInfoValue || '',
       otherGuardian: otherGuardianValue || '',
@@ -3141,3 +3156,37 @@ exports.main = async event => {
     };
   }
 };
+  // Derive careStatus similar to list summaries
+  const deriveCareStatus = () => {
+    const pick = (...cand) => {
+      for (const v of cand) {
+        if (v !== undefined && v !== null && v !== '') return v;
+      }
+      return '';
+    };
+    const doc = patientDoc || {};
+    const data = (doc && typeof doc.data === 'object') ? doc.data : {};
+    const nested = (data && typeof data.data === 'object') ? data.data : {};
+    let careStatus = normalizeSpacing(pick(doc.careStatus, data.careStatus, nested.careStatus));
+    const checkoutAt = Number(pick(doc.checkoutAt, data.checkoutAt));
+    if (!careStatus && Number.isFinite(checkoutAt) && checkoutAt > 0) {
+      return 'discharged';
+    }
+    const latestTs = Number(
+      pick(
+        doc.latestAdmissionTimestamp,
+        data.latestAdmissionTimestamp,
+        group && group.latestAdmissionTimestamp,
+        latest && latest.intakeTime
+      )
+    );
+    if (!careStatus && Number.isFinite(latestTs) && latestTs > 0) {
+      const now = Date.now();
+      if (latestTs > now) return 'pending';
+      const diffDays = Math.floor((now - latestTs) / (24 * 60 * 60 * 1000));
+      if (diffDays <= 30) return 'in_care';
+      if (diffDays <= 90) return 'pending';
+      return 'discharged';
+    }
+    return careStatus || '';
+  };

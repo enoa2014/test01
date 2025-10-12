@@ -60,7 +60,7 @@ type PatientDetailResponse = {
 export async function fetchPatientDetail(app: CloudBase, patientKey: string): Promise<PatientDetail> {
   const res = await app.callFunction({
     name: PATIENT_PROFILE_FUNCTION,
-    data: { action: 'detail', patientKey }
+    data: { action: 'detail', key: patientKey }
   });
   const result = res.result as PatientDetailResponse;
   if (result?.error) {

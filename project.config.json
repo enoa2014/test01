@@ -7,9 +7,7 @@
     "enhance": true,
     "postcss": true,
     "preloadBackgroundData": false,
-    "minified": true,
-    "swc": true,
-    "disableSWC": false
+    "minified": true
   },
   "compileType": "miniprogram",
   "libVersion": "latest",

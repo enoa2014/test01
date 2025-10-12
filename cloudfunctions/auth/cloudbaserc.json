@@ -1,0 +1,16 @@
+{
+  "envId": "cloud1-6g2fzr5f7cf51e38",
+  "functionRoot": "./",
+  "functions": [
+    {
+      "name": "auth",
+      "timeout": 20,
+      "envVariables": {
+        "TCB_CUSTOM_LOGIN_PRIVATE_KEY_ID": "25e0bbf5-fee8-43ac-954f-871d61ab26c6",
+        "TCB_CUSTOM_LOGIN_PRIVATE_KEY": "-----BEGIN RSA PRIVATE KEY-----\\nMIICXQIBAAKBgQDatGt64LWwBculONa8UkkTBjvKpWOT03XxOpWapyMmGxsDoHmO\\n8zR438Jd/zQbxg9ekJDnw8MUFHxavMFzTzEwBmu45/L7YugxhnAV4RQFmcF7UkGH\\nVWH/OZYvCqovin3okbx530X+DE5VKegVVr4dRwy4QwO6GZzO7La4g/8iEwIDAQAB\\nAoGAG1KZ8N585FI9CFWrAhj3lyBavOzfnVq4K9xpT0pdKkgNnmzgctrwbb9qnWqi\\nHGwohGRkLgg3aV1L0dwuANVebAnp1By+aQbYMkzCQjyV7n8Vo9UjTgabvTRxKR2O\\nfftsJPDA15YJXq2UkovpKOVNp2VWLEM/3PsDQUpzi2+bKC0CQQDrY4sUOY3E2ODn\\nLZp/BvcYdE0CzQo1ViTlvfWUsb125+NDTq/ua5NGKyjhOkQ79czyLfapk0B6Xx4c\\nik87l3UfAkEA7drjQKiRFQJBoYJUZdA9S8CPMtteSGdosmqZlcAN1ixfi/Atj9Ug\\nUBCQpu1rmM2jfKPMg5hlZWOruc6U/VhgjQJBAIm+u7F/KI4L2DiQQDubiNd/n11H\\nPXUOzxK+Qcrc5CGD+0L09hEQVKOYOBjs7ucjpOYHrbN4HyA9LzLGYS1fKUMCQQDj\\nn7wnXqopTtV8OPuHy/c9DXR9GQ5rf/rj87wzYW5cbm6pvxn7Md0QginMdh2oR/OT\\nDjZkIW23z+DBmn9ezDrpAkBQFuvgfmlqGBZIG42t1YHVmjrX3c4II5jwrfiWQoyQ\\nruwnMP3M/gOu+lsH6shR8+12Hax49emi3EHNVoKHhq6r\\n-----END RSA PRIVATE KEY-----"
+      },
+      "runtime": "Nodejs16.13",
+      "installDependency": true
+    }
+  ]
+}

@@ -43,9 +43,12 @@ const App: React.FC = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/patients" replace />} />
           <Route path="/patients" element={<PatientListPage />} />
+          <Route path="/patients/new" element={<IntakeWizardPage />} />
           <Route path="/patients/:patientKey" element={<PatientDetailPage />} />
-          <Route path="/intake" element={<IntakeWizardPage />} />
+          <Route path="/patients/:patientKey/edit" element={<PatientFormPage />} />
           <Route path="/patients/:patientKey/intakes" element={<IntakeRecordsPage />} />
+          {/* 向后兼容：旧的 /intake 路由重定向到 /patients/new */}
+          <Route path="/intake" element={<Navigate to="/patients/new" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/patients" replace />} />
       </Routes>

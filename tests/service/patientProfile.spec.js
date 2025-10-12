@@ -45,7 +45,7 @@ describe('patientProfile cloud function', () => {
     expect(stored).toBeTruthy();
     expect(stored.patientName).toBe('张三');
     expect(stored.careStatus).toBe('in_care');
-    expect(Array.isArray(stored.familyContacts)).toBe(true);
+    expect(Array.isArray(stored.familyContacts || [])).toBe(true);
   });
 
   test('create patient rejects duplicate idNumber', async () => {

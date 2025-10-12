@@ -8,7 +8,7 @@ import {
   uploadMedia
 } from '../api/media';
 import { useCloudbase } from '../hooks/useCloudbase';
-import { MediaItem, MediaQuota } from '../shared/types';
+import { MediaItem, MediaQuota } from '../types/patient';
 
 type MediaManagerProps = {
   patientKey: string;
@@ -448,4 +448,3 @@ const MediaManager: React.FC<MediaManagerProps> = ({ patientKey }) => {
 };
 
 export default MediaManager;
-
