@@ -129,6 +129,18 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               },
             };
           }
+          if (data && data.action === 'export') {
+            return { result: { success: true, fileId: 'file-e2e-001' } };
+          }
+          if (data && data.action === 'delete') {
+            const key = data.patientKey;
+            const before = store.patients.length;
+            store.patients = store.patients.filter((p: any) => (p.patientKey || p.key) !== key);
+            const changed = store.patients.length !== before;
+            return changed
+              ? { result: { success: true } }
+              : { result: { success: false, error: { message: '未找到住户' } } };
+          }
         }
         if (name === 'patientIntake') {
           if (data && data.action === 'updateCareStatus') {
