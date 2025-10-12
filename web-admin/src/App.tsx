@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, Link } from 'react-router-dom';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import PatientListPage from './pages/PatientListPage';
@@ -7,7 +7,9 @@ import PatientDetailPage from './pages/PatientDetailPage';
 import PatientFormPage from './pages/PatientFormPage';
 import IntakeWizardPage from './pages/IntakeWizardPage';
 import IntakeRecordsPage from './pages/IntakeRecordsPage';
+import AnalysisPage from './pages/AnalysisPage';
 import { useCloudbase } from './hooks/useCloudbase';
+import './styles/analysis.css';
 
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useCloudbase();
@@ -21,6 +23,20 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
         {user ? (
           <div className="flex-row">
+            <nav className="app-nav">
+              <Link
+                to="/patients"
+                className={`nav-link ${location.pathname === '/patients' ? 'active' : ''}`}
+              >
+                住户列表
+              </Link>
+              <Link
+                to="/analysis"
+                className={`nav-link ${location.pathname === '/analysis' ? 'active' : ''}`}
+              >
+                数据分析
+              </Link>
+            </nav>
             <span>{user.username || user.uid}</span>
             <button className="secondary-button" onClick={logout}>
               退出登录
@@ -47,6 +63,7 @@ const App: React.FC = () => {
           <Route path="/patients/:patientKey" element={<PatientDetailPage />} />
           <Route path="/patients/:patientKey/edit" element={<PatientFormPage />} />
           <Route path="/patients/:patientKey/intakes" element={<IntakeRecordsPage />} />
+          <Route path="/analysis" element={<AnalysisPage />} />
           {/* 向后兼容：旧的 /intake 路由重定向到 /patients/new */}
           <Route path="/intake" element={<Navigate to="/patients/new" replace />} />
         </Route>
