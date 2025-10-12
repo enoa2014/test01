@@ -28,21 +28,55 @@ if (!DEFAULTS.envId) {
 }
 
 export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [app] = useState(() => (DEFAULTS.envId ? tcb.init({ env: DEFAULTS.envId }) : null));
+  const [app, setApp] = useState<CloudBase | null>(() =>
+    DEFAULTS.envId ? tcb.init({ env: DEFAULTS.envId }) : null
+  );
   const [auth, setAuth] = useState<Auth | null>(null);
   const [user, setUser] = useState<CloudbaseContextValue['user']>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!app) {
-      setLoading(false);
-      return;
+  const initAuthForApp = useCallback(async (appInstance: CloudBase | null) => {
+    if (!appInstance) {
+      setAuth(null);
+      return null;
     }
-    const instance = app.auth({ persistence: 'local' });
+    const instance = appInstance.auth({ persistence: 'local' });
     setAuth(instance);
-    let cancelled = false;
+    return instance;
+  }, []);
 
+  // 尝试使用 SDK 的“当前环境”符号进行回退初始化
+  const tryReinitWithFallbackEnv = useCallback(async (): Promise<CloudBase | null> => {
+    try {
+      const sym: any = (tcb as any).SYMBOL_CURRENT_ENV;
+      if (sym) {
+        const newApp = tcb.init({ env: sym });
+        await initAuthForApp(newApp);
+        setApp(newApp);
+        return newApp;
+      }
+    } catch (_) {
+      // ignore
+    }
+    return null;
+  }, [initAuthForApp]);
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
+      let currentApp = app;
+      if (!currentApp) {
+        currentApp = await tryReinitWithFallbackEnv();
+        if (!currentApp) {
+          setLoading(false);
+          return;
+        }
+      }
+      const instance = await initAuthForApp(currentApp);
+      if (!instance) {
+        setLoading(false);
+        return;
+      }
       try {
         const state = await instance.getLoginState();
         if (!cancelled && state && state.user) {
@@ -56,16 +90,13 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } catch (error) {
         console.warn('Unable to load CloudBase login state', error);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     })();
-
     return () => {
       cancelled = true;
     };
-  }, [app]);
+  }, [app, initAuthForApp, tryReinitWithFallbackEnv]);
 
   const ensureAnonymousLogin = useCallback(async () => {
     if (!auth) {
@@ -110,33 +141,84 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const login = useCallback(
     async (username: string, password: string) => {
+      const execLogin = async (appInstance: CloudBase, authInstance: Auth) => {
+        // 确保具备最小权限以调用云函数（匿名登录）
+        const state = await authInstance.getLoginState();
+        if (!state) {
+          if (typeof authInstance.signInAnonymously === 'function') {
+            await authInstance.signInAnonymously();
+          } else if (typeof authInstance.anonymousAuthProvider === 'function') {
+            await authInstance.anonymousAuthProvider().signIn();
+          }
+        }
+        const res = await appInstance.callFunction({
+          name: DEFAULTS.authFunctionName,
+          data: { action: 'login', username, password }
+        });
+        if (!res.result || !res.result.success) {
+          const message = res.result?.error?.message || '登录失败';
+          throw new Error(message);
+        }
+        const { ticket, user: userInfo } = res.result as any;
+        if (!ticket) {
+          throw new Error('未获取到登录凭据');
+        }
+        const loginState = await authInstance.customAuthProvider().signInWithTicket(ticket);
+        const nextUser = {
+          uid: loginState.user?.uid || userInfo?.uid || '',
+          username: userInfo?.username || loginState.user?.customUserId,
+          role: userInfo?.role,
+          ticketIssuedAt: Date.now()
+        };
+        setUser(nextUser);
+      };
+
+      const isEnvConfigError = (err: unknown) => {
+        const msg = String((err as any)?.message || '').toLowerCase();
+        return (
+          msg.includes('no env in config') ||
+          msg.includes('missing env id') ||
+          (msg.includes('env') && msg.includes('config'))
+        );
+      };
+
       if (!app || !auth) {
-        throw new Error('CloudBase 未初始化');
-      }
-      await ensureAnonymousLogin();
-      const res = await app.callFunction({
-        name: DEFAULTS.authFunctionName,
-        data: { action: 'login', username, password }
-      });
-      if (!res.result || !res.result.success) {
-        const message = res.result?.error?.message || '登录失败';
-        throw new Error(message);
+        const newApp = await tryReinitWithFallbackEnv();
+        const newAuth = await initAuthForApp(newApp);
+        if (newApp && newAuth) {
+          try {
+            await execLogin(newApp, newAuth);
+            return;
+          } catch (e) {
+            if (!isEnvConfigError(e)) throw e;
+            await new Promise(r => setTimeout(r, 600));
+            await execLogin(newApp, newAuth);
+            return;
+          }
+        }
+        throw new Error('CloudBase 未初始化或缺少环境 ID');
       }
 
-      const { ticket, user: userInfo } = res.result;
-      if (!ticket) {
-        throw new Error('未获取到登录凭据');
+      try {
+        await execLogin(app, auth);
+      } catch (e) {
+        if (!isEnvConfigError(e)) throw e;
+        const newApp = await tryReinitWithFallbackEnv();
+        const newAuth = await initAuthForApp(newApp);
+        if (!newApp || !newAuth) {
+          await new Promise(r => setTimeout(r, 600));
+          await execLogin(app, auth);
+          return;
+        }
+        try {
+          await execLogin(newApp, newAuth);
+        } catch (_) {
+          await new Promise(r => setTimeout(r, 600));
+          await execLogin(newApp, newAuth);
+        }
       }
-      const loginState = await auth.customAuthProvider().signInWithTicket(ticket);
-      const nextUser = {
-        uid: loginState.user?.uid || userInfo?.uid || '',
-        username: userInfo?.username || loginState.user?.customUserId,
-        role: userInfo?.role,
-        ticketIssuedAt: Date.now()
-      };
-      setUser(nextUser);
     },
-    [app, auth, ensureAnonymousLogin]
+    [app, auth, ensureAnonymousLogin, initAuthForApp, tryReinitWithFallbackEnv]
   );
 
   const logout = useCallback(async () => {
