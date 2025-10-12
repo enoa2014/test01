@@ -28,9 +28,136 @@ if (!DEFAULTS.envId) {
 }
 
 export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [app, setApp] = useState<CloudBase | null>(() =>
-    DEFAULTS.envId ? tcb.init({ env: DEFAULTS.envId }) : null
-  );
+  // E2E 测试模式：通过 localStorage("E2E_BYPASS_LOGIN"=1) 启用
+  const isE2ETestBypass =
+    typeof window !== 'undefined' &&
+    (() => {
+      try {
+        return window.localStorage.getItem('E2E_BYPASS_LOGIN') === '1';
+      } catch {
+        return false;
+      }
+    })();
+
+  // 提供一个极简的 stub CloudBase，覆盖 callFunction 与认证相关方法
+  function createE2EStub() {
+    const store: any = {
+      users: [{ uid: 'e2e-uid', username: 'e2e-admin', role: 'admin' }],
+      patients: [
+        {
+          patientKey: 'p-001',
+          patientName: '张三',
+          gender: '男',
+          birthDate: '2010-06-01',
+          latestAdmissionTimestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
+          latestHospital: '协和医院',
+          latestDiagnosis: '骨髓异常',
+          admissionCount: 2,
+          careStatus: 'in_care',
+        },
+        {
+          patientKey: 'p-002',
+          patientName: '李四',
+          gender: '女',
+          birthDate: '2012-03-15',
+          latestAdmissionTimestamp: Date.now() - 50 * 24 * 60 * 60 * 1000,
+          latestHospital: '湘雅医院',
+          latestDiagnosis: '免疫缺陷',
+          admissionCount: 1,
+          careStatus: 'pending',
+        },
+        {
+          patientKey: 'p-003',
+          patientName: '王五',
+          gender: '男',
+          birthDate: '2008-11-20',
+          latestAdmissionTimestamp: Date.now() - 200 * 24 * 60 * 60 * 1000,
+          latestHospital: '北医三院',
+          latestDiagnosis: '白血病',
+          admissionCount: 3,
+          careStatus: 'discharged',
+          checkoutAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+        },
+      ],
+    };
+
+    const user = { uid: 'e2e-uid', customUserId: 'admin:e2e-admin' } as any;
+
+    const auth: any = {
+      async getLoginState() {
+        return { user, credential: { refreshTime: Date.now() } };
+      },
+      async signOut() {
+        return;
+      },
+      customAuthProvider() {
+        return {
+          async signInWithTicket(_ticket: string) {
+            return { user };
+          },
+        };
+      },
+      signInAnonymously: async () => {},
+      anonymousAuthProvider: () => ({ signIn: async () => {} }),
+    };
+
+    const app: any = {
+      async callFunction({ name, data }: any) {
+        if (name === DEFAULTS.authFunctionName) {
+          // 模拟登录云函数
+          if (data && data.action === 'login') {
+            if (!data.username || !data.password) {
+              return { result: { success: false, error: { message: '缺少用户名或口令' } } };
+            }
+            return {
+              result: {
+                success: true,
+                ticket: 'e2e-ticket',
+                user: { uid: 'e2e-uid', username: data.username, role: 'admin' },
+              },
+            };
+          }
+        }
+        if (name === 'patientProfile') {
+          if (data && data.action === 'list') {
+            return {
+              result: {
+                success: true,
+                patients: store.patients,
+                totalCount: store.patients.length,
+                hasMore: false,
+              },
+            };
+          }
+        }
+        if (name === 'patientIntake') {
+          if (data && data.action === 'updateCareStatus') {
+            const { patientKey, status } = data || {};
+            const item = store.patients.find((p: any) => p.patientKey === patientKey);
+            if (!item) {
+              return { result: { success: false, error: { message: '未找到住户' } } };
+            }
+            item.careStatus = status;
+            return { result: { success: true } };
+          }
+        }
+        // 默认成功回包
+        return { result: { success: true } };
+      },
+      auth() {
+        return auth;
+      },
+    };
+
+    return { app: app as CloudBase, auth: auth as Auth };
+  }
+
+  const [app, setApp] = useState<CloudBase | null>(() => {
+    if (isE2ETestBypass) {
+      return createE2EStub().app;
+    }
+    return DEFAULTS.envId ? tcb.init({ env: DEFAULTS.envId }) : null;
+  });
   const [auth, setAuth] = useState<Auth | null>(null);
   const [user, setUser] = useState<CloudbaseContextValue['user']>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +174,12 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // 尝试使用 SDK 的“当前环境”符号进行回退初始化
   const tryReinitWithFallbackEnv = useCallback(async (): Promise<CloudBase | null> => {
+    if (isE2ETestBypass) {
+      const stub = createE2EStub();
+      setApp(stub.app);
+      await initAuthForApp(stub.app);
+      return stub.app;
+    }
     try {
       const sym: any = (tcb as any).SYMBOL_CURRENT_ENV;
       if (sym) {
@@ -59,7 +192,7 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // ignore
     }
     return null;
-  }, [initAuthForApp]);
+  }, [initAuthForApp, isE2ETestBypass]);
 
   useEffect(() => {
     let cancelled = false;
