@@ -96,6 +96,10 @@
     "database:find-duplicates": "node scripts/find-duplicate-patients.js",
     "test:cleanup-verify": "node scripts/e2e/verify-cleanup.js",
     "test:cleanup": "node scripts/e2e/verify-cleanup.js --cleanup",
-    "docs:links": "node scripts/docs-check-links.js README.md"
+    "docs:links": "node scripts/docs-check-links.js README.md",
+    "test:e2e:web": "npm --prefix web-admin run test:e2e",
+    "test:e2e:web:headed": "npm --prefix web-admin run test:e2e:headed",
+    "test:e2e:web:ui": "npm --prefix web-admin run test:e2e:ui",
+    "e2e:web:report": "npm --prefix web-admin run e2e:report"
   }
 }
