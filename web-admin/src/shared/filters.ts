@@ -42,8 +42,35 @@ export const normalizeAdvancedFilters = (f: AdvancedFilters): AdvancedFilters =>
 });
 
 // 简化版：仅返回原列表，实际筛选逻辑后续可扩展
-export const applyAdvancedFilters = <T extends Record<string, any>>(items: T[], _f: AdvancedFilters): T[] => {
-  return items;
+export const applyAdvancedFilters = <T extends Record<string, any>>(items: T[], f: AdvancedFilters): T[] => {
+  const filters = normalizeAdvancedFilters(f);
+  let result = items.slice();
+
+  // 状态筛选
+  if (filters.statuses.length > 0) {
+    const set = new Set(filters.statuses);
+    result = result.filter(it => (it.careStatus && set.has(String(it.careStatus))) || false);
+  }
+
+  // 性别筛选
+  if (filters.genders.length > 0) {
+    const set = new Set(filters.genders.map(String));
+    result = result.filter(it => set.has(String(it.gender || it.genderLabel || '').trim()));
+  }
+
+  // 医院筛选（最近医院/医院字段）
+  if (filters.hospitals.length > 0) {
+    const set = new Set(filters.hospitals.map(String));
+    result = result.filter(it => set.has(String(it.latestHospital || it.hospital || '').trim()));
+  }
+
+  // 诊断筛选（最近诊断/诊断字段）
+  if (filters.diagnosis.length > 0) {
+    const set = new Set(filters.diagnosis.map(String));
+    result = result.filter(it => set.has(String(it.latestDiagnosis || it.diagnosis || '').trim()));
+  }
+
+  return result;
 };
 
 export const deriveHospitalOptions = <T extends Record<string, any>>(items: T[]): FilterOption[] => {
@@ -120,4 +147,3 @@ export const formatAge = (birthDate: string | Date | null | undefined): string =
   if (age === null) return '-';
   return `${age}岁`;
 };
-
