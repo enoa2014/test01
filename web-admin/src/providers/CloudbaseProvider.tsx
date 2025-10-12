@@ -90,6 +90,12 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       async signOut() {
         return;
       },
+      async signInWithCustomTicket(_ticket: string) {
+        return { user };
+      },
+      async signInWithTicket(_ticket: string) {
+        return { user };
+      },
       customAuthProvider() {
         return {
           async signInWithTicket(_ticket: string) {
@@ -312,10 +318,34 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (!ticket) {
           throw new Error('未获取到登录凭据');
         }
-        const loginState = await authInstance.customAuthProvider().signInWithTicket(ticket);
+        const execSignIn = async () => {
+          // 优先使用新版本的 signInWithCustomTicket 方法
+          if (typeof authInstance.signInWithCustomTicket === 'function') {
+            await authInstance.signInWithCustomTicket(ticket);
+            return;
+          }
+          // 兼容旧版本的 signInWithTicket 方法
+          if (typeof authInstance.signInWithTicket === 'function') {
+            await authInstance.signInWithTicket(ticket);
+            return;
+          }
+          // 更旧的版本需要通过 customAuthProvider
+          const provider =
+            typeof authInstance.customAuthProvider === 'function'
+              ? authInstance.customAuthProvider()
+              : null;
+          if (provider && typeof provider.signInWithTicket === 'function') {
+            await provider.signInWithTicket(ticket);
+            return;
+          }
+          throw new Error('登录失败：当前 CloudBase SDK 版本不支持自定义登录');
+        };
+
+        await execSignIn();
+
         const nextUser = {
-          uid: loginState.user?.uid || userInfo?.uid || '',
-          username: userInfo?.username || loginState.user?.customUserId,
+          uid: userInfo?.uid || '',
+          username: userInfo?.username,
           role: userInfo?.role,
           ticketIssuedAt: Date.now()
         };
