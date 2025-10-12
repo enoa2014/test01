@@ -27,11 +27,15 @@ test.describe('Web Admin - Business Flow', () => {
     await search.fill('');
     await expect(page.getByText('李四')).toBeVisible();
 
-    // 在“李四”的卡片上点击状态徽章（随访）
-    const liSiCard = page.locator('div', { hasText: '李四' }).first();
-    await expect(liSiCard).toBeVisible();
-    // 徽章文案为“随访”（对应 careStatus=pending）
-    await liSiCard.getByText('随访', { exact: true }).click();
+    // 切换至表格视图，使用“待入住”状态 pill 进行编辑
+    const toTable = page.getByRole('button', { name: /表格视图/ });
+    if (await toTable.isVisible()) {
+      await toTable.click();
+    }
+
+    const rowLiSi = page.locator('tbody tr', { hasText: '李四' }).first();
+    await expect(rowLiSi).toBeVisible();
+    await rowLiSi.locator('.status-pill').click();
 
     // 在弹窗中选择“已离开”，并确认
     await page.getByText('已离开', { exact: true }).click();
