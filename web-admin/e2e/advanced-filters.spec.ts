@@ -27,10 +27,8 @@ test('Advanced filters: filter by status (待入住) and reset', async ({ page }
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('李四');
 
-  // 再次打开面板并重置
-  await page.getByRole('button', { name: /高级筛选/ }).click();
-  await page.getByRole('button', { name: '重置' }).click();
-  await page.getByRole('button', { name: '应用筛选' }).click();
+  // 工具栏重置筛选
+  await page.getByRole('button', { name: '重置筛选' }).click();
 
   // 恢复后应包含至少 2 条（张三、王五）
   await expect(rows).toHaveCount(3);
