@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchPatientList, deletePatient, exportPatients } from '../api/patient';
 import { useCloudbase } from '../hooks/useCloudbase';
@@ -14,8 +14,6 @@ import {
   normalizeAdvancedFilters,
   summarizeFiltersForScheme,
   resolveAgeBucket,
-  getAgeBucketLabelById,
-  AGE_BUCKETS,
   calculateAge,
   formatAge,
 } from '../shared/filters';
@@ -53,6 +51,16 @@ type TableRow = PatientSummary & {
   latestEvent: string;
   tags: string[];
   diffDaysSinceLatestAdmission: number | null;
+  // 添加扩展字段以支持Excel数据
+  firstAdmissionDate?: string;
+  firstAdmissionTimestamp?: number;
+  firstDiagnosis?: string;
+  firstHospital?: string;
+  firstDoctor?: string;
+  importOrder?: number | null;
+  importedAt?: number;
+  _importedAt?: number;
+  excelImportOrder?: number;
 };
 
 type CacheData = {
@@ -216,10 +224,10 @@ const PatientListPage: React.FC = () => {
   const [hospitalOptions, setHospitalOptions] = useState<FilterOption[]>([]);
   const [diagnosisOptions, setDiagnosisOptions] = useState<FilterOption[]>([]);
   const [allDiagnosisOptions, setAllDiagnosisOptions] = useState<FilterOption[]>([]);
-  const [genderOptions, setGenderOptions] = useState<FilterOption[]>([
+  const genderOptions = useMemo(() => [
     { id: '男', label: '男' },
     { id: '女', label: '女' },
-  ]);
+  ], []);
   const [ethnicityOptions, setEthnicityOptions] = useState<FilterOption[]>([]);
   const [nativePlaceOptions, setNativePlaceOptions] = useState<FilterOption[]>([]);
   const [doctorOptions, setDoctorOptions] = useState<FilterOption[]>([]);
@@ -468,7 +476,6 @@ const PatientListPage: React.FC = () => {
         const latestAdmissionTimestamp = Number(item.latestAdmissionTimestamp || 0);
 
         const {
-          cardStatus: derivedCardStatus,
           careStatus: derivedCareStatus,
           diffDays,
         } = mapPatientStatus(latestAdmissionTimestamp);
@@ -736,158 +743,364 @@ const PatientListPage: React.FC = () => {
     );
   };
 
-  // 渲染单个患者卡片
+  // 渲染单个患者卡片 - 现代化设计
   const renderPatientCard = (row: TableRow) => {
-    const borderColor = row.cardStatus === 'success' ? '#10b981' : row.cardStatus === 'warning' ? '#f59e0b' : '#e5e7eb';
     const isSelected = selected.has(row.key);
+    const statusColors = {
+      success: { bg: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', border: '#10b981', text: '#065f46' },
+      warning: { bg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', border: '#f59e0b', text: '#92400e' },
+      default: { bg: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', border: '#d1d5db', text: '#374151' }
+    };
+
+    const cardColor = statusColors[row.cardStatus];
 
     return (
       <div
         key={row.key}
+        className="patient-card-modern"
         style={{
           background: 'white',
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 12,
-          border: `2px solid ${isSelected ? '#2563eb' : borderColor}`,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          borderRadius: 16,
+          padding: 0,
+          marginBottom: 0,
+          border: `2px solid ${isSelected ? '#2563eb' : cardColor.border}`,
+          boxShadow: isSelected
+            ? '0 8px 32px rgba(37, 99, 235, 0.2), 0 0 0 1px rgba(37, 99, 235, 0.1)'
+            : '0 4px 16px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)',
           cursor: 'pointer',
-          transition: 'all 0.2s',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          overflow: 'hidden',
+          position: 'relative',
+          height: '100%',
         }}
         onClick={() => navigate(`/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-6px) scale(1.02)';
+          e.currentTarget.style.boxShadow = isSelected
+            ? '0 20px 50px rgba(37, 99, 235, 0.25), 0 0 0 1px rgba(37, 99, 235, 0.15)'
+            : '0 12px 40px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.8)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = isSelected
+            ? '0 12px 40px rgba(37, 99, 235, 0.2), 0 0 0 1px rgba(37, 99, 235, 0.1)'
+            : '0 4px 20px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)';
+        }}
       >
-        {/* 头部 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 18, fontWeight: 600, color: '#1f2937' }}>
-                {row.patientName || '-'}
-              </span>
-              <span style={{ fontSize: 14, color: '#6b7280' }}>
-                {row.gender} · {row.ageText}
-              </span>
+        {/* 顶部状态条 */}
+        <div
+          style={{
+            height: 4,
+            background: cardColor.bg,
+            width: '100%',
+          }}
+        />
+
+        {/* 卡片主体 */}
+        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* 头部区域 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* 姓名和基本信息 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${row.gender === '男' ? '#dbeafe' : '#fce7f3'} 0%, ${row.gender === '男' ? '#bfdbfe' : '#fbcfe8'} 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: row.gender === '男' ? '#1e40af' : '#be185d',
+                  boxShadow: `0 2px 8px ${row.gender === '男' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.2)'}`,
+                  border: `2px solid ${row.gender === '男' ? '#93c5fd' : '#fbcfe8'}`,
+                }}>
+                  {row.patientName ? row.patientName.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: '#1f2937',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {row.patientName || '未知住户'}
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 13,
+                    color: '#6b7280',
+                    marginTop: 2
+                  }}>
+                    <span>{row.gender || '-'}</span>
+                    <span>•</span>
+                    <span>{row.ageText || '-'}</span>
+                    {row.nativePlace && (
+                      <>
+                        <span>•</span>
+                        <span style={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: 100
+                        }}>
+                          📍 {row.nativePlace}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 状态徽章 */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {row.badges.map((badge, idx) => {
+                  const isStatusBadge = badge.text === '在住' || badge.text === '待入住' || badge.text === '已离开';
+                  const badgeColors = {
+                    success: { bg: '#d1fae5', color: '#065f46' },
+                    warning: { bg: '#fef3c7', color: '#92400e' },
+                    danger: { bg: '#fee2e2', color: '#991b1b' },
+                    info: { bg: '#dbeafe', color: '#1e40af' },
+                    primary: { bg: '#dbeafe', color: '#1e40af' },
+                    secondary: { bg: '#f3f4f6', color: '#374151' },
+                    default: { bg: '#f3f4f6', color: '#374151' }
+                  };
+
+                  const badgeColor = badgeColors[badge.type] || badgeColors.default;
+                  const onClick = (e: React.MouseEvent) => {
+                    if (!isStatusBadge) return;
+                    e.stopPropagation();
+                    setStatusTargetKey(row.patientKey || row.recordKey || '');
+                    const next = (badge.text === '在住' ? 'in_care' : badge.text === '待入住' ? 'pending' : 'discharged') as 'in_care' | 'pending' | 'discharged';
+                    setStatusForm({ value: next, note: '' });
+                    setStatusDialogVisible(true);
+                  };
+
+                  return (
+                    <span
+                      key={idx}
+                      onClick={onClick}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '4px 10px',
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        backgroundColor: badgeColor.bg,
+                        color: badgeColor.color,
+                        border: `1px solid ${badgeColor.bg}`,
+                        cursor: isStatusBadge ? 'pointer' : 'default',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isStatusBadge) {
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      title={isStatusBadge ? '点击调整状态' : undefined}
+                    >
+                      {isStatusBadge && (
+                        <span style={{ marginRight: 4, fontSize: 8 }}>●</span>
+                      )}
+                      {badge.text}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
-            {/* 徽章 */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {row.badges.map((badge, idx) => {
-                const isStatusBadge = badge.text === '在住' || badge.text === '待入住' || badge.text === '已离开';
-                const onClick = (e: React.MouseEvent) => {
-                  if (!isStatusBadge) return;
+
+            {/* 选择框 */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              marginLeft: 12
+            }}>
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => {
                   e.stopPropagation();
-                  setStatusTargetKey(row.patientKey || row.recordKey || '');
-                  const next = (badge.text === '在住' ? 'in_care' : badge.text === '待入住' ? 'pending' : 'discharged') as 'in_care' | 'pending' | 'discharged';
-                  setStatusForm({ value: next, note: '' });
-                  setStatusDialogVisible(true);
-                };
-                return (
+                  toggleSelect(row.key);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 20,
+                  height: 20,
+                  cursor: 'pointer',
+                  accentColor: '#2563eb'
+                }}
+              />
+              {row.riskLevel === 'high' && (
+                <div style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: '#ef4444',
+                  animation: 'pulse 2s infinite',
+                }} title="需复查"/>
+              )}
+            </div>
+          </div>
+
+          {/* 最新事件 - 信息卡片 */}
+          <div style={{
+            marginBottom: 12,
+            padding: 12,
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 3, fontWeight: 500 }}>
+              最近就诊
+            </div>
+            <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.4 }}>
+              {row.latestEvent || '暂无就诊记录'}
+            </div>
+          </div>
+
+          {/* 标签区域 */}
+          {row.tags && row.tags.length > 0 && (
+            <div style={{ marginBottom: 12, marginTop: 'auto' }}>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4, fontWeight: 500 }}>
+                相关信息
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {row.tags.slice(0, 2).map((tag, idx) => (
                   <span
                     key={idx}
-                    onClick={onClick}
                     style={{
-                    display: 'inline-block',
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    backgroundColor:
-                      badge.type === 'success' ? '#d1fae5' :
-                      badge.type === 'warning' ? '#fef3c7' :
-                      badge.type === 'danger' ? '#fee2e2' :
-                      badge.type === 'info' ? '#dbeafe' :
-                      badge.type === 'primary' ? '#dbeafe' :
-                      '#f3f4f6',
-                    color:
-                      badge.type === 'success' ? '#065f46' :
-                      badge.type === 'warning' ? '#92400e' :
-                      badge.type === 'danger' ? '#991b1b' :
-                      badge.type === 'info' ? '#1e40af' :
-                      badge.type === 'primary' ? '#1e40af' :
-                      '#374151',
-                     cursor: isStatusBadge ? 'pointer' : 'default',
-                  }}
-                  title={isStatusBadge ? '点击调整状态' : undefined}
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '4px 8px',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      backgroundColor: '#f8fafc',
+                      color: '#475569',
+                      border: '1px solid #e2e8f0',
+                    }}
                   >
-                    {badge.text}
+                    {tag.includes('医院') && <span style={{ marginRight: 3, fontSize: 10 }}>🏥</span>}
+                    {tag.includes('医生') && <span style={{ marginRight: 3, fontSize: 10 }}>👨‍⚕️</span>}
+                    {tag.includes('Excel') && <span style={{ marginRight: 3, fontSize: 10 }}>📊</span>}
+                    {tag}
                   </span>
-                );
-              })}
-            </div>
-          </div>
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => {
-              e.stopPropagation();
-              toggleSelect(row.key);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: 18, height: 18, cursor: 'pointer' }}
-          />
-        </div>
-
-        {/* 最新事件 */}
-        <div style={{ marginBottom: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 }}>
-          <div style={{ fontSize: 14, color: '#4b5563' }}>{row.latestEvent}</div>
-        </div>
-
-        {/* 标签 */}
-        {row.tags && row.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-            {row.tags.map((tag, idx) => (
-              <span
-                key={idx}
-                style={{
-                  display: 'inline-block',
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  backgroundColor: '#f3f4f6',
-                  color: '#6b7280',
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* 快速信息 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
-          {row.nativePlace && (
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              📍 {row.nativePlace}
+                ))}
+                {row.tags.length > 2 && (
+                  <span style={{
+                    padding: '4px 6px',
+                    fontSize: 10,
+                    color: '#64748b',
+                    fontStyle: 'italic'
+                  }}>
+                    +{row.tags.length - 2} 更多
+                  </span>
+                )}
+              </div>
             </div>
           )}
-          {row.latestHospital && (
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              🏥 {row.latestHospital}
-            </div>
-          )}
-        </div>
 
-        {/* 操作按钮 */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
-          <button
-            className="link-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`);
-            }}
-            style={{ flex: 1, padding: '6px 12px', fontSize: 14 }}
-          >
-            查看详情
-          </button>
-          <button
-            className="danger-button"
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteSingle(row.patientKey || row.recordKey || '');
-            }}
-            style={{ padding: '6px 12px', fontSize: 14 }}
-          >
-            删除
-          </button>
+          {/* 操作区域 */}
+          <div className="patient-card-actions" style={{
+            display: 'flex',
+            gap: 8,
+            paddingTop: 12,
+            borderTop: '1px solid #f1f5f9',
+            backgroundColor: '#fafbfc',
+            margin: -18,
+            padding: '12px 18px',
+            flexWrap: 'nowrap',
+            minWidth: 0,
+            marginTop: 'auto',
+          }}>
+            <button
+              className="modern-btn primary-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`);
+              }}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                padding: '8px 12px',
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <span style={{ fontSize: 12 }}>📋</span>
+              查看详情
+            </button>
+            <button
+              className="modern-btn danger-btn"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteSingle(row.patientKey || row.recordKey || '');
+              }}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                padding: '8px 12px',
+                background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <span style={{ fontSize: 12 }}>🗑️</span>
+              删除
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -912,82 +1125,335 @@ const PatientListPage: React.FC = () => {
 
   return (
     <div className="card">
-      {/* 统计卡片 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
+      {/* 现代化统计卡片 */}
+      <div className="stats-grid-modern" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: 20,
+        marginBottom: 24
+      }}>
         <div
           onClick={() => handleStatFilterClick('all')}
+          className="stat-card-modern"
           style={{
-            padding: 16,
-            borderRadius: 8,
-            border: `2px solid ${activeStatFilter === 'all' ? '#2563eb' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'all' ? '#eff6ff' : 'white',
+            padding: 20,
+            borderRadius: 16,
+            border: `2px solid ${activeStatFilter === 'all' ? '#3b82f6' : '#e5e7eb'}`,
+            background: activeStatFilter === 'all'
+              ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             cursor: 'pointer',
-            transition: 'all 0.2s',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: activeStatFilter === 'all'
+              ? '0 8px 32px rgba(59, 130, 246, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.1)'
+              : '0 2px 12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)',
+            transform: activeStatFilter === 'all' ? 'scale(1.02)' : 'scale(1)',
+          }}
+          onMouseEnter={(e) => {
+            if (activeStatFilter !== 'all') {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(15, 23, 42, 0.12)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeStatFilter !== 'all') {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+            }
           }}
         >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>全部住户</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#1f2937' }}>{statsData.total}</div>
+          <div style={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: activeStatFilter === 'all'
+              ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(148, 163, 184, 0.05) 100%)',
+            transition: 'all 0.3s',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{
+              fontSize: 28,
+              marginBottom: 8,
+              lineHeight: 1,
+              filter: activeStatFilter === 'all' ? 'brightness(0) invert(1)' : 'none',
+            }}>👥</div>
+            <div style={{
+              fontSize: 13,
+              color: activeStatFilter === 'all' ? 'rgba(255, 255, 255, 0.9)' : '#64748b',
+              marginBottom: 6,
+              fontWeight: 500,
+              letterSpacing: '0.5px'
+            }}>全部住户</div>
+            <div style={{
+              fontSize: 36,
+              fontWeight: 700,
+              color: activeStatFilter === 'all' ? '#ffffff' : '#1e293b',
+              lineHeight: 1,
+              textShadow: activeStatFilter === 'all' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+            }}>{statsData.total}</div>
+          </div>
         </div>
 
         <div
           onClick={() => handleStatFilterClick('in_care')}
+          className="stat-card-modern"
           style={{
-            padding: 16,
-            borderRadius: 8,
+            padding: 20,
+            borderRadius: 16,
             border: `2px solid ${activeStatFilter === 'in_care' ? '#10b981' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'in_care' ? '#ecfdf5' : 'white',
+            background: activeStatFilter === 'in_care'
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             cursor: 'pointer',
-            transition: 'all 0.2s',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: activeStatFilter === 'in_care'
+              ? '0 8px 32px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.1)'
+              : '0 2px 12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)',
+            transform: activeStatFilter === 'in_care' ? 'scale(1.02)' : 'scale(1)',
+          }}
+          onMouseEnter={(e) => {
+            if (activeStatFilter !== 'in_care') {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(15, 23, 42, 0.12)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeStatFilter !== 'in_care') {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+            }
           }}
         >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>在住</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#10b981' }}>{statsData.inCare}</div>
+          <div style={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: activeStatFilter === 'in_care'
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(148, 163, 184, 0.05) 100%)',
+            transition: 'all 0.3s',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{
+              fontSize: 28,
+              marginBottom: 8,
+              lineHeight: 1,
+              filter: activeStatFilter === 'in_care' ? 'brightness(0) invert(1)' : 'none',
+            }}>🏠</div>
+            <div style={{
+              fontSize: 13,
+              color: activeStatFilter === 'in_care' ? 'rgba(255, 255, 255, 0.9)' : '#64748b',
+              marginBottom: 6,
+              fontWeight: 500,
+              letterSpacing: '0.5px'
+            }}>在住</div>
+            <div style={{
+              fontSize: 36,
+              fontWeight: 700,
+              color: activeStatFilter === 'in_care' ? '#ffffff' : '#1e293b',
+              lineHeight: 1,
+              textShadow: activeStatFilter === 'in_care' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+            }}>{statsData.inCare}</div>
+          </div>
         </div>
 
         <div
           onClick={() => handleStatFilterClick('pending')}
+          className="stat-card-modern"
           style={{
-            padding: 16,
-            borderRadius: 8,
+            padding: 20,
+            borderRadius: 16,
             border: `2px solid ${activeStatFilter === 'pending' ? '#f59e0b' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'pending' ? '#fffbeb' : 'white',
+            background: activeStatFilter === 'pending'
+              ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             cursor: 'pointer',
-            transition: 'all 0.2s',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: activeStatFilter === 'pending'
+              ? '0 8px 32px rgba(245, 158, 11, 0.25), 0 0 0 1px rgba(245, 158, 11, 0.1)'
+              : '0 2px 12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)',
+            transform: activeStatFilter === 'pending' ? 'scale(1.02)' : 'scale(1)',
+          }}
+          onMouseEnter={(e) => {
+            if (activeStatFilter !== 'pending') {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(15, 23, 42, 0.12)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeStatFilter !== 'pending') {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+            }
           }}
         >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>待入住</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#f59e0b' }}>{statsData.pending}</div>
+          <div style={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: activeStatFilter === 'pending'
+              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(148, 163, 184, 0.05) 100%)',
+            transition: 'all 0.3s',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{
+              fontSize: 28,
+              marginBottom: 8,
+              lineHeight: 1,
+              filter: activeStatFilter === 'pending' ? 'brightness(0) invert(1)' : 'none',
+            }}>⏳</div>
+            <div style={{
+              fontSize: 13,
+              color: activeStatFilter === 'pending' ? 'rgba(255, 255, 255, 0.9)' : '#64748b',
+              marginBottom: 6,
+              fontWeight: 500,
+              letterSpacing: '0.5px'
+            }}>待入住</div>
+            <div style={{
+              fontSize: 36,
+              fontWeight: 700,
+              color: activeStatFilter === 'pending' ? '#ffffff' : '#1e293b',
+              lineHeight: 1,
+              textShadow: activeStatFilter === 'pending' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+            }}>{statsData.pending}</div>
+          </div>
         </div>
 
         <div
           onClick={() => handleStatFilterClick('discharged')}
+          className="stat-card-modern"
           style={{
-            padding: 16,
-            borderRadius: 8,
+            padding: 20,
+            borderRadius: 16,
             border: `2px solid ${activeStatFilter === 'discharged' ? '#6b7280' : '#e5e7eb'}`,
-            backgroundColor: activeStatFilter === 'discharged' ? '#f9fafb' : 'white',
+            background: activeStatFilter === 'discharged'
+              ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             cursor: 'pointer',
-            transition: 'all 0.2s',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: activeStatFilter === 'discharged'
+              ? '0 8px 32px rgba(107, 114, 128, 0.25), 0 0 0 1px rgba(107, 114, 128, 0.1)'
+              : '0 2px 12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)',
+            transform: activeStatFilter === 'discharged' ? 'scale(1.02)' : 'scale(1)',
+          }}
+          onMouseEnter={(e) => {
+            if (activeStatFilter !== 'discharged') {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(15, 23, 42, 0.12)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeStatFilter !== 'discharged') {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+            }
           }}
         >
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>已退住</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#6b7280' }}>{statsData.discharged}</div>
+          <div style={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: activeStatFilter === 'discharged'
+              ? 'linear-gradient(135deg, rgba(107, 114, 128, 0.1) 0%, rgba(107, 114, 128, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(148, 163, 184, 0.05) 100%)',
+            transition: 'all 0.3s',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{
+              fontSize: 28,
+              marginBottom: 8,
+              lineHeight: 1,
+              filter: activeStatFilter === 'discharged' ? 'brightness(0) invert(1)' : 'none',
+            }}>🏃</div>
+            <div style={{
+              fontSize: 13,
+              color: activeStatFilter === 'discharged' ? 'rgba(255, 255, 255, 0.9)' : '#64748b',
+              marginBottom: 6,
+              fontWeight: 500,
+              letterSpacing: '0.5px'
+            }}>已退住</div>
+            <div style={{
+              fontSize: 36,
+              fontWeight: 700,
+              color: activeStatFilter === 'discharged' ? '#ffffff' : '#1e293b',
+              lineHeight: 1,
+              textShadow: activeStatFilter === 'discharged' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+            }}>{statsData.discharged}</div>
+          </div>
         </div>
       </div>
 
-      {/* 搜索和筛选工具栏 */}
-      <div className="toolbar" style={{ alignItems: 'flex-start' }}>
-        <div className="flex-row" style={{ flexWrap: 'wrap', gap: 12, flex: 1 }}>
-          {/* 搜索框 */}
-          <div style={{ position: 'relative', minWidth: 280 }}>
+      {/* 现代化搜索和筛选工具栏 */}
+      <div style={{
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+        border: '1px solid #e2e8f0',
+      }}>
+        {/* 搜索区域 */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="patient-list-search" style={{ position: 'relative', maxWidth: 500 }}>
+            <div style={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              fontSize: 18,
+              color: '#64748b',
+              pointerEvents: 'none',
+            }}>
+              🔍
+            </div>
             <input
               type="search"
-              placeholder="搜索姓名 / 证件号 / 电话 / 医院 / 诊断"
+              placeholder="搜索姓名 / 证件号 / 电话 / 医院 / 诊断..."
               value={keyword}
               onChange={event => setKeyword(event.target.value)}
               onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+              style={{
+                width: '100%',
+                padding: '14px 16px 14px 48px',
+                borderRadius: 12,
+                border: `2px solid ${keyword.trim() ? '#3b82f6' : '#e2e8f0'}`,
+                fontSize: 15,
+                background: 'white',
+                transition: 'all 0.2s',
+                boxShadow: keyword.trim() ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#3b82f6';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+              }}
+              onBlur={(e) => {
+                if (!keyword.trim()) {
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
             />
             {/* 搜索建议下拉框 */}
             {showSuggestions && searchSuggestions.length > 0 && (
@@ -997,14 +1463,14 @@ const PatientListPage: React.FC = () => {
                   top: '100%',
                   left: 0,
                   right: 0,
-                  marginTop: 4,
+                  marginTop: 8,
                   backgroundColor: 'white',
-                  border: '1px solid #d1d5db',
-                  borderRadius: 6,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  maxHeight: 240,
+                  border: '2px solid #e2e8f0',
+                  borderRadius: 12,
+                  boxShadow: '0 10px 25px rgba(15, 23, 42, 0.1)',
+                  maxHeight: 280,
                   overflowY: 'auto',
-                  zIndex: 10,
+                  zIndex: 20,
                 }}
               >
                 {searchSuggestions.map((suggestion, index) => (
@@ -1012,62 +1478,201 @@ const PatientListPage: React.FC = () => {
                     key={index}
                     onClick={() => handleSuggestionClick(suggestion)}
                     style={{
-                      padding: '8px 12px',
+                      padding: '12px 16px',
                       cursor: 'pointer',
-                      borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
+                      borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f1f5f9' : 'none',
+                      transition: 'all 0.2s',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      e.currentTarget.style.backgroundColor = '#f8fafc';
+                      e.currentTarget.style.paddingLeft = '20px';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.paddingLeft = '16px';
                     }}
                   >
-                    {suggestion}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14, color: '#64748b' }}>🔍</span>
+                      <span style={{ fontSize: 14, color: '#1e293b' }}>{suggestion}</span>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-
-          {/* 高级筛选按钮 */}
-          <button
-            className={hasActiveFilters ? 'primary-button' : 'secondary-button'}
-            type="button"
-            onClick={handleToggleAdvancedFilter}
-          >
-            高级筛选 {hasActiveFilters && `(已启用)`}
-          </button>
-
-          <button className="secondary-button" type="button" onClick={resetFilters}>
-            重置筛选
-          </button>
-
-          {/* 视图切换按钮 */}
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            {viewMode === 'card' ? '📋 表格视图' : '🎴 卡片视图'}
-          </button>
         </div>
 
-        <div className="flex-row" style={{ flexWrap: 'wrap', gap: 12 }}>
-          <button className="secondary-button" type="button" onClick={() => loadPatients()} disabled={loading}>
-            {loading ? '刷新中...' : '刷新列表'}
-          </button>
-          {/* Excel 导入功能已移除 */}
-          <button className="secondary-button" type="button" onClick={handleExportSelected}>
-            导出选中
-          </button>
-          <button className="secondary-button" type="button" onClick={handleBulkDelete} disabled={selected.size === 0}>
-            删除选中
-          </button>
-          <button className="primary-button" type="button" onClick={() => navigate('/patients/new')}>
-            新增住户
-          </button>
+        {/* 操作按钮区域 */}
+        <div className="patient-list-toolbar" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 12,
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+          }}>
+            {/* 高级筛选按钮 */}
+            <button
+              className={hasActiveFilters ? 'primary-button' : 'secondary-button'}
+              type="button"
+              onClick={handleToggleAdvancedFilter}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <span>🎯</span>
+              高级筛选
+              {hasActiveFilters && (
+                <span style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: 18,
+                  height: 18,
+                  fontSize: 11,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 600,
+                }}>✓</span>
+              )}
+            </button>
+
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={resetFilters}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <span>🔄</span>
+              重置筛选
+            </button>
+
+            {/* 视图切换按钮 */}
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <span>{viewMode === 'card' ? '📋' : '🎴'}</span>
+              {viewMode === 'card' ? '表格视图' : '卡片视图'}
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+          }}>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => loadPatients()}
+              disabled={loading}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <span>{loading ? '⏳' : '🔄'}</span>
+              {loading ? '刷新中...' : '刷新列表'}
+            </button>
+
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleExportSelected}
+              disabled={selected.size === 0}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+                opacity: selected.size === 0 ? 0.5 : 1,
+                cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <span>📤</span>
+              导出选中 {selected.size > 0 && `(${selected.size})`}
+            </button>
+
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={selected.size === 0}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+                opacity: selected.size === 0 ? 0.5 : 1,
+                cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <span>🗑️</span>
+              删除选中 {selected.size > 0 && `(${selected.size})`}
+            </button>
+
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => navigate('/patients/new')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <span>➕</span>
+              新增住户
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1075,9 +1680,9 @@ const PatientListPage: React.FC = () => {
 
       {/* 筛选摘要 */}
       {hasActiveFilters && (
-        <div style={{ marginBottom: 12, padding: 8, backgroundColor: '#eff6ff', borderRadius: 6, fontSize: 14 }}>
-          <span style={{ color: '#2563eb', fontWeight: 500 }}>筛选条件：</span>
-          <span style={{ color: '#1f2937' }}>{summarizeFiltersForScheme(advancedFilters)}</span>
+        <div className="patient-list-filter-summary" style={{ marginBottom: 12, padding: 10, backgroundColor: '#eff6ff', borderRadius: 8, fontSize: 14, border: '1px solid #bfdbfe' }}>
+          <span style={{ color: '#2563eb', fontWeight: 500 }}>🎯 筛选条件：</span>
+          <span style={{ color: '#1f2937', marginLeft: 6 }}>{summarizeFiltersForScheme(advancedFilters)}</span>
         </div>
       )}
 
@@ -1093,26 +1698,144 @@ const PatientListPage: React.FC = () => {
 
       {/* 骨架屏加载状态 */}
       {loading && rows.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[0, 1, 2, 3, 4].map((i) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
+              className="skeleton-card"
               style={{
-                background: 'white',
-                borderRadius: 12,
-                padding: 16,
-                border: '1px solid #e5e7eb',
-                animation: 'pulse 1.5s ease-in-out infinite',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: 20,
+                padding: 0,
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.08)',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 100, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
-                <div style={{ width: 60, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
-              </div>
-              <div style={{ width: '80%', height: 16, backgroundColor: '#f3f4f6', borderRadius: 4, marginBottom: 8 }} />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <div style={{ width: 80, height: 24, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
-                <div style={{ width: 80, height: 24, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
+              {/* 骨架屏顶部状态条 */}
+              <div style={{
+                height: 4,
+                background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 1.5s ease-in-out infinite',
+              }} />
+
+              <div style={{ padding: 24 }}>
+                {/* 头部骨架 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                      backgroundSize: '200% 100%',
+                      animation: 'shimmer 1.5s ease-in-out infinite',
+                    }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        width: '60%',
+                        height: 20,
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: 6,
+                        marginBottom: 8,
+                        background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 1.5s ease-in-out infinite',
+                      }} />
+                      <div style={{
+                        width: '40%',
+                        height: 16,
+                        backgroundColor: '#f1f5f9',
+                        borderRadius: 4,
+                        background: 'linear-gradient(90deg, #f1f5f9 0%, #f8fafc 50%, #f1f5f9 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 1.5s ease-in-out infinite',
+                      }} />
+                    </div>
+                  </div>
+                  <div style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    backgroundColor: '#e2e8f0',
+                    background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                </div>
+
+                {/* 内容骨架 */}
+                <div style={{
+                  marginBottom: 20,
+                  padding: 14,
+                  backgroundColor: '#f8fafc',
+                  borderRadius: 10,
+                }}>
+                  <div style={{
+                    width: '80%',
+                    height: 14,
+                    backgroundColor: '#e2e8f0',
+                    borderRadius: 4,
+                    marginBottom: 6,
+                    background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                  <div style={{
+                    width: '60%',
+                    height: 14,
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: 4,
+                    background: 'linear-gradient(90deg, #f1f5f9 0%, #f8fafc 50%, #f1f5f9 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                </div>
+
+                {/* 标签骨架 */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                  <div style={{
+                    width: 60,
+                    height: 24,
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: 12,
+                    background: 'linear-gradient(90deg, #f1f5f9 0%, #f8fafc 50%, #f1f5f9 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                  <div style={{
+                    width: 80,
+                    height: 24,
+                    backgroundColor: '#e2e8f0',
+                    borderRadius: 12,
+                    background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                </div>
+
+                {/* 操作按钮骨架 */}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{
+                    flex: 1,
+                    height: 40,
+                    backgroundColor: '#e2e8f0',
+                    borderRadius: 8,
+                    background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                  <div style={{
+                    width: 100,
+                    height: 40,
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: 8,
+                    background: 'linear-gradient(90deg, #f1f5f9 0%, #f8fafc 50%, #f1f5f9 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s ease-in-out infinite',
+                  }} />
+                </div>
               </div>
             </div>
           ))}
@@ -1121,48 +1844,135 @@ const PatientListPage: React.FC = () => {
         // 智能空状态
         <div style={{
           textAlign: 'center',
-          padding: 60,
-          background: 'white',
-          borderRadius: 12,
-          border: '1px solid #e5e7eb'
+          padding: 80,
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: 20,
+          border: '2px solid #e2e8f0',
+          boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)',
         }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>
+          <div style={{
+            fontSize: 64,
+            marginBottom: 24,
+            animation: 'bounce 2s infinite',
+          }}>
             {debouncedKeyword ? '🔍' : hasActiveFilters ? '🔎' : '📋'}
           </div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#1f2937', marginBottom: 8 }}>
+          <div style={{
+            fontSize: 24,
+            fontWeight: 700,
+            color: '#1e293b',
+            marginBottom: 12,
+            letterSpacing: '0.5px'
+          }}>
             {debouncedKeyword ? '未找到匹配的住户' : hasActiveFilters ? '无符合条件的住户' : '暂无住户档案'}
           </div>
-          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
+          <div style={{
+            fontSize: 16,
+            color: '#64748b',
+            marginBottom: 32,
+            lineHeight: 1.6,
+            maxWidth: 400,
+            margin: '0 auto 32px'
+          }}>
             {debouncedKeyword
-              ? `没有找到与"${debouncedKeyword}"相关的住户`
+              ? `没有找到与"${debouncedKeyword}"相关的住户，请尝试其他搜索词`
               : hasActiveFilters
               ? '当前筛选条件过于严格，请尝试调整筛选条件'
               : activeStatFilter !== 'all'
-              ? '当前分类没有住户'
-              : '点击右上角按钮添加第一位住户'}
+              ? '当前分类没有住户，请选择其他分类或添加新住户'
+              : '开始添加第一位住户，建立完整的档案管理系统'}
           </div>
           {(debouncedKeyword || hasActiveFilters) && (
             <button
               className="secondary-button"
               onClick={resetFilters}
-              style={{ marginTop: 8 }}
+              style={{
+                padding: '12px 24px',
+                fontSize: 15,
+                fontWeight: 500,
+                borderRadius: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8
+              }}
             >
+              <span>🔄</span>
               {debouncedKeyword ? '清除搜索' : '清除筛选'}
+            </button>
+          )}
+          {!debouncedKeyword && !hasActiveFilters && activeStatFilter === 'all' && (
+            <button
+              className="primary-button"
+              onClick={() => navigate('/patients/new')}
+              style={{
+                padding: '12px 32px',
+                fontSize: 15,
+                fontWeight: 500,
+                borderRadius: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <span>➕</span>
+              添加第一位住户
             </button>
           )}
         </div>
       ) : viewMode === 'card' ? (
-        // 卡片视图
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        // 网格卡片视图
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+          gap: 20,
+          padding: '4px 0'
+        }}>
           {rows.map(row => renderPatientCard(row))}
         </div>
       ) : (
-        // 表格视图
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
+        // 现代化表格视图
+        <div style={{
+          overflowX: 'auto',
+          background: 'white',
+          borderRadius: 16,
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.5)',
+        }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'separate',
+            borderSpacing: 0,
+            fontSize: 14,
+          }}>
             <thead>
-              <tr>
-                <th style={{ width: 50, textAlign: 'center' }}>
+              <tr style={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                borderBottom: '2px solid #e2e8f0',
+              }}>
+                <th style={{
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  borderRight: '1px solid #e2e8f0',
+                  width: 50,
+                }}>
                   <input
                     type="checkbox"
                     checked={selected.size > 0 && selected.size === rows.length}
@@ -1173,70 +1983,389 @@ const PatientListPage: React.FC = () => {
                         setSelected(new Set());
                       }
                     }}
-                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      cursor: 'pointer',
+                      accentColor: '#3b82f6',
+                    }}
                   />
                 </th>
-                <th style={{ minWidth: 120 }}>姓名</th>
-                <th style={{ width: 60, textAlign: 'center' }}>性别</th>
-                <th style={{ width: 80 }}>年龄</th>
-                <th style={{ minWidth: 120 }}>籍贯</th>
-                <th style={{ width: 100 }}>状态</th>
-                <th style={{ minWidth: 160 }}>就诊医院</th>
-                <th style={{ width: 100, textAlign: 'center' }}>入住次数</th>
-                <th style={{ width: 180, textAlign: 'center' }}>操作</th>
+                <th style={{
+                  padding: '16px 12px',
+                  textAlign: 'left',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  borderRight: '1px solid #e2e8f0',
+                  minWidth: 280,
+                }}>住户信息</th>
+                <th style={{
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  borderRight: '1px solid #e2e8f0',
+                  width: 120,
+                }}>状态</th>
+                <th style={{
+                  padding: '16px 12px',
+                  textAlign: 'left',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  borderRight: '1px solid #e2e8f0',
+                  minWidth: 180,
+                }}>就诊医院</th>
+                <th style={{
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  borderRight: '1px solid #e2e8f0',
+                  width: 120,
+                }}>入住次数</th>
+                <th style={{
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  width: 180,
+                }}>操作</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(row => (
-                <tr key={row.key}>
-                  <td style={{ textAlign: 'center' }}>
+              {rows.map((row, index) => (
+                <tr
+                  key={row.key}
+                  style={{
+                    borderBottom: '1px solid #f1f5f9',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    backgroundColor: index % 2 === 0 ? 'white' : '#fafbfc',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                    e.currentTarget.style.transform = 'scale(1.005)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.08)';
+                    e.currentTarget.style.zIndex = '10';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafbfc';
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.zIndex = '1';
+                  }}
+                >
+                  <td style={{
+                    padding: '16px 12px',
+                    textAlign: 'center',
+                    borderRight: '1px solid #f1f5f9',
+                  }}>
                     <input
                       type="checkbox"
                       checked={selected.has(row.key)}
                       onChange={() => toggleSelect(row.key)}
-                      style={{ width: 16, height: 16, cursor: 'pointer' }}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        cursor: 'pointer',
+                        accentColor: '#3b82f6',
+                      }}
                     />
                   </td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: '#1f2937' }}>
-                      {row.patientName || '-'}
+                  <td style={{
+                    padding: '16px 12px',
+                    borderRight: '1px solid #f1f5f9',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}>
+                      <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${row.gender === '男' ? '#dbeafe' : '#fce7f3'} 0%, ${row.gender === '男' ? '#bfdbfe' : '#fbcfe8'} 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: row.gender === '男' ? '#1e40af' : '#be185d',
+                        boxShadow: `0 2px 8px ${row.gender === '男' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.2)'}`,
+                        border: `2px solid ${row.gender === '男' ? '#93c5fd' : '#fbcfe8'}`,
+                      }}>
+                        {row.patientName ? row.patientName.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          fontWeight: 600,
+                          color: '#1e293b',
+                          fontSize: 15,
+                          marginBottom: 2,
+                        }}>
+                          {row.patientName || '未知住户'}
+                        </div>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: 13,
+                          color: '#64748b',
+                        }}>
+                          <span>{row.gender || '-'}</span>
+                          <span>•</span>
+                          <span>{row.ageText || '-'}</span>
+                          {row.nativePlace && (
+                            <>
+                              <span>•</span>
+                              <span style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: 100
+                              }}>
+                                📍 {row.nativePlace}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {row.riskLevel === 'high' && (
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            marginTop: 4,
+                            padding: '2px 6px',
+                            backgroundColor: '#fee2e2',
+                            color: '#dc2626',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 500,
+                          }}>
+                            <span style={{ fontSize: 8 }}>●</span>
+                            需复查
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
-                  <td style={{ textAlign: 'center', color: '#6b7280' }}>
-                    {row.gender || '-'}
+                  <td style={{
+                    padding: '16px 12px',
+                    borderRight: '1px solid #f1f5f9',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {statusLabel(row)}
+                      {/* 状态徽章 */}
+                      {row.badges.slice(0, 2).map((badge, idx) => {
+                        const isStatusBadge = badge.text === '在住' || badge.text === '待入住' || badge.text === '已离开';
+                        if (isStatusBadge) return null;
+                        const badgeColors = {
+                          success: { bg: '#d1fae5', color: '#065f46' },
+                          warning: { bg: '#fef3c7', color: '#92400e' },
+                          danger: { bg: '#fee2e2', color: '#991b1b' },
+                          info: { bg: '#dbeafe', color: '#1e40af' },
+                          primary: { bg: '#dbeafe', color: '#1e40af' },
+                          secondary: { bg: '#f3f4f6', color: '#374151' },
+                          default: { bg: '#f3f4f6', color: '#374151' }
+                        };
+                        const badgeColor = badgeColors[badge.type] || badgeColors.default;
+                        return (
+                          <span
+                            key={idx}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              fontSize: 11,
+                              fontWeight: 500,
+                              backgroundColor: badgeColor.bg,
+                              color: badgeColor.color,
+                              border: `1px solid ${badgeColor.bg}`,
+                            }}
+                          >
+                            {badge.text}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </td>
-                  <td style={{ color: '#6b7280' }}>
-                    {row.ageText}
+                  <td style={{
+                    padding: '16px 12px',
+                    borderRight: '1px solid #f1f5f9',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 12,
+                      }}>
+                        🏥
+                      </div>
+                      <div>
+                        <div style={{
+                          fontWeight: 500,
+                          color: '#1e293b',
+                          fontSize: 14,
+                          marginBottom: 2,
+                        }}>
+                          {row.latestHospital || '未知医院'}
+                        </div>
+                        <div style={{
+                          fontSize: 12,
+                          color: '#64748b',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: 120,
+                        }}>
+                          {row.latestDiagnosis || '暂无诊断'}
+                        </div>
+                      </div>
+                    </div>
                   </td>
-                  <td style={{ color: '#6b7280' }}>
-                    {row.nativePlace || row.address || '-'}
+                  <td style={{
+                    padding: '16px 12px',
+                    textAlign: 'center',
+                    borderRight: '1px solid #f1f5f9',
+                  }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      border: '1px solid #e2e8f0',
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: '#1e293b',
+                      }}>
+                        <span>🏠</span>
+                        {row.admissionCount ?? '0'}
+                      </div>
+                      <div style={{
+                        fontSize: 11,
+                        color: '#64748b',
+                        fontWeight: 500,
+                      }}>
+                        入住次数
+                      </div>
+                    </div>
                   </td>
-                  <td>{statusLabel(row)}</td>
-                  <td style={{ color: '#6b7280' }}>
-                    {row.latestHospital || '-'}
-                  </td>
-                  <td style={{ textAlign: 'center', fontWeight: 600, color: '#1f2937' }}>
-                    {row.admissionCount ?? '-'}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                  <td style={{
+                    padding: '16px 12px',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      gap: 8,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexWrap: 'nowrap',
+                      minWidth: 0,
+                    }}>
                       <button
-                        className="link-button"
+                        className="modern-btn table-btn-primary"
                         onClick={() =>
                           navigate(
                             `/patients/${encodeURIComponent(row.patientKey || row.recordKey || '')}`
                           )
                         }
-                        style={{ fontSize: 14, padding: '6px 12px' }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '8px 12px',
+                          background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                          color: '#1e40af',
+                          border: '1px solid #93c5fd',
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          whiteSpace: 'nowrap',
+                          minWidth: 80,
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       >
+                        <span>📋</span>
                         查看
                       </button>
                       <button
-                        className="danger-button"
+                        className="modern-btn table-btn-danger"
                         type="button"
                         onClick={() => handleDeleteSingle(row.patientKey || row.recordKey || '')}
-                        style={{ fontSize: 14, padding: '6px 12px' }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '8px 12px',
+                          background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca',
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          whiteSpace: 'nowrap',
+                          minWidth: 80,
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(220, 38, 38, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       >
+                        <span>🗑️</span>
                         删除
                       </button>
                     </div>
@@ -1263,6 +2392,7 @@ const PatientListPage: React.FC = () => {
           onClick={() => !statusDialogSubmitting && setStatusDialogVisible(false)}
         >
           <div
+            className="patient-list-dialog"
             style={{
               backgroundColor: 'white',
               borderRadius: 12,

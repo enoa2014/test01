@@ -974,6 +974,80 @@ button {
   }
 }
 
+/* 骨架屏闪烁动画 */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* 弹跳动画 */
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40%, 43% {
+    transform: translateY(-10px);
+  }
+  70% {
+    transform: translateY(-5px);
+  }
+  90% {
+    transform: translateY(-2px);
+  }
+}
+
+/* 加载状态动画 */
+.skeleton-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 患者卡片进入动画 */
+.patient-card-modern {
+  animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 统计卡片动画 */
+.stat-card-modern {
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* 状态徽章 - 黄色状态 */
 .status-pill.yellow {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
@@ -981,49 +1055,342 @@ button {
   border: 1px solid #f59e0b;
 }
 
-/* 响应式设计 - 平板和移动设备 */
+/* 现代化患者列表响应式设计 */
+@media (max-width: 1200px) {
+  .patient-card-modern {
+    margin-bottom: 16px;
+  }
+
+  .stat-card-modern {
+    min-width: 200px;
+  }
+}
+
 @media (max-width: 768px) {
   .app-content {
-    padding: 16px;
+    padding: 12px;
   }
 
   .card {
-    padding: 20px;
-    border-radius: 10px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
   }
 
   h1 {
-    font-size: 24px !important;
+    font-size: 22px !important;
   }
 
   h2 {
-    font-size: 20px !important;
+    font-size: 18px !important;
   }
 
   h3 {
     font-size: 16px !important;
   }
 
-  /* 状态卡片在移动端堆叠 */
-  .grid-two {
-    grid-template-columns: 1fr;
+  /* 统计卡片在移动端堆叠为2x2网格 */
+  .stats-grid-modern {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
   }
 
-  /* 表格在移动端优化 */
-  .table {
+  .stat-card-modern {
+    min-width: 100%;
+    padding: 16px !important;
+    transform: scale(1) !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 36"] {
+    font-size: 28px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 28"] {
+    font-size: 24px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 13"] {
+    font-size: 11px !important;
+  }
+
+  /* 患者卡片响应式 */
+  .patient-card-modern {
+    border-radius: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .patient-card-modern div[style*="padding: 24"] {
+    padding: 18px !important;
+  }
+
+  .patient-card-modern div[style*="width: 48"] {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 16px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 18"] {
+    font-size: 16px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 14"] {
+    font-size: 13px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 13"] {
+    font-size: 12px !important;
+  }
+
+  /* 搜索框响应式 */
+  .patient-list-search {
+    max-width: 100% !important;
+  }
+
+  .patient-list-search input {
+    padding: 16px 16px 16px 48px !important;
+    font-size: 16px !important;
+  }
+
+  /* 工具栏按钮响应式 */
+  .patient-list-toolbar {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .patient-list-toolbar > div {
+    flex-direction: column;
+    gap: 10px !important;
+  }
+
+  .patient-list-toolbar button {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+  }
+
+  .patient-list-toolbar button span {
+    font-size: 16px !important;
+  }
+
+  /* 筛选摘要响应式 */
+  .patient-list-filter-summary {
+    font-size: 13px;
+    padding: 12px 16px;
+  }
+
+  /* 空状态响应式 */
+  div[style*="padding: 80"] {
+    padding: 40px 20px !important;
+  }
+
+  div[style*="fontSize: 64"] {
+    font-size: 48px !important;
+  }
+
+  div[style*="fontSize: 24"] {
+    font-size: 20px !important;
+  }
+
+  div[style*="fontSize: 16"] {
+    font-size: 14px !important;
+  }
+
+  /* 骨架屏响应式 */
+  .skeleton-card {
+    margin-bottom: 16px;
+  }
+
+  .skeleton-card div[style*="padding: 24"] {
+    padding: 18px !important;
+  }
+
+  /* 对话框响应式 */
+  .patient-list-dialog {
+    width: 95% !important;
+    max-width: none !important;
+    margin: 10px;
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 8px 12px;
     font-size: 14px;
   }
 
-  .table th,
-  .table td {
-    padding: 12px 8px;
+  .app-content {
+    padding: 8px;
   }
 
-  /* 按钮在移动端调整 */
-  .primary-button,
-  .secondary-button {
+  .card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* 统计卡片在超小屏幕堆叠为单列 */
+  .stats-grid-modern {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stat-card-modern {
+    padding: 14px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 36"] {
+    font-size: 24px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 28"] {
+    font-size: 20px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 13"] {
+    font-size: 10px !important;
+  }
+
+  /* 患者卡片超小屏幕优化 */
+  .patient-card-modern {
+    border-radius: 14px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .patient-card-modern div[style*="padding: 24"] {
+    padding: 16px !important;
+  }
+
+  .patient-card-modern div[style*="width: 48"] {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 18"] {
+    font-size: 15px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 14"] {
+    font-size: 12px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 13"] {
+    font-size: 11px !important;
+  }
+
+  .patient-card-modern div[style*="fontSize: 10"] {
+    font-size: 9px !important;
+  }
+
+  /* 搜索框超小屏幕优化 */
+  .patient-list-search input {
+    padding: 14px 14px 14px 44px !important;
+    font-size: 15px !important;
+  }
+
+  .patient-list-search div[style*="left: 16"] {
+    left: 14px !important;
+    font-size: 18px !important;
+  }
+
+  /* 工具栏按钮超小屏幕优化 */
+  .patient-list-toolbar button {
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+  }
+
+  .patient-list-toolbar button span {
+    font-size: 15px !important;
+  }
+
+  /* 筛选摘要超小屏幕优化 */
+  .patient-list-filter-summary {
+    font-size: 12px;
     padding: 10px 14px;
-    font-size: 14px;
+  }
+
+  /* 空状态超小屏幕优化 */
+  div[style*="padding: 80"] {
+    padding: 30px 15px !important;
+  }
+
+  div[style*="fontSize: 64"] {
+    font-size: 40px !important;
+  }
+
+  div[style*="fontSize: 24"] {
+    font-size: 18px !important;
+  }
+
+  div[style*="fontSize: 16"] {
+    font-size: 13px !important;
+  }
+
+  /* 骨架屏超小屏幕优化 */
+  .skeleton-card div[style*="padding: 24"] {
+    padding: 16px !important;
+  }
+
+  .skeleton-card div[style*="width: 48"] {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .skeleton-card div[style*="height: 40"] {
+    height: 36px !important;
+  }
+}
+
+/* 横向优化 - 适用于横屏平板 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .stats-grid-modern {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .stat-card-modern {
+    padding: 12px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 36"] {
+    font-size: 22px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 28"] {
+    font-size: 18px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 13"] {
+    font-size: 10px !important;
+  }
+}
+
+/* 高度优化 - 适用于小高度设备 */
+@media (max-height: 600px) {
+  .stat-card-modern {
+    padding: 12px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 36"] {
+    font-size: 20px !important;
+  }
+
+  .stat-card-modern div[style*="fontSize: 28"] {
+    font-size: 16px !important;
+  }
+
+  .patient-card-modern div[style*="padding: 24"] {
+    padding: 16px !important;
+  }
+
+  .patient-card-modern div[style*="marginBottom: 20"] {
+    margin-bottom: 12px !important;
+  }
+
+  .patient-card-modern div[style*="marginBottom: 16"] {
+    margin-bottom: 12px !important;
   }
 }
 
