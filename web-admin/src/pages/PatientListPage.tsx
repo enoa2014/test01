@@ -27,6 +27,13 @@ const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
 const SUGGEST_DEBOUNCE_TIME = 300; // 搜索建议防抖时间
 const MAX_SUGGESTIONS = 8; // 最大建议数量
 
+// 列表页状态选项（与详情页保持一致）
+const STATUS_OPTIONS = [
+  { id: 'in_care', label: '在住' },
+  { id: 'pending', label: '待入住' },
+  { id: 'discharged', label: '已离开' },
+];
+
 type Badge = {
   text: string;
   type: 'success' | 'warning' | 'danger' | 'secondary' | 'info' | 'primary' | 'default';
@@ -221,6 +228,12 @@ const PatientListPage: React.FC = () => {
   const [statsData, setStatsData] = useState<StatsData>({ total: 0, inCare: 0, pending: 0, discharged: 0 });
   const [activeStatFilter, setActiveStatFilter] = useState<'all' | 'in_care' | 'pending' | 'discharged'>('all');
 
+  // 状态调整对话框
+  const [statusDialogVisible, setStatusDialogVisible] = useState(false);
+  const [statusDialogSubmitting, setStatusDialogSubmitting] = useState(false);
+  const [statusForm, setStatusForm] = useState<{ value: 'in_care' | 'pending' | 'discharged' | '' ; note: string }>({ value: '', note: '' });
+  const [statusTargetKey, setStatusTargetKey] = useState<string>('');
+
   // 视图模式（默认表格视图）
   const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
 
@@ -359,6 +372,58 @@ const PatientListPage: React.FC = () => {
     setNativePlaceOptions(Array.from(nativePlaceSet).map(id => ({ id, label: id })));
     setDoctorOptions(Array.from(doctorSet).map(id => ({ id, label: id })));
   }, []);
+
+  // 确认状态调整（列表页）
+  const handleConfirmStatusChange = useCallback(async () => {
+    if (!app) {
+      setError('CloudBase 未初始化');
+      return;
+    }
+    if (!statusTargetKey || !statusForm.value) {
+      setError('请选择状态');
+      return;
+    }
+    setStatusDialogSubmitting(true);
+    setError(null);
+    try {
+      const res = await app.callFunction({
+        name: 'patientIntake',
+        data: {
+          action: 'updateCareStatus',
+          patientKey: statusTargetKey,
+          status: statusForm.value,
+          note: statusForm.note,
+        },
+      });
+      const result = res.result as { success?: boolean; error?: { message?: string } };
+      if (!result || result.success === false) {
+        throw new Error(result?.error?.message || '更新失败');
+      }
+      const nextPatients = patients.map(r => {
+        const matched = r.key === statusTargetKey || r.patientKey === statusTargetKey || r.recordKey === statusTargetKey;
+        if (!matched) return r;
+        const careStatus = statusForm.value as 'in_care' | 'pending' | 'discharged';
+        const cardStatus = deriveCardStatus(careStatus);
+        const admissionCount = Number(r.admissionCount || 0);
+        const badges = generatePatientBadges({
+          careStatus,
+          riskLevel: identifyRiskLevel(r.diffDaysSinceLatestAdmission),
+          admissionCount,
+        });
+        return { ...r, careStatus, cardStatus, badges };
+      });
+      setPatients(nextPatients);
+      const nextDisplay = applyFilters(nextPatients);
+      setDisplayPatients(nextDisplay);
+      setStatsData(calculateStats(nextPatients));
+      setMessage('状态已更新');
+      setStatusDialogVisible(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新失败');
+    } finally {
+      setStatusDialogSubmitting(false);
+    }
+  }, [app, statusTargetKey, statusForm.value, statusForm.note, patients, applyFilters, calculateStats]);
 
   const loadPatients = useCallback(async (silent = false) => {
     if (!app) {
@@ -643,13 +708,32 @@ const PatientListPage: React.FC = () => {
   // 状态标签渲染
   const statusLabel = (row: TableRow) => {
     const careStatus = row.careStatus || (row.checkoutAt ? 'discharged' : 'in_care');
+    const open = (e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      setStatusTargetKey(row.patientKey || row.recordKey || '');
+      const next: any = careStatus || 'pending';
+      setStatusForm({ value: next, note: '' });
+      setStatusDialogVisible(true);
+    };
     if (careStatus === 'discharged') {
-      return <span className="status-pill gray">已退住</span>;
+      return (
+        <span className="status-pill gray" onClick={open} style={{ cursor: 'pointer' }} title="点击调整状态">
+          已退住
+        </span>
+      );
     }
     if (careStatus === 'pending') {
-      return <span className="status-pill yellow">待入住</span>;
+      return (
+        <span className="status-pill yellow" onClick={open} style={{ cursor: 'pointer' }} title="点击调整状态">
+          待入住
+        </span>
+      );
     }
-    return <span className="status-pill green">在住</span>;
+    return (
+      <span className="status-pill green" onClick={open} style={{ cursor: 'pointer' }} title="点击调整状态">
+        在住
+      </span>
+    );
   };
 
   // 渲染单个患者卡片
@@ -685,10 +769,21 @@ const PatientListPage: React.FC = () => {
             </div>
             {/* 徽章 */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {row.badges.map((badge, idx) => (
-                <span
-                  key={idx}
-                  style={{
+              {row.badges.map((badge, idx) => {
+                const isStatusBadge = badge.text === '在住' || badge.text === '待入住' || badge.text === '已离开';
+                const onClick = (e: React.MouseEvent) => {
+                  if (!isStatusBadge) return;
+                  e.stopPropagation();
+                  setStatusTargetKey(row.patientKey || row.recordKey || '');
+                  const next = (badge.text === '在住' ? 'in_care' : badge.text === '待入住' ? 'pending' : 'discharged') as 'in_care' | 'pending' | 'discharged';
+                  setStatusForm({ value: next, note: '' });
+                  setStatusDialogVisible(true);
+                };
+                return (
+                  <span
+                    key={idx}
+                    onClick={onClick}
+                    style={{
                     display: 'inline-block',
                     padding: '2px 8px',
                     borderRadius: 4,
@@ -708,11 +803,14 @@ const PatientListPage: React.FC = () => {
                       badge.type === 'info' ? '#1e40af' :
                       badge.type === 'primary' ? '#1e40af' :
                       '#374151',
+                     cursor: isStatusBadge ? 'pointer' : 'default',
                   }}
-                >
-                  {badge.text}
-                </span>
-              ))}
+                  title={isStatusBadge ? '点击调整状态' : undefined}
+                  >
+                    {badge.text}
+                  </span>
+                );
+              })}
             </div>
           </div>
           <input
@@ -1156,6 +1254,94 @@ const PatientListPage: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 状态调整对话框 */}
+      {statusDialogVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => !statusDialogSubmitting && setStatusDialogVisible(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 500,
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600 }}>调整状态</h3>
+            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 12 }}>
+              选择新的住户状态，便于列表展示一致。
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+              {STATUS_OPTIONS.map((option) => (
+                <div
+                  key={option.id}
+                  onClick={() => !statusDialogSubmitting && setStatusForm({ ...statusForm, value: option.id as any })}
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    border: `2px solid ${statusForm.value === (option.id as any) ? '#3b82f6' : '#e5e7eb'}`,
+                    backgroundColor: statusForm.value === (option.id as any) ? '#eff6ff' : 'white',
+                    cursor: statusDialogSubmitting ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>{statusForm.value === (option.id as any) ? '●' : '○'}</span>
+                    <span style={{ fontWeight: 500, fontSize: 14 }}>{option.label}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4, marginLeft: 24 }}>
+                    {option.id === 'in_care' && '用于正在小家入住的住户'}
+                    {option.id === 'pending' && '待入住房、随访等状态'}
+                    {option.id === 'discharged' && '已办理离开或转出'}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+                备注（可选）
+              </label>
+              <textarea
+                value={statusForm.note}
+                onChange={(e) => setStatusForm({ ...statusForm, note: e.target.value })}
+                disabled={statusDialogSubmitting}
+                placeholder="可选，说明状态调整原因"
+                maxLength={120}
+                style={{
+                  width: '100%',
+                  minHeight: 80,
+                  padding: 8,
+                  border: '1px solid #d1d5db',
+                  borderRadius: 6,
+                  fontSize: 14,
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button className="secondary-button" onClick={() => setStatusDialogVisible(false)} disabled={statusDialogSubmitting}>
+                取消
+              </button>
+              <button className="primary-button" onClick={handleConfirmStatusChange} disabled={statusDialogSubmitting}>
+                {statusDialogSubmitting ? '处理中...' : '确认调整'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
