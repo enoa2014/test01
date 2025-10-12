@@ -41,7 +41,7 @@ test.describe('Web Admin - Business Flow', () => {
     await page.getByText('已离开', { exact: true }).click();
     await page.getByRole('button', { name: '确认调整' }).click();
 
-    // 验证“李四”卡片中出现“已离开”
-    await expect(liSiCard.getByText('已离开', { exact: true })).toBeVisible();
+    // 验证行内状态 pill 变为“已退住”（表格文案）
+    await expect(rowLiSi.locator('.status-pill.gray')).toHaveText('已退住');
   });
 });
