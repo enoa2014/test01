@@ -265,7 +265,13 @@ function decorateStatCards(stats: AnalysisStat[]): AnalysisStat[] {
 
   return stats.map(stat => {
     if (!stat) {
-      return stat;
+      return {
+        label: '',
+        count: 0,
+        patients: [],
+        variant: 'default',
+        status: 'default',
+      };
     }
 
     const decorated = { ...stat };

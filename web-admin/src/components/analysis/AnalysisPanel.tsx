@@ -138,49 +138,55 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
   const renderStatCards = () => (
     <div className="stats-scroll">
-      {panel.stats.map((stat, statIndex) => (
-        <div
-          key={stat.label}
-          className={`stat-card ${stat.variant || 'default'} ${stat.status || 'default'}`}
-          onClick={() => handleStatClick(statIndex)}
-        >
-          <div className="stat-label">{stat.label}</div>
-          <div className="stat-count">
-            <span className="stat-figure">{stat.count}</span>
-            <span className="stat-unit">人</span>
+      {panel.stats.map((stat, statIndex) => {
+        if (!stat) return null;
+        return (
+          <div
+            key={stat.label || `stat-${statIndex}`}
+            className={`stat-card ${stat.variant || 'default'} ${stat.status || 'default'}`}
+            onClick={() => handleStatClick(statIndex)}
+          >
+            <div className="stat-label">{stat.label}</div>
+            <div className="stat-count">
+              <span className="stat-figure">{stat.count}</span>
+              <span className="stat-unit">人</span>
+            </div>
+            {stat.sampleNames && (
+              <div className="stat-samples">{stat.sampleNames}</div>
+            )}
           </div>
-          {stat.sampleNames && (
-            <div className="stat-samples">{stat.sampleNames}</div>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const renderStatBars = () => (
     <div className="stat-bars">
-      {panel.stats.map((stat, statIndex) => (
-        <div
-          key={stat.label}
-          className="stat-bar"
-          onClick={() => handleStatClick(statIndex)}
-        >
-          <div className="stat-bar-header">
-            <div className="stat-bar-label">{stat.label}</div>
-            <div className="stat-bar-value">{stat.count} 人</div>
+      {panel.stats.map((stat, statIndex) => {
+        if (!stat) return null;
+        return (
+          <div
+            key={stat.label || `stat-${statIndex}`}
+            className="stat-bar"
+            onClick={() => handleStatClick(statIndex)}
+          >
+            <div className="stat-bar-header">
+              <div className="stat-bar-label">{stat.label}</div>
+              <div className="stat-bar-value">{stat.count} 人</div>
+            </div>
+            <div className="stat-bar-track">
+              <div
+                className="stat-bar-fill"
+                style={{
+                  width: `${stat.percentage || 0}%`,
+                  backgroundColor: stat.color || '#1976d2'
+                }}
+              />
+            </div>
+            <div className="stat-bar-percent">{stat.percentageLabel || '0%'}</div>
           </div>
-          <div className="stat-bar-track">
-            <div
-              className="stat-bar-fill"
-              style={{
-                width: `${stat.percentage || 0}%`,
-                backgroundColor: stat.color || '#1976d2'
-              }}
-            />
-          </div>
-          <div className="stat-bar-percent">{stat.percentageLabel || '0%'}</div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -195,24 +201,27 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         />
       </div>
       <div className="pie-legend">
-        {panel.stats.map((stat, statIndex) => (
-          <div
-            key={stat.label}
-            className="pie-legend-item"
-            onClick={() => handleStatClick(statIndex)}
-          >
+        {panel.stats.map((stat, statIndex) => {
+          if (!stat) return null;
+          return (
             <div
-              className="pie-legend-dot"
-              style={{ backgroundColor: stat.color || '#1976d2' }}
-            />
-            <div className="pie-legend-copy">
-              <div className="pie-legend-label">{stat.label}</div>
-              <div className="pie-legend-meta">
-                {stat.count} 人 · {stat.percentageLabel || '0%'}
+              key={stat.label || `stat-${statIndex}`}
+              className="pie-legend-item"
+              onClick={() => handleStatClick(statIndex)}
+            >
+              <div
+                className="pie-legend-dot"
+                style={{ backgroundColor: stat.color || '#1976d2' }}
+              />
+              <div className="pie-legend-copy">
+                <div className="pie-legend-label">{stat.label}</div>
+                <div className="pie-legend-meta">
+                  {stat.count} 人 · {stat.percentageLabel || '0%'}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

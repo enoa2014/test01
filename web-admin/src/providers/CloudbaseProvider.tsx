@@ -28,16 +28,22 @@ if (!DEFAULTS.envId) {
 }
 
 export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // E2E 测试模式：通过 localStorage("E2E_BYPASS_LOGIN"=1) 启用
+  // E2E / 本地开发绕过：
+  // - 运行时：localStorage("E2E_BYPASS_LOGIN") === '1'
+  // - 编译时：VITE_E2E_BYPASS_LOGIN=1 | true
+  const ENV_BYPASS =
+    (import.meta as any)?.env?.VITE_E2E_BYPASS_LOGIN === '1' ||
+    String((import.meta as any)?.env?.VITE_E2E_BYPASS_LOGIN || '')?.toLowerCase() === 'true';
   const isE2ETestBypass =
-    typeof window !== 'undefined' &&
-    (() => {
-      try {
-        return window.localStorage.getItem('E2E_BYPASS_LOGIN') === '1';
-      } catch {
-        return false;
-      }
-    })();
+    ENV_BYPASS ||
+    (typeof window !== 'undefined' &&
+      (() => {
+        try {
+          return window.localStorage.getItem('E2E_BYPASS_LOGIN') === '1';
+        } catch {
+          return false;
+        }
+      })());
 
   // 提供一个极简的 stub CloudBase，覆盖 callFunction 与认证相关方法
   function createE2EStub() {
@@ -45,6 +51,7 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       users: [{ uid: 'e2e-uid', username: 'e2e-admin', role: 'admin' }],
       patients: [
         {
+          _id: 'p-001',
           patientKey: 'p-001',
           patientName: '张三',
           gender: '男',
@@ -56,6 +63,7 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           careStatus: 'in_care',
         },
         {
+          _id: 'p-002',
           patientKey: 'p-002',
           patientName: '李四',
           gender: '女',
@@ -67,6 +75,7 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           careStatus: 'pending',
         },
         {
+          _id: 'p-003',
           patientKey: 'p-003',
           patientName: '王五',
           gender: '男',
@@ -247,6 +256,28 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [app, initAuthForApp, tryReinitWithFallbackEnv]);
 
+  // 始终用服务端代理重写 callFunction，避免浏览器域名限制
+  const appWithProxy = useMemo<CloudBase | null>(() => {
+    if (!app) return null;
+    const original: any = app as any;
+    const proxy: any = Object.create(original);
+    proxy.callFunction = async ({ name, data }: any) => {
+      const resp = await fetch(`/api/func/${encodeURIComponent(name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data })
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || json?.error) {
+        const message = json?.error?.message || `调用云函数失败: ${name}`;
+        throw new Error(message);
+      }
+      // 对齐浏览器 SDK 返回结构
+      return { result: json };
+    };
+    return proxy as CloudBase;
+  }, [app]);
+
   const ensureAnonymousLogin = useCallback(async () => {
     if (!auth) {
       throw new Error('CloudBase auth not ready.');
@@ -380,8 +411,8 @@ export const CloudbaseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [auth]);
 
   const value = useMemo<CloudbaseContextValue>(
-    () => ({ app, auth, user, loading, login, logout, refreshLoginState }),
-    [app, auth, user, loading, login, logout, refreshLoginState]
+    () => ({ app: appWithProxy, auth, user, loading, login, logout, refreshLoginState }),
+    [appWithProxy, auth, user, loading, login, logout, refreshLoginState]
   );
 
   return <CloudbaseContext.Provider value={value}>{children}</CloudbaseContext.Provider>;

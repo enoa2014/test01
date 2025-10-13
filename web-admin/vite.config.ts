@@ -1,5 +1,106 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import type { Plugin } from 'vite';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import dotenv from 'dotenv';
+import tcb from 'tcb-admin-node';
+
+// Dev-only CloudBase server proxy implemented as a Vite middleware
+function cloudbaseProxy(): Plugin {
+  return {
+    name: 'cloudbase-dev-proxy',
+    configureServer(server) {
+      // Load parent .env (repo root) and local .env for credentials
+      const thisDir = path.dirname(fileURLToPath(new URL(import.meta.url)));
+      try { dotenv.config({ path: path.resolve(thisDir, '../.env') }); } catch {}
+      try { dotenv.config({ path: path.resolve(thisDir, '.env') }); } catch {}
+      try { dotenv.config({ path: path.resolve(thisDir, '.env.local') }); } catch {}
+
+      server.middlewares.use('/api/func', async (req, res, next) => {
+        if (!req.url) return next();
+        // Expected: /api/func/<name>
+        const parts = req.url.split('?')[0].split('/').filter(Boolean);
+        const name = parts[2]; // ['', 'api', 'func', '<name>'] -> index 2 is 'func', index 3 is name; but because base is '/api/func', here parts[0]='api', parts[1]='func', parts[2]=name
+        const fnName = parts[2] || parts[1];
+        if (!fnName) return next();
+
+        // Read JSON body
+        let body = '';
+        await new Promise<void>((resolve) => {
+          req.on('data', (chunk: any) => (body += chunk));
+          req.on('end', () => resolve());
+        });
+        let payload: any = {};
+        try { payload = body ? JSON.parse(body) : {}; } catch {}
+
+        const envId = process.env.VITE_TCB_ENV_ID || process.env.TCB_ENV || process.env.TCB_ENV_ID || process.env.CLOUDBASE_ENV_ID || '';
+        const secretId = process.env.TENCENTCLOUD_SECRETID || '';
+        const secretKey = process.env.TENCENTCLOUD_SECRETKEY || '';
+        try {
+          if (!envId || !secretId || !secretKey) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({
+              error: {
+                message: 'CloudBase 环境或凭证未配置 (envId/secretId/secretKey)'
+              }
+            }));
+            return;
+          }
+          const app = tcb.init({ env: envId, credentials: { secretId, secretKey } });
+          const cfRes = await app.callFunction({ name: fnName, data: payload?.data });
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify(cfRes?.result ?? cfRes ?? {}));
+        } catch (e: any) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: { message: e?.message || String(e) } }));
+        }
+      });
+
+      // Storage upload helper for E2E (dev only)
+      server.middlewares.use('/api/storage/upload', async (req, res, next) => {
+        let body = '';
+        await new Promise<void>((resolve) => {
+          req.on('data', (chunk: any) => (body += chunk));
+          req.on('end', () => resolve());
+        });
+        let payload: any = {};
+        try { payload = body ? JSON.parse(body) : {}; } catch {}
+
+        const envId = process.env.VITE_TCB_ENV_ID || process.env.TCB_ENV || process.env.TCB_ENV_ID || process.env.CLOUDBASE_ENV_ID || '';
+        const secretId = process.env.TENCENTCLOUD_SECRETID || '';
+        const secretKey = process.env.TENCENTCLOUD_SECRETKEY || '';
+        if (!envId || !secretId || !secretKey) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: { message: 'CloudBase 环境或凭证未配置 (envId/secretId/secretKey)' } }));
+          return;
+        }
+        try {
+          const app = tcb.init({ env: envId, credentials: { secretId, secretKey } });
+          const buffer = Buffer.from(String(payload.contentBase64 || ''), 'base64');
+          if (!payload.cloudPath || !buffer.length) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ error: { message: '缺少 cloudPath 或 contentBase64' } }));
+            return;
+          }
+          const uploadRes = await app.uploadFile({ cloudPath: payload.cloudPath, fileContent: buffer, contentType: payload.contentType || '' });
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ success: true, fileID: uploadRes.fileID, cloudPath: payload.cloudPath }));
+        } catch (e: any) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: { message: e?.message || String(e) } }));
+        }
+      });
+    }
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -10,10 +111,16 @@ export default defineConfig(({ mode }) => {
   const authFn = env.VITE_AUTH_FUNCTION_NAME || 'auth';
 
   return {
-    plugins: [react()],
+    plugins: [react(), cloudbaseProxy()],
     server: {
       host: env.VITE_HOST || '0.0.0.0',
-      port: Number(env.VITE_PORT || 5173)
+      port: Number(env.VITE_PORT || 5173),
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:4174',
+          changeOrigin: true,
+        }
+      }
     },
     // 以编译期常量注入，确保前端可读取到环境配置
     define: {

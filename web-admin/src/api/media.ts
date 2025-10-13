@@ -75,14 +75,34 @@ export async function uploadMedia(
     throw new Error(prepare?.error?.message || '无法准备上传');
   }
 
-  const uploadResult = await app.uploadFile({
-    cloudPath: prepare.data.storagePath,
-    filePath: file
+  // 通过服务端代理进行上传，避免浏览器端域名/签名限制
+  const toBase64 = (f: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('读取文件失败'));
+      reader.onload = () => {
+        const result = String(reader.result || '');
+        const base64 = result.startsWith('data:') ? result.split(',')[1] : result;
+        resolve(base64);
+      };
+      reader.readAsDataURL(f);
+    });
+
+  const contentBase64 = await toBase64(file);
+  const upResp = await fetch('/api/storage/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cloudPath: prepare.data.storagePath,
+      contentBase64,
+      contentType: file.type || prepare.data.mimeType || 'application/octet-stream'
+    })
   });
-  const fileId = uploadResult.fileID;
-  if (!fileId) {
-    throw new Error('云存储上传失败');
+  const upJson = await upResp.json().catch(() => ({}));
+  if (!upResp.ok || !upJson?.fileID) {
+    throw new Error(upJson?.error?.message || '云存储上传失败');
   }
+  const fileId = upJson.fileID;
 
   const completeRes = await app.callFunction({
     name: FUNCTION_NAME,
@@ -183,4 +203,3 @@ export async function getTxtPreview(
   }
   return result.data;
 }
-

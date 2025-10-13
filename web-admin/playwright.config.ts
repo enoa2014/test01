@@ -15,17 +15,17 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
-    baseURL: process.env.PW_BASE_URL || 'http://localhost:4173',
+    baseURL: process.env.PW_BASE_URL || 'http://localhost:5176',
     trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run build && npm run preview',
-    port: 4173,
-    reuseExistingServer: false,
+    command: 'npm run dev:all',
+    port: 5176,
+    reuseExistingServer: true,
     cwd: thisDir,
-    timeout: 120_000,
+    timeout: 180_000,
   },
   projects: [
     {

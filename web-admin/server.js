@@ -10,10 +10,10 @@ const isPkg = typeof process.pkg !== 'undefined';
 const baseDir = isPkg ? path.dirname(process.execPath) : __dirname;
 const distDir = path.join(baseDir, 'dist');
 
-if (!fs.existsSync(distDir)) {
-  console.error(`未找到静态资源目录: ${distDir}`);
-  console.error('请先运行 "npm run build"，并确保 dist 目录与可执行文件同级。');
-  process.exit(1);
+const hasDist = fs.existsSync(distDir);
+if (!hasDist) {
+  console.warn(`未找到静态资源目录: ${distDir}`);
+  console.warn('将仅提供 API 路由 /api/func/*，静态资源请使用 Vite 开发服务器。');
 }
 
 const serve = serveStatic(distDir, {
@@ -30,10 +30,16 @@ const basePort = Number(process.env.PORT || process.env.port || 4173) || 4173;
 
 function createServer() {
   return http.createServer((req, res) => {
-    serve(req, res, err => {
-      if (err) {
-        return finalhandler(req, res)(err);
-      }
+    // API: /api/func/<name> 统一服务端代理云函数
+    if (req.url && req.url.startsWith('/api/func/')) {
+      return handleApi(req, res);
+    }
+
+    if (hasDist) {
+      serve(req, res, err => {
+        if (err) {
+          return finalhandler(req, res)(err);
+        }
 
      if (
        req.method === 'GET' &&
@@ -50,9 +56,63 @@ function createServer() {
         return;
       }
 
+        finalhandler(req, res)();
+      });
+    } else {
+      // API-only mode without dist
       finalhandler(req, res)();
+    }
+  });
+}
+
+function parseBody(req) {
+  return new Promise(resolve => {
+    let body = '';
+    req.on('data', chunk => (body += chunk));
+    req.on('end', () => {
+      try { resolve(JSON.parse(body || '{}')); } catch { resolve({}); }
     });
   });
+}
+
+async function handleApi(req, res) {
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    const parts = url.pathname.split('/').filter(Boolean); // ['api','func','<name>']
+    const name = parts[2] || '';
+    if (!name) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(JSON.stringify({ error: { message: '缺少云函数名称' } }));
+      return;
+    }
+    const dotenv = require('dotenv');
+    const tcb = require('tcb-admin-node');
+    // 加载上级 .env 以及本地 .env
+    try { dotenv.config({ path: path.join(__dirname, '../.env') }); } catch {}
+    try { dotenv.config({ path: path.join(__dirname, '.env') }); } catch {}
+    try { dotenv.config({ path: path.join(__dirname, '.env.local') }); } catch {}
+
+    const envId = process.env.VITE_TCB_ENV_ID || process.env.TCB_ENV || process.env.TCB_ENV_ID || process.env.CLOUDBASE_ENV_ID || '';
+    const secretId = process.env.TENCENTCLOUD_SECRETID || '';
+    const secretKey = process.env.TENCENTCLOUD_SECRETKEY || '';
+    if (!envId || !secretId || !secretKey) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(JSON.stringify({ error: { message: 'CloudBase 环境或凭证未配置 (envId/secretId/secretKey)' } }));
+      return;
+    }
+    const app = tcb.init({ env: envId, credentials: { secretId, secretKey } });
+    const { data } = await parseBody(req);
+    const result = await app.callFunction({ name, data });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify(result?.result ?? result ?? {}));
+  } catch (e) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ error: { message: e && e.message ? e.message : String(e) } }));
+  }
 }
 
 function attemptListen(port, attemptsLeft) {
