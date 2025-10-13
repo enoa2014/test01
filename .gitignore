@@ -1,8 +1,33 @@
 # BMAD (local only)
+# Env files (keep examples tracked)
 .env
+.env.*
+!.env.example
+!.env.*.example
 
 # Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build artifacts (generic)
+dist/
+build/
+coverage/
+.nyc_output/
+.cache/
+.eslintcache
+.parcel-cache/
+.turbo/
+.vite/
 
 # WeChat Mini Program build artifacts
 miniprogram/miniprogram_npm/
@@ -10,8 +35,20 @@ cloudfunctions/*/node_modules/
 project.private.config.json
 project.private.config.json.bak
 
-# Ignore local AI helper artifacts
+# Playwright outputs
+**/playwright-report/
+**/test-results/
+
+# Web-admin packaging outputs
+web-admin/dist/
+web-admin/release-*/
+web-admin/*.zip
+web-admin/.env.local
+web-admin/server.cjs
+
+# Local AI helper artifacts
 .claude/
+.clauderc.json
 CLAUDE.md
 nul
 tcb-cli/
