@@ -54,3 +54,6 @@ nul
 tcb-cli/
 tcb-cli-2-7-8/
 tests/e2e/.cache/
+
+# Temp workspace
+.tmp/
