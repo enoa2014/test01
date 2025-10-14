@@ -1109,14 +1109,7 @@ async function handleSubmitIntake(event) {
         'data.updatedAt': now,
       };
 
-      if (normalizedVisitHospital) {
-        patientUpdateData.latestHospital = normalizedVisitHospital;
-        patientUpdateData['data.latestHospital'] = normalizedVisitHospital;
-      }
-      if (normalizedHospitalDiagnosis) {
-        patientUpdateData.latestDiagnosis = normalizedHospitalDiagnosis;
-        patientUpdateData['data.latestDiagnosis'] = normalizedHospitalDiagnosis;
-      }
+      // 按新规则：latestHospital/latestDiagnosis 仅由 Web 详情页手动维护，不在此处自动覆盖
       if (normalizedAttendingDoctor) {
         patientUpdateData.latestDoctor = normalizedAttendingDoctor;
         patientUpdateData['data.latestDoctor'] = normalizedAttendingDoctor;
@@ -1218,14 +1211,7 @@ async function handleSubmitIntake(event) {
           'data.firstAdmissionDate': normalizedFirstAdmissionDate,
           'data.updatedAt': now,
         };
-        if (normalizedVisitHospital) {
-          patientUpdateData.latestHospital = normalizedVisitHospital;
-          patientUpdateData['data.latestHospital'] = normalizedVisitHospital;
-        }
-        if (normalizedHospitalDiagnosis) {
-          patientUpdateData.latestDiagnosis = normalizedHospitalDiagnosis;
-          patientUpdateData['data.latestDiagnosis'] = normalizedHospitalDiagnosis;
-        }
+        // 按新规则：不在草稿转正时回写 latestHospital/latestDiagnosis，避免覆盖手动值
         if (normalizedAttendingDoctor) {
           patientUpdateData.latestDoctor = normalizedAttendingDoctor;
           patientUpdateData['data.latestDoctor'] = normalizedAttendingDoctor;
@@ -1493,6 +1479,11 @@ async function handleUpdatePatient(event = {}) {
       'guardianInfo',
       'guardianContactName',
       'guardianContactPhone',
+      // 手动维护的就诊相关字段（仅由 Web 详情页编辑）
+      'latestHospital',
+      'latestDiagnosis',
+      'confirmedDate',
+      'treatmentStage',
     ];
     const patientUpdateData = {};
     patientFields.forEach(field => {
@@ -1994,12 +1985,12 @@ async function handleUpdateIntakeRecord(event = {}) {
     },
   });
 
-  const resPayload = {
-    intakeId: targetIntakeId,
-    intakeTime:
-      (updates.intakeTime !== undefined ? updates.intakeTime : intakeRecord.intakeTime) || null,
-    checkoutAt: Number.isFinite(checkoutAtInput) ? checkoutAtInput : null,
-  };
+      const resPayload = {
+        intakeId: targetIntakeId,
+        intakeTime:
+          (updates.intakeTime !== undefined ? updates.intakeTime : intakeRecord.intakeTime) || null,
+        checkoutAt: Number.isFinite(checkoutAtInput) ? checkoutAtInput : null,
+      };
   if (summary && typeof summary === 'object') {
     resPayload.admissionCount = summary.count;
     resPayload.latestAdmissionDate = summary.latestTimestamp || null;

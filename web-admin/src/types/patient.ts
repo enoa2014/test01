@@ -15,6 +15,8 @@ export type PatientSummary = {
   contactCount?: number;
   latestHospital?: string;
   latestDiagnosis?: string;
+  confirmedDate?: string;
+  treatmentStage?: string;
   latestDoctor?: string;
   latestAdmissionDate?: string;
   latestAdmissionTimestamp?: number;
@@ -35,6 +37,10 @@ export type PatientDetail = {
     birthDate?: string;
     nativePlace?: string;
     ethnicity?: string;
+    latestHospital?: string;
+    latestDiagnosis?: string;
+    confirmedDate?: string;
+    treatmentStage?: string;
   };
   basicInfo?: Array<{ label: string; value: string }>;
   familyInfo?: Array<{ label: string; value: string }>;
@@ -102,4 +108,8 @@ export type PatientFormPayload = {
   checkoutAt?: string;
   checkoutReason?: string;
   checkoutNote?: string;
+  latestHospital?: string;
+  latestDiagnosis?: string;
+  confirmedDate?: string;
+  treatmentStage?: string;
 };

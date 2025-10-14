@@ -1034,11 +1034,7 @@ function pickRecordTimestamp(record) {
       updates.lastIntakeNarrative = command.remove();
     }
 
-    if (summary.latestHospital) {
-      updates.latestHospital = summary.latestHospital;
-    } else if (!hasRecords) {
-      updates.latestHospital = command.remove();
-    }
+    // 不自动覆盖 latestHospital：该字段改为仅由 Web 详情页手动维护
 
     if (summary.latestDoctor) {
       updates.latestDoctor = summary.latestDoctor;
@@ -1046,11 +1042,7 @@ function pickRecordTimestamp(record) {
       updates.latestDoctor = command.remove();
     }
 
-    if (summary.latestDiagnosis) {
-      updates.latestDiagnosis = summary.latestDiagnosis;
-    } else if (!hasRecords) {
-      updates.latestDiagnosis = command.remove();
-    }
+    // 不自动覆盖 latestDiagnosis：该字段改为仅由 Web 详情页手动维护
 
     if (summary.firstHospital) {
       updates.firstHospital = summary.firstHospital;

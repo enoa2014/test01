@@ -212,7 +212,7 @@ const PatientDetailPage: React.FC = () => {
           .map(({ label, value }) => ({ label, value: value == null ? '' : String(value) }))
           .filter(item => item.value);
 
-      const basicInfo = (profileResult && profileResult.basicInfo) && profileResult.basicInfo.length
+      let basicInfo = (profileResult && profileResult.basicInfo) && profileResult.basicInfo.length
         ? profileResult.basicInfo
         : buildInfoList([
             { label: '性别', value: mergedPatient.gender },
@@ -275,6 +275,22 @@ const PatientDetailPage: React.FC = () => {
         }
       }
 
+      // 基础信息中追加四个手动维护字段（纯手动，不做任何联动/自动生成）
+      {
+        const extraItems = [
+          { label: '就诊医院', value: mergedPatient.latestHospital || '' },
+          { label: '确诊疾病', value: mergedPatient.latestDiagnosis || '' },
+          { label: '确诊时间', value: mergedPatient.confirmedDate || '' },
+          { label: '目前治疗阶段', value: mergedPatient.treatmentStage || '' },
+        ];
+        const existingLabels = new Set((basicInfo || []).map((it: any) => (it && it.label) || ''));
+        const mergedList = [...(basicInfo || [])];
+        for (const item of extraItems) {
+          if (!existingLabels.has(item.label)) mergedList.push(item);
+        }
+        basicInfo = mergedList;
+      }
+
       const merged: PatientDetail = {
         patient: mergedPatient,
         basicInfo,
@@ -305,6 +321,11 @@ const PatientDetailPage: React.FC = () => {
         phone: patient.phone || '',
         nativePlace: patient.nativePlace || '',
         ethnicity: patient.ethnicity || '',
+        // 手动维护的就诊相关字段
+        latestHospital: (patient as any).latestHospital || '',
+        latestDiagnosis: (patient as any).latestDiagnosis || '',
+        confirmedDate: formatDateForInput((patient as any).confirmedDate as string),
+        treatmentStage: (patient as any).treatmentStage || '',
       };
     } else if (block === 'contact') {
       const tryLabels = (labels: string[]) => {

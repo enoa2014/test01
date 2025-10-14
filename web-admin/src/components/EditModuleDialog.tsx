@@ -76,6 +76,11 @@ const EditModuleDialog: React.FC<Props> = ({ visible, block, initialForm, onCanc
       <Field label="联系电话"><TextInput value={String(form.phone || '')} onChange={setField('phone')} /></Field>
       <Field label="籍贯"><TextInput value={String(form.nativePlace || '')} onChange={setField('nativePlace')} /></Field>
       <Field label="民族"><TextInput value={String(form.ethnicity || '')} onChange={setField('ethnicity')} /></Field>
+      {/* 手动维护的就诊相关字段（与基础信息同级，纯手动，无自动联动） */}
+      <Field label="就诊医院"><TextInput value={String(form.latestHospital || '')} onChange={setField('latestHospital')} /></Field>
+      <Field label="确诊疾病"><TextInput value={String(form.latestDiagnosis || '')} onChange={setField('latestDiagnosis')} /></Field>
+      <Field label="确诊时间"><TextInput type="date" value={String(form.confirmedDate || '')} onChange={setField('confirmedDate')} /></Field>
+      <Field label="目前治疗阶段"><TextInput value={String(form.treatmentStage || '')} onChange={setField('treatmentStage')} /></Field>
     </div>
   );
 
@@ -129,4 +134,3 @@ const EditModuleDialog: React.FC<Props> = ({ visible, block, initialForm, onCanc
 };
 
 export default EditModuleDialog;
-
