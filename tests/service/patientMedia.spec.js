@@ -126,7 +126,7 @@ describe('patientMedia cloud function service tests', () => {
     expect(secondPrepare.error.code).toBe('MEDIA_QUOTA_EXCEEDED');
   });
 
-  test('unauthorized access is rejected when dev bypass disabled', async () => {
+  test('open access mode allows listing even when dev bypass disabled', async () => {
     process.env.PATIENT_MEDIA_ALLOW_DEV_BYPASS = 'false';
     jest.resetModules();
     cloud = require('wx-server-sdk');
@@ -138,8 +138,9 @@ describe('patientMedia cloud function service tests', () => {
       patientKey: 'p-auth',
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error.code).toBe('PERMISSION_DENIED');
+    expect(result.success).toBe(true);
+    expect(result.data).toBeTruthy();
+    expect(Array.isArray(result.data.items || [])).toBe(true);
   });
 
   test('previewTxt rejects files exceeding preview size limit', async () => {

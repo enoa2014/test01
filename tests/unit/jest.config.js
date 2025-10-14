@@ -8,6 +8,9 @@ module.exports = {
   displayName: 'Unit Tests',
   testMatch: ['**/tests/unit/**/*.test.js', '**/miniprogram/**/*.test.js'],
   testPathIgnorePatterns: ['/node_modules/', '/miniprogram_npm/', '/tests/e2e/'],
+  // Avoid scanning backup folders accidentally created during dependency troubleshooting
+  modulePathIgnorePatterns: ['<rootDir>/node_modules.bak', '<rootDir>/node_modules.bak.*'],
+  watchPathIgnorePatterns: ['node_modules.bak', 'node_modules.bak.*'],
   collectCoverageFrom: [
     'miniprogram/**/*.js',
     'web-admin/src/**/*.ts',

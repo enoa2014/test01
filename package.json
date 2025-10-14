@@ -18,6 +18,7 @@
   "dependencies": {
     "@cloudbase/manager-node": "^4.6.3",
     "@cloudbase/node-sdk": "^2.10.0",
+    "lodash": "^4.17.21",
     "dotenv": "^17.2.2",
     "xlsx": "^0.18.5"
   },
@@ -100,6 +101,7 @@
     "test:e2e:web": "npm --prefix web-admin run test:e2e",
     "test:e2e:web:headed": "npm --prefix web-admin run test:e2e:headed",
     "test:e2e:web:ui": "npm --prefix web-admin run test:e2e:ui",
-    "e2e:web:report": "npm --prefix web-admin run e2e:report"
+    "e2e:web:report": "npm --prefix web-admin run e2e:report",
+    "devtools:chrome": "node scripts/start-chrome-cdp.js"
   }
 }

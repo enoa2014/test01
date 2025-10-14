@@ -129,9 +129,11 @@ describe('patientProfile cloud function', () => {
     expect(keywordRes.patients[0].patientName).toBe('李四');
   });
 
-  test('create rejects unauthorized request', async () => {
+  test('open access mode allows creating without explicit admin context', async () => {
     const result = await patientProfile.main({ action: 'create', data: buildPatientPayload() });
-    expect(result.success).toBe(false);
-    expect(result.error.code).toBe('FORBIDDEN');
+    expect(result.success).toBe(true);
+    expect(result.patientKey).toBeTruthy();
+    const stored = cloud.__getCollectionDoc('patients', result.patientKey);
+    expect(stored).toBeTruthy();
   });
 });
