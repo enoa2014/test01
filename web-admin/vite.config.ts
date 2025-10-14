@@ -18,11 +18,20 @@ function cloudbaseProxy(): Plugin {
       try { dotenv.config({ path: path.resolve(thisDir, '.env.local') }); } catch {}
 
       server.middlewares.use('/api/func', async (req, res, next) => {
-        if (!req.url) return next();
-        // Expected: /api/func/<name>
-        const parts = req.url.split('?')[0].split('/').filter(Boolean);
-        const name = parts[2]; // ['', 'api', 'func', '<name>'] -> index 2 is 'func', index 3 is name; but because base is '/api/func', here parts[0]='api', parts[1]='func', parts[2]=name
-        const fnName = parts[2] || parts[1];
+        // Be robust to Connect mounting behavior: when mounted at '/api/func',
+        // req.url is usually '/<name>' (without the mount prefix). Fallback to
+        // originalUrl when available.
+        const raw = (req as any).originalUrl || req.url || '';
+        // Prefer extracting after explicit prefix when present
+        let fnName = '';
+        const pref = '/api/func/';
+        if (raw.startsWith(pref)) {
+          fnName = raw.slice(pref.length).split('?')[0].split('/')[0];
+        } else {
+          const parts = raw.split('?')[0].split('/').filter(Boolean);
+          // Mounted form gives ['<name>']; unmounted would be ['api','func','<name>']
+          fnName = parts[0] || parts[2] || parts[1] || '';
+        }
         if (!fnName) return next();
 
         // Read JSON body
@@ -115,12 +124,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: env.VITE_HOST || '0.0.0.0',
       port: Number(env.VITE_PORT || 5173),
-      proxy: {
-        '/api': {
-          target: 'http://127.0.0.1:4174',
-          changeOrigin: true,
-        }
-      }
+      // No generic '/api' proxy in dev: we implement /api/* locally above.
     },
     // 以编译期常量注入，确保前端可读取到环境配置
     define: {
