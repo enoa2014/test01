@@ -1,36 +1,26 @@
 #!/usr/bin/env node
 const path = require('path');
-const { spawnSync } = require('child_process');
 const fs = require('fs/promises');
-const { createStyleHandler } = require('@weapp-tailwindcss/postcss');
+const postcss = require('postcss');
+const tailwindcss = require('tailwindcss');
 
 async function runTailwind(inputPath, tempOutputPath, configPath, cwd) {
-  const args = ['@tailwindcss/cli', '-i', inputPath, '-o', tempOutputPath, '--config', configPath, '--minify'];
-  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const result = spawnSync(command, args, {
-    cwd,
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      NODE_ENV: process.env.NODE_ENV || 'development',
-      TAILWIND_DISABLE_WATCHER: '1',
-    },
+  const css = await fs.readFile(inputPath, 'utf8');
+  const config = require(configPath);
+  const result = await postcss([tailwindcss(config)]).process(css, {
+    from: inputPath,
+    to: tempOutputPath,
+    map: false,
   });
-  if (result.status !== 0) {
-    throw new Error(`Tailwind 构建失败，退出码 ${result.status}`);
-  }
+  await fs.writeFile(tempOutputPath, result.css, 'utf8');
 }
 
 async function transformToWxss(rawCssPath, wxssOutputPath) {
-  const styleHandler = createStyleHandler({ platform: 'wechat' });
-  const cssSource = await fs.readFile(rawCssPath, 'utf8');
-  const result = await styleHandler(cssSource, {
-    cssSelectorReplacement: {
-      root: 'page',
-      universal: ['view', 'text'],
-    },
-  });
-  await fs.writeFile(wxssOutputPath, result.css, 'utf8');
+  // 轻量转换：多数 Tailwind 工具类是类选择器，WXSS 可直接使用
+  // 这里仅做极简替换以适配根选择器
+  let cssSource = await fs.readFile(rawCssPath, 'utf8');
+  cssSource = cssSource.replace(/:root/g, 'page');
+  await fs.writeFile(wxssOutputPath, cssSource, 'utf8');
 }
 
 async function main() {

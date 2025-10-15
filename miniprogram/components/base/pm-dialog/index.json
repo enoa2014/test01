@@ -1,6 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "pm-button": "/components/base/pm-button/index"
-  }
-}
