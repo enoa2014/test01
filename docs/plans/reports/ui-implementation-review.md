@@ -2,7 +2,7 @@
 
 > **检查时间**: 2025-10-02
 > **参考文档**: `ui-refactor-index-v2.md`
-> **检查范围**: `miniprogram/pages/index/`
+> **检查范围**: `wx-project/pages/index/`
 
 ---
 

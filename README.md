@@ -10,8 +10,10 @@
 
 ## 目录结构
 
+说明：原 `miniprogram/` 目录已迁移为 `wx-project/`，相关脚本与文档路径已按新目录名对齐。
+
 ```
-miniprogram/           # 小程序前端代码
+wx-project/           # 小程序前端代码
   app.js
   app.json
   app.wxss
@@ -52,7 +54,7 @@ tests/
 
 - `npm run tokens:generate`：根据 `design-tokens.json` 生成小程序可用的样式令牌文件。
 - `npm run sync-config`：根据 `.env` 同步 `project.config.json` 及环境配置文件。
-- `npm run fix-encoding`：遍历 `miniprogram/` 和 `cloudfunctions/`，将 JSON/WXML/WXSS/JS 文件统一写成 UTF-8 无 BOM。
+- `npm run fix-encoding`：遍历 `wx-project/` 和 `cloudfunctions/`，将 JSON/WXML/WXSS/JS 文件统一写成 UTF-8 无 BOM。
 
 ### 测试命令
 
@@ -146,7 +148,7 @@ excel_records → patientProfile(list/detail) → 前端业务
 - 在患者详情页的"资料管理"模块上传/浏览图片与文档，支持 JPG/PNG/WebP 及 TXT/PDF/Word/Excel。
 - 单个文件不超过 10MB，单次最多 5 个，系统自动校验总数量（20）和总容量（30MB）。
 - 支持缩略图展示、原图预览与下载，TXT 文档在线预览。
-- 仅后台授权用户可操作，云函数位于 `cloudfunctions/patientMedia`，前端入口在 `miniprogram/pages/patient-detail`。
+- 仅后台授权用户可操作，云函数位于 `cloudfunctions/patientMedia`，前端入口在 `wx-project/pages/patient-detail`。
 
 ## 数据库管理
 

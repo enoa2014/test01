@@ -7,7 +7,7 @@ describe('dedupeIntakeRecords', () => {
       '..',
       '..',
       '..',
-      'miniprogram',
+      'wx-project',
       'pages',
       'patient-detail',
       'data-mappers.js'

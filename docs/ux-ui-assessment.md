@@ -25,7 +25,7 @@
 
 - 统一主题命名与变量
   - 规范仅使用语义类：`text-primary`/`text-secondary`、`bg-surface`/`bg-surface-muted`、状态色 `success`/`warning`/`info`/`danger`。
-  - 清理旧的 `--color-*` 与新的 `--ink-*` 混用；在 `miniprogram/styles/tailwind.input.css:1` 做映射与迁移标注。
+  - 清理旧的 `--color-*` 与新的 `--ink-*` 混用；在 `wx-project/styles/tailwind.input.css:1` 做映射与迁移标注。
 
 - 主题切换可发现性
   - 在详情/分析页头部展示“当前主题”轻提示/入口，或在“更多”里提供切换。
@@ -37,27 +37,27 @@
 
 ## 页面专项建议
 
-### 住户列表页（`miniprogram/pages/index/index.wxml:180`）
+### 住户列表页（`wx-project/pages/index/index.wxml:180`）
 - 信息层级：主信息（姓名/年龄/状态）与次信息（最近入住/医院）对齐显示，元信息（标签/次数）弱化色。
 - 批量模式：吸顶工具栏展示“已选 N / 全选 / 反选 / 清空”，卡片减少与“查看”冲突的长按/滑动。
 - 滚动反馈：提供“返回顶部 / 回筛选”悬浮按钮。
 
-### 住户详情页（`miniprogram/pages/patient-detail/detail.wxml:1`）
+### 住户详情页（`wx-project/pages/patient-detail/detail.wxml:1`）
 - 渐进渲染：入院记录增加子骨架屏与“仅看最近 5/10 条”，展开查看全部。
 - 区块导航：在页头加入锚点导航（基础/家庭/经济/记录/附件）。
 - 状态语义：统一状态色映射（在住=success、待入住=warning、离开=default）与图标。
 
-### 附件管理（`miniprogram/pages/patient-detail/detail.wxml:423`）
+### 附件管理（`wx-project/pages/patient-detail/detail.wxml:423`）
 - 懒加载已加；补充显式“加载附件”按钮 + 图标，空态插画与引导 CTA。
 - 控件增强：排序（时间/大小/类型）、筛选（图片/文档/可预览）、批量选择/删除。
 - 操作强调：使用 `pm-button` 风格按钮，下载/删除加图标与加载/禁用态。
 
 ### 录入流程（选择/向导/完成）
-- 创建向导：通过“创建住户向导”完成基础身份与联系方式采集（已移除选择页，改为从列表页直接进入 `miniprogram/pages/patient-intake/wizard/wizard`）。
-- 向导页：逐项即时校验 + 顶部错误计数可跳转定位（`miniprogram/pages/patient-intake/wizard/wizard.wxml:35`）。
+- 创建向导：通过“创建住户向导”完成基础身份与联系方式采集（已移除选择页，改为从列表页直接进入 `wx-project/pages/patient-intake/wizard/wizard`）。
+- 向导页：逐项即时校验 + 顶部错误计数可跳转定位（`wx-project/pages/patient-intake/wizard/wizard.wxml:35`）。
 - 完成页：明确主次 CTA（查看详情/继续添加/回列表），返回自动刷新列表。
 
-### 分析页（`miniprogram/pages/analysis/index.wxml:16`）
+### 分析页（`wx-project/pages/analysis/index.wxml:16`）
 - 吸顶筛选条（时间/医院/状态）与筛选摘要；空数据时给出说明与返回路径。
 - 图表模式偏好持久化，返回恢复。
 
@@ -73,7 +73,7 @@
 ## 性能与加载策略
 - 列表：骨架卡自适应屏高；分页与预取；`setData` 仅携带首屏必须字段。
 - 详情：已并发云函数与附件懒加载；继续对入院记录使用分页/虚拟列表/分段 `setData`。
-- 资源：附件缩略统一规格、懒加载与失败重试；去重 `sort/map`，减少重复计算（参考 `miniprogram/pages/patient-detail/detail.js:642`）。
+- 资源：附件缩略统一规格、懒加载与失败重试；去重 `sort/map`，减少重复计算（参考 `wx-project/pages/patient-detail/detail.js:642`）。
 
 ---
 
@@ -88,9 +88,9 @@
 - 规范落地：样式/交互规范文档 + Lint/快照脚本，防止回归。
 
 - 路径参考
-  - 列表卡片：`miniprogram/components/business/patient-card/index.wxml:1`
-  - 详情附件：`miniprogram/pages/patient-detail/detail.wxml:423`
-  - 主题配置：`miniprogram/styles/tailwind.input.css:1`、`miniprogram/utils/theme.js:7`
+  - 列表卡片：`wx-project/components/business/patient-card/index.wxml:1`
+  - 详情附件：`wx-project/pages/patient-detail/detail.wxml:423`
+  - 主题配置：`wx-project/styles/tailwind.input.css:1`、`wx-project/utils/theme.js:7`
 
 ---
 
@@ -120,9 +120,9 @@
 ---
 
 ## 附：落地改动示例（参考）
-- 附件懒加载：`miniprogram/pages/patient-detail/detail.wxml:423` 增加“点击加载附件”入口；`miniprogram/pages/patient-detail/detail.js:1480` 增加 `initMediaSection/ensureMediaInitialized`。
-- 并发加载：`miniprogram/pages/patient-detail/detail.js:446` 使用 `Promise.all` 并发 `patientProfile` 与 `patientIntake` 调用。
-- 记录列表精简：`miniprogram/pages/patient-detail/detail.js:649` 仅维护 `visibleIntakeRecords` 并分页。
+- 附件懒加载：`wx-project/pages/patient-detail/detail.wxml:423` 增加“点击加载附件”入口；`wx-project/pages/patient-detail/detail.js:1480` 增加 `initMediaSection/ensureMediaInitialized`。
+- 并发加载：`wx-project/pages/patient-detail/detail.js:446` 使用 `Promise.all` 并发 `patientProfile` 与 `patientIntake` 调用。
+- 记录列表精简：`wx-project/pages/patient-detail/detail.js:649` 仅维护 `visibleIntakeRecords` 并分页。
 
 ---
 

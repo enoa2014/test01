@@ -6,19 +6,19 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 module.exports = {
   rootDir: projectRoot,
   displayName: 'Unit Tests',
-  testMatch: ['**/tests/unit/**/*.test.js', '**/miniprogram/**/*.test.js'],
+  testMatch: ['**/tests/unit/**/*.test.js', '**/wx-project/**/*.test.js'],
   testPathIgnorePatterns: ['/node_modules/', '/miniprogram_npm/', '/tests/e2e/'],
   // Avoid scanning backup folders accidentally created during dependency troubleshooting
   modulePathIgnorePatterns: ['<rootDir>/node_modules.bak', '<rootDir>/node_modules.bak.*'],
   watchPathIgnorePatterns: ['node_modules.bak', 'node_modules.bak.*'],
   collectCoverageFrom: [
-    'miniprogram/**/*.js',
+    'wx-project/**/*.js',
     'web-admin/src/**/*.ts',
     'web-admin/src/**/*.tsx',
-    '!miniprogram/app.js',
-    '!miniprogram/config/**',
-    '!miniprogram/**/*.test.js',
-    '!miniprogram/miniprogram_npm/**',
+    '!wx-project/app.js',
+    '!wx-project/config/**',
+    '!wx-project/**/*.test.js',
+    '!wx-project/miniprogram_npm/**',
   ],
   coverageDirectory: 'coverage/unit',
   coverageReporters: ['text', 'lcov', 'html'],
@@ -37,7 +37,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: [path.join(projectRoot, 'tests', 'unit', 'setup.js')],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/miniprogram/$1',
+    '^@/(.*)$': '<rootDir>/wx-project/$1',
   },
   globals: {
     wx: {},

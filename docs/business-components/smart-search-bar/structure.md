@@ -3,7 +3,7 @@
 ## 目录结构
 
 ```
-miniprogram/components/business/smart-search-bar/
+wx-project/components/business/smart-search-bar/
 ├── index.js
 ├── index.json
 ├── index.wxml

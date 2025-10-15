@@ -6,8 +6,8 @@
 
 设计令牌的唯一来源（Single Source of Truth）位于 `design-tokens.json`，通过 `scripts/generate-tokens.js` 转换为：
 
-- `miniprogram/styles/generated/tokens.wxss`（运行时注入 `.theme-root` / `page` 自定义属性）
-- `miniprogram/styles/generated/tokens.js`（逻辑层读取）
+- `wx-project/styles/generated/tokens.wxss`（运行时注入 `.theme-root` / `page` 自定义属性）
+- `wx-project/styles/generated/tokens.js`（逻辑层读取）
 
 请在更新令牌后执行：
 
@@ -340,7 +340,7 @@ Global Tokens (全局令牌)
 ### 目录结构
 
 ```
-miniprogram/styles/
+wx-project/styles/
 ├── generated/
 │   ├── tokens.wxss          # 运行 `npm run tokens:generate` 自动生成
 │   └── tokens.js            # 逻辑层使用的同步产物

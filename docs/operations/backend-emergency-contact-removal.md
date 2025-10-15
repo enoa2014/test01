@@ -11,10 +11,10 @@
 
 ## 前端兼容性验证
 
-- `miniprogram/pages/patient-intake/wizard/wizard.js:65` 中为 `formData` 新增 `guardianInfo` 及其联系人字段占位，确保缺省情况下前端直接回退为空字符串而非 `undefined`。
-- `miniprogram/pages/patient-intake/wizard/wizard.js:1041` 起的 `buildContactsFromFields` 现会把既有 `contacts` 数组与 `guardianContactName/Phone` 拼装为标准联系人对象，避免旧档案因缺失紧急联系人导致向导重新暴露联系人步骤。
-- `miniprogram/pages/patient-intake/wizard/wizard.js:1200` 的 `syncContactsToFields` 将首位联系人同步到 `guardianContactName/Phone`，并生成包含关系与手机号的 `guardianInfo` 文本，回传后端时仍维持原有字符串结构。
-- `miniprogram/pages/patient-intake/wizard/wizard.js:1957` 的提交流程在剔除旧 `emergency*` 字段后，对 `guardianInfo` 与额外联系人做归并，保证后端可从文本恢复联系人清单。
+- `wx-project/pages/patient-intake/wizard/wizard.js:65` 中为 `formData` 新增 `guardianInfo` 及其联系人字段占位，确保缺省情况下前端直接回退为空字符串而非 `undefined`。
+- `wx-project/pages/patient-intake/wizard/wizard.js:1041` 起的 `buildContactsFromFields` 现会把既有 `contacts` 数组与 `guardianContactName/Phone` 拼装为标准联系人对象，避免旧档案因缺失紧急联系人导致向导重新暴露联系人步骤。
+- `wx-project/pages/patient-intake/wizard/wizard.js:1200` 的 `syncContactsToFields` 将首位联系人同步到 `guardianContactName/Phone`，并生成包含关系与手机号的 `guardianInfo` 文本，回传后端时仍维持原有字符串结构。
+- `wx-project/pages/patient-intake/wizard/wizard.js:1957` 的提交流程在剔除旧 `emergency*` 字段后，对 `guardianInfo` 与额外联系人做归并，保证后端可从文本恢复联系人清单。
 
 ## 测试执行记录（均通过 wsl_bridge_client 并设置 480s 超时）
 

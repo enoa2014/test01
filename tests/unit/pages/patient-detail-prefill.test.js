@@ -4,8 +4,8 @@ const mockBuildEditForm = jest.fn();
 const mockFormatDateForInput = jest.fn();
 
 // Mock 相关函数
-jest.mock('../../../miniprogram/pages/patient-detail/detail.js', () => {
-  const actual = jest.requireActual('../../../miniprogram/pages/patient-detail/detail.js');
+jest.mock('../../../wx-project/pages/patient-detail/detail.js', () => {
+  const actual = jest.requireActual('../../../wx-project/pages/patient-detail/detail.js');
   return {
     ...actual,
     buildEditForm: mockBuildEditForm,

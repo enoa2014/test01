@@ -24,10 +24,10 @@
 
 ### 理解系统的关键文件
 
-- **主入口**: `miniprogram/app.js` - 微信小程序应用初始化
-- **配置**: `miniprogram/config/envList.js`（自动生成）, `.env` 文件
+- **主入口**: `wx-project/app.js` - 微信小程序应用初始化
+- **配置**: `wx-project/config/envList.js`（自动生成）, `.env` 文件
 - **核心业务逻辑**: `cloudfunctions/` 下的各个云函数
-- **前端页面**: `miniprogram/pages/` - 首页、分析页、患者详情页
+- **前端页面**: `wx-project/pages/` - 首页、分析页、患者详情页
 - **数据库模型**: 参见 `docs/architecture/data-model.md`
 - **关键算法**: Excel解析和数据同步逻辑在 `cloudfunctions/readExcel/index.js`
 
@@ -35,9 +35,9 @@
 
 基于头脑风暴结果，以下模块将受到计划中增强功能的影响：
 
-- **患者详情编辑**: `miniprogram/pages/patient-detail/detail.js` + `cloudfunctions/patientIntake/index.js` ✅已实现
-- **引导式向导**: `miniprogram/pages/patient-intake/wizard/wizard.js` ✅已实现
-- **列表结构化**: `miniprogram/pages/index/index.js` 🚧待实现
+- **患者详情编辑**: `wx-project/pages/patient-detail/detail.js` + `cloudfunctions/patientIntake/index.js` ✅已实现
+- **引导式向导**: `wx-project/pages/patient-intake/wizard/wizard.js` ✅已实现
+- **列表结构化**: `wx-project/pages/index/index.js` 🚧待实现
 - **测试数据工具**: `scripts/e2e/` + 权限控制 🚧部分实现
 
 ## 高层架构
@@ -76,7 +76,7 @@
 
 ```text
 test01/
-├── miniprogram/                  # 前端微信小程序代码
+├── wx-project/                   # 前端微信小程序代码
 │   ├── app.js                   # 应用入口点，云开发初始化
 │   ├── config/
 │   │   ├── envList.js           # 自动生成的环境配置
@@ -151,7 +151,7 @@ test01/
 
 | 服务           | 用途         | 集成类型   | 关键文件                       |
 | -------------- | ------------ | ---------- | ------------------------------ |
-| 微信云开发     | 后端基础设施 | SDK        | `miniprogram/app.js`           |
+| 微信云开发     | 后端基础设施 | SDK        | `wx-project/app.js`            |
 | 腾讯云存储     | 文件存储     | 云函数SDK  | `cloudfunctions/patientMedia/` |
 | 微信开发者工具 | 开发环境     | CLI/自动化 | `tests/e2e/config/devtools.js` |
 
@@ -225,8 +225,8 @@ npm run test:service        # 云函数单元测试
 **实现状态**: ✅ 完成
 **涉及文件**:
 
-- `miniprogram/pages/patient-detail/detail.js` - 前端编辑逻辑
-- `miniprogram/config/patient-detail-fields.js` - 字段配置系统
+- `wx-project/pages/patient-detail/detail.js` - 前端编辑逻辑
+- `wx-project/config/patient-detail-fields.js` - 字段配置系统
 - `cloudfunctions/patientIntake/index.js` - 后端更新API，支持乐观锁
 - **完整的表单验证和错误处理**
 - **患者操作审计日志系统**
@@ -236,7 +236,7 @@ npm run test:service        # 云函数单元测试
 **实现状态**: ✅ 完成
 **涉及文件**:
 
-- `miniprogram/pages/patient-intake/wizard/wizard.js` - 5步引导流程
+- `wx-project/pages/patient-intake/wizard/wizard.js` - 5步引导流程
 - **草稿保存和恢复功能**
 - **表单校验和必填项检查**
 
@@ -246,7 +246,7 @@ npm run test:service        # 云函数单元测试
 
 **需要修改的文件**:
 
-- `miniprogram/pages/index/index.js` - 添加标签/卡片展示
+- `wx-project/pages/index/index.js` - 添加标签/卡片展示
 - 后端API可能需要返回额外字段
 - **快捷筛选保存与调用功能**
 

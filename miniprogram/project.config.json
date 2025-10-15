@@ -3,9 +3,7 @@
     "es6": true,
     "postcss": true,
     "minified": true,
-    "uglifyFileName": false,
     "enhance": true,
-    "packNpmRelationList": [],
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
@@ -15,11 +13,6 @@
     "minifyWXML": true
   },
   "compileType": "miniprogram",
-  "simulatorPluginLibVersion": {},
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
   "appid": "wx6fe6343a956db160",
   "editorSetting": {}
 }

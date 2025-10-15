@@ -22,7 +22,7 @@
 
 **✅ 已完成项**:
 
-- ✅ 组件目录创建: `miniprogram/components/business/patient-card/`
+- ✅ 组件目录创建: `wx-project/components/business/patient-card/`
 - ✅ 所有文件齐全: `index.js`, `index.json`, `index.wxml`, `index.wxss`, `README.md`
 - ✅ 属性接口定义完善 (超出预期):
   ```javascript
@@ -153,7 +153,7 @@ handleLongPress() {
 
 **✅ 已完成项**:
 
-- ✅ 组件目录: `miniprogram/components/business/smart-search-bar/`
+- ✅ 组件目录: `wx-project/components/business/smart-search-bar/`
 - ✅ 所有文件齐全: `index.js`, `index.json`, `index.wxml`, `index.wxss`, `README.md`
 - ✅ 属性接口完善 (完全符合规范):
   ```javascript

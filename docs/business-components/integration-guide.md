@@ -111,6 +111,6 @@
 
 ## 后续步骤
 
-- 在组件开发完成后，编写 `miniprogram/pages/example` 页面作为参考实现。
+- 在组件开发完成后，编写 `wx-project/pages/example` 页面作为参考实现。
 - 与后端联合调试时使用 `environment-config` 指向测试环境。
 - 定期回顾组件与 API 协议，更新变更日志并通知团队。

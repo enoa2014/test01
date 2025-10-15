@@ -253,7 +253,7 @@
 **JS 数据准备**:
 
 ```javascript
-// miniprogram/pages/index/index.js
+// wx-project/pages/index/index.js
 
 Page({
   data: {
@@ -777,7 +777,7 @@ Page({
 **示例**:
 
 ```json
-// miniprogram/pages/index/index.json
+// wx-project/pages/index/index.json
 {
   "usingComponents": {
     "pm-card": "/components/base/pm-card/index",
@@ -792,7 +792,7 @@ Page({
 **文件结构**:
 
 ```
-miniprogram/components/business/patient-card/
+wx-project/components/business/patient-card/
 ├── index.js
 ├── index.json
 ├── index.wxml
@@ -855,7 +855,7 @@ Component({
 **文件结构**:
 
 ```
-miniprogram/components/business/smart-search-bar/
+wx-project/components/business/smart-search-bar/
 ├── index.js
 ├── index.json
 ├── index.wxml

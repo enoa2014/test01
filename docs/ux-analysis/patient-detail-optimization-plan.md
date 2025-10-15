@@ -1097,10 +1097,10 @@ const metrics = {
 
 ### 代码文件
 
-1. `miniprogram/pages/patient-detail/detail.wxml` (优化)
-2. `miniprogram/pages/patient-detail/detail.wxss` (优化)
-3. `miniprogram/pages/patient-detail/detail.js` (优化)
-4. `miniprogram/components/base/collapse-panel/` (新增)
+1. `wx-project/pages/patient-detail/detail.wxml` (优化)
+2. `wx-project/pages/patient-detail/detail.wxss` (优化)
+3. `wx-project/pages/patient-detail/detail.js` (优化)
+4. `wx-project/components/base/collapse-panel/` (新增)
 
 ### 文档
 
@@ -1120,9 +1120,9 @@ const metrics = {
 
 ### 列表页优化成功案例
 
-- 统计卡片实现: `miniprogram/pages/index/index.wxml#L8-43`
-- 触摸标准化: `miniprogram/pages/index/index.wxss#L347-360`
-- 视觉层级: `miniprogram/pages/index/index.wxss#L195-269`
+- 统计卡片实现: `wx-project/pages/index/index.wxml#L8-43`
+- 触摸标准化: `wx-project/pages/index/index.wxss#L347-360`
+- 视觉层级: `wx-project/pages/index/index.wxss#L195-269`
 
 ### 设计规范
 

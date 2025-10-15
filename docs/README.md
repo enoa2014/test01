@@ -2,6 +2,8 @@
 
 本目录汇总项目的所有中文文档，按领域分组，配合 `docs/TOC.md` 提供完整导航。
 
+提示：代码目录自近期重构起，原 `miniprogram/` 已更名为 `wx-project/`。文档中的代码路径已逐步更新为新目录名。
+
 - 架构与技术栈：`docs/architecture/`
 - 开发环境与质量：`docs/dev-environment/`
 - 小程序：`docs/miniprogram/`

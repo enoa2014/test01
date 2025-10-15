@@ -226,6 +226,6 @@
 ## 10. 后续任务
 
 1. 根据此文档，重构 `pm-button`/`pm-card`/`pm-input`，并新增 `pm-tag`。
-2. 输出 TypeScript 类型定义至 `miniprogram/components/base/types.d.ts`（规划）。
+2. 输出 TypeScript 类型定义至 `wx-project/components/base/types.d.ts`（规划）。
 3. 在 Stylelint 中增加组件命名约束（例如 `.pm-button__*`）。
 4. 将实现进度更新至 `TODO.md`（基础组件升级章节）。

@@ -2029,12 +2029,12 @@ text-xl: 44rpx    // 主标题（住户姓名）
 
 | 文件路径                                            | 功能说明 | 代码行数 |
 | --------------------------------------------------- | -------- | -------- |
-| `miniprogram/pages/patient-detail/detail.wxml`      | 页面结构 | 521 行   |
-| `miniprogram/pages/patient-detail/detail.wxss`      | 页面样式 | 693 行   |
-| `miniprogram/pages/patient-detail/detail.js`        | 核心逻辑 | 1566 行  |
-| `miniprogram/pages/patient-detail/constants.js`     | 字段配置 | ~100 行  |
-| `miniprogram/pages/patient-detail/form-utils.js`    | 表单工具 | ~200 行  |
-| `miniprogram/pages/patient-detail/media-service.js` | 媒体管理 | ~400 行  |
+| `wx-project/pages/patient-detail/detail.wxml`      | 页面结构 | 521 行   |
+| `wx-project/pages/patient-detail/detail.wxss`      | 页面样式 | 693 行   |
+| `wx-project/pages/patient-detail/detail.js`        | 核心逻辑 | 1566 行  |
+| `wx-project/pages/patient-detail/constants.js`     | 字段配置 | ~100 行  |
+| `wx-project/pages/patient-detail/form-utils.js`    | 表单工具 | ~200 行  |
+| `wx-project/pages/patient-detail/media-service.js` | 媒体管理 | ~400 行  |
 | `design-tokens.json`                                | 设计变量 | 126 行   |
 
 **总计：~3600 行代码**

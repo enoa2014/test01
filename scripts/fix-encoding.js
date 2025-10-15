@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const roots = ['miniprogram', 'cloudfunctions'];
+const roots = ['wx-project', 'cloudfunctions'];
 const exts = new Set(['.json', '.wxml', '.wxss', '.js']);
 
 let processed = 0;

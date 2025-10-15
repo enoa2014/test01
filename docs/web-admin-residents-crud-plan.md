@@ -148,7 +148,7 @@
   - 增加 `编辑` 按钮；无管理员权限不展示。
 - PatientFormPage（新增）：
   - 创建/编辑复用同一表单组件；
-  - 字段对齐小程序 `miniprogram/config/patient-detail-fields.js` 的核心子集；
+  - 字段对齐小程序 `wx-project/config/patient-detail-fields.js` 的核心子集；
   - 表单校验与错误提示；
   - 成功后返回列表或详情并提示。
 

@@ -55,7 +55,7 @@ module.exports = {
   },
   testEnvironment: 'jsdom',
   collectCoverage: true,
-  collectCoverageFrom: ['miniprogram/components/**/*.{js,ts}', '!miniprogram/**/index.{js,ts}'],
+  collectCoverageFrom: ['wx-project/components/**/*.{js,ts}', '!wx-project/**/index.{js,ts}'],
   coverageThreshold: {
     global: {
       branches: 70,

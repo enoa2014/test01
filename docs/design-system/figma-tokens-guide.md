@@ -299,7 +299,7 @@ Collection: Border Radius
 
 2. **代码同步**:
    - 将导出的 JSON 合并至仓库根目录的 `design-tokens.json`
-   - 运行 `npm run tokens:generate`，自动生成 `miniprogram/styles/generated/tokens.{wxss,js}`
+   - 运行 `npm run tokens:generate`，自动生成 `wx-project/styles/generated/tokens.{wxss,js}`
    - 页面/组件通过 `@import "../../styles/generated/tokens.wxss"`、`foundation.wxss`、`utilities.wxss` 接入变量
    - 禁止手动修改 legacy `styles/tokens.wxss`
 

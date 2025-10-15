@@ -10,7 +10,7 @@ describe('analysis month panel ordering', () => {
       '..',
       '..',
       '..',
-      'miniprogram',
+      'wx-project',
       'pages',
       'analysis',
       'index.js'

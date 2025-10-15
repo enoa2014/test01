@@ -10,9 +10,9 @@
 
 ## 统计方法
 
-1. **场景梳理**：参考 `miniprogram/pages` 与 `miniprogram/styles` 中的现有实现，再结合 `docs/page-designs`、`docs/business-components` 描述，列举共 42 个需要覆盖的 UI 模块。
-2. **组件映射**：使用 `miniprogram/mapping.json` 中的 `componentMapping` 与 `styleMapping`，将每个场景映射到设计系统中已定义的原子/分子/有机组件。
-3. **覆盖判定**：若某场景所需组件在 `docs/design-system/component-specifications.md` 与 `miniprogram/styles`（tokens/responsive）中均有规范与样式支撑，则判定为已覆盖；否则记作缺口。
+1. **场景梳理**：参考 `wx-project/pages` 与 `wx-project/styles` 中的现有实现，再结合 `docs/page-designs`、`docs/business-components` 描述，列举共 42 个需要覆盖的 UI 模块。
+2. **组件映射**：使用 `wx-project/mapping.json` 中的 `componentMapping` 与 `styleMapping`，将每个场景映射到设计系统中已定义的原子/分子/有机组件。
+3. **覆盖判定**：若某场景所需组件在 `docs/design-system/component-specifications.md` 与 `wx-project/styles`（tokens/responsive）中均有规范与样式支撑，则判定为已覆盖；否则记作缺口。
 
 ## 结果汇总
 
@@ -29,9 +29,9 @@
 
 ## 证据附件
 
-- 组件映射表：`miniprogram/mapping.json`（设计系统组件与 Figma/小程序组件的映射）
+- 组件映射表：`wx-project/mapping.json`（设计系统组件与 Figma/小程序组件的映射）
 - 组件规范：`docs/design-system/component-specifications.md`
-- 样式实现：`design-tokens.json` → `npm run tokens:generate` 产出的 `miniprogram/styles/generated/tokens.wxss` 与 `miniprogram/styles/responsive.wxss`
+- 样式实现：`design-tokens.json` → `npm run tokens:generate` 产出的 `wx-project/styles/generated/tokens.wxss` 与 `wx-project/styles/responsive.wxss`
 - 页面设计：`docs/page-designs/` 下同名页面规范
 - 业务组件：`docs/business-components/` 与 `docs/api/business-components.md`
 

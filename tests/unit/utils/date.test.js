@@ -3,7 +3,7 @@ const {
   formatDate,
   calculateAge,
   formatAge,
-} = require('../../../miniprogram/utils/date');
+} = require('../../../wx-project/utils/date');
 
 describe('date utilities', () => {
   describe('parseDateValue', () => {

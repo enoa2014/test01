@@ -1,6 +1,6 @@
 # 患者列表页 UI 重构建议
 
-> **分析对象**: `miniprogram/pages/index/`
+> **分析对象**: `wx-project/pages/index/`
 > **当前版本**: 现有实现（2025-10-01）
 > **重构目标**: 提升用户体验、信息密度、视觉层次
 
@@ -940,7 +940,7 @@ function saveSearchHistory(keyword) {
 ### 工具函数 - 相对时间
 
 ```javascript
-// miniprogram/utils/date.js 中添加
+// wx-project/utils/date.js 中添加
 
 /**
  * 格式化相对时间
@@ -1001,7 +1001,7 @@ module.exports = {
 ### 状态识别逻辑
 
 ```javascript
-// miniprogram/pages/index/index.js 中添加
+// wx-project/pages/index/index.js 中添加
 
 /**
  * 识别患者状态
@@ -1069,7 +1069,7 @@ const patients = sourcePatients.map(item => {
 ### 搜索建议实现
 
 ```javascript
-// miniprogram/pages/index/index.js
+// wx-project/pages/index/index.js
 
 Page({
   data: {

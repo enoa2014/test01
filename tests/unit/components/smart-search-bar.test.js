@@ -3,7 +3,7 @@ const path = require('path');
 const componentPath = path.resolve(
   __dirname,
   '../../..',
-  'miniprogram/components/business/smart-search-bar/index.js'
+  'wx-project/components/business/smart-search-bar/index.js'
 );
 
 describe('smart-search-bar component', () => {

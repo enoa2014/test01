@@ -8,7 +8,7 @@
 | -------------------------------------------------------------------- | ----------------------------------------- | -------------------------- | ------------------------------------------------------------------ |
 | 微信小程序原生框架                                                   | —                                         | 页面/组件开发              | 结合 `app.json`、`project.config.json` 管理路由与配置              |
 | 设计令牌体系 (`design-tokens.json` → `styles/generated/tokens.wxss`) | 自研                                      | 统一颜色、间距、阴影等样式 | Story 001.1 产出，运行 `npm run tokens:generate` 生成 WXSS/JS 变量 |
-| Component Lab                                                        | `miniprogram/pages/component-lab`         | 组件示例与调试             | 开发态启用，发布前需移除入口                                       |
+| Component Lab                                                        | `wx-project/pages/component-lab`          | 组件示例与调试             | 开发态启用，发布前需移除入口                                       |
 | Mpflow                                                               | `mpflow.config.js`、`mpflow-service` 脚本 | 构建、E2E 测试与项目脚手架 | 结合 `test:e2e` 脚本运行                                           |
 | WXSS/PostCSS 工具链                                                  | WXSS 原生 + Stylelint                     | 样式规则与校验             | 通过 `lint:style` 维护一致性                                       |
 

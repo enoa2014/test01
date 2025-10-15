@@ -29,7 +29,7 @@
 ```
 root
 ├─ docs/                        # 文档与规范
-├─ miniprogram/                 # 小程序源代码
+├─ wx-project/                  # 小程序源代码
 │   ├─ app.js \ app.json
 │   ├─ styles/                  # 全局样式、设计令牌
 │   ├─ config/                  # 配置与常量

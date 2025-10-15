@@ -19,7 +19,7 @@
 #### 核心文件
 
 - `design-tokens.json` - 设计令牌原始定义
-- `miniprogram/styles/generated/tokens.wxss` - 自动生成的样式变量
+- `wx-project/styles/generated/tokens.wxss` - 自动生成的样式变量
 - `docs/design-system/design-tokens-spec.md` - 令牌命名规范文档
 - `docs/design-system/figma-tokens-guide.md` - Figma实施指南
 
@@ -41,8 +41,8 @@
 
 #### 核心文件
 
-- `miniprogram/styles/responsive.wxss` - 响应式设计系统
-- `miniprogram/app.wxss` - 全局样式集成
+- `wx-project/styles/responsive.wxss` - 响应式设计系统
+- `wx-project/app.wxss` - 全局样式集成
 
 #### 设计特点
 

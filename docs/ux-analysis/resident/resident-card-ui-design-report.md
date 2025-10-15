@@ -7,7 +7,7 @@
 ## 当前设计分析
 
 ### 组件结构
-- **位置**: `miniprogram/components/business/patient-card/`
+- **位置**: `wx-project/components/business/patient-card/`
 - **核心文件**:
   - `index.wxml` - 模板结构
   - `index.wxss` - 样式定义

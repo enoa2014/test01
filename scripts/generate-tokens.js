@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * 生成小程序使用的设计令牌产物：
- *  1. miniprogram/styles/generated/tokens.wxss  (提供 theme-root + page 自定义属性)
- *  2. miniprogram/styles/generated/tokens.js    (供 JS 层引用)
+ *  1. wx-project/styles/generated/tokens.wxss  (提供 theme-root + page 自定义属性)
+ *  2. wx-project/styles/generated/tokens.js    (供 JS 层引用)
  */
 
 const fs = require('fs');
@@ -10,7 +10,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT, 'design-tokens.json');
-const OUTPUT_DIR = path.join(ROOT, 'miniprogram', 'styles', 'generated');
+const OUTPUT_DIR = path.join(ROOT, 'wx-project', 'styles', 'generated');
 const WXSS_TARGET = path.join(OUTPUT_DIR, 'tokens.wxss');
 const JS_TARGET = path.join(OUTPUT_DIR, 'tokens.js');
 

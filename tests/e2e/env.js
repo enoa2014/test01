@@ -10,7 +10,7 @@ class DevtoolsEnvironment extends NodeEnvironment {
       ...(config.testEnvironmentOptions || {}),
     };
     this.wsEndpoint = options.wsEndpoint || process.env.WX_DEVTOOLS_WS || 'ws://127.0.0.1:9421';
-    this.projectPath = options.projectPath || path.resolve(process.cwd(), 'miniprogram');
+    this.projectPath = options.projectPath || path.resolve(process.cwd(), 'wx-project');
     this.cliPath = options.cliPath || process.env.WX_DEVTOOLS_CLI;
   }
 

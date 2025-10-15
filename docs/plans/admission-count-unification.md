@@ -39,7 +39,7 @@
   - [x] 对 `summaryVersion` 使用 `syncExcelRecordsToIntake` 的返回或新增自增版本号，以便缓存与一致性校验。
 
 ### 2. 前端调整
-- **涉及文件**：`miniprogram/pages/patient-detail/detail.js`
+- **涉及文件**：`wx-project/pages/patient-detail/detail.js`
 - **变更**
   - [x] 放弃前端 `dedupeIntakeRecords`，直接使用云端返回的 `records` 与 `count`。
   - [x] `patient.admissionCount`、`allIntakeRecords.length` 均引用云端 `count`。
@@ -58,7 +58,7 @@
   - [ ] 入住记录字段、状态、枚举；
   - [ ] 聚合结果结构（含 `count`、`latestAdmissionTimestamp` 等）；
   - [ ] 通过 npm workspace 或自动同步脚本让 `patientProfile`、`patientIntake`、小程序端共享。
-- [ ] 为前端提供 TypeScript 类型定义 (`miniprogram/types/patient.d.ts`)，减少魔法字段。
+- [ ] 为前端提供 TypeScript 类型定义 (`wx-project/types/patient.d.ts`)，减少魔法字段。
 
 ### 2. 缓存与版本
 - [ ] 引入云端 KV 缓存：`patients_summary_cache` 添加 `summaryVersion`。

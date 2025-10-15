@@ -137,7 +137,7 @@ wx.cloud.callFunction({
 - 修复 Node.js 10.15 兼容性问题
 - 实现数据过滤和格式化
 
-**前端集成:** `miniprogram/pages/patient-detail/detail.js`
+**前端集成:** `wx-project/pages/patient-detail/detail.js`
 
 - 添加并行云函数调用
 - 修复可选链操作符兼容性

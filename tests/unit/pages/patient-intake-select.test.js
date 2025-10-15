@@ -48,7 +48,7 @@ describe('patient intake select page search & pagination', () => {
       '..',
       '..',
       '..',
-      'miniprogram',
+      'wx-project',
       'pages',
       'patient-intake',
       'select',

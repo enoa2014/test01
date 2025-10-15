@@ -7,10 +7,10 @@
 
 ## 页面结构
 
-> 当前实现位于 `miniprogram/pages/component-lab/`，默认在开发环境中可用。发布前请根据下文“权限与安全”章节通过构建脚本移除或禁用。
+> 当前实现位于 `wx-project/pages/component-lab/`，默认在开发环境中可用。发布前请根据下文“权限与安全”章节通过构建脚本移除或禁用。
 
 ```
-miniprogram/pages/component-lab
+wx-project/pages/component-lab
 ├─ index.wxml
 ├─ index.wxss
 ├─ index.js / index.ts

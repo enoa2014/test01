@@ -4,7 +4,7 @@ describe('pm-input component definition', () => {
   const componentPath = path.resolve(
     __dirname,
     '../../..',
-    'miniprogram/components/base/pm-input/index.js'
+    'wx-project/components/base/pm-input/index.js'
   );
 
   beforeEach(() => {

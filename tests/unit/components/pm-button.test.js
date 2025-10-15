@@ -4,7 +4,7 @@ describe('pm-button component definition', () => {
   const componentPath = path.resolve(
     __dirname,
     '../../..',
-    'miniprogram/components/base/pm-button/index.js'
+    'wx-project/components/base/pm-button/index.js'
   );
 
   beforeEach(() => {

@@ -4,7 +4,7 @@ describe('pm-card component definition', () => {
   const componentPath = path.resolve(
     __dirname,
     '../../..',
-    'miniprogram/components/base/pm-card/index.js'
+    'wx-project/components/base/pm-card/index.js'
   );
 
   beforeEach(() => {

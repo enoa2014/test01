@@ -1,14 +1,14 @@
 # RGBA 使用清单（2025-09）
 
-本清单汇总当前代码库中仍以 `rgba()` / 渐变透明度实现的样式，用于规划后续令牌补充与替换路径。数据来自 `rg "rgba(" miniprogram` 及衍生的 `scripts/audit-rgba.js` 扫描结果。
+本清单汇总当前代码库中仍以 `rgba()` / 渐变透明度实现的样式，用于规划后续令牌补充与替换路径。数据来自 `rg "rgba(" wx-project` 及衍生的 `scripts/audit-rgba.js` 扫描结果。
 
-> 🌱 建议：在 `design-tokens.json` 新增相应语义令牌（overlay、highlight、gradient、shadow），并在 `scripts/generate-tokens.js` 输出，同时为剩余 `miniprogram/styles/legacy/tokens.wxss` 里的渐变提供迁移计划。
+> 🌱 建议：在 `design-tokens.json` 新增相应语义令牌（overlay、highlight、gradient、shadow），并在 `scripts/generate-tokens.js` 输出，同时为剩余 `wx-project/styles/legacy/tokens.wxss` 里的渐变提供迁移计划。
 
 ## 1. 组件级别
 
 | 位置                                                  | 用途             | 建议令牌                                  |
 | ----------------------------------------------------- | ---------------- | ----------------------------------------- |
-| `miniprogram/components/base/pm-button/index.wxss:74` | 加载态小圆圈描边 | `--overlay-inverse-40`（白色 40% 透明度） |
+| `wx-project/components/base/pm-button/index.wxss:74` | 加载态小圆圈描边 | `--overlay-inverse-40`（白色 40% 透明度） |
 
 ## 2. 页面遮罩 / 高亮
 
@@ -44,7 +44,7 @@
 ## 6. 阴影（box-shadow）
 
 - 已在 `design-tokens.json → shadow` 中定义；未来计划：
-  1. 从 `miniprogram/styles/legacy/tokens.wxss` 中移除重复阴影类。
+  1. 从 `wx-project/styles/legacy/tokens.wxss` 中移除重复阴影类。
   2. 将页面内自定义阴影 (`pages/index/index.wxss`, `patient-intake/success/success.wxss` 等) 替换为 `var(--shadow-*)`。
 
 ## 后续步骤
@@ -72,6 +72,6 @@
    ```
 2. 扩展 `scripts/generate-tokens.js`：对 overlay/background/gradient 分类生成别名（如 `--overlay-dim`, `--bg-info-soft`, `--gradient-info-light`）。
 3. 逐页替换现有 `rgba()` 语句为 `var(--overlay-dim)` 等。
-4. 清理 `miniprogram/styles/legacy/tokens.wxss` 中同类定义，确保所有来源唯一，并最终下线 legacy 文件。
+4. 清理 `wx-project/styles/legacy/tokens.wxss` 中同类定义，确保所有来源唯一，并最终下线 legacy 文件。
 
 本文件后续可作为令牌扩展的跟踪依据，建议在上述步骤执行完毕后更新状态。

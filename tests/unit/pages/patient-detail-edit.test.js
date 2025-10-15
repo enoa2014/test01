@@ -10,7 +10,7 @@ describe('patient detail edit flow', () => {
       '..',
       '..',
       '..',
-      'miniprogram',
+      'wx-project',
       'pages',
       'patient-detail',
       'detail.js'

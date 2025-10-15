@@ -11,7 +11,7 @@ root
 │   ├── dev-environment/         # 开发环境、CI、测试指南
 │   ├── page-designs/            # 核心页面重构方案
 │   └── ux-research/             # 用户研究与旅程分析
-├── miniprogram/                 # 微信小程序主工程
+├── wx-project/                  # 微信小程序主工程
 │   ├── app.js / app.json        # 小程序入口配置
 │   ├── components/              # 基础 & 业务组件（pm-button、pm-card、pm-input 等）
 │   ├── pages/                   # 页面模块（dashboard、patient-detail、component-lab 等）
@@ -44,7 +44,7 @@ root
 ## 结构说明
 
 - **docs/**：所有规范、设计与研究资料集中于此，按照主题分目录，便于跨团队协作。
-- **miniprogram/**：核心产品代码，遵循微信小程序文件组织；`component-lab` 页面仅在开发态启用。
+- **wx-project/**：核心产品代码，遵循微信小程序文件组织；`component-lab` 页面仅在开发态启用。
 - **cloudfunctions/**：与小程序共享数据的后端逻辑，职责分离架构：
   - `patientProfile`: 专门处理前端业务查询（患者列表、详情）
   - `readExcel`: 专注Excel数据初始化和同步
@@ -57,7 +57,7 @@ root
 
 1. 新增模块或页面时，先在本文件中登记目录与职责，再在 README/相关文档中链接说明。
 2. 对旧目录（如 `pages/`、`styles/` 兼容层）逐步迁移后清理，以保持结构清晰。
-3. 持续与设计/后端对齐，确保 `docs/` 与 `miniprogram/` 内的目录保持一致命名（如 pm-\* 组件）。
-4. 在发布前检查 `miniprogram/app.json`，移除仅限开发的页面（如 `component-lab`）。
+3. 持续与设计/后端对齐，确保 `docs/` 与 `wx-project/` 内的目录保持一致命名（如 pm-\* 组件）。
+4. 在发布前检查 `wx-project/app.json`，移除仅限开发的页面（如 `component-lab`）。
 
 如目录结构发生重大变化，请及时更新本基线以避免信息滞后。

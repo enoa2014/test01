@@ -2,7 +2,7 @@
 
 ## 执行摘要
 
-本次复评基于最新代码实现，结合住户列表页（`miniprogram/pages/index/`）、住户详情页（`miniprogram/pages/patient-detail/`）与住户录入向导（`miniprogram/pages/patient-intake/wizard/`）的交互现状，对原有分析报告进行了校准。核心结论如下：
+本次复评基于最新代码实现，结合住户列表页（`wx-project/pages/index/`）、住户详情页（`wx-project/pages/patient-detail/`）与住户录入向导（`wx-project/pages/patient-intake/wizard/`）的交互现状，对原有分析报告进行了校准。核心结论如下：
 - ✅ 列表页已经沉淀了完善的状态统计、搜索建议与高级筛选体系，为分析页提供了成熟的数据入口与行动终点。
 - ⚠️ 分析页缺乏与列表页同构的全局概览与筛选互通，用户无法在“查看分析”后快速回到列表执行同维度筛选。
 - ⚠️ 详情页与录入向导强化了数据完整度与字段规范，但分析页对缺失字段、异常数据的识别与指引仍十分薄弱。
@@ -20,17 +20,17 @@
 
 ## 1. 跨页面现状对照
 
-### 1.1 列表页（`miniprogram/pages/index/index.wxml`）
+### 1.1 列表页（`wx-project/pages/index/index.wxml`）
 - 通过顶部 `stat-card` 网格提供「全部/在住/待入住/已离开」核心指标，并可直接切换筛选状态。
 - `smart-search-bar` + 高级筛选面板（`index.js` 中 `normalizeAdvancedFilters`）支持籍贯、民族、医生等多字段组合过滤，且会在工具栏显示已激活的筛选数量。
 - 列表页提供“查看分析”按钮与浮动「添加住户」FAB，属于分析页的天然入口与回流点。
 
-### 1.2 详情页（`miniprogram/pages/patient-detail/detail.wxml`）
+### 1.2 详情页（`wx-project/pages/patient-detail/detail.wxml`）
 - 头部指标卡展示状态、入住次数、最近入住时间，强调运营指标；编辑模式覆盖基础信息、联系人与入住记录。
 - `STATUS_ALIAS_CONFIG` 保证多种状态写法归一，并通过 `statusClass` 影响 UI，体现数据治理需求。
 - 媒体、情况说明等字段在详情中完整呈现，但分析页未提供对应的数据质量或占比洞察。
 
-### 1.3 住户录入向导（`miniprogram/pages/patient-intake/wizard/`）
+### 1.3 住户录入向导（`wx-project/pages/patient-intake/wizard/`）
 - 分步进度条、必填项提醒与身份证自动识别锁定逻辑提升了录入准确度。
 - 草稿自动保存、附件上传、联系人数量校验等能力可为分析页提供数据完整度指标。
 - 录入完成后通过 `PATIENT_LIST_DIRTY_KEY` 通知列表刷新，但分析页没有相应的脏数据感知机制。

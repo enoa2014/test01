@@ -17,7 +17,7 @@
 - 相对路径：在 `docs/` 内部相互链接时，使用相对路径且不要以 `docs/` 前缀开头。
   - 示例（位于 `docs/TOC.md` 内）：`design/ui-refactor/overview.md`。
 - 跨目录到仓库根部或其他目录：按需使用 `../` 回退。
-  - 示例（位于 `docs/miniprogram/components/index.md` 内指向仓库组件）：`../../../miniprogram/components/.../README.md`。
+  - 示例（位于 `docs/miniprogram/components/index.md` 内指向仓库组件）：`../../../wx-project/components/.../README.md`。
 - 外部链接：使用完整 `https://`；避免裸链接，尽量以文本包裹如 `[示例](https://example.com)`。
 
 ## 图片与资源

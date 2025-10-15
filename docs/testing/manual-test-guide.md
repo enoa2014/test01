@@ -90,7 +90,7 @@ case 'getAllIntakeRecords':
   return await handleGetAllIntakeRecords(event);
 ```
 
-### 前端页面更新 (`miniprogram/pages/patient-detail/detail.js`)
+### 前端页面更新 (`wx-project/pages/patient-detail/detail.js`)
 
 ```javascript
 // 并行调用三个云函数，包括新增的获取所有记录
@@ -103,7 +103,7 @@ const [profileRes, patientRes, intakeRecordsRes] = await Promise.all([
 ]);
 ```
 
-### 界面模板 (`miniprogram/pages/patient-detail/detail.wxml`)
+### 界面模板 (`wx-project/pages/patient-detail/detail.wxml`)
 
 ```xml
 <!-- 新增的入住记录历史部分 -->

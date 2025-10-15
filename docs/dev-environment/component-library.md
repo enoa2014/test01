@@ -19,7 +19,7 @@
 ## 目录结构（建议）
 
 ```
-miniprogram/components
+wx-project/components
 ├─ base
 │   ├─ button
 │   │   ├─ button.wxml
@@ -45,8 +45,8 @@ miniprogram/components
 ## 依赖与工具
 
 - 推荐使用 TypeScript 编写逻辑（通过 `miniprogramRoot` 支持）。
-- 公共逻辑与常量放置于 `miniprogram/utils`，避免重复实现。
-- 主题配色、间距统一由 `design-tokens.json` 驱动，通过 `npm run tokens:generate` 生成的 `miniprogram/styles/generated/tokens.wxss` 及基础样式文件提供，禁止硬编码。
+- 公共逻辑与常量放置于 `wx-project/utils`，避免重复实现。
+- 主题配色、间距统一由 `design-tokens.json` 驱动，通过 `npm run tokens:generate` 生成的 `wx-project/styles/generated/tokens.wxss` 及基础样式文件提供，禁止硬编码。
 - 若需第三方库，优先选择轻量包并评估微信小程序兼容性。
 
 ## 组件开发约定
@@ -79,7 +79,7 @@ miniprogram/components
 
 ## 导出与引用
 
-- 在 `miniprogram/components/index.ts` 导出所有组件：
+- 在 `wx-project/components/index.ts` 导出所有组件：
   ```ts
   export { default as Button } from './base/button';
   export { default as Input } from './base/input';
@@ -178,6 +178,6 @@ miniprogram/components
 />
 ```
 
-- `pm-button`、`pm-input`、`pm-card` 位于 `miniprogram/components/base/` 目录，作为 Story 001.3 的基础示例。
+- `pm-button`、`pm-input`、`pm-card` 位于 `wx-project/components/base/` 目录，作为 Story 001.3 的基础示例。
 - 对应测试文件位于 `tests/unit/components/`，可作为新增组件单测的模板。
 - Component Lab 页面默认加载上述组件，便于产品与设计快速预览。

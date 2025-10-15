@@ -10,7 +10,7 @@ describe('index page batch mode behaviour', () => {
       '..',
       '..',
       '..',
-      'miniprogram',
+      'wx-project',
       'pages',
       'index',
       'index.js'

@@ -5,7 +5,7 @@
 ## 摘要
 
 - 目标：降低视觉噪声、统一操作语义、优化触控与可达性、完善空状态与反馈。
-- 范围：`miniprogram/pages/patient-detail/*`、基础组件 `pm-button`/`pm-input` 的使用语义，以及媒体区与时间轴的微交互。
+- 范围：`wx-project/pages/patient-detail/*`、基础组件 `pm-button`/`pm-input` 的使用语义，以及媒体区与时间轴的微交互。
 - 产出：快速可落地改动清单 + 分主题实施要点 + 验收标准。
 
 ---
@@ -34,7 +34,7 @@
 
 5) 空状态插画与操作指引
 - 现状：仅“暂无图片/文档资料”。
-- 方案：引入轻量插画（`miniprogram/assets/images/empty-patients.svg` 可复用）+ 主 CTA（上传/添加），提升可操作性。
+- 方案：引入轻量插画（`wx-project/assets/images/empty-patients.svg` 可复用）+ 主 CTA（上传/添加），提升可操作性。
 
 ---
 
@@ -170,7 +170,7 @@ Day 2
 
 更新时间：2025-10-09
 
-已完成（代码已提交至 `miniprogram/pages/patient-detail/`）
+已完成（代码已提交至 `wx-project/pages/patient-detail/`）
 - [x] 状态卡支持点按打开状态弹窗（同时保留长按）
 - [x] `.detail-scroll` 增加安全区底部内边距（`env(safe-area-inset-bottom)`）
 - [x] 媒体区“下载/删除”按钮补充 `role="button"`、`hover-class` 与 `aria-label`，并统一最小高度 ≥72rpx
@@ -203,8 +203,8 @@ Day 2
 创建时间：2025-10-09
 维护人：前端/设计协作组
 关联文件：
-- miniprogram/pages/patient-detail/detail.wxml
-- miniprogram/pages/patient-detail/detail.wxss
-- miniprogram/pages/patient-detail/detail.js
-- miniprogram/components/base/pm-button/
-- miniprogram/components/base/pm-input/
+- wx-project/pages/patient-detail/detail.wxml
+- wx-project/pages/patient-detail/detail.wxss
+- wx-project/pages/patient-detail/detail.js
+- wx-project/components/base/pm-button/
+- wx-project/components/base/pm-input/

@@ -21,7 +21,7 @@ function createComponent(componentName) {
     process.exit(1);
   }
 
-  const componentDir = path.join('miniprogram', 'components', componentName);
+  const componentDir = path.join('wx-project', 'components', componentName);
 
   // 检查组件是否已存在
   if (fs.existsSync(componentDir)) {

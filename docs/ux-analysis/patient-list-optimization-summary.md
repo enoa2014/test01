@@ -1071,18 +1071,18 @@ skeletonCount = min(
 
 | 文件                                                          | 改动类型      | 行数变化 | 主要内容                                                                            |
 | ------------------------------------------------------------- | ------------- | -------- | ----------------------------------------------------------------------------------- |
-| `miniprogram/pages/index/index.js`                            | 功能增强      | +115行   | 骨架屏动态计算, 空状态逻辑, 筛选激活状态, 长按反馈, FAB提示, 密度切换, 方案上限警告 |
-| `miniprogram/pages/index/index.wxml`                          | UI重构        | +47行    | 错误状态, 空状态模板, FAB标签, 密度切换按钮                                         |
-| `miniprogram/pages/index/index.wxss`                          | 样式优化      | +103行   | 错误/空状态样式, FAB标签动画, 密度模式间距                                          |
-| `miniprogram/components/business/smart-search-bar/index.js`   | 功能增强      | +10行    | 高级筛选激活状态属性                                                                |
-| `miniprogram/components/business/smart-search-bar/index.wxml` | UI增强        | +6行     | 激活徽章显示                                                                        |
-| `miniprogram/components/business/smart-search-bar/index.wxss` | 样式增强      | +17行    | 激活状态样式                                                                        |
-| `miniprogram/components/business/patient-card/index.js`       | 模式扩展      | +10行    | 新增comfortable和spacious密度预设                                                   |
-| `miniprogram/components/business/patient-card/index.wxss`     | 样式优化      | +27行    | 视觉层级, 长按反馈, 触控目标                                                        |
-| `miniprogram/components/business/filter-panel/index.js`       | 功能增强      | +8行     | 方案管理模式切换                                                                    |
-| `miniprogram/components/business/filter-panel/index.wxml`     | UI增强        | +15行    | 方案数量显示, 管理链接, 管理模式UI                                                  |
-| `miniprogram/components/business/filter-panel/index.wxss`     | 样式增强      | +33行    | 方案管理UI样式                                                                      |
-| `miniprogram/components/base/pm-badge/index.wxss`             | 无障碍优化    | +4行     | Warning徽章对比度增强                                                               |
+| `wx-project/pages/index/index.js`                            | 功能增强      | +115行   | 骨架屏动态计算, 空状态逻辑, 筛选激活状态, 长按反馈, FAB提示, 密度切换, 方案上限警告 |
+| `wx-project/pages/index/index.wxml`                          | UI重构        | +47行    | 错误状态, 空状态模板, FAB标签, 密度切换按钮                                         |
+| `wx-project/pages/index/index.wxss`                          | 样式优化      | +103行   | 错误/空状态样式, FAB标签动画, 密度模式间距                                          |
+| `wx-project/components/business/smart-search-bar/index.js`   | 功能增强      | +10行    | 高级筛选激活状态属性                                                                |
+| `wx-project/components/business/smart-search-bar/index.wxml` | UI增强        | +6行     | 激活徽章显示                                                                        |
+| `wx-project/components/business/smart-search-bar/index.wxss` | 样式增强      | +17行    | 激活状态样式                                                                        |
+| `wx-project/components/business/patient-card/index.js`       | 模式扩展      | +10行    | 新增comfortable和spacious密度预设                                                   |
+| `wx-project/components/business/patient-card/index.wxss`     | 样式优化      | +27行    | 视觉层级, 长按反馈, 触控目标                                                        |
+| `wx-project/components/business/filter-panel/index.js`       | 功能增强      | +8行     | 方案管理模式切换                                                                    |
+| `wx-project/components/business/filter-panel/index.wxml`     | UI增强        | +15行    | 方案数量显示, 管理链接, 管理模式UI                                                  |
+| `wx-project/components/business/filter-panel/index.wxss`     | 样式增强      | +33行    | 方案管理UI样式                                                                      |
+| `wx-project/components/base/pm-badge/index.wxss`             | 无障碍优化    | +4行     | Warning徽章对比度增强                                                               |
 | `design-tokens.json`                                          | 设计token优化 | +1行     | Warning颜色调整, 新增warningDark                                                    |
 
 ### 新增功能点

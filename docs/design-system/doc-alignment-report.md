@@ -6,7 +6,7 @@
 | --------------------------------------------- | ---- | ---------------------------------------------------------------------------------------- |
 | `docs/design-system/design-tokens-spec.md`    | ✅   | 目录结构改为 `styles/generated/`，提示 legacy 文件仅做过渡。                             |
 | `docs/design-system/figma-tokens-guide.md`    | ✅   | 明确合并 `design-tokens.json` 后运行 `npm run tokens:generate`，禁用手改 legacy 文件。   |
-| `docs/design-system/rgba-inventory.md`        | ✅   | 指向 `miniprogram/styles/legacy/tokens.wxss`，说明迁移计划。                             |
+| `docs/design-system/rgba-inventory.md`        | ✅   | 指向 `wx-project/styles/legacy/tokens.wxss`，说明迁移计划。                             |
 | `docs/page-designs/design-handoff-package.md` | ✅   | 前端实现建议改为引用 `styles/generated/tokens.wxss`。                                    |
 | `docs/dev-environment/setup.md`               | ✅   | 脚本示例中说明 `lint:style` 与令牌生成流程。                                             |
 | `docs/architecture/tech-stack.md`             | ✅   | 技术栈条目指向 `design-tokens.json → styles/generated/tokens.wxss`。                     |

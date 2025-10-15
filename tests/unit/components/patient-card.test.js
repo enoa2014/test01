@@ -4,7 +4,7 @@ describe('patient-card component', () => {
   const componentPath = path.resolve(
     __dirname,
     '../../..',
-    'miniprogram/components/business/patient-card/index.js'
+    'wx-project/components/business/patient-card/index.js'
   );
 
   beforeEach(() => {

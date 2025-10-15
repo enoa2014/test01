@@ -35,8 +35,8 @@ async function transformToWxss(rawCssPath, wxssOutputPath) {
 
 async function main() {
   const root = path.resolve(__dirname, '..');
-  const inputPath = path.join(root, 'miniprogram/styles/tailwind.input.css');
-  const generatedDir = path.join(root, 'miniprogram/styles/generated');
+  const inputPath = path.join(root, 'wx-project/styles/tailwind.input.css');
+  const generatedDir = path.join(root, 'wx-project/styles/generated');
   const rawCssPath = path.join(generatedDir, 'tailwind.raw.css');
   const wxssPath = path.join(generatedDir, 'tailwind.wxss');
   const configPath = path.join(root, 'tailwind.config.js');

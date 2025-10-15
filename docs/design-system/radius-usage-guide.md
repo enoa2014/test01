@@ -389,7 +389,7 @@
 
    ```bash
    # 搜索项目中的硬编码圆角
-   grep -r "border-radius:" miniprogram/
+   grep -r "border-radius:" wx-project/
    ```
 
 2. **映射到令牌**：
