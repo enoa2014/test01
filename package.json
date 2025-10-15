@@ -102,6 +102,7 @@
     "test:e2e:web:headed": "npm --prefix web-admin run test:e2e:headed",
     "test:e2e:web:ui": "npm --prefix web-admin run test:e2e:ui",
     "e2e:web:report": "npm --prefix web-admin run e2e:report",
-    "devtools:chrome": "node scripts/start-chrome-cdp.js"
+    "devtools:chrome": "node scripts/start-chrome-cdp.js",
+    "deploy:function": "node scripts/deploy-cloudfunctions.js"
   }
 }

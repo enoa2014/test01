@@ -773,12 +773,7 @@ async function handleGetPatientDetail(event) {
     if (syncSummary.latestNarrative) {
       patient.lastIntakeNarrative = syncSummary.latestNarrative;
     }
-    if (syncSummary.latestHospital) {
-      patient.latestHospital = syncSummary.latestHospital;
-    }
-    if (syncSummary.latestDoctor) {
-      patient.latestDoctor = syncSummary.latestDoctor;
-    }
+    // 按新规则：latestHospital/latestDiagnosis/latestDoctor 为手动维护，不在详情返回中以聚合结果覆盖
   }
 
   let resolvedCareStatus = null;
@@ -887,6 +882,12 @@ async function handleGetPatientDetail(event) {
         guardianContactName: patient.guardianContactName || '',
         guardianContactPhone: patient.guardianContactPhone || '',
         excelRecordKeys: Array.isArray(patient.excelRecordKeys) ? patient.excelRecordKeys : [],
+        // 手动维护字段在详情返回中直出
+        latestHospital: patient.latestHospital || (patient.data && patient.data.latestHospital) || '',
+        latestDiagnosis: patient.latestDiagnosis || (patient.data && patient.data.latestDiagnosis) || '',
+        latestDoctor: patient.latestDoctor || (patient.data && patient.data.latestDoctor) || '',
+        confirmedDate: patient.confirmedDate || (patient.data && patient.data.confirmedDate) || '',
+        treatmentStage: patient.treatmentStage || (patient.data && patient.data.treatmentStage) || '',
       },
       latestIntake,
       operationLogs,
