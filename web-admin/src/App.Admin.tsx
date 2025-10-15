@@ -14,6 +14,13 @@ import PatientFormPage from './pages/PatientFormPage';
 import IntakeWizardPage from './pages/IntakeWizardPage';
 import IntakeRecordsPage from './pages/IntakeRecordsPage';
 import AnalysisPage from './pages/AnalysisPage';
+
+// 导入新的管理页面
+import { UsersPage } from './pages/UsersPage';
+import { RolesPage } from './pages/RolesPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
+import { InvitesPage } from './pages/InvitesPage';
+
 import './styles/analysis.css';
 
 const AdminApp: React.FC = () => {
@@ -42,34 +49,22 @@ const AdminApp: React.FC = () => {
                   {/* 数据分析页面 */}
                   <Route path="/analysis" element={<AnalysisPage />} />
 
-                  {/* 管理功能页面（待实现） */}
+                  {/* 管理功能页面 */}
                   <Route path="/users" element={
-                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                      <h2>用户管理</h2>
-                      <p>功能开发中...</p>
-                    </div>
+                    <AdminRouteGuard requireAdmin={true}>
+                      <UsersPage />
+                    </AdminRouteGuard>
                   } />
 
                   <Route path="/roles" element={
-                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                      <h2>角色管理</h2>
-                      <p>功能开发中...</p>
-                    </div>
+                    <AdminRouteGuard requireAdmin={true}>
+                      <RolesPage />
+                    </AdminRouteGuard>
                   } />
 
-                  <Route path="/approvals" element={
-                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                      <h2>申请审批</h2>
-                      <p>功能开发中...</p>
-                    </div>
-                  } />
+                  <Route path="/approvals" element={<ApprovalsPage />} />
 
-                  <Route path="/invites" element={
-                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                      <h2>邀请管理</h2>
-                      <p>功能开发中...</p>
-                    </div>
-                  } />
+                  <Route path="/invites" element={<InvitesPage />} />
 
                   <Route path="/import" element={
                     <AdminRouteGuard requireAdmin={true}>
