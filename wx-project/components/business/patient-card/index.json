@@ -1,0 +1,8 @@
+{
+  "component": true,
+  "usingComponents": {
+    "pm-card": "/components/base/pm-card/index",
+    "pm-badge": "/components/base/pm-badge/index",
+    "pm-button": "/components/base/pm-button/index"
+  }
+}

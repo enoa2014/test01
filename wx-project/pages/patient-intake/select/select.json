@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "选择住户",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f5f5f5",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "pm-button": "/components/base/pm-button/index"
+  }
+}

@@ -1,0 +1,888 @@
+<view class="theme-root lab {{themeClass}}">
+  <view class="lab__sidebar">
+    <view class="lab__sidebar-title">组件列表</view>
+    <block wx:for="{{components}}" wx:key="id">
+      <view
+        class="lab__item {{item.id === activeId ? 'lab__item--active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="handleSelect"
+      >
+        {{item.name}}
+      </view>
+    </block>
+  </view>
+
+  <view class="lab__content">
+    <view class="lab__preview">
+      <view class="lab__preview-header">
+        <text class="lab__preview-title">{{current.name || '选择一个组件'}} </text>
+        <text class="lab__preview-path" wx:if="{{current.componentPath}}"
+          >{{current.componentPath}}</text
+        >
+      </view>
+      <view class="lab__preview-body">
+        <pm-button
+          wx:if="{{current.id === 'pm-button'}}"
+          type="{{propsState.type}}"
+          size="{{propsState.size}}"
+          loading="{{propsState.loading}}"
+          disabled="{{propsState.disabled}}"
+          block="{{propsState.block}}"
+          ghost="{{propsState.ghost}}"
+          use-slot="{{propsState.useSlot}}"
+          bindtap="handleDemoTap"
+          text="{{propsState.useSlot ? '' : propsState.text}}"
+        >
+          <view wx:if="{{propsState.useSlot}}" class="lab__button-slot">
+            <text class="lab__slot-icon">🔔</text>
+            <text class="lab__slot-text">{{propsState.text}}</text>
+          </view>
+        </pm-button>
+        <pm-input
+          wx:elif="{{current.id === 'pm-input'}}"
+          label="{{propsState.label}}"
+          value="{{propsState.value}}"
+          placeholder="{{propsState.placeholder}}"
+          type="{{propsState.type}}"
+          size="{{propsState.size}}"
+          label-position="{{propsState.labelPosition}}"
+          disabled="{{propsState.disabled}}"
+          clearable="{{propsState.clearable}}"
+          helper="{{propsState.helper}}"
+          error="{{propsState.error || ''}}"
+          hint="{{propsState.hint}}"
+          block="{{propsState.block}}"
+          use-prefix-slot="{{propsState.usePrefixSlot}}"
+          use-suffix-slot="{{propsState.useSuffixSlot}}"
+          prefix-icon="{{propsState.prefixIcon}}"
+          suffix-icon="{{propsState.suffixIcon}}"
+          maxlength="{{propsState.maxlength}}"
+          textarea-auto-height="{{propsState.textareaAutoHeight}}"
+          show-confirm-bar="{{propsState.showConfirmBar}}"
+          bindinput="handleInputChange"
+        >
+          <view wx:if="{{propsState.usePrefixSlot}}" slot="prefix" class="lab__affix">+86</view>
+          <view wx:if="{{propsState.useSuffixSlot}}" slot="suffix" class="lab__affix">岁</view>
+        </pm-input>
+        <pm-card
+          wx:elif="{{current.id === 'pm-card'}}"
+          title="{{propsState.useHeaderSlot ? '' : propsState.title}}"
+          description="{{propsState.useSlot ? '' : propsState.description}}"
+          status="{{propsState.status}}"
+          variant="{{propsState.variant}}"
+          clickable="{{propsState.clickable}}"
+          use-slot="{{propsState.useSlot}}"
+          use-header-slot="{{propsState.useHeaderSlot}}"
+          use-footer-slot="{{propsState.useFooterSlot}}"
+        >
+          <view wx:if="{{propsState.useHeaderSlot}}" slot="header" class="lab__card-header">
+            <text class="lab__slot-icon">🩺</text>
+            <text>重点关注患者</text>
+          </view>
+          <view wx:if="{{propsState.useSlot}}" class="lab__card-body">
+            <text>• 今日需联系家属确认随访时间</text>
+            <text>• 上传最新化验单至媒体库</text>
+          </view>
+          <view wx:if="{{propsState.useFooterSlot}}" slot="footer" class="lab__card-footer">
+            <pm-button
+              size="small"
+              type="primary"
+              text="查看详情"
+              bindtap="handleDemoTap"
+            ></pm-button>
+          </view>
+        </pm-card>
+        <pm-picker
+          wx:elif="{{current.id === 'pm-picker'}}"
+          label="{{propsState.label}}"
+          value="{{propsState.value}}"
+          placeholder="{{propsState.placeholder}}"
+          multiple="{{propsState.multiple}}"
+          searchable="{{propsState.searchable}}"
+          clearable="{{propsState.clearable}}"
+          disabled="{{propsState.disabled}}"
+          helper="{{propsState.helper}}"
+          hint="{{propsState.hint}}"
+          error="{{propsState.error}}"
+          block="{{propsState.block}}"
+          label-position="{{propsState.labelPosition}}"
+          options="{{propsState.options}}"
+          max-tag-count="{{propsState.maxTagCount || 3}}"
+          required="{{propsState.required}}"
+          bind:change="handlePickerChange"
+          bind:clear="handlePickerClear"
+          bind:search="handlePickerSearch"
+        ></pm-picker>
+        <pm-dialog
+          wx:elif="{{current.id === 'pm-dialog'}}"
+          visible="{{propsState.visible}}"
+          title="{{propsState.title}}"
+          content="{{propsState.content}}"
+          confirm-text="{{propsState.confirmText}}"
+          cancel-text="{{propsState.cancelText}}"
+          confirm-type="{{propsState.confirmType}}"
+          cancel-type="{{propsState.cancelType}}"
+          show-close="{{propsState.showClose}}"
+          close-on-overlay="{{propsState.closeOnOverlay}}"
+          scrollable="{{propsState.scrollable}}"
+          use-slot="{{propsState.useSlot}}"
+          use-header-slot="{{propsState.useHeaderSlot}}"
+          use-footer-slot="{{propsState.useFooterSlot}}"
+          bind:confirm="handleDialogConfirm"
+          bind:cancel="handleDialogCancel"
+          bind:close="handleDialogClose"
+        >
+          <view wx:if="{{propsState.useSlot}}" class="lab__dialog-body">
+            <text>请在 24 小时内安排患者随访，并记录随访结果。</text>
+          </view>
+          <view wx:if="{{propsState.useFooterSlot}}" slot="footer" class="lab__dialog-footer">
+            <pm-button type="ghost" text="稍后提醒" bindtap="handleDialogCancel"></pm-button>
+            <pm-button type="primary" text="立即安排" bindtap="handleDialogConfirm"></pm-button>
+          </view>
+        </pm-dialog>
+        <pm-badge
+          wx:elif="{{current.id === 'pm-badge'}}"
+          text="{{propsState.text}}"
+          count="{{propsState.count}}"
+          max="{{propsState.max}}"
+          type="{{propsState.type}}"
+          size="{{propsState.size}}"
+          dotted="{{propsState.dotted}}"
+          block="{{propsState.block}}"
+          use-slot="{{propsState.useSlot}}"
+        >
+          <view wx:if="{{propsState.useSlot}}" class="lab__badge-slot">
+            <text>自定义内容</text>
+          </view>
+        </pm-badge>
+        <view wx:else class="lab__empty">请选择需要预览的组件</view>
+      </view>
+    </view>
+
+    <view class="lab__panel" wx:if="{{current.id}}">
+      <view class="lab__panel-title">属性调节</view>
+
+      <view class="lab__preset-section" wx:if="{{current.presets && current.presets.length}}">
+        <text class="lab__panel-label">快速示例</text>
+        <view class="lab__preset-list">
+          <view
+            class="lab__preset {{activePresetId === presetBaseId ? 'lab__preset--active' : ''}}"
+            data-id="{{presetBaseId}}"
+            bindtap="handlePresetSelect"
+            >默认</view
+          >
+          <view
+            wx:for="{{current.presets}}"
+            wx:key="id"
+            class="lab__preset {{item.id === activePresetId ? 'lab__preset--active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="handlePresetSelect"
+            >{{item.label}}</view
+          >
+          <view
+            wx:if="{{activePresetId === presetCustomId}}"
+            class="lab__preset lab__preset--custom"
+            >自定义</view
+          >
+        </view>
+      </view>
+
+      <block wx:if="{{current.id === 'pm-button'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">类型</text>
+          <picker
+            mode="selector"
+            range="{{current.options.type.values}}"
+            value="{{optionIndexes.type}}"
+            data-key="type"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.type}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">尺寸</text>
+          <picker
+            mode="selector"
+            range="{{current.options.size.values}}"
+            value="{{optionIndexes.size}}"
+            data-key="size"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.size}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">图标</text>
+          <input
+            value="{{propsState.icon}}"
+            data-key="icon"
+            bindinput="handleTextInput"
+            placeholder="例如：⚡ 或 icon 名称"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">图标位置</text>
+          <picker
+            mode="selector"
+            range="{{current.options.iconPosition.values}}"
+            value="{{optionIndexes.iconPosition}}"
+            data-key="iconPosition"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.iconPosition}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.loading}}"
+              data-prop="loading"
+              bindchange="handleToggle"
+            />
+            Loading</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.disabled}}"
+              data-prop="disabled"
+              bindchange="handleToggle"
+            />
+            Disabled</label
+          >
+          <label class="lab__switch"
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            Block</label
+          >
+          <label class="lab__switch"
+            ><switch checked="{{propsState.ghost}}" data-prop="ghost" bindchange="handleToggle" />
+            Ghost</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.elevated}}"
+              data-prop="elevated"
+              bindchange="handleToggle"
+            />
+            Elevated</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.iconOnly}}"
+              data-prop="iconOnly"
+              bindchange="handleToggle"
+            />
+            Icon Only</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            使用自定义内容</label
+          >
+        </view>
+        <view class="lab__panel-field" wx:if="{{!propsState.useSlot && !propsState.iconOnly}}">
+          <text class="lab__panel-label">文案</text>
+          <input
+            value="{{propsState.text}}"
+            data-key="text"
+            bindinput="handleTextInput"
+            placeholder="按钮文本"
+          />
+        </view>
+        <view class="lab__panel-field" wx:if="{{propsState.iconOnly}}">
+          <text class="lab__panel-label">无障碍标签</text>
+          <input
+            value="{{propsState.ariaLabel}}"
+            data-key="ariaLabel"
+            bindinput="handleTextInput"
+            placeholder="提供屏幕阅读器描述"
+          />
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-picker'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标签</text>
+          <input
+            value="{{propsState.label}}"
+            data-key="label"
+            bindinput="handleTextInput"
+            placeholder="选择器标签"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">占位符</text>
+          <input
+            value="{{propsState.placeholder}}"
+            data-key="placeholder"
+            bindinput="handleTextInput"
+            placeholder="请选择"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">当前值</text>
+          <input
+            value="{{propsState.value}}"
+            data-key="value"
+            bindinput="handleTextInput"
+            placeholder="手动设置当前值（单选）"
+            wx:if="{{!propsState.multiple}}"
+          />
+          <input
+            wx:else
+            value="{{propsState.value ? propsState.value.join(',') : ''}}"
+            data-key="value"
+            bindinput="handleTextInput"
+            placeholder="多选值以逗号分隔"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标签位置</text>
+          <picker
+            mode="selector"
+            range="{{current.options.labelPosition.values}}"
+            value="{{optionIndexes.labelPosition}}"
+            data-key="labelPosition"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.labelPosition}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">Tag 上限</text>
+          <input
+            type="number"
+            value="{{propsState.maxTagCount}}"
+            data-key="maxTagCount"
+            bindinput="handleNumberInput"
+            placeholder="多选标签最多显示数量"
+          />
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.multiple}}"
+              data-prop="multiple"
+              bindchange="handleToggle"
+            />
+            启用多选</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.searchable}}"
+              data-prop="searchable"
+              bindchange="handleToggle"
+            />
+            支持搜索</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.clearable}}"
+              data-prop="clearable"
+              bindchange="handleToggle"
+            />
+            显示清除按钮</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.required}}"
+              data-prop="required"
+              bindchange="handleToggle"
+            />
+            必填提示</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            块级展示</label
+          >
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-dialog'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标题</text>
+          <input
+            value="{{propsState.title}}"
+            data-key="title"
+            bindinput="handleTextInput"
+            placeholder="弹窗标题"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">内容</text>
+          <textarea
+            value="{{propsState.content}}"
+            data-key="content"
+            bindinput="handleTextInput"
+            placeholder="弹窗内容"
+            class="lab__textarea"
+          ></textarea>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">确认按钮</text>
+          <input
+            value="{{propsState.confirmText}}"
+            data-key="confirmText"
+            bindinput="handleTextInput"
+            placeholder="确认按钮文案"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">取消按钮</text>
+          <input
+            value="{{propsState.cancelText}}"
+            data-key="cancelText"
+            bindinput="handleTextInput"
+            placeholder="取消按钮文案"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">确认样式</text>
+          <picker
+            mode="selector"
+            range="{{current.options.confirmType.values}}"
+            value="{{optionIndexes.confirmType}}"
+            data-key="confirmType"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.confirmType}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">取消样式</text>
+          <picker
+            mode="selector"
+            range="{{current.options.cancelType.values}}"
+            value="{{optionIndexes.cancelType}}"
+            data-key="cancelType"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.cancelType}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.visible}}"
+              data-prop="visible"
+              bindchange="handleToggle"
+            />
+            显示弹窗</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.showClose}}"
+              data-prop="showClose"
+              bindchange="handleToggle"
+            />
+            顶部关闭按钮</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.closeOnOverlay}}"
+              data-prop="closeOnOverlay"
+              bindchange="handleToggle"
+            />
+            点击遮罩关闭</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.scrollable}}"
+              data-prop="scrollable"
+              bindchange="handleToggle"
+            />
+            内容可滚动</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            自定义内容</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useFooterSlot}}"
+              data-prop="useFooterSlot"
+              bindchange="handleToggle"
+            />
+            自定义底部</label
+          >
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-badge'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">文本</text>
+          <input
+            value="{{propsState.text}}"
+            data-key="text"
+            bindinput="handleTextInput"
+            placeholder="Badge 文本"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">数量</text>
+          <input
+            value="{{propsState.count}}"
+            data-key="count"
+            bindinput="handleTextInput"
+            placeholder="数量或留空"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">最大计数</text>
+          <input
+            type="number"
+            value="{{propsState.max}}"
+            data-key="max"
+            bindinput="handleNumberInput"
+            placeholder="超过后显示 n+"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">类型</text>
+          <picker
+            mode="selector"
+            range="{{current.options.type.values}}"
+            value="{{optionIndexes.type}}"
+            data-key="type"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.type}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">尺寸</text>
+          <picker
+            mode="selector"
+            range="{{current.options.size.values}}"
+            value="{{optionIndexes.size}}"
+            data-key="size"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.size}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch checked="{{propsState.dotted}}" data-prop="dotted" bindchange="handleToggle" />
+            状态点模式</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            胶囊模式</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            自定义内容</label
+          >
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-input'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标签</text>
+          <input
+            value="{{propsState.label}}"
+            data-key="label"
+            bindinput="handleTextInput"
+            placeholder="标签"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">占位符</text>
+          <input
+            value="{{propsState.placeholder}}"
+            data-key="placeholder"
+            bindinput="handleTextInput"
+            placeholder="请输入占位文本"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">内容</text>
+          <input
+            value="{{propsState.value}}"
+            data-key="value"
+            bindinput="handleTextInput"
+            placeholder="示例内容"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">类型</text>
+          <picker
+            mode="selector"
+            range="{{current.options.type.values}}"
+            value="{{optionIndexes.type}}"
+            data-key="type"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.type}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">尺寸</text>
+          <picker
+            mode="selector"
+            range="{{current.options.size.values}}"
+            value="{{optionIndexes.size}}"
+            data-key="size"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.size}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标签位置</text>
+          <picker
+            mode="selector"
+            range="{{current.options.labelPosition.values}}"
+            value="{{optionIndexes.labelPosition}}"
+            data-key="labelPosition"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.labelPosition}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">辅助文本</text>
+          <input
+            value="{{propsState.helper}}"
+            data-key="helper"
+            bindinput="handleTextInput"
+            placeholder="辅助说明"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">提示文案</text>
+          <input
+            value="{{propsState.hint}}"
+            data-key="hint"
+            bindinput="handleTextInput"
+            placeholder="展示在输入框下方的提示"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">错误提示</text>
+          <input
+            value="{{propsState.error}}"
+            data-key="error"
+            bindinput="handleTextInput"
+            placeholder="填写错误提示"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">最大长度</text>
+          <input
+            type="number"
+            value="{{propsState.maxlength}}"
+            data-key="maxlength"
+            bindinput="handleNumberInput"
+            placeholder="-1 表示不限制"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">前缀图标</text>
+          <input
+            value="{{propsState.prefixIcon}}"
+            data-key="prefixIcon"
+            bindinput="handleTextInput"
+            placeholder="如：☎️"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">后缀图标</text>
+          <input
+            value="{{propsState.suffixIcon}}"
+            data-key="suffixIcon"
+            bindinput="handleTextInput"
+            placeholder="如：年"
+          />
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.disabled}}"
+              data-prop="disabled"
+              bindchange="handleToggle"
+            />
+            Disabled</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.clearable}}"
+              data-prop="clearable"
+              bindchange="handleToggle"
+            />
+            Clearable</label
+          >
+          <label class="lab__switch"
+            ><switch checked="{{propsState.block}}" data-prop="block" bindchange="handleToggle" />
+            Block</label
+          >
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.usePrefixSlot}}"
+              data-prop="usePrefixSlot"
+              bindchange="handleToggle"
+            />
+            Prefix</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSuffixSlot}}"
+              data-prop="useSuffixSlot"
+              bindchange="handleToggle"
+            />
+            Suffix</label
+          >
+        </view>
+        <view
+          wx:if="{{propsState.type === 'textarea'}}"
+          class="lab__panel-field lab__panel-field--row"
+        >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.textareaAutoHeight}}"
+              data-prop="textareaAutoHeight"
+              bindchange="handleToggle"
+            />
+            AutoHeight</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.showConfirmBar}}"
+              data-prop="showConfirmBar"
+              bindchange="handleToggle"
+            />
+            ConfirmBar</label
+          >
+        </view>
+      </block>
+
+      <block wx:elif="{{current.id === 'pm-card'}}">
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">标题</text>
+          <input
+            value="{{propsState.title}}"
+            data-key="title"
+            bindinput="handleTextInput"
+            placeholder="卡片标题"
+          />
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">描述</text>
+          <pm-input
+            label="描述"
+            type="textarea"
+            value="{{propsState.description}}"
+            placeholder="卡片描述"
+            data-key="description"
+            bindinput="handleTextInput"
+            textarea-auto-height="{{true}}"
+            clearable="{{false}}"
+            label-position="top"
+            block="{{true}}"
+          ></pm-input>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">状态</text>
+          <picker
+            mode="selector"
+            range="{{current.options.status.values}}"
+            value="{{optionIndexes.status}}"
+            data-key="status"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.status}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field">
+          <text class="lab__panel-label">样式</text>
+          <picker
+            mode="selector"
+            range="{{current.options.variant.values}}"
+            value="{{optionIndexes.variant}}"
+            data-key="variant"
+            bindchange="handleOptionChange"
+          >
+            <view class="lab__picker">{{propsState.variant}}</view>
+          </picker>
+        </view>
+        <view class="lab__panel-field lab__panel-field--row">
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.clickable}}"
+              data-prop="clickable"
+              bindchange="handleToggle"
+            />
+            Clickable</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useSlot}}"
+              data-prop="useSlot"
+              bindchange="handleToggle"
+            />
+            自定义内容</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useHeaderSlot}}"
+              data-prop="useHeaderSlot"
+              bindchange="handleToggle"
+            />
+            自定义头部</label
+          >
+          <label class="lab__switch"
+            ><switch
+              checked="{{propsState.useFooterSlot}}"
+              data-prop="useFooterSlot"
+              bindchange="handleToggle"
+            />
+            自定义底部</label
+          >
+        </view>
+      </block>
+
+      <view class="lab__panel-footer" wx:if="{{current.docs}}">
+        <text>文档：</text>
+        <text class="lab__link">{{current.docs}}</text>
+      </view>
+    </view>
+  </view>
+</view>

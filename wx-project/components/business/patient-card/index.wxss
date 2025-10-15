@@ -1,0 +1,419 @@
+@import '/styles/foundation.wxss';
+
+/* P1-5: 长按操作视觉反馈 - 微动画 */
+.patient-card {
+  display: block;
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.patient-card:active {
+  transform: scale(0.98);
+  background-color: var(--color-bg-secondary);
+}
+
+/* 长按状态 */
+.patient-card--longpress {
+  transform: scale(0.95);
+  box-shadow: 0 0 0 4rpx var(--color-primary-subtle);
+  background-color: var(--color-bg-tertiary);
+}
+
+/* 选中状态 */
+.patient-card--selected {
+  box-shadow: 0 0 0 2rpx var(--color-primary);
+}
+
+.patient-card__selection-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  pointer-events: none;
+}
+
+.patient-card__selection-overlay--active {
+  background-color: rgba(38, 95, 255, 0.08);
+}
+
+/* 滑动操作区域 */
+.patient-card__swipe-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  background: linear-gradient(90deg, transparent 0%, var(--color-bg-primary) 30%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.patient-card--swiping .patient-card__swipe-actions {
+  opacity: 1;
+}
+
+.patient-card__swipe-action {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-secondary);
+  transition: all 0.2s ease;
+}
+
+.patient-card__swipe-action:active {
+  transform: scale(0.9);
+  background-color: var(--color-bg-tertiary);
+}
+
+.patient-card__swipe-action--primary {
+  background-color: var(--color-primary);
+  color: var(--color-bg-primary);
+}
+
+.patient-card__swipe-action--danger {
+  background-color: var(--color-danger);
+  color: var(--color-bg-primary);
+}
+
+/* 状态指示色条 */
+.patient-card__status-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4rpx;
+  border-radius: 2rpx 0 0 2rpx;
+}
+
+.patient-card__status-indicator--in_care {
+  background-color: var(--color-success);
+}
+
+.patient-card__status-indicator--pending {
+  background-color: var(--color-warning);
+}
+
+.patient-card__status-indicator--discharged {
+  background-color: var(--color-text-tertiary);
+}
+
+/* 头像包装器 */
+.patient-card__avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* 状态图标 */
+.patient-card__status-icon {
+  position: absolute;
+  bottom: -4rpx;
+  right: -4rpx;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid var(--color-bg-primary);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.patient-card__status-icon--in_care {
+  background-color: var(--color-success);
+}
+
+.patient-card__status-icon--pending {
+  background-color: var(--color-warning);
+}
+
+.patient-card__status-icon--discharged {
+  background-color: var(--color-text-tertiary);
+}
+
+.patient-card__status-icon-text {
+  font-size: 16rpx;
+  color: var(--color-bg-primary);
+  line-height: 1;
+}
+
+.patient-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.patient-card__avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-bg-primary);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-lg);
+}
+
+.patient-card__avatar-text {
+  line-height: 1;
+}
+
+.patient-card__title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.patient-card__title-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* P1-3: 优化视觉层级 - 增强标题字号和字重 */
+.patient-card__name {
+  font-size: var(--text-2xl); /* 从44rpx提升到52rpx */
+  font-weight: var(--font-bold); /* 从600提升到700 */
+  color: var(--color-text-primary);
+  line-height: 1.2; /* 增加行高提升可读性 */
+}
+
+/* P1-3: 优化视觉层级 - 收敛次要信息字号 */
+.patient-card__age {
+  font-size: var(--text-xs); /* 从24rpx减小到20rpx */
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* P0-5: 扩大选择框触控区域至88rpx */
+.patient-card__select-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--space-1);
+  flex-shrink: 0;
+}
+
+.patient-card__checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 2rpx solid var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-primary);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.patient-card__checkbox--checked {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-bg-primary);
+}
+
+.patient-card__checkbox-icon {
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.patient-card__badges {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* 标签分组优化 */
+.patient-card__badge {
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+/* 状态标签高亮 */
+.patient-card__badge--success,
+.patient-card__badge--warning,
+.patient-card__badge--danger {
+  opacity: 1;
+  font-weight: var(--font-semibold);
+}
+
+.patient-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3); /* 增加间距提升分组感 */
+  margin-top: var(--space-3);
+}
+
+/* 信息分组分隔线 */
+.patient-card__info-group {
+  border-top: 1rpx solid var(--color-border-subtle);
+  padding-top: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.patient-card__primary {
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}
+
+.patient-card__secondary {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.patient-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.patient-card__info {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.patient-card__info-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* P1-3: 优化视觉层级 - 精简元数据标签 */
+.patient-card__info-label {
+  font-size: var(--text-xs); /* 保持20rpx小字号 */
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+/* P1-3: 优化视觉层级 - 使用中间层级字号 */
+.patient-card__info-value {
+  font-size: var(--text-base); /* 从24rpx提升到28rpx使用中间层级 */
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium); /* 增加字重突出数值 */
+  text-align: right;
+  line-height: 1.5;
+}
+
+.patient-card__tag {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-base);
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* 媒体预览区域 */
+.patient-card__media-preview {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.media-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-secondary);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+
+.media-chip:active {
+  transform: scale(0.95);
+  background: var(--color-bg-tertiary);
+}
+
+.media-chip--photo {
+  border-left: 3rpx solid var(--color-info);
+}
+
+.media-chip--doc {
+  border-left: 3rpx solid var(--color-warning);
+}
+
+.media-icon {
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+.media-count {
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+/* 缩略图样式 */
+.media-thumbnails {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.media-thumbnail {
+  position: relative;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--radius-base);
+  overflow: hidden;
+  background-color: var(--color-bg-secondary);
+  transition: transform 0.2s ease;
+}
+
+.media-thumbnail:active {
+  transform: scale(0.95);
+}
+
+.media-thumbnail-image {
+  width: 100%;
+  height: 100%;
+}
+
+.media-thumbnail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.media-thumbnail-count {
+  color: var(--color-bg-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.media-stats {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.patient-card--detail .patient-card__tag {
+  font-size: var(--text-sm);
+}

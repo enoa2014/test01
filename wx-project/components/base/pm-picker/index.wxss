@@ -1,0 +1,222 @@
+.pm-picker {
+  position: relative;
+  display: block;
+}
+
+.pm-picker__control {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-primary);
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-3);
+  min-height: 88rpx;
+}
+
+.pm-picker--disabled .pm-picker__control {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-disabled);
+}
+
+.pm-picker__label {
+  min-width: 140rpx;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.pm-picker__required {
+  color: var(--color-danger);
+  margin-left: 4rpx;
+}
+
+.pm-picker__value-wrapper {
+  flex: 1;
+  min-height: 44rpx;
+  display: flex;
+  align-items: center;
+}
+
+.pm-picker__text {
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+}
+
+.pm-picker__placeholder {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-base);
+}
+
+.pm-picker__tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pm-picker__tag {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.pm-picker__tag--extra {
+  background: var(--color-bg-secondary);
+}
+
+.pm-picker__icons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pm-picker__icon {
+  width: 32rpx;
+  height: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+}
+
+.pm-picker__icon--clear {
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.pm-picker__icon--arrow {
+  border: 2rpx solid currentcolor;
+  border-width: 0 2rpx 2rpx 0;
+  padding: 6rpx;
+  transform: rotate(45deg);
+}
+
+.pm-picker__helper {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.pm-picker__error {
+  color: var(--color-danger);
+}
+
+.pm-picker__hint {
+  color: var(--color-info);
+}
+
+.pm-picker__helper-text {
+  color: var(--color-text-tertiary);
+}
+
+.pm-picker__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--overlay-modal);
+  z-index: 1000;
+}
+
+.pm-picker__panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70vh;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-md);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+}
+
+.pm-picker__panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.pm-picker__panel-title {
+  color: var(--color-text-primary);
+  font-weight: var(--font-semibold);
+}
+
+.pm-picker__panel-actions {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--color-info);
+}
+
+.pm-picker__panel-action {
+  font-size: var(--text-sm);
+}
+
+.pm-picker__panel-action--primary {
+  color: var(--color-primary);
+  font-weight: var(--font-medium);
+}
+
+.pm-picker__search {
+  padding: var(--space-4) var(--space-5);
+}
+
+.pm-picker__search-input {
+  width: 100%;
+  height: 72rpx;
+  border-radius: var(--radius-base);
+  border: 2rpx solid var(--color-border-secondary);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.pm-picker__options {
+  flex: 1;
+  padding: var(--space-4) var(--space-5);
+}
+
+.pm-picker__option {
+  padding: var(--space-3) 0;
+  border-bottom: 2rpx solid var(--color-border-secondary);
+  color: var(--color-text-secondary);
+}
+
+.pm-picker__option:last-child {
+  border-bottom: none;
+}
+
+.pm-picker__option--disabled {
+  color: var(--color-text-tertiary);
+}
+
+.pm-picker__option--active {
+  color: var(--color-primary);
+}
+
+.pm-picker__option-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-base);
+}
+
+.pm-picker__option-desc {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.pm-picker__check {
+  font-size: var(--text-base);
+}
+
+.pm-picker__empty {
+  text-align: center;
+  color: var(--color-text-tertiary);
+  padding: var(--space-6) 0;
+}

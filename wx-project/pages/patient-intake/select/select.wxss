@@ -1,0 +1,371 @@
+/* 住户选择页面样式 */
+
+.select-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-secondary);
+  box-sizing: border-box;
+}
+
+/* 头部 */
+.header {
+  background-color: var(--color-bg-primary);
+  padding: var(--space-5);
+  text-align: center;
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.select-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* 搜索区域 */
+.search-section {
+  background-color: var(--color-bg-primary);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 2rpx solid var(--color-border-secondary);
+  box-sizing: border-box;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  min-height: 72rpx;
+  padding: 0 var(--space-3) 0 var(--space-5);
+  font-size: var(--text-base);
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-tertiary);
+  box-sizing: border-box;
+  color: var(--color-text-primary);
+}
+
+.search-input:focus {
+  border-color: var(--color-info);
+  background-color: var(--color-bg-primary);
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.clear-btn {
+  position: absolute;
+  right: var(--space-2);
+  width: 32rpx;
+  height: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-text-tertiary);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--color-bg-primary);
+}
+
+/* 住户列表 */
+.patient-list {
+  flex: 1;
+  padding: 0 var(--space-5);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.patient-item {
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.patient-item:active {
+  transform: scale(0.98);
+}
+
+.patient-main {
+  flex: 1;
+}
+
+.patient-name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.patient-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.info-item {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.patient-meta {
+  margin-left: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.admission-info {
+  text-align: right;
+}
+
+.admission-count {
+  font-size: var(--text-sm);
+  color: var(--color-info);
+  display: block;
+  margin-bottom: var(--space-1);
+  font-weight: var(--font-semibold);
+}
+
+.last-admission {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  display: block;
+}
+
+.new-badge {
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+  background-color: var(--bg-warning-soft);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1rpx solid var(--color-warning);
+}
+
+.patient-action {
+  margin-left: var(--space-3);
+}
+
+.action-icon {
+  font-size: var(--text-lg);
+  color: var(--color-success);
+  font-weight: var(--font-semibold);
+}
+
+/* 状态提示 */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: var(--space-6) var(--space-5);
+}
+
+.loading-text {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: var(--space-4);
+}
+
+.empty-text {
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-semibold);
+}
+
+.empty-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  line-height: 1.4;
+}
+
+.loading-more,
+.no-more {
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.no-more-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+/* 底部操作 */
+.action-bar {
+  background-color: var(--color-bg-primary);
+  padding: var(--space-4) var(--space-4);
+  border-top: 2rpx solid var(--color-border-secondary);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+}
+
+.action-bar__button {
+  font-weight: var(--font-semibold);
+  min-width: 240rpx;
+  max-width: 100%;
+}
+
+/* 确认弹窗 */
+.confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--overlay-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modal-fade-in 0.2s ease-out;
+}
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  width: 640rpx;
+  max-width: 90vw;
+  background-color: var(--color-bg-primary);
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow:
+    var(--shadow-xl),
+    0 4rpx 16rpx var(--interaction-shadow-generic-hover);
+  box-sizing: border-box;
+  animation: modal-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-slide-up {
+  from {
+    transform: translateY(40rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  text-align: center;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.5rpx;
+}
+
+.modal-body {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.selected-patient {
+  margin-bottom: var(--space-4);
+}
+
+.modal-body .patient-name {
+  text-align: center;
+  margin-bottom: var(--space-4);
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.patient-details {
+  background-color: var(--color-bg-tertiary);
+  padding: var(--space-4);
+  border-radius: 16rpx;
+}
+
+.detail-item {
+  display: flex;
+  margin-bottom: var(--space-2);
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  min-width: 120rpx;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.intake-hint {
+  background: var(--bg-info-soft);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 12rpx;
+  border-left: 4rpx solid var(--color-info);
+  margin-top: var(--space-4);
+}
+
+.intake-hint .hint-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5);
+  background-color: var(--color-bg-primary);
+}
+
+.modal-action {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-action--cancel {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border: none;
+  font-weight: 500;
+}
+
+.modal-action--confirm {
+  font-weight: 600;
+}

@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/analysis/index",
+    "pages/patient-detail/detail",
+    "pages/patient-intake/wizard/wizard",
+    "pages/patient-intake/success/success",
+    "pages/component-lab/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "入住档案",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5f5"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "cloud": true
+}

@@ -1,0 +1,143 @@
+@import '/styles/foundation.wxss';
+
+.smart-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.smart-search__input-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.smart-search__input {
+  flex: 1;
+}
+
+.smart-search__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.smart-search__action {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-base);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+
+/* P1-1: 高级筛选按钮激活状态 */
+.advanced-filter-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.advanced-filter-btn.active {
+  background: var(--color-primary-light, #e6f4ff);
+  color: var(--color-primary);
+  font-weight: var(--font-semibold);
+}
+
+.active-indicator {
+  display: inline-flex;
+}
+
+.smart-search__loading {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+.smart-search__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
+}
+
+.smart-search__suggestion {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.smart-search__suggestion-icon {
+  color: var(--color-text-tertiary);
+}
+
+/* 快速筛选器已移除 - 功能已整合至页面统计卡片 */
+
+.smart-search__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.smart-search__history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.smart-search__history-title {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.smart-search__history-clear {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+}
+
+.smart-search__history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.smart-search__history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* P0-2: 历史记录文本 */
+.smart-search__history-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* P0-2: 删除按钮 */
+.smart-search__history-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44rpx;
+  min-height: 44rpx;
+  margin: calc(var(--space-1) * -1);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-base);
+  transition: color 0.2s ease;
+}
+
+.smart-search__history-delete:active {
+  color: var(--color-danger);
+}

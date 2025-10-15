@@ -1,0 +1,91 @@
+<!--入住成功页面-->
+<view class="theme-root success-container {{themeClass}}">
+  <view class="success-header">
+    <view class="success-icon">✅</view>
+    <view class="success-title">{{titleText}}</view>
+    <view class="success-subtitle">{{subtitleText}}</view>
+  </view>
+
+  <view class="success-content">
+    <!-- 入住信息摘要 -->
+    <view class="summary-card">
+      <view class="card-header">
+        <view class="card-title">{{summaryTitle}}</view>
+        <view class="record-id" wx:if="{{recordId}}">编号：{{recordId}}</view>
+      </view>
+
+      <view class="summary-info">
+        <view class="info-row">
+          <text class="info-label">住户姓名</text>
+          <text class="info-value">{{patientName}}</text>
+        </view>
+
+        <view class="info-row">
+          <text class="info-label">{{timeLabel}}</text>
+          <text class="info-value">{{actionTime}}</text>
+        </view>
+
+        <view class="info-row" wx:if="{{mode !== 'create' && uploadCount > 0}}">
+          <text class="info-label">附件数量</text>
+          <text class="info-value">{{uploadCount}}个文件</text>
+        </view>
+      </view>
+
+      <view class="situation-summary" wx:if="{{mode !== 'create' && situationSummary}}">
+        <view class="summary-label">情况说明摘要</view>
+        <view class="summary-text">{{situationSummary}}</view>
+      </view>
+    </view>
+
+    <!-- 后续提醒 -->
+    <view class="reminder-card">
+      <view class="reminder-icon">📋</view>
+      <view class="reminder-content">
+        <view class="reminder-title">温馨提醒</view>
+        <view class="reminder-list">
+          <block wx:for="{{reminderItems}}" wx:key="*this">
+            <view class="reminder-item">• {{item}}</view>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="quick-actions">
+      <view class="action-title">后续操作</view>
+      <view class="action-buttons">
+        <pm-button
+          class="action-button"
+          type="primary"
+          ghost="{{true}}"
+          size="small"
+          icon="👁️"
+          text="查看住户"
+          bindtap="onViewPatient"
+        ></pm-button>
+
+        <pm-button
+          class="action-button"
+          type="primary"
+          ghost="{{true}}"
+          size="small"
+          icon="➕"
+          text="继续添加"
+          bindtap="onAddAnother"
+        ></pm-button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions">
+    <pm-button
+      class="primary-action primary-btn"
+      type="primary"
+      size="medium"
+      block="{{true}}"
+      text="返回首页"
+      bindtap="onBackToHome"
+    ></pm-button>
+  </view>
+</view>
