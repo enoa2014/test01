@@ -1,0 +1,124 @@
+import React from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { CloudbaseProvider } from './providers/CloudbaseProvider';
+import { RBACProvider } from './contexts/RBACContext';
+import { AdminRouteGuard } from './components/AdminRouteGuard';
+import { AdminLayout } from './components/AdminLayout';
+import LoginPage from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+
+// 导入现有页面
+import PatientListPage from './pages/PatientListPage';
+import PatientDetailPage from './pages/PatientDetailPage';
+import PatientFormPage from './pages/PatientFormPage';
+import IntakeWizardPage from './pages/IntakeWizardPage';
+import IntakeRecordsPage from './pages/IntakeRecordsPage';
+import AnalysisPage from './pages/AnalysisPage';
+import './styles/analysis.css';
+
+const AdminApp: React.FC = () => {
+  return (
+    <CloudbaseProvider>
+      <RBACProvider>
+        <Routes>
+          {/* 登录页面 */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* 管理端路由 */}
+          <Route path="/*" element={
+            <AdminRouteGuard>
+              <AdminLayout>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+
+                  {/* 患者管理相关页面 */}
+                  <Route path="/patients" element={<PatientListPage />} />
+                  <Route path="/patients/new" element={<IntakeWizardPage />} />
+                  <Route path="/patients/:patientKey" element={<PatientDetailPage />} />
+                  <Route path="/patients/:patientKey/edit" element={<PatientFormPage />} />
+                  <Route path="/patients/:patientKey/intakes" element={<IntakeRecordsPage />} />
+
+                  {/* 数据分析页面 */}
+                  <Route path="/analysis" element={<AnalysisPage />} />
+
+                  {/* 管理功能页面（待实现） */}
+                  <Route path="/users" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>用户管理</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  <Route path="/roles" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>角色管理</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  <Route path="/approvals" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>申请审批</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  <Route path="/invites" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>邀请管理</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  <Route path="/import" element={
+                    <AdminRouteGuard requireAdmin={true}>
+                      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <h2>导入Excel</h2>
+                        <p>功能开发中...</p>
+                      </div>
+                    </AdminRouteGuard>
+                  } />
+
+                  <Route path="/export" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>导出中心</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  <Route path="/audit" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>审计日志</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  <Route path="/settings" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>系统设置</h2>
+                      <p>功能开发中...</p>
+                    </div>
+                  } />
+
+                  {/* 向后兼容重定向 */}
+                  <Route path="/intake" element={<Navigate to="/patients/new" replace />} />
+
+                  {/* 404 页面 */}
+                  <Route path="*" element={
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <h2>页面未找到</h2>
+                      <p>请检查URL是否正确</p>
+                    </div>
+                  } />
+                </Routes>
+              </AdminLayout>
+            </AdminRouteGuard>
+          } />
+        </Routes>
+      </RBACProvider>
+    </CloudbaseProvider>
+  );
+};
+
+export default AdminApp;
