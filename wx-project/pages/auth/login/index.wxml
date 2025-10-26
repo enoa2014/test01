@@ -1,0 +1,37 @@
+<view class="login-page">
+  <view class="header">
+    <image class="logo" src="/assets/logo.png" mode="aspectFit" />
+    <text class="title">欢迎使用入住档案系统</text>
+    <text class="subtitle">请选择登录方式</text>
+  </view>
+
+  <view class="section">
+    <text class="section-title">快捷进入</text>
+    <button class="btn primary" bindtap="goWelcome">微信用户进入</button>
+    <button class="btn" bindtap="goQRConfirm">扫码确认登录</button>
+  </view>
+
+  <view class="divider" />
+
+  <view class="section">
+    <text class="section-title">管理员登录</text>
+    <view class="form">
+      <input class="input" placeholder="用户名" value="{{username}}" bindinput="onUsernameInput" />
+      <view class="password-row">
+        <input class="input" placeholder="口令" password="{{!showPassword}}" value="{{password}}" bindinput="onPasswordInput" />
+        <button class="toggle" size="mini" bindtap="toggleShowPassword">{{ showPassword ? '隐藏' : '显示' }}</button>
+      </view>
+      <button class="btn primary" loading="{{loading}}" bindtap="submitAdminLogin">登 录</button>
+      <text class="error" wx:if="{{error}}">{{error}}</text>
+    </view>
+  </view>
+
+  <view class="footer">
+    <text class="tip">如需权限说明或邀请码，请前往欢迎页</text>
+  </view>
+
+  <view class="mask" wx:if="{{loading}}">
+    <view class="loading">正在处理...</view>
+  </view>
+</view>
+

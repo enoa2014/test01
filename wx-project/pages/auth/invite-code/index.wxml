@@ -1,0 +1,176 @@
+<!-- pages/auth/invite-code/index.wxml -->
+<view class="invite-code">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">邀请码激活</text>
+      <text class="header-subtitle">请输入邀请码以获得相应角色权限</text>
+    </view>
+  </view>
+
+  <!-- 邀请码输入区域 -->
+  <view class="input-section">
+    <view class="input-container">
+      <view class="input-label">邀请码</view>
+      <view class="input-wrapper">
+        <input
+          class="invite-input"
+          type="text"
+          placeholder="请输入8位邀请码"
+          value="{{inviteCode}}"
+          bindinput="onInviteCodeInput"
+          maxlength="8"
+          focus="{{inputFocused}}"
+          bindconfirm="validateAndUseInviteCode"
+        />
+        <view class="input-status" wx:if="{{inviteCode.length > 0}}">
+          <text class="icon-clear" bindtap="clearInput" wx:if="{{!validating}}"></text>
+          <view class="validating-icon" wx:if="{{validating}}"></view>
+        </view>
+      </view>
+      <view class="input-hint">
+        <text class="hint-text">邀请码由8位字符组成，区分大小写</text>
+      </view>
+    </view>
+
+    <!-- 验证结果 -->
+    <view class="validation-result" wx:if="{{validationResult}}">
+      <view class="result-card result-card--{{validationResult.valid ? 'success' : 'error'}}">
+        <view class="result-icon">
+          <text class="icon-{{validationResult.valid ? 'success' : 'error'}}"></text>
+        </view>
+        <view class="result-content">
+          <text class="result-title">{{validationResult.valid ? '邀请码有效' : '邀请码无效'}}</text>
+          <text class="result-desc">{{validationResult.message}}</text>
+          <view class="result-details" wx:if="{{validationResult.valid && validationResult.role}}">
+            <text class="detail-item">获得角色：{{validationResult.roleName}}</text>
+            <text class="detail-item" wx:if="{{validationResult.expiresAt}}">有效期至：{{validationResult.expiresAt}}</text>
+            <text class="detail-item" wx:if="{{validationResult.description}}">说明：{{validationResult.description}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button
+        class="action-btn action-btn--primary {{canValidate ? '' : 'action-btn--disabled'}}"
+        disabled="{{!canValidate || validating || using}}"
+        bindtap="validateAndUseInviteCode"
+      >
+        {{validating ? '验证中...' : (using ? '激活中...' : '验证并激活')}}
+      </button>
+
+      <button
+        class="action-btn action-btn--secondary"
+        bindtap="showHelp"
+      >
+        使用帮助
+      </button>
+    </view>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="help-section">
+    <view class="help-title">
+      <text class="title-text">使用说明</text>
+    </view>
+    <view class="help-content">
+      <view class="help-item">
+        <view class="help-icon">
+          <text class="icon-number">1</text>
+        </view>
+        <view class="help-text">
+          <text class="help-step">获取邀请码</text>
+          <text class="help-desc">联系管理员或通过官方渠道获取邀请码</text>
+        </view>
+      </view>
+
+      <view class="help-item">
+        <view class="help-icon">
+          <text class="icon-number">2</text>
+        </view>
+        <view class="help-text">
+          <text class="help-step">输入邀请码</text>
+          <text class="help-desc">在上方输入框中完整输入8位邀请码</text>
+        </view>
+      </view>
+
+      <view class="help-item">
+        <view class="help-icon">
+          <text class="icon-number">3</text>
+        </view>
+        <view class="help-text">
+          <text class="help-step">验证激活</text>
+          <text class="help-desc">点击验证按钮，系统将自动为您分配相应角色</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 常见问题 -->
+  <view class="faq-section">
+    <view class="faq-title">
+      <text class="title-text">常见问题</text>
+    </view>
+    <view class="faq-list">
+      <view class="faq-item" bindtap="toggleFaq" data-index="0">
+        <view class="faq-question">
+          <text class="question-text">邀请码有效期是多久？</text>
+          <text class="icon-arrow {{faqExpanded[0] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[0] ? 'expanded' : ''}}">
+          <text class="answer-text">邀请码的有效期由管理员设置，通常为30-90天。请在有效期内使用，过期后需要重新获取。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="1">
+        <view class="faq-question">
+          <text class="question-text">一个邀请码可以使用多次吗？</text>
+          <text class="icon-arrow {{faqExpanded[1] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[1] ? 'expanded' : ''}}">
+          <text class="answer-text">邀请码的使用次数由管理员设置，通常只能使用一次。使用后邀请码将失效。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="2">
+        <view class="faq-question">
+          <text class="question-text">输入邀请码后没有反应怎么办？</text>
+          <text class="icon-arrow {{faqExpanded[2] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[2] ? 'expanded' : ''}}">
+          <text class="answer-text">请检查：1）邀请码是否正确；2）网络连接是否正常；3）邀请码是否已过期。如仍有问题，请联系管理员。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="3">
+        <view class="faq-question">
+          <text class="question-text">如何获得更多角色的权限？</text>
+          <text class="icon-arrow {{faqExpanded[3] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[3] ? 'expanded' : ''}}">
+          <text class="answer-text">您可以通过角色申请页面申请其他角色，或获取相应角色的邀请码。不同角色有不同的权限范围。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 联系支持 -->
+  <view class="support-section">
+    <view class="support-title">需要帮助？</view>
+    <view class="support-content">
+      <text class="support-desc">如果您在使用过程中遇到任何问题，请联系技术支持</text>
+      <view class="support-actions">
+        <button class="support-btn" bindtap="contactSupport">
+          <text class="icon-contact"></text>
+          <text>联系管理员</text>
+        </button>
+        <button class="support-btn" bindtap="goToApplication">
+          <text class="icon-apply"></text>
+          <text>角色申请</text>
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

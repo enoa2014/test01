@@ -1,0 +1,85 @@
+<view class="pm-picker {{disabled ? 'pm-picker--disabled' : ''}}" bindtap="handleControlTap">
+  <view class="pm-picker__control">
+    <view class="pm-picker__label" wx:if="label">
+      {{label}}
+      <text wx:if="required" class="pm-picker__required">*</text>
+    </view>
+    <view class="pm-picker__value-wrapper">
+      <view wx:if="hasSelection" class="pm-picker__value">
+        <block wx:if="multiple">
+          <view class="pm-picker__tags">
+            <block wx:for="{{displayTags}}" wx:key="value">
+              <view class="pm-picker__tag">{{item}}</view>
+            </block>
+            <view wx:if="extraTagCount>0" class="pm-picker__tag pm-picker__tag--extra"
+              >+{{extraTagCount}}</view
+            >
+          </view>
+        </block>
+        <block wx:else>
+          <text class="pm-picker__text">{{displayLabel}}</text>
+        </block>
+      </view>
+      <view wx:else class="pm-picker__placeholder">{{placeholder}}</view>
+    </view>
+    <view class="pm-picker__icons">
+      <view
+        wx:if="clearable && hasSelection"
+        class="pm-picker__icon pm-picker__icon--clear"
+        catchtap="handleClear"
+        >×</view
+      >
+      <view class="pm-picker__icon pm-picker__icon--arrow"></view>
+    </view>
+  </view>
+  <view class="pm-picker__helper" wx:if="error || helper || hint">
+    <text wx:if="error" class="pm-picker__error">{{error}}</text>
+    <text wx:elif="hint" class="pm-picker__hint">{{hint}}</text>
+    <text wx:elif="helper" class="pm-picker__helper-text">{{helper}}</text>
+  </view>
+</view>
+
+<view wx:if="opened" class="pm-picker__overlay" catchtouchmove="noop" bindtap="handleOverlayTap" />
+
+<view wx:if="opened" class="pm-picker__panel" catchtap="noop">
+  <view class="pm-picker__panel-header">
+    <view class="pm-picker__panel-title">{{panelTitle}}</view>
+    <view class="pm-picker__panel-actions">
+      <text class="pm-picker__panel-action" bindtap="handleCancel">取消</text>
+      <text class="pm-picker__panel-action pm-picker__panel-action--primary" bindtap="handleConfirm"
+        >确定</text
+      >
+    </view>
+  </view>
+
+  <view wx:if="searchable" class="pm-picker__search">
+    <input
+      class="pm-picker__search-input"
+      type="text"
+      placeholder="搜索关键词"
+      value="{{keyword}}"
+      bindinput="handleSearch"
+      confirm-type="search"
+    />
+  </view>
+
+  <scroll-view scroll-y class="pm-picker__options">
+    <block wx:if="filteredOptions.length">
+      <view
+        wx:for="{{filteredOptions}}"
+        wx:key="value"
+        class="pm-picker__option {{item.disabled ? 'pm-picker__option--disabled' : ''}} {{item.active ? 'pm-picker__option--active' : ''}}"
+        data-value="{{item.value}}"
+        data-disabled="{{item.disabled}}"
+        bindtap="handleOptionTap"
+      >
+        <view class="pm-picker__option-main">
+          <text class="pm-picker__option-label">{{item.label}}</text>
+          <text wx:if="multiple" class="pm-picker__check">{{item.active ? '✓' : ''}}</text>
+        </view>
+        <text wx:if="item.description" class="pm-picker__option-desc">{{item.description}}</text>
+      </view>
+    </block>
+    <view wx:else class="pm-picker__empty">暂无匹配项</view>
+  </scroll-view>
+</view>

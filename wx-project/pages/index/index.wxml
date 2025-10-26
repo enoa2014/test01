@@ -1,0 +1,393 @@
+﻿<view class="theme-root container stack gap-4 {{themeClass}}" data-theme="{{theme}}">
+  <view class="hero">
+    <view class="hero-header">
+      <text class="title">住户档案</text>
+      <picker
+        class="theme-picker"
+        mode="selector"
+        range="{{themeOptions}}"
+        range-key="label"
+        value="{{themePickerIndex}}"
+        bindchange="onThemePick"
+      >
+        <view class="theme-select">
+          <text class="theme-select__label">{{themePickerLabel}}</text>
+          <text class="theme-select__icon">▾</text>
+        </view>
+      </picker>
+    </view>
+    <text class="hero-subtitle">汇总每位住户的入住记录</text>
+  </view>
+
+  <!-- 统计卡片区域 -->
+  <view class="stats-section">
+    <view class="stats-grid">
+      <view
+        class="stat-card stat-card--all {{activeStatFilter === 'all' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="all"
+      >
+        <text class="stat-value">{{statsData.total || 0}}</text>
+        <text class="stat-label">全部</text>
+      </view>
+      <view
+        class="stat-card stat-card--in-care {{activeStatFilter === 'in_care' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="in_care"
+      >
+        <text class="stat-value">{{statsData.inCare || 0}}</text>
+        <text class="stat-label">在住</text>
+      </view>
+      <view
+        class="stat-card stat-card--pending {{activeStatFilter === 'pending' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="pending"
+      >
+        <text class="stat-value">{{statsData.pending || 0}}</text>
+        <text class="stat-label">待入住</text>
+      </view>
+      <view
+        class="stat-card stat-card--discharged {{activeStatFilter === 'discharged' ? 'stat-card--active' : ''}}"
+        bindtap="onStatFilterTap"
+        data-filter="discharged"
+      >
+        <text class="stat-value">{{statsData.discharged || 0}}</text>
+        <text class="stat-label">已离开</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="toolbar stack gap-3">
+    <smart-search-bar
+      value="{{searchKeyword}}"
+      placeholder="搜索住户姓名、档案号或标签"
+      suggestions="{{searchSuggestions}}"
+      loading="{{searchLoading}}"
+      history-enabled="{{true}}"
+      has-active-filters="{{hasActiveFilters}}"
+      active-filter-count="{{activeFilterCount}}"
+      bind:input="onSearchInput"
+      bind:suggest="onSearchSuggest"
+      bind:search="onSearchSubmit"
+      bind:clear="onSearchClear"
+      bind:toggleadv="onToggleAdvancedFilter"
+    />
+
+    <view class="toolbar-row">
+      <picker
+        class="sort-picker-wrapper"
+        mode="selector"
+        range="{{sortOptions}}"
+        range-key="label"
+        value="{{sortIndex}}"
+        bindchange="onSortChange"
+      >
+        <view class="sort-picker">
+          <text class="sort-text">{{sortOptions[sortIndex].label}}</text>
+          <text class="sort-icon">▾</text>
+        </view>
+      </picker>
+      <view class="toolbar-actions">
+        <!-- 多选模式开关 -->
+        <pm-button
+          class="toolbar-action batch-toggle"
+          text="{{batchMode ? '完成' : '多选'}}"
+          icon="{{batchMode ? '✓' : '☑'}}"
+          size="small"
+          type="primary"
+          ghost="{{!batchMode}}"
+          aria-label="{{batchMode ? '退出多选模式' : '开启多选模式'}}"
+          bindtap="onToggleBatchMode"
+        />
+        <pm-button
+          class="toolbar-action"
+          text="扫码登录"
+          icon="📱"
+          size="small"
+          type="primary"
+          ghost="{{true}}"
+          bindtap="onQRLoginTap"
+        />
+        <pm-button
+          class="toolbar-action"
+          text="查看分析"
+          size="small"
+          type="primary"
+          ghost="{{true}}"
+          bindtap="onAnalysisTap"
+        />
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="skeleton-list">
+    <view class="skeleton-item" wx:for="{{skeletonPlaceholders}}" wx:key="*this">
+      <view class="skeleton-avatar"></view>
+      <view class="skeleton-body">
+        <view class="skeleton-line skeleton-line--title"></view>
+        <view class="skeleton-badges">
+          <view class="skeleton-badge" wx:for="{{[0,1]}}" wx:key="*this"></view>
+        </view>
+        <view class="skeleton-grid">
+          <view class="skeleton-chip" wx:for="{{[0,1,2]}}" wx:key="*this"></view>
+        </view>
+        <view class="skeleton-line"></view>
+      </view>
+    </view>
+  </view>
+  <!-- P2-7: 增强错误状态UI和重试机制 -->
+  <view wx:elif="{{error}}" class="error-state">
+    <view class="error-illustration">
+      <text class="error-icon">⚠️</text>
+    </view>
+    <text class="error-title">加载失败</text>
+    <text class="error-message">{{error}}</text>
+    <view class="error-actions">
+      <pm-button text="重试" type="primary" icon="🔄" bindtap="onRetry" />
+    </view>
+  </view>
+
+  <!-- P1-9: 智能空状态场景区分 -->
+  <pm-card
+    wx:if="{{!loading && !error && !displayPatients.length && emptyStateConfig}}"
+    class="empty-state-card"
+    title="{{emptyStateConfig.title}}"
+    useFooterSlot="{{true}}"
+  >
+    <view class="empty-state">
+      <view class="empty-illustration-wrapper">
+        <text class="empty-icon">
+          {{emptyStateConfig.type === 'search' ? '🔍' : emptyStateConfig.type === 'filter' ? '🔎' :
+          '📋'}}
+        </text>
+      </view>
+      <text class="empty-description">{{emptyStateConfig.description}}</text>
+    </view>
+    <view slot="footer" class="empty-actions">
+      <pm-button
+        wx:if="{{emptyStateConfig.showCreateButton}}"
+        text="{{emptyStateConfig.actionText}}"
+        type="primary"
+        size="medium"
+        bindtap="{{emptyStateConfig.actionHandler}}"
+      />
+      <pm-button
+        wx:else
+        text="{{emptyStateConfig.actionText}}"
+        type="ghost"
+        size="medium"
+        bindtap="{{emptyStateConfig.actionHandler}}"
+      />
+      <pm-button
+        wx:if="{{emptyStateConfig.showCreateButton}}"
+        text="添加住户"
+        type="primary"
+        size="medium"
+        bindtap="onCreatePatientTap"
+      />
+    </view>
+  </pm-card>
+  <scroll-view wx:else scroll-y class="patient-list {{batchMode ? 'patient-list--batch' : ''}}">
+    <patient-card
+      wx:for="{{displayPatients}}"
+      wx:key="patientKey"
+      class="patient-item patient-item--{{cardDensityMode}}"
+      patient="{{item}}"
+      mode="{{cardDensityMode}}"
+      status="{{item.cardStatus || 'default'}}"
+      badges="{{item.badges || []}}"
+      selectable="{{batchMode}}"
+      selected="{{item.selected}}"
+      clickable="{{true}}"
+      data-key="{{item.key || item.patientKey || item.recordKey || ''}}"
+      data-patient-key="{{item.patientKey || item.key || item.recordKey || ''}}"
+      data-record-key="{{item.recordKey || item.key || item.patientKey || ''}}"
+      bind:cardtap="onPatientTap"
+      bind:selectchange="onCardSelectChange"
+      bind:longpress="onCardLongPress"
+    />
+  </scroll-view>
+
+  <view wx:if="{{batchMode}}" class="batch-toolbar">
+    <view class="batch-toolbar__info">
+      <text class="batch-toolbar__count">已选 {{selectedCount}}</text>
+      <pm-button
+        class="batch-toolbar__select-all"
+        size="small"
+        type="primary"
+        ghost="{{allSelected}}"
+        text="{{allSelected ? '取消全选' : '全选当前'}}"
+        bindtap="onBatchToggleSelectAll"
+      />
+    </view>
+    <view class="batch-toolbar__actions">
+      <pm-button
+        size="small"
+        icon="📄"
+        text="批量导出"
+        ghost="{{false}}"
+        type="primary"
+        disabled="{{selectedCount === 0 || batchOperationLoading}}"
+        loading="{{batchOperationLoading && batchOperationType === 'export'}}"
+        bindtap="onBatchExportTap"
+      />
+      <pm-button
+        size="small"
+        icon="🛠"
+        text="批量修改状态"
+        type="default"
+        ghost="{{true}}"
+        disabled="{{selectedCount === 0 || batchOperationLoading}}"
+        loading="{{batchOperationLoading && batchOperationType === 'status'}}"
+        bindtap="onBatchStatusTap"
+      />
+      <pm-button
+        size="small"
+        icon="🗑"
+        text="批量删除"
+        type="danger"
+        ghost="{{true}}"
+        disabled="{{selectedCount === 0 || batchOperationLoading}}"
+        loading="{{batchOperationLoading && batchOperationType === 'delete'}}"
+        bindtap="onBatchDeleteTap"
+      />
+    </view>
+  </view>
+
+  <!-- P1-7: FAB标签提示 -->
+  <view
+    wx:if="{{!batchMode}}"
+    class="fab-container {{fabVisible ? '' : 'fab-container--hidden'}} {{fabExpanded ? 'fab-container--expanded' : ''}} {{canCreatePatient ? '' : 'fab-container--disabled'}}"
+  >
+    <view
+      wx:if="{{(fabExpanded && canCreatePatient) || !canCreatePatient}}"
+      class="fab-label {{canCreatePatient ? '' : 'fab-label--hint'}}"
+    >
+      <text>{{canCreatePatient ? '添加住户' : '暂无新增权限'}}</text>
+    </view>
+    <view class="fab-button {{canCreatePatient ? '' : 'fab-button--disabled'}}">
+      <pm-button
+        icon="＋"
+        type="primary"
+        size="large"
+        icon-only="{{true}}"
+        elevated="{{true}}"
+        aria-label="{{canCreatePatient ? '添加住户' : '暂无新增权限'}}"
+        hover-class="{{canCreatePatient ? 'fab-button--hover' : ''}}"
+        bindtap="onCreatePatientTap"
+      />
+    </view>
+  </view>
+
+  <filter-panel
+    visible="{{filterPanelVisible}}"
+    statuses="{{filterStatusOptions}}"
+    risk-levels="{{filterRiskOptions}}"
+    hospital-options="{{filterHospitalOptions}}"
+    diagnosis-options="{{filterDiagnosisOptions}}"
+    gender-options="{{filterGenderOptions}}"
+    ethnicity-options="{{filterEthnicityOptions}}"
+    native-place-options="{{filterNativePlaceOptions}}"
+    doctor-options="{{filterDoctorOptions}}"
+    age-range-options="{{filterAgeRangeOptions}}"
+    value="{{pendingAdvancedFilters}}"
+    preview-count="{{filterPreviewCount}}"
+    preview-label="{{filterPreviewLabel}}"
+    preview-loading="{{filterPreviewLoading}}"
+    schemes="{{filterSchemes}}"
+    bind:preview="onFilterPreview"
+    bind:apply="onFilterApply"
+    bind:reset="onFilterReset"
+    bind:close="onFilterClose"
+    bind:savescheme="onFilterSaveScheme"
+    bind:appliescheme="onFilterApplyScheme"
+    bind:deletescheme="onFilterDeleteScheme"
+    bind:renamescheme="onFilterRenameScheme"
+    bind:searchdiagnosis="onFilterDiagnosisSearch"
+    bind:diagnosisselect="onFilterDiagnosisSelect"
+  />
+
+  
+
+  <pm-dialog
+    visible="{{statusDialogVisible}}"
+    title="调整状态"
+    confirm-type="primary"
+    cancel-text=""
+    confirm-text=""
+    close-on-confirm="{{false}}"
+    close-on-cancel="{{!statusDialogSubmitting}}"
+    show-close="{{!statusDialogSubmitting}}"
+    mask-closable="{{!statusDialogSubmitting}}"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    bind:close="onStatusDialogClose"
+  >
+    <view class="status-dialog__body">
+      <view class="status-dialog__summary" wx:if="{{statusDialogPatient}}">
+        <text class="status-dialog__name"
+          >{{statusDialogPatient.isBatch
+            ? '已选 ' + statusDialogPatient.batchCount + ' 位住户'
+            : statusDialogPatient.patientName || '该住户'}}</text
+        >
+        <text class="status-dialog__desc"
+          >{{statusDialogPatient.isBatch
+            ? '状态将同步应用到所有已选住户。'
+            : '选择新的住户状态，便于列表展示一致。'}}</text
+        >
+      </view>
+      <view class="status-dialog__options">
+        <view
+          wx:for="{{statusDialogOptions}}"
+          wx:key="id"
+          class="status-dialog__option {{statusDialogForm.value === item.id ? 'status-dialog__option--active' : ''}}"
+          bindtap="onStatusOptionSelect"
+          data-value="{{item.id}}"
+        >
+          <view class="status-dialog__option-main">
+            <text class="status-dialog__option-radio"
+              >{{statusDialogForm.value === item.id ? '●' : '○'}}</text
+            >
+            <text class="status-dialog__option-label">{{item.label}}</text>
+          </view>
+          <text class="status-dialog__option-tip" wx:if="{{item.id === 'in_care'}}"
+            >用于正在小家入住的住户</text
+          >
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'pending'}}"
+            >待入住房、随访等状态</text
+          >
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'discharged'}}"
+            >已办理离开或转出</text
+          >
+        </view>
+      </view>
+      <pm-input
+        label="备注"
+        type="textarea"
+        placeholder="可选，说明状态调整原因"
+        value="{{statusDialogForm.note}}"
+        maxlength="120"
+        textarea-auto-height="{{true}}"
+        disabled="{{statusDialogSubmitting}}"
+        bind:input="onStatusNoteInput"
+      />
+    </view>
+    <view slot="footer" class="status-dialog__footer">
+      <pm-button
+        text="取消"
+        type="ghost"
+        size="medium"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogCancel"
+      />
+      <pm-button
+        text="{{statusDialogSubmitting ? '处理中...' : '确认调整'}}"
+        type="primary"
+        size="medium"
+        loading="{{statusDialogSubmitting}}"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogConfirm"
+      />
+    </view>
+  </pm-dialog>
+</view>

@@ -1,0 +1,671 @@
+﻿<view class="theme-root detail-container {{themeClass}}">
+  <!-- 轻提示条 -->
+  <view wx:if="{{inlineToastVisible}}" class="inline-toast {{inlineToastType}}">
+    <text>{{inlineToastText}}</text>
+  </view>
+  <!-- P0-4: 骨架屏加载状态 -->
+  <view wx:if="{{loading}}" class="detail-skeleton">
+    <!-- 头部骨架 -->
+    <view class="skeleton-header">
+      <view class="skeleton-name"></view>
+      <view class="skeleton-metrics">
+        <view class="skeleton-metric-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+          <view class="skeleton-icon"></view>
+          <view class="skeleton-label"></view>
+          <view class="skeleton-value"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 信息区域骨架 -->
+    <view class="skeleton-section" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="skeleton-section-title"></view>
+      <view class="skeleton-info-row" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+        <view class="skeleton-label"></view>
+        <view class="skeleton-value"></view>
+      </view>
+    </view>
+
+    <!-- 媒体区域骨架 -->
+    <view class="skeleton-section">
+      <view class="skeleton-section-title"></view>
+      <view class="skeleton-media-grid">
+        <view class="skeleton-media-card" wx:for="{{[1,2]}}" wx:key="*this">
+          <view class="skeleton-media-image"></view>
+          <view class="skeleton-media-name"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:elif="{{error}}" class="error">{{error}}</view>
+  <scroll-view wx:else scroll-y enable-flex class="detail-scroll">
+    <view class="patient-header">
+      <view class="patient-name-row">
+        <text class="patient-detail-name">{{patient.patientName || ''}}</text>
+      </view>
+
+      <!-- 运营指标卡片网格 -->
+      <view wx:if="{{patient}}" class="patient-metrics-grid">
+        <view
+          wx:if="{{patient.status}}"
+          class="metric-card metric-card--status status-{{patient.statusClass || 'unknown'}}"
+          bindlongpress="onStatusLongPress"
+          bindtap="onStatusLongPress"
+        >
+          <view class="metric-card__icon"
+            >{{patient.statusClass === 'in-care' ? '🏠' : patient.statusClass === 'pending' ? '⏳' :
+            patient.statusClass === 'checked-out' ? '👋' : '📋'}}</view
+          >
+          <text class="metric-card__label">状态</text>
+          <text class="metric-card__value">{{patient.statusDisplay || patient.status}}</text>
+        </view>
+        <view wx:if="{{patient.admissionCount}}" class="metric-card metric-card--admissions">
+          <view class="metric-card__icon">📊</view>
+          <text class="metric-card__label">入住次数</text>
+          <text class="metric-card__value">{{patient.admissionCount}}次</text>
+        </view>
+        <view wx:if="{{patient.lastAdmissionTime}}" class="metric-card metric-card--recent">
+          <view class="metric-card__icon">📅</view>
+          <text class="metric-card__label">最近入住</text>
+          <text class="metric-card__value">{{patient.lastAdmissionTimeDisplay}}</text>
+        </view>
+      </view>
+
+      <!-- 移除顶栏“编辑资料”按钮，改用模块内编辑入口/长按 -->
+
+      
+    </view>
+
+    
+    
+      <!-- P1: 信息区域卡片化 -->
+      <view class="info-card-grid">
+        <view class="info-card info-card--basic" wx:if="{{basicInfo.length}}" bindlongpress="onModuleLongPress" data-block="basic">
+          <view class="info-card-header">
+            <text class="info-card-title">👤 住户基本信息</text>
+            <view class="info-card__tools">
+              <text class="info-card__edit" bindtap="onEditStart" data-block="basic">编辑</text>
+            </view>
+          </view>
+          <view class="info-card-body">
+            <view class="info-row" wx:for="{{basicInfo}}" wx:key="label">
+              <text class="label">{{item.label}}</text>
+              <text class="value">{{item.value}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="info-card info-card--contact" wx:if="{{familyInfo.length}}" bindlongpress="onModuleLongPress" data-block="contact">
+          <view class="info-card-header">
+            <text class="info-card-title">📞 联系信息</text>
+            <view class="info-card__tools">
+              <text class="info-card__edit" bindtap="onEditStart" data-block="contact">编辑</text>
+            </view>
+          </view>
+          <view class="info-card-body">
+            <view class="info-row" wx:for="{{familyInfo}}" wx:key="label">
+              <text class="label">{{item.label}}</text>
+              <text class="value">{{item.value}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="info-card info-card--economic" wx:if="{{economicInfo.length}}" bindlongpress="onModuleLongPress" data-block="economic">
+          <view class="info-card-header">
+            <text class="info-card-title">💰 经济情况</text>
+            <view class="info-card__tools">
+              <text class="info-card__edit" bindtap="onEditStart" data-block="economic">编辑</text>
+            </view>
+          </view>
+          <view class="info-card-body">
+            <view class="info-row" wx:for="{{economicInfo}}" wx:key="label">
+              <text class="label">{{item.label}}</text>
+              <text class="value">{{item.value}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    
+
+    <!-- 入住记录 -->
+    <view class="intake-records-section">
+      <view class="section-header section-header--sub">
+        <view class="records-row">
+          <text class="section-title">入住记录（{{intakeRecordCount}}条）</text>
+        </view>
+        <view class="records-controls">
+          <view
+            class="sort-button {{recordsSortOrder === 'desc' ? 'desc' : 'asc'}}"
+            hover-class="hover"
+            aria-label="切换排序为{{recordsSortOrder === 'desc' ? '最早' : '最新'}}"
+            bindtap="onToggleRecordsSort"
+          >
+            <text class="sort-icon">{{recordsSortOrder === 'desc' ? '▼' : '▲'}}</text>
+            <text class="sort-text">{{recordsSortOrder === 'desc' ? '最新' : '最早'}}</text>
+          </view>
+          <pm-button
+            type="primary"
+            size="small"
+            text="添加"
+            bindtap="onAddIntakeRecord"
+          />
+        </view>
+      </view>
+      <view wx:if="{{visibleIntakeRecords.length}}" class="timeline">
+        <block wx:for="{{visibleIntakeRecords}}" wx:key="intakeId">
+          <view class="timeline-row">
+            <view class="timeline-dot"></view>
+            <view class="intake-record-item">
+            <view class="record-header-main" bindtap="onToggleRecordExpand" data-id="{{item.intakeId}}">
+              <view class="record-title-row">
+                <text class="record-time">{{item.displayTime || '未记录时间'}}</text>
+                <text class="record-time-sep">→</text>
+                <text class="record-time checkout">{{item.checkoutDisplay}}</text>
+                <view class="record-expand-control">
+                  <text
+                      class="record-status"
+                      wx:if="{{item.statusDisplay && item.statusDisplay !== '已提交' && item.statusDisplay !== '系统导入'}}"
+                      >{{item.statusDisplay}}</text
+                    >
+                    <text class="duration-badge" wx:if="{{item.durationDisplay}}">· {{item.durationDisplay}}</text>
+                    <text class="record-expand-icon">{{recordsExpanded[item.intakeId] ? '▲' : '▼'}}</text>
+                  </view>
+                </view>
+
+                <view class="record-preview">
+                  <text wx:if="{{item.hospitalDisplay}}" class="preview-hospital"
+                    >🏥 {{item.hospitalDisplay}}</text
+                  >
+                  <text wx:if="{{item.diagnosisDisplay}}" class="preview-diagnosis"
+                    >📋 {{item.diagnosisDisplay}}</text
+                  >
+                </view>
+              </view>
+
+              <view wx:if="{{recordsExpanded[item.intakeId]}}" class="record-details">
+                <view class="record-actions">
+                  <text class="record-action" bindtap="onEditIntakeRecord" data-id="{{item.intakeId}}">编辑</text>
+                  <text class="record-action danger" bindtap="onDeleteIntakeRecord" data-id="{{item.intakeId}}">删除</text>
+                </view>
+                <view
+                  class="record-section"
+                  wx:if="{{item.hospitalDisplay || item.diagnosisDisplay || item.doctorDisplay}}"
+                >
+                  <text class="record-section-title">就诊情况</text>
+                  <view class="record-field" wx:if="{{item.hospitalDisplay}}">
+                    <text class="field-label">就诊医院：</text>
+                    <text class="field-value">{{item.hospitalDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.diagnosisDisplay}}">
+                    <text class="field-label">医院诊断：</text>
+                    <text class="field-value">{{item.diagnosisDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.doctorDisplay}}">
+                    <text class="field-label">医生姓名：</text>
+                    <text class="field-value">{{item.doctorDisplay}}</text>
+                  </view>
+                </view>
+
+                <view class="record-section" wx:if="{{item.durationDisplay}}">
+                  <text class="record-section-title">时长</text>
+                  <view class="record-field">
+                    <text class="field-label">本次入住：</text>
+                    <text class="field-value">{{item.durationDisplay}}</text>
+                  </view>
+                </view>
+
+                <view
+                  class="record-section"
+                  wx:if="{{item.symptomDetailDisplay || item.treatmentProcessDisplay || item.followUpPlanDisplay}}"
+                >
+                  <text class="record-section-title">医疗情况</text>
+                  <view class="record-field" wx:if="{{item.symptomDetailDisplay}}">
+                    <text class="field-label">症状详情：</text>
+                    <text class="field-value">{{item.symptomDetailDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.treatmentProcessDisplay}}">
+                    <text class="field-label">医治过程：</text>
+                    <text class="field-value">{{item.treatmentProcessDisplay}}</text>
+                  </view>
+                  <view class="record-field" wx:if="{{item.followUpPlanDisplay}}">
+                    <text class="field-label">后续治疗安排：</text>
+                    <text class="field-value">{{item.followUpPlanDisplay}}</text>
+                  </view>
+                </view>
+
+                <view class="record-section" wx:if="{{item.situation}}">
+                  <text class="record-section-title">情况说明</text>
+                  <view class="record-field">
+                    <text class="field-label">描述：</text>
+                    <text class="field-value">{{item.situation}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+      <view wx:else class="records-placeholder">暂无入住记录</view>
+    </view>
+
+    <view class="operation-log-section" wx:if="{{operationLogs.length}}">
+      <view class="section-header section-header--sub" bindtap="onToggleOperationLogs">
+        <text class="section-title">操作日志（{{operationLogs.length}}条）</text>
+        <view class="record-expand-control">
+          <text class="record-expand-icon">{{operationLogsCollapsed ? '展开 ▼' : '收起 ▲'}}</text>
+        </view>
+      </view>
+      <block wx:if="{{!operationLogsCollapsed}}">
+        <view class="operation-log-item" wx:for="{{operationLogs}}" wx:key="index">
+          <view class="log-header">
+            <text class="log-time">{{item.timeText || ''}}</text>
+            <text class="log-operator">{{item.operatorName || '未知操作人'}}</text>
+          </view>
+          <text class="log-message">{{item.message || '更新住户资料'}}</text>
+        </view>
+      </block>
+    </view>
+
+    <view class="media-section">
+      <text class="section-title">资料管理</text>
+      <block wx:if="{{!mediaInitialized}}">
+        <view class="placeholder">附件尚未加载</view>
+        <view class="media-retry" bindtap="onMediaLoadTap">点击加载附件</view>
+      </block>
+      <block wx:else>
+        <view wx:if="{{media.loading && !media.accessChecked}}" class="placeholder"
+          >正在检查权限…</view
+        >
+        <view wx:elif="{{media.loading}}" class="placeholder">正在加载附件…</view>
+        <view wx:elif="{{media.error}}" class="error">
+          {{media.error}}
+          <view class="media-retry" bindtap="onMediaRetry">重新加载</view>
+        </view>
+        <view wx:elif="{{media.accessChecked && !media.allowed}}" class="placeholder"
+          >当前账号暂无权限查看附件。</view
+        >
+        <view wx:else>
+          <view class="media-header">
+            <view class="media-quota">
+              <view class="quota-item">
+                <view class="quota-header">
+                  <text class="quota-label">文件数量</text>
+                  <text class="quota-value"
+                    >{{media.quota.totalCount}} / {{media.quota.maxCount}}</text
+                  >
+                </view>
+                <view class="quota-progress">
+                  <view
+                    class="quota-progress-bar {{media.quota.countPercent >= 90 ? 'danger' : (media.quota.countPercent >= 70 ? 'warning' : 'success')}}"
+                    style="width: {{media.quota.countPercent}}%"
+                  ></view>
+                </view>
+              </view>
+              <view class="quota-item">
+                <view class="quota-header">
+                  <text class="quota-label">存储容量</text>
+                  <text class="quota-value"
+                    >{{media.quota.totalBytesText}} / {{media.quota.maxBytesText}}</text
+                  >
+                </view>
+                <view class="quota-progress">
+                  <view
+                    class="quota-progress-bar {{media.quota.sizePercent >= 90 ? 'danger' : (media.quota.sizePercent >= 70 ? 'warning' : 'success')}}"
+                    style="width: {{media.quota.sizePercent}}%"
+                  ></view>
+                </view>
+              </view>
+            </view>
+            <view class="media-tabs" role="tablist">
+              <view
+                class="media-tab-button {{media.tab === 'images' ? 'active' : ''}}"
+                data-tab="images"
+                role="tab"
+                aria-selected="{{media.tab === 'images'}}"
+                hover-class="hover"
+                bindtap="onMediaTabChange"
+                >照片墙</view
+              >
+              <view
+                class="media-tab-button {{media.tab === 'documents' ? 'active' : ''}}"
+                data-tab="documents"
+                role="tab"
+                aria-selected="{{media.tab === 'documents'}}"
+                hover-class="hover"
+                bindtap="onMediaTabChange"
+                >文档列表</view
+              >
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{media.uploading}}" class="media-status">正在上传，请稍候…</view>
+
+        <view class="media-actions">
+          <view
+            wx:if="{{media.tab === 'images'}}"
+            class="media-action-button {{media.uploading ? 'disabled' : ''}}"
+            bindtap="onUploadImagesTap"
+            >上传图片</view
+          >
+          <view
+            wx:elif="{{media.tab === 'documents'}}"
+            class="media-action-button {{media.uploading ? 'disabled' : ''}}"
+            bindtap="onUploadDocumentsTap"
+            >上传文档</view
+          >
+        </view>
+
+        <view wx:if="{{media.tab === 'images'}}">
+          <view class="media-upload-hint">单次最多 5 个，支持 JPG/PNG/WebP，单个文件 ≤ 10MB。</view>
+          <view wx:if="{{media.images.length}}" class="media-grid">
+            <view class="media-card-item" wx:for="{{media.images}}" wx:key="id">
+              <pm-card
+                variant="outlined"
+                clickable="{{true}}"
+                padding="0"
+                use-slot="{{true}}"
+                use-header-slot="{{true}}"
+                use-footer-slot="{{true}}"
+                class="media-card__card"
+                bind:tap="onImagePreviewTap"
+                data-index="{{index}}"
+              >
+                <view slot="header" class="media-card__image">
+                  <image class="media-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill"></image>
+                </view>
+                <view class="media-card__content">
+                  <text class="media-card__name">{{item.displayName}}</text>
+                  <text class="media-card__meta">{{item.sizeText}} · {{item.uploadedAtText}}</text>
+                  <text class="media-card__meta">上传人：{{item.uploaderDisplay}}</text>
+                </view>
+                <view slot="footer" class="media-card__footer">
+                  <pm-button
+                    size="small"
+                    type="default"
+                    text="{{item.downloading ? '下载中…' : '下载'}}"
+                    loading="{{item.downloading}}"
+                    aria-label="{{item.downloading ? '下载中' : '下载'}} {{item.displayName}}"
+                    data-id="{{item.id}}"
+                    data-index="{{index}}"
+                    bind:tap="onImageDownloadTap"
+                  />
+                  <pm-button
+                    size="small"
+                    type="danger"
+                    text="{{item.deleting ? '处理中…' : '删除'}}"
+                    loading="{{item.deleting}}"
+                    aria-label="{{item.deleting ? '处理中' : '删除'}} {{item.displayName}}"
+                    data-id="{{item.id}}"
+                    data-index="{{index}}"
+                    data-category="image"
+                    bind:tap="onDeleteMediaTap"
+                  />
+                </view>
+              </pm-card>
+            </view>
+          </view>
+          <view wx:if="{{!media.images.length}}" class="media-empty-state">
+            <view class="media-empty-icon">🖼️</view>
+            <view class="media-empty-text">暂无图片资料</view>
+            <pm-button
+              text="上传图片"
+              type="primary"
+              size="small"
+              bindtap="onUploadImagesTap"
+            />
+          </view>
+        </view>
+
+        <view wx:elif="{{media.tab === 'documents'}}">
+          <view class="media-upload-hint"
+            >支持 TXT / PDF / Word / Excel，单次最多 5 个，单个文件 ≤ 10MB。</view
+          >
+          <view wx:if="{{media.documents.length}}" class="media-table">
+            <view class="media-table-header">
+              <view class="media-cell name">文件名</view>
+              <view class="media-cell type">类型</view>
+              <view class="media-cell size">大小</view>
+              <view class="media-cell time">上传时间</view>
+              <view class="media-cell uploader">上传人</view>
+              <view class="media-cell actions">操作</view>
+            </view>
+            <view class="media-table-row" wx:for="{{media.documents}}" wx:key="id">
+              <view class="media-cell name">
+                <text
+                  class="doc-name {{item.isText ? 'interactive' : 'disabled'}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  bindtap="onDocumentNameTap"
+                >
+                  {{item.displayName}}
+                </text>
+                <text wx:if="{{item.isText}}" class="doc-preview-hint"
+                  >{{item.previewLoading ? '预览中…' : '支持在线预览'}}</text
+                >
+              </view>
+              <view class="media-cell type">{{item.typeText}}</view>
+              <view class="media-cell size">{{item.sizeText}}</view>
+              <view class="media-cell time">{{item.uploadedAtText}}</view>
+              <view class="media-cell uploader">{{item.uploaderDisplay}}</view>
+              <view class="media-cell actions">
+                <pm-button
+                  size="small"
+                  type="default"
+                  text="{{item.downloading ? '下载中…' : '下载'}}"
+                  loading="{{item.downloading}}"
+                  aria-label="{{item.downloading ? '下载中' : '下载'}} {{item.displayName}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  bind:tap="onDocumentDownloadTap"
+                />
+                <pm-button
+                  size="small"
+                  type="danger"
+                  text="{{item.deleting ? '处理中…' : '删除'}}"
+                  loading="{{item.deleting}}"
+                  aria-label="{{item.deleting ? '处理中' : '删除'}} {{item.displayName}}"
+                  data-id="{{item.id}}"
+                  data-index="{{index}}"
+                  data-category="document"
+                  bind:tap="onDeleteMediaTap"
+                />
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{!media.documents.length}}" class="media-empty-state">
+            <view class="media-empty-icon">📄</view>
+            <view class="media-empty-text">暂无文档资料</view>
+            <pm-button
+              text="上传文档"
+              type="primary"
+              size="small"
+              bindtap="onUploadDocumentsTap"
+            />
+          </view>
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+
+  <!-- 状态调整对话框（与列表页一致） -->
+  <pm-dialog
+    visible="{{statusDialogVisible}}"
+    title="调整状态"
+    confirm-type="primary"
+    cancel-text=""
+    confirm-text=""
+    close-on-confirm="{{false}}"
+    close-on-cancel="{{!statusDialogSubmitting}}"
+    show-close="{{!statusDialogSubmitting}}"
+    mask-closable="{{!statusDialogSubmitting}}"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    bind:close="onStatusDialogClose"
+  >
+    <view class="status-dialog__body">
+      <view class="status-dialog__summary" wx:if="{{statusDialogPatient}}">
+        <text class="status-dialog__name">{{statusDialogPatient.patientName || '该住户'}}</text>
+        <text class="status-dialog__desc">选择新的住户状态，便于列表展示一致。</text>
+      </view>
+      <view class="status-dialog__options">
+        <view
+          wx:for="{{statusDialogOptions}}"
+          wx:key="id"
+          class="status-dialog__option {{statusDialogForm.value === item.id ? 'status-dialog__option--active' : ''}}"
+          bindtap="onStatusOptionSelect"
+          data-value="{{item.id}}"
+        >
+          <view class="status-dialog__option-main">
+            <text class="status-dialog__option-radio">{{statusDialogForm.value === item.id ? '●' : '○'}}</text>
+            <text class="status-dialog__option-label">{{item.label}}</text>
+          </view>
+          <text class="status-dialog__option-tip" wx:if="{{item.id === 'in_care'}}">用于正在小家入住的住户</text>
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'pending'}}">待入住房、随访等状态</text>
+          <text class="status-dialog__option-tip" wx:elif="{{item.id === 'discharged'}}">已办理离开或转出</text>
+        </view>
+      </view>
+      <pm-input
+        label="备注"
+        type="textarea"
+        placeholder="可选，说明状态调整原因"
+        value="{{statusDialogForm.note}}"
+        maxlength="120"
+        textarea-auto-height="{{true}}"
+        disabled="{{statusDialogSubmitting}}"
+        bind:input="onStatusNoteInput"
+      />
+    </view>
+    <view slot="footer" class="status-dialog__footer">
+      <pm-button
+        text="取消"
+        type="ghost"
+        size="medium"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogCancel"
+      />
+      <pm-button
+        text="{{statusDialogSubmitting ? '处理中...' : '确认调整'}}"
+        type="primary"
+        size="medium"
+        loading="{{statusDialogSubmitting}}"
+        disabled="{{statusDialogSubmitting}}"
+        bindtap="onStatusDialogConfirm"
+      />
+    </view>
+  </pm-dialog>
+
+  <!-- 入住条目编辑对话框 -->
+  <pm-dialog
+    visible="{{recordEditDialogVisible}}"
+    title="编辑入住记录"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    close-on-cancel="{{!recordEditSubmitting}}"
+    show-close="{{!recordEditSubmitting}}"
+    bind:close="onRecordEditCancel"
+  >
+    <scroll-view scroll-y style="height: 60vh;">
+    <view class="checkout-dialog__datetime">
+      <text class="checkout-dialog__field-label">入住时间</text>
+      <view class="checkout-dialog__datetime-row">
+        <picker mode="date" value="{{recordEditForm.intakeDate}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordIntakeDateChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.intakeDate || '选择日期'}}</view>
+        </picker>
+        <picker mode="time" value="{{recordEditForm.intakeTime}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordIntakeTimeChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.intakeTime || '选择时间'}}</view>
+        </picker>
+      </view>
+    </view>
+    <view class="checkout-dialog__datetime">
+      <text class="checkout-dialog__field-label">离开时间（可选）</text>
+      <view class="checkout-dialog__datetime-row">
+        <picker mode="date" value="{{recordEditForm.checkoutDate}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordCheckoutDateChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.checkoutDate || '选择日期'}}</view>
+        </picker>
+        <picker mode="time" value="{{recordEditForm.checkoutTime}}" disabled="{{recordEditSubmitting}}" bindchange="onRecordCheckoutTimeChange">
+          <view class="checkout-dialog__picker">{{recordEditForm.checkoutTime || '选择时间'}}</view>
+        </picker>
+      </view>
+    </view>
+    <pm-input label="就诊医院" value="{{recordEditForm.hospital}}" bind:input="onRecordFieldInput" data-field="hospital" />
+    <pm-input label="医院诊断" value="{{recordEditForm.diagnosis}}" bind:input="onRecordFieldInput" data-field="diagnosis" />
+    <pm-input label="医生姓名" value="{{recordEditForm.doctor}}" bind:input="onRecordFieldInput" data-field="doctor" />
+    <pm-input label="症状详情" type="textarea" value="{{recordEditForm.symptoms}}" bind:input="onRecordFieldInput" data-field="symptoms" />
+    <pm-input label="医治过程" type="textarea" value="{{recordEditForm.treatmentProcess}}" bind:input="onRecordFieldInput" data-field="treatmentProcess" />
+    <pm-input label="后续治疗安排" type="textarea" value="{{recordEditForm.followUpPlan}}" bind:input="onRecordFieldInput" data-field="followUpPlan" />
+    <view style="height: 200rpx;"></view>
+    </scroll-view>
+    <view slot="footer" class="checkout-dialog__footer">
+      <pm-button text="取消" type="ghost" size="medium" disabled="{{recordEditSubmitting}}" bindtap="onRecordEditCancel" />
+      <pm-button text="保存" type="primary" size="medium" loading="{{recordEditSubmitting}}" disabled="{{recordEditSubmitting}}" bindtap="onRecordEditConfirm" />
+    </view>
+  </pm-dialog>
+
+  <!-- 模块编辑对话框（基本/联系/经济） -->
+  <pm-dialog
+    visible="{{moduleEditDialogVisible}}"
+    title="编辑信息"
+    use-slot="{{true}}"
+    use-footer-slot="{{true}}"
+    close-on-cancel="{{true}}"
+    show-close="{{true}}"
+    bind:close="onBlockCancel"
+  >
+    <scroll-view scroll-y style="height: 60vh;">
+    <view wx:if="{{moduleEditBlock==='basic'}}">
+      <pm-input label="姓名" required="{{true}}" value="{{blockEditForm.patientName}}" error="{{blockEditErrors.patientName || ''}}" data-field="patientName" bind:input="onBlockFieldInput" />
+      <view class="form-group">
+        <label class="form-label required">性别</label>
+        <radio-group class="radio-group" bindchange="onBlockGenderChange">
+          <radio value="男" checked="{{blockEditForm.gender==='男'}}">男</radio>
+          <radio value="女" checked="{{blockEditForm.gender==='女'}}">女</radio>
+        </radio-group>
+        <view wx:if="{{blockEditErrors.gender}}" class="field-error">{{blockEditErrors.gender}}</view>
+      </view>
+      <view class="form-group">
+        <label class="form-label required">出生日期</label>
+        <picker mode="date" value="{{blockEditForm.birthDate}}" bindchange="onBlockBirthDateChange">
+          <view class="picker-display">{{blockEditForm.birthDate || '请选择出生日期'}}</view>
+        </picker>
+        <view wx:if="{{blockEditErrors.birthDate}}" class="field-error">{{blockEditErrors.birthDate}}</view>
+      </view>
+      <pm-input label="证件类型" value="{{blockEditForm.idType}}" data-field="idType" bind:input="onBlockFieldInput" />
+      <pm-input label="证件号码" required="{{true}}" value="{{blockEditForm.idNumber}}" error="{{blockEditErrors.idNumber || ''}}" data-field="idNumber" bind:input="onBlockFieldInput" />
+      <pm-input label="联系电话" value="{{blockEditForm.phone}}" error="{{blockEditErrors.phone || ''}}" data-field="phone" bind:input="onBlockFieldInput" />
+      <pm-input label="籍贯" value="{{blockEditForm.nativePlace}}" data-field="nativePlace" bind:input="onBlockFieldInput" />
+      <pm-input label="民族" value="{{blockEditForm.ethnicity}}" data-field="ethnicity" bind:input="onBlockFieldInput" />
+    </view>
+
+    <view wx:elif="{{moduleEditBlock==='contact'}}">
+      <pm-input label="家庭地址" required="{{true}}" value="{{blockEditForm.address}}" error="{{blockEditErrors.address || ''}}" data-field="address" bind:input="onBlockFieldInput" />
+      <pm-input label="父亲联系方式" value="{{blockEditForm.fatherInfo}}" data-field="fatherInfo" bind:input="onBlockFieldInput" />
+      <pm-input label="母亲联系方式" value="{{blockEditForm.motherInfo}}" data-field="motherInfo" bind:input="onBlockFieldInput" />
+      <pm-input label="其他监护人" value="{{blockEditForm.guardianInfo}}" data-field="guardianInfo" bind:input="onBlockFieldInput" />
+    </view>
+
+    <view wx:elif="{{moduleEditBlock==='economic'}}">
+      <pm-input label="家庭经济情况" type="textarea" value="{{blockEditForm.familyEconomy}}" data-field="familyEconomy" bind:input="onBlockFieldInput" />
+    </view>
+    <view style="height: 200rpx;"></view>
+    </scroll-view>
+
+    <view slot="footer" class="checkout-dialog__footer">
+      <pm-button text="取消" type="ghost" size="medium" bindtap="onBlockCancel" />
+      <pm-button text="保存" type="primary" size="medium" bindtap="onBlockSave" />
+    </view>
+  </pm-dialog>
+
+  <view wx:if="{{textPreview.visible}}" class="text-preview-mask" catchtouchmove="noop">
+    <view class="text-preview-dialog">
+      <view class="text-preview-header">
+        <text class="text-preview-title">{{textPreview.title}}</text>
+        <view class="text-preview-close" bindtap="onTextPreviewClose">关闭</view>
+      </view>
+      <scroll-view scroll-y enable-flex class="text-preview-content">
+        <text>{{textPreview.content}}</text>
+      </scroll-view>
+    </view>
+  </view>
+</view>

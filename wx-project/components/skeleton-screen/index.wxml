@@ -1,0 +1,103 @@
+<!-- components/skeleton-screen/index.wxml -->
+<view class="skeleton-screen" wx:if="{{show}}">
+  <!-- 页面头部骨架屏 -->
+  <view class="skeleton-header" wx:if="{{type === 'page' || type === 'all'}}">
+    <view class="skeleton-title"></view>
+    <view class="skeleton-subtitle"></view>
+    <view class="skeleton-actions">
+      <view class="skeleton-button"></view>
+    </view>
+  </view>
+
+  <!-- 统计卡片骨架屏 -->
+  <view class="skeleton-stats" wx:if="{{type === 'stats' || type === 'all'}}">
+    <view class="skeleton-stat" wx:for="{{4}}" wx:key="*this">
+      <view class="skeleton-number"></view>
+      <view class="skeleton-label"></view>
+    </view>
+  </view>
+
+  <!-- 搜索栏骨架屏 -->
+  <view class="skeleton-search" wx:if="{{type === 'search' || type === 'all'}}">
+    <view class="skeleton-input"></view>
+  </view>
+
+  <!-- 筛选器骨架屏 -->
+  <view class="skeleton-filters" wx:if="{{type === 'filters' || type === 'all'}}">
+    <view class="skeleton-filter" wx:for="{{3}}" wx:key="*this">
+      <view class="skeleton-label"></view>
+      <view class="skeleton-picker"></view>
+    </view>
+  </view>
+
+  <!-- 列表项骨架屏 -->
+  <view class="skeleton-list" wx:if="{{type === 'list' || type === 'all'}}">
+    <view class="skeleton-item" wx:for="{{rows || 5}}" wx:key="*this">
+      <view class="skeleton-item-header">
+        <view class="skeleton-avatar"></view>
+        <view class="skeleton-info">
+          <view class="skeleton-line skeleton-line--title"></view>
+          <view class="skeleton-line skeleton-line--subtitle"></view>
+        </view>
+        <view class="skeleton-badge"></view>
+      </view>
+      <view class="skeleton-item-content">
+        <view class="skeleton-line skeleton-line--content"></view>
+        <view class="skeleton-line skeleton-line--content skeleton-line--short"></view>
+      </view>
+      <view class="skeleton-item-actions">
+        <view class="skeleton-button skeleton-button--small"></view>
+        <view class="skeleton-button skeleton-button--small"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 表格骨架屏 -->
+  <view class="skeleton-table" wx:if="{{type === 'table' || type === 'all'}}">
+    <view class="skeleton-table-header">
+      <view class="skeleton-table-cell" wx:for="{{columns || 4}}" wx:key="*this"></view>
+    </view>
+    <view class="skeleton-table-row" wx:for="{{rows || 5}}" wx:key="*this">
+      <view class="skeleton-table-cell" wx:for="{{columns || 4}}" wx:for-item="cell" wx:key="cell"></view>
+    </view>
+  </view>
+
+  <!-- 卡片网格骨架屏 -->
+  <view class="skeleton-grid" wx:if="{{type === 'grid' || type === 'all'}}">
+    <view class="skeleton-card" wx:for="{{6}}" wx:key="*this">
+      <view class="skeleton-card-header">
+        <view class="skeleton-icon"></view>
+        <view class="skeleton-title-small"></view>
+      </view>
+      <view class="skeleton-card-content">
+        <view class="skeleton-line skeleton-line--number"></view>
+        <view class="skeleton-line skeleton-line--label"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 图表骨架屏 -->
+  <view class="skeleton-chart" wx:if="{{type === 'chart' || type === 'all'}}">
+    <view class="skeleton-chart-header">
+      <view class="skeleton-title-small"></view>
+      <view class="skeleton-subtitle-small"></view>
+    </view>
+    <view class="skeleton-chart-content">
+      <view class="skeleton-chart-bars">
+        <view class="skeleton-bar" wx:for="{{5}}" wx:key="*this" style="height: {{Math.random() * 60 + 20}}%"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 表单骨架屏 -->
+  <view class="skeleton-form" wx:if="{{type === 'form' || type === 'all'}}">
+    <view class="skeleton-form-group" wx:for="{{4}}" wx:key="*this">
+      <view class="skeleton-label"></view>
+      <view class="skeleton-input"></view>
+    </view>
+    <view class="skeleton-form-actions">
+      <view class="skeleton-button"></view>
+      <view class="skeleton-button skeleton-button--outline"></view>
+    </view>
+  </view>
+</view>

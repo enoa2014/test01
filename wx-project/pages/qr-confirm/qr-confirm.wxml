@@ -1,0 +1,164 @@
+<!--pages/qr-confirm/qr-confirm.wxml-->
+<view class="container">
+  <!-- 头部 -->
+  <view class="header">
+    <view class="title">扫码登录确认</view>
+    <view class="subtitle">确认在Web端登录您的账号</view>
+  </view>
+
+  <!-- 扫码区域 -->
+  <view class="scan-section" wx:if="{{!sessionInfo}}">
+    <view class="scan-icon">📱</view>
+    <view class="scan-title">扫描二维码</view>
+    <view class="scan-desc">请扫描Web端显示的登录二维码</view>
+
+    <view class="scan-buttons">
+      <button class="scan-btn primary" bindtap="scanQRCode" loading="{{loading}}">
+        <text class="btn-icon">📷</text>
+        <text>扫码登录</text>
+      </button>
+
+      <button class="scan-btn secondary" bindtap="chooseFromAlbum">
+        <text class="btn-icon">🖼️</text>
+        <text>相册选择</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 会话信息 -->
+  <view class="session-info" wx:if="{{sessionInfo}}">
+    <view class="session-header">
+      <view class="session-title">登录确认</view>
+      <view class="session-time" wx:if="{{timeRemaining > 0}}">
+        剩余时间：{{formatTime(timeRemaining)}}
+      </view>
+    </view>
+
+    <!-- Web端信息 -->
+    <view class="web-info">
+      <view class="info-item">
+        <text class="info-label">设备信息：</text>
+        <text class="info-value">{{sessionInfo.webDeviceInfo.userAgent || '未知设备'}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">IP地址：</text>
+        <text class="info-value">{{sessionInfo.webDeviceInfo.ip || '未知IP'}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">登录类型：</text>
+        <text class="info-value">{{sessionInfo.type === 'multi' ? '多角色登录' : '单角色登录'}}</text>
+      </view>
+    </view>
+
+    <!-- 用户信息 -->
+    <view class="user-info" wx:if="{{userInfo}}">
+      <view class="user-avatar">
+        <image src="{{userInfo.avatarUrl}}" mode="aspectFill" class="avatar-img"></image>
+      </view>
+      <view class="user-details">
+        <view class="user-name">{{userInfo.nickName}}</view>
+        <view class="user-desc">确认以以下身份登录</view>
+      </view>
+    </view>
+
+    <!-- 角色选择 -->
+    <view class="role-section" wx:if="{{availableRoles.length > 1}}">
+      <view class="role-title">选择登录角色</view>
+      <view class="role-list">
+        <view
+          class="role-item {{selectedRole === role ? 'selected' : ''}}"
+          wx:for="{{availableRoles}}"
+          wx:key="*this"
+          data-role="{{item}}"
+          bindtap="selectRole"
+        >
+          <view class="role-icon">{{roleConfig[item].icon}}</view>
+          <view class="role-info">
+            <view class="role-name">{{roleConfig[item].name}}</view>
+            <view class="role-desc">{{roleConfig[item].description}}</view>
+          </view>
+          <view class="role-check" wx:if="{{selectedRole === item}}">
+            <view class="check-icon">✓</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 单角色显示 -->
+    <view class="single-role" wx:if="{{availableRoles.length === 1 && selectedRole}}">
+      <view class="role-display">
+        <view class="role-icon">{{roleConfig[selectedRole].icon}}</view>
+        <view class="role-info">
+          <view class="role-name">{{roleConfig[selectedRole].name}}</view>
+          <view class="role-desc">{{roleConfig[selectedRole].description}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 登录模式选择（仅管理员） -->
+    <view class="login-mode-section" wx:if="{{selectedRole === 'admin'}}">
+      <view class="mode-title">登录模式</view>
+      <view class="mode-options">
+        <view
+          class="mode-item {{loginMode === 'full' ? 'selected' : ''}}"
+          bindtap="switchLoginMode"
+        >
+          <view class="mode-icon">🔑</view>
+          <view class="mode-info">
+            <view class="mode-name">完整登录</view>
+            <view class="mode-desc">完整管理权限</view>
+          </view>
+        </view>
+
+        <view
+          class="mode-item {{loginMode === 'guest' ? 'selected' : ''}}"
+          bindtap="switchLoginMode"
+        >
+          <view class="mode-icon">👤</view>
+          <view class="mode-info">
+            <view class="mode-name">游客模式</view>
+            <view class="mode-desc">只读访问权限</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button
+        class="action-btn cancel"
+        bindtap="cancelLogin"
+        disabled="{{loading}}"
+      >
+        取消
+      </button>
+
+      <button
+        class="action-btn confirm"
+        bindtap="confirmLogin"
+        loading="{{loading}}"
+        disabled="{{loading || timeRemaining <= 0}}"
+      >
+        确认登录
+      </button>
+    </view>
+  </view>
+
+  <!-- 错误提示 -->
+  <view class="error-section" wx:if="{{error}}">
+    <view class="error-icon">⚠️</view>
+    <view class="error-message">{{error}}</view>
+    <button class="retry-btn" bindtap="clearError">重新扫码</button>
+  </view>
+
+  <!-- 帮助信息 -->
+  <view class="help-section">
+    <view class="help-title">使用帮助</view>
+    <view class="help-list">
+      <view class="help-item">1. 确保Web端显示的是有效的登录二维码</view>
+      <view class="help-item">2. 二维码有效期为90秒，过期需要重新生成</view>
+      <view class="help-item">3. 确认后将跳转到Web端管理后台</view>
+      <view class="help-item">4. 如有疑问，请联系系统管理员</view>
+    </view>
+  </view>
+</view>

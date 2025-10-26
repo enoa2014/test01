@@ -1,0 +1,199 @@
+/* components/role-badge/index.wxss */
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--role-bg-color, #f2f2f7);
+  border: 1px solid var(--role-border-color, #8e8e93);
+  border-radius: 6rpx;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* 徽章尺寸 */
+.role-badge--small {
+  padding: 4rpx 8rpx;
+  font-size: 20rpx;
+  line-height: 1.2;
+  min-height: 28rpx;
+}
+
+.role-badge--medium {
+  padding: 6rpx 12rpx;
+  font-size: 24rpx;
+  line-height: 1.2;
+  min-height: 36rpx;
+}
+
+.role-badge--large {
+  padding: 8rpx 16rpx;
+  font-size: 28rpx;
+  line-height: 1.2;
+  min-height: 44rpx;
+}
+
+/* 可点击状态 */
+.role-badge--clickable {
+  cursor: pointer;
+}
+
+.role-badge--clickable:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+/* 图标样式 */
+.role-badge__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4rpx;
+}
+
+.role-badge--small .role-badge__icon {
+  width: 16rpx;
+  height: 16rpx;
+}
+
+.role-badge--medium .role-badge__icon {
+  width: 20rpx;
+  height: 20rpx;
+}
+
+.role-badge--large .role-badge__icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.role-badge__icon-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 文字样式 */
+.role-badge__text {
+  color: var(--role-color, #8e8e93);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 当只有图标时 */
+.role-badge:has(.role-badge__icon):not(:has(.role-badge__text)) .role-badge__icon {
+  margin-right: 0;
+}
+
+/* 当只有文字时 */
+.role-badge:not(:has(.role-badge__icon)) .role-badge__text {
+  padding: 0 4rpx;
+}
+
+/* 不同角色特定的样式调整 */
+.role-badge[style*="#ff3b30"] {
+  /* 管理员 - 红色系 */
+  box-shadow: 0 2rpx 8rpx rgba(255, 59, 48, 0.2);
+}
+
+.role-badge[style*="#007aff"] {
+  /* 社工 - 蓝色系 */
+  box-shadow: 0 2rpx 8rpx rgba(0, 122, 255, 0.2);
+}
+
+.role-badge[style*="#34c759"] {
+  /* 志愿者 - 绿色系 */
+  box-shadow: 0 2rpx 8rpx rgba(52, 199, 89, 0.2);
+}
+
+.role-badge[style*="#ff9500"] {
+  /* 家长 - 橙色系 */
+  box-shadow: 0 2rpx 8rpx rgba(255, 149, 0, 0.2);
+}
+
+.role-badge[style*="#8e8e93"] {
+  /* 访客 - 灰色系 */
+  box-shadow: 0 2rpx 8rpx rgba(142, 142, 147, 0.2);
+}
+
+/* 响应式适配 */
+@media (max-width: 480px) {
+  .role-badge--small {
+    font-size: 18rpx;
+    min-height: 26rpx;
+  }
+
+  .role-badge--medium {
+    font-size: 22rpx;
+    min-height: 34rpx;
+  }
+
+  .role-badge--large {
+    font-size: 26rpx;
+    min-height: 42rpx;
+  }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .role-badge {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10rpx);
+  }
+
+  .role-badge__text {
+    color: var(--role-color, #ffffff);
+  }
+}
+
+/* 动画效果 */
+@keyframes badgePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--role-color-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6rpx rgba(var(--role-color-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--role-color-rgb), 0);
+  }
+}
+
+.role-badge--pulse {
+  animation: badgePulse 2s infinite;
+}
+
+/* 悬浮效果 */
+.role-badge--floating {
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+  transform: translateY(-2rpx);
+}
+
+.role-badge--floating:active {
+  transform: translateY(0);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+
+/* 特殊状态样式 */
+.role-badge--outline {
+  background-color: transparent !important;
+  border-color: var(--role-color, #8e8e93);
+}
+
+.role-badge--outline .role-badge__text {
+  color: var(--role-color, #8e8e93);
+}
+
+.role-badge--minimal {
+  border: none !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.role-badge--minimal .role-badge__text {
+  color: var(--role-color, #8e8e93);
+  font-weight: 400;
+}

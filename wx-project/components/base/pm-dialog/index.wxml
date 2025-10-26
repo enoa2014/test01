@@ -1,0 +1,37 @@
+<view wx:if="{{visible}}" class="pm-dialog" catchtouchmove="noop">
+  <view class="pm-dialog__overlay" bindtap="handleOverlayTap"></view>
+  <view class="pm-dialog__container" catchtap="noop">
+    <view class="pm-dialog__header" wx:if="{{showHeader}}">
+      <slot wx:if="useHeaderSlot" name="header"></slot>
+      <text wx:elif="{{title}}" class="pm-dialog__title">{{title}}</text>
+      <view wx:if="{{showClose}}" class="pm-dialog__close" bindtap="handleClose">×</view>
+    </view>
+
+    <view class="pm-dialog__body {{scrollable ? 'pm-dialog__body--scrollable' : ''}}">
+      <slot></slot>
+      <text wx:if="{{!useSlot && content}}" class="pm-dialog__content">{{content}}</text>
+    </view>
+
+    <view class="pm-dialog__footer" wx:if="{{showFooter}}">
+      <slot wx:if="useFooterSlot" name="footer"></slot>
+      <view wx:elif="{{hasButtons}}" class="pm-dialog__actions">
+        <pm-button
+          wx:if="{{showCancel}}"
+          type="{{cancelType}}"
+          size="medium"
+          text="{{cancelText}}"
+          class="pm-dialog__btn"
+          bindtap="handleCancel"
+        ></pm-button>
+        <pm-button
+          wx:if="{{showConfirm}}"
+          type="{{confirmType}}"
+          size="medium"
+          text="{{confirmText}}"
+          class="pm-dialog__btn"
+          bindtap="handleConfirm"
+        ></pm-button>
+      </view>
+    </view>
+  </view>
+</view>

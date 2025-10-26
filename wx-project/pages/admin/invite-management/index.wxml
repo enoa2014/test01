@@ -1,0 +1,551 @@
+<!-- pages/admin/invite-management/index.wxml -->
+<view class="invite-management">
+  <!-- 骨架屏 -->
+  <skeleton-screen show="{{showSkeleton}}" type="page,stats,search,filters,list" rows="5"></skeleton-screen>
+
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">邀请码管理</text>
+      <text class="header-subtitle">创建和管理邀请码</text>
+    </view>
+    <view class="header-actions">
+      <button class="create-btn" bindtap="showCreateModal">
+        <text class="btn-icon">+</text>
+        <text class="btn-text">创建邀请码</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats-section">
+    <view class="stats-grid">
+      <view class="stat-card">
+        <text class="stat-number">{{stats.totalInvites}}</text>
+        <text class="stat-label">总邀请码</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.activeInvites}}</text>
+        <text class="stat-label">有效邀请码</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.usedInvites}}</text>
+        <text class="stat-label">已使用</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.expiredInvites}}</text>
+        <text class="stat-label">已过期</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选和搜索 -->
+  <view class="filter-section">
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <text class="search-icon">🔍</text>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="搜索邀请码或描述"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="performSearch"
+        />
+        <text class="clear-icon {{searchKeyword ? '' : 'hidden'}}" bindtap="clearSearch">×</text>
+      </view>
+    </view>
+
+    <view class="filter-controls">
+      <view class="filter-item">
+        <text class="filter-label">角色</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{roleOptions}}"
+          range-key="label"
+          value="{{selectedRoleIndex}}"
+          bindchange="onRoleChange"
+        >
+          <view class="picker-display">
+            {{roleOptions[selectedRoleIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">状态</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{statusOptions}}"
+          range-key="label"
+          value="{{selectedStatusIndex}}"
+          bindchange="onStatusChange"
+        >
+          <view class="picker-display">
+            {{statusOptions[selectedStatusIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">创建时间</text>
+        <picker
+          class="filter-picker"
+          mode="date"
+          value="{{selectedDate}}"
+          bindchange="onDateChange"
+        >
+          <view class="picker-display">
+            {{selectedDate || '全部时间'}}
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="quick-actions">
+      <button class="action-btn action-btn--batch" bindtap="showBatchCreateModal">
+        批量创建
+      </button>
+      <button class="action-btn action-btn--export" bindtap="exportInvites">
+        导出数据
+      </button>
+    </view>
+  </view>
+
+  <!-- 邀请码列表 -->
+  <view class="invite-list" wx:if="{{invites.length > 0}}">
+    <view
+      class="invite-item"
+      wx:for="{{invites}}"
+      wx:key="id"
+      bindtap="viewInviteDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="item-header">
+        <view class="invite-info">
+          <view class="invite-code">
+            <text class="code-text">{{item.code}}</text>
+            <button class="copy-btn" bindtap="copyInviteCode" data-code="{{item.code}}" catchtap="true">
+              复制
+            </button>
+          </view>
+          <view class="invite-meta">
+            <role-badge role="{{item.role}}" size="small"></role-badge>
+            <text class="create-time">创建于 {{item.createTime}}</text>
+          </view>
+        </view>
+        <view class="invite-status">
+          <view class="status-badge status-badge--{{item.status}}">
+            {{item.statusText}}
+          </view>
+        </view>
+      </view>
+
+      <view class="item-content">
+        <view class="detail-info">
+          <view class="detail-item" wx:if="{{item.description}}">
+            <text class="detail-label">说明：</text>
+            <text class="detail-text">{{item.description}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">使用次数：</text>
+            <text class="detail-text">{{item.usedCount}}/{{item.maxUses}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.expiresAt}}">
+            <text class="detail-label">过期时间：</text>
+            <text class="detail-text">{{item.expiresAt}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.createdBy}}">
+            <text class="detail-label">创建者：</text>
+            <text class="detail-text">{{item.createdByName || '管理员'}}</text>
+          </view>
+        </view>
+
+        <view class="usage-info" wx:if="{{item.usedCount > 0}}">
+          <text class="usage-label">使用记录：</text>
+          <view class="usage-list">
+            <view
+              class="usage-item"
+              wx:for="{{item.usageRecords}}"
+              wx:for-item="record"
+              wx:key="id"
+            >
+              <text class="usage-user">{{record.userName}}</text>
+              <text class="usage-time">{{record.useTime}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="item-actions">
+        <button
+          class="action-btn action-btn--edit"
+          bindtap="editInvite"
+          data-id="{{item.id}}"
+          catchtap="true"
+          wx:if="{{item.status === 'active'}}"
+        >
+          编辑
+        </button>
+        <button
+          class="action-btn action-btn--revoke"
+          bindtap="revokeInvite"
+          data-id="{{item.id}}"
+          catchtap="true"
+          wx:if="{{item.status === 'active'}}"
+        >
+          撤销
+        </button>
+        <button
+          class="action-btn action-btn--detail"
+          bindtap="viewInviteDetail"
+          data-id="{{item.id}}"
+          catchtap="true"
+        >
+          详情
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <text class="empty-icon">🎫</text>
+    <text class="empty-text">暂无邀请码</text>
+    <text class="empty-desc">点击上方"创建邀请码"按钮开始创建</text>
+    <button class="create-empty-btn" bindtap="showCreateModal">
+      创建第一个邀请码
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 底部分页 -->
+  <view class="bottom-pagination" wx:if="{{invites.length > 0}}">
+    <text class="pagination-info">共 {{total}} 个邀请码</text>
+    <view class="pagination-controls">
+      <button
+        class="page-btn {{currentPage <= 1 ? 'page-btn--disabled' : ''}}"
+        disabled="{{currentPage <= 1}}"
+        bindtap="prevPage"
+      >
+        上一页
+      </button>
+      <text class="page-info">{{currentPage}}/{{totalPages}}</text>
+      <button
+        class="page-btn {{currentPage >= totalPages ? 'page-btn--disabled' : ''}}"
+        disabled="{{currentPage >= totalPages}}"
+        bindtap="nextPage"
+      >
+        下一页
+      </button>
+    </view>
+  </view>
+
+  <!-- 创建邀请码弹窗 -->
+  <view class="create-modal" wx:if="{{showCreateModal}}">
+    <view class="modal-mask" bindtap="closeCreateModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">创建邀请码</text>
+        <text class="modal-close" bindtap="closeCreateModal">×</text>
+      </view>
+
+      <view class="modal-body">
+        <view class="form-section">
+          <text class="section-title">基本信息</text>
+          <view class="form-item">
+            <text class="form-label">角色类型 *</text>
+            <picker
+              class="form-picker"
+              mode="selector"
+              range="{{roleOptions}}"
+              range-key="label"
+              value="{{formRoleIndex}}"
+              bindchange="onFormRoleChange"
+            >
+              <view class="picker-display">
+                {{roleOptions[formRoleIndex].label}}
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">使用次数 *</text>
+            <input
+              class="form-input"
+              type="number"
+              placeholder="请输入使用次数"
+              value="{{formMaxUses}}"
+              bindinput="onFormMaxUsesInput"
+            />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">说明</text>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入邀请码说明（选填）"
+              value="{{formDescription}}"
+              bindinput="onFormDescriptionInput"
+              maxlength="200"
+              auto-height
+            ></textarea>
+            <text class="input-counter">{{formDescription.length}}/200</text>
+          </view>
+        </view>
+
+        <view class="form-section">
+          <text class="section-title">有效期设置</text>
+          <view class="form-item">
+            <checkbox-group bindchange="onExpiryChange">
+              <label class="checkbox-item">
+                <checkbox value="never" checked="{{formExpiryType === 'never'}}"/>
+                <text class="checkbox-text">永不过期</text>
+              </label>
+              <label class="checkbox-item">
+                <checkbox value="date" checked="{{formExpiryType === 'date'}}"/>
+                <text class="checkbox-text">指定过期时间</text>
+              </label>
+            </checkbox-group>
+          </view>
+
+          <view class="form-item" wx:if="{{formExpiryType === 'date'}}">
+            <text class="form-label">过期时间</text>
+            <picker
+              class="form-picker"
+              mode="date"
+              value="{{formExpiresAt}}"
+              bindchange="onFormExpiresAtChange"
+            >
+              <view class="picker-display">
+                {{formExpiresAt || '请选择过期时间'}}
+              </view>
+            </picker>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--confirm"
+          bindtap="confirmCreateInvite"
+          disabled="{{!isFormValid}}"
+        >
+          创建邀请码
+        </button>
+        <button class="modal-btn modal-btn--cancel" bindtap="closeCreateModal">
+          取消
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 批量创建弹窗 -->
+  <view class="batch-modal" wx:if="{{showBatchModal}}">
+    <view class="modal-mask" bindtap="closeBatchModal"></view>
+    <view class="modal-content modal-content--large">
+      <view class="modal-header">
+        <text class="modal-title">批量创建邀请码</text>
+        <text class="modal-close" bindtap="closeBatchModal">×</text>
+      </view>
+
+      <view class="modal-body">
+        <view class="form-section">
+          <text class="section-title">批量设置</text>
+          <view class="form-item">
+            <text class="form-label">角色类型 *</text>
+            <picker
+              class="form-picker"
+              mode="selector"
+              range="{{roleOptions}}"
+              range-key="label"
+              value="{{batchRoleIndex}}"
+              bindchange="onBatchRoleChange"
+            >
+              <view class="picker-display">
+                {{roleOptions[batchRoleIndex].label}}
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">数量 *</text>
+            <input
+              class="form-input"
+              type="number"
+              placeholder="请输入创建数量（1-50）"
+              value="{{batchCount}}"
+              bindinput="onBatchCountInput"
+            />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">每个邀请码使用次数 *</text>
+            <input
+              class="form-input"
+              type="number"
+              placeholder="请输入使用次数"
+              value="{{batchMaxUses}}"
+              bindinput="onBatchMaxUsesInput"
+            />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">统一说明</text>
+            <textarea
+              class="form-textarea"
+              placeholder="批量创建的邀请码将使用此说明（选填）"
+              value="{{batchDescription}}"
+              bindinput="onBatchDescriptionInput"
+              maxlength="200"
+              auto-height
+            ></textarea>
+            <text class="input-counter">{{batchDescription.length}}/200</text>
+          </view>
+        </view>
+
+        <view class="form-section">
+          <text class="section-title">预览</text>
+          <view class="preview-section">
+            <text class="preview-title">将创建 {{batchCount || 0}} 个邀请码</text>
+            <text class="preview-info">角色：{{roleOptions[batchRoleIndex].label}}</text>
+            <text class="preview-info">使用次数：{{batchMaxUses || 1}} 次</text>
+            <text class="preview-info" wx:if="{{batchDescription}}">说明：{{batchDescription}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--confirm"
+          bindtap="confirmBatchCreate"
+          disabled="{{!isBatchFormValid}}"
+        >
+          批量创建
+        </button>
+        <button class="modal-btn modal-btn--cancel" bindtap="closeBatchModal">
+          取消
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 邀请码详情弹窗 -->
+  <view class="detail-modal" wx:if="{{showDetailModal}}">
+    <view class="modal-mask" bindtap="closeDetailModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">邀请码详情</text>
+        <text class="modal-close" bindtap="closeDetailModal">×</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{selectedInvite}}">
+        <!-- 基本信息 -->
+        <view class="detail-section">
+          <text class="section-title">基本信息</text>
+          <view class="detail-item">
+            <text class="detail-label">邀请码：</text>
+            <view class="code-display">
+              <text class="code-text">{{selectedInvite.code}}</text>
+              <button class="copy-btn" bindtap="copyInviteCode" data-code="{{selectedInvite.code}}">
+                复制
+              </button>
+            </view>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">角色：</text>
+            <role-badge role="{{selectedInvite.role}}"></role-badge>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">状态：</text>
+            <view class="status-badge status-badge--{{selectedInvite.status}}">
+              {{selectedInvite.statusText}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 使用信息 -->
+        <view class="detail-section">
+          <text class="section-title">使用信息</text>
+          <view class="detail-item">
+            <text class="detail-label">使用次数：</text>
+            <text class="detail-value">{{selectedInvite.usedCount}}/{{selectedInvite.maxUses}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">剩余次数：</text>
+            <text class="detail-value">{{selectedInvite.remainingUses}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{selectedInvite.expiresAt}}">
+            <text class="detail-label">过期时间：</text>
+            <text class="detail-value">{{selectedInvite.expiresAt}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">创建时间：</text>
+            <text class="detail-value">{{selectedInvite.createTime}}</text>
+          </view>
+        </view>
+
+        <!-- 使用记录 -->
+        <view class="detail-section" wx:if="{{selectedInvite.usageRecords.length > 0}}">
+          <text class="section-title">使用记录</text>
+          <view class="usage-list">
+            <view
+              class="usage-record"
+              wx:for="{{selectedInvite.usageRecords}}"
+              wx:for-item="record"
+              wx:key="id"
+            >
+              <view class="record-user">
+                <text class="user-name">{{record.userName}}</text>
+                <text class="user-email">{{record.userEmail || ''}}</text>
+              </view>
+              <view class="record-meta">
+                <text class="use-time">使用时间：{{record.useTime}}</text>
+                <text class="user-ip">IP：{{record.userIp || '未知'}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 其他信息 -->
+        <view class="detail-section">
+          <text class="section-title">其他信息</text>
+          <view class="detail-item" wx:if="{{selectedInvite.description}}">
+            <text class="detail-label">说明：</text>
+            <text class="detail-value">{{selectedInvite.description}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">创建者：</text>
+            <text class="detail-value">{{selectedInvite.createdByName || '管理员'}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">ID：</text>
+            <text class="detail-value">{{selectedInvite.id}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--revoke"
+          bindtap="revokeInvite"
+          data-id="{{selectedInvite.id}}"
+          wx:if="{{selectedInvite.status === 'active'}}"
+        >
+          撤销邀请码
+        </button>
+        <button class="modal-btn modal-btn--close" bindtap="closeDetailModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

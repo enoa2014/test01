@@ -1,0 +1,233 @@
+<!-- pages/auth/permission-management/index.wxml -->
+<view class="permission-management">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">权限管理</text>
+      <text class="header-subtitle">查看和管理您的权限状态</text>
+    </view>
+  </view>
+
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <view class="user-avatar">
+      <image
+        class="avatar-image"
+        src="{{userInfo.profile.avatar || '/assets/default-avatar.png'}}"
+        mode="aspectFill"
+      ></image>
+      <view class="avatar-edit" bindtap="editAvatar">
+        <text class="icon-camera"></text>
+      </view>
+    </view>
+    <view class="user-info">
+      <text class="user-name">{{userInfo.profile.realName || '未设置姓名'}}</text>
+      <text class="user-status">{{userInfo.statusText}}</text>
+    </view>
+    <view class="user-actions">
+      <button class="action-btn" bindtap="editProfile">
+        <text class="icon-edit"></text>
+        <text>编辑资料</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 权限状态 -->
+  <view class="permission-section">
+    <view class="section-title">
+      <text class="title-text">当前权限</text>
+      <text class="title-desc">您当前拥有的角色和权限</text>
+    </view>
+
+    <view class="role-list" wx:if="{{userRoles.length > 0}}">
+      <view
+        class="role-item"
+        wx:for="{{userRoles}}"
+        wx:key="role"
+      >
+        <view class="role-info">
+          <view class="role-header">
+            <text class="role-name">{{item.roleName}}</text>
+            <role-badge role="{{item.role}}" size="small"></role-badge>
+          </view>
+          <text class="role-desc">{{item.description}}</text>
+          <view class="role-time">
+            <text class="time-label">获得时间：</text>
+            <text class="time-value">{{item.obtainTime}}</text>
+          </view>
+          <view class="role-permissions" wx:if="{{item.permissions.length > 0}}">
+            <text class="permissions-title">主要权限：</text>
+            <view class="permission-tags">
+              <text
+                class="permission-tag"
+                wx:for="{{item.permissions}}"
+                wx:key="name"
+                wx:for-item="permission"
+              >
+                {{permission.name}}
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-roles" wx:else>
+      <text class="empty-icon">🔒</text>
+      <text class="empty-text">您还没有任何角色权限</text>
+      <text class="empty-desc">通过邀请码激活或申请角色获得权限</text>
+    </view>
+  </view>
+
+  <!-- 权限申请入口 -->
+  <view class="action-section">
+    <view class="section-title">
+      <text class="title-text">获取权限</text>
+      <text class="title-desc">通过以下方式获得更多权限</text>
+    </view>
+
+    <view class="action-cards">
+      <view class="action-card" bindtap="goToInviteCode">
+        <view class="card-icon">
+          <text class="icon-invite"></text>
+        </view>
+        <view class="card-content">
+          <text class="card-title">邀请码激活</text>
+          <text class="card-desc">使用邀请码快速获得角色权限</text>
+        </view>
+        <view class="card-arrow">
+          <text class="icon-arrow"></text>
+        </view>
+      </view>
+
+      <view class="action-card" bindtap="goToRoleApplication">
+        <view class="card-icon">
+          <text class="icon-apply"></text>
+        </view>
+        <view class="card-content">
+          <text class="card-title">角色申请</text>
+          <text class="card-desc">提交申请获得相应角色权限</text>
+        </view>
+        <view class="card-arrow">
+          <text class="icon-arrow"></text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 申请状态 -->
+  <view class="application-section" wx:if="{{applications.length > 0}}">
+    <view class="section-title">
+      <text class="title-text">申请记录</text>
+      <text class="title-desc">您的角色申请记录</text>
+    </view>
+
+    <view class="application-list">
+      <view
+        class="application-item"
+        wx:for="{{applications}}"
+        wx:key="id"
+        bindtap="viewApplicationDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="application-header">
+          <view class="application-role">
+            <text class="role-name">{{item.roleName}}</text>
+            <view class="application-status application-status--{{item.status}}">
+              {{item.statusText}}
+            </view>
+          </view>
+          <text class="application-time">{{item.createTime}}</text>
+        </view>
+        <view class="application-reason" wx:if="{{item.reason}}">
+          <text class="reason-label">申请理由：</text>
+          <text class="reason-text">{{item.reason}}</text>
+        </view>
+        <view class="application-actions" wx:if="{{item.status === 'pending'}}">
+          <button class="cancel-btn" bindtap="cancelApplication" data-id="{{item.id}}">
+            撤销申请
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 权限说明 -->
+  <view class="info-section">
+    <view class="section-title">
+      <text class="title-text">权限说明</text>
+      <text class="title-desc">了解不同角色的权限范围</text>
+    </view>
+
+    <view class="permission-cards">
+      <view class="permission-card">
+        <view class="permission-header">
+          <text class="permission-title">社工权限</text>
+          <text class="permission-icon">👩‍⚕️</text>
+        </view>
+        <view class="permission-content">
+          <text class="permission-desc">负责患者跟进、康复指导等日常工作</text>
+          <view class="permission-list">
+            <text class="permission-item">• 查看和编辑患者信息</text>
+            <text class="permission-item">• 管理患者康复计划</text>
+            <text class="permission-item">• 上传患者相关文件</text>
+            <text class="permission-item">• 查看数据分析报告</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="permission-card">
+        <view class="permission-header">
+          <text class="permission-title">志愿者权限</text>
+          <text class="permission-icon">🤝</text>
+        </view>
+        <view class="permission-content">
+          <text class="permission-desc">协助社工开展活动、陪伴患者</text>
+          <view class="permission-list">
+            <text class="permission-item">• 查看患者基本信息</text>
+            <text class="permission-item">• 参与康复活动</text>
+            <text class="permission-item">• 上传活动记录</text>
+            <text class="permission-item">• 查看活动统计</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="permission-card">
+        <view class="permission-header">
+          <text class="permission-title">研究员权限</text>
+          <text class="permission-icon">👨‍🔬</text>
+        </view>
+        <view class="permission-content">
+          <text class="permission-desc">负责数据分析、研究报告等工作</text>
+          <view class="permission-list">
+            <text class="permission-item">• 查看所有患者数据</text>
+            <text class="permission-item">• 生成数据分析报告</text>
+            <text class="permission-item">• 导出研究数据</text>
+            <text class="permission-item">• 查看系统统计</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 系统信息 -->
+  <view class="system-section">
+    <view class="system-info">
+      <text class="info-title">系统信息</text>
+      <view class="info-list">
+        <view class="info-item">
+          <text class="info-label">用户ID：</text>
+          <text class="info-value">{{userInfo.userId}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">注册时间：</text>
+          <text class="info-value">{{userInfo.createTime}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">最后更新：</text>
+          <text class="info-value">{{userInfo.updateTime}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

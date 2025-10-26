@@ -1,0 +1,63 @@
+<view class="smart-search">
+  <view class="smart-search__input-row">
+    <pm-input
+      class="smart-search__input"
+      value="{{internalValue}}"
+      placeholder="{{placeholder}}"
+      clearable="{{true}}"
+      type="search"
+      bind:input="handleInput"
+      bind:clear="handleClear"
+      bind:confirm="handleConfirm"
+    />
+    <view class="smart-search__actions">
+      <view class="smart-search__action" bindtap="handleSearch">搜索</view>
+      <view
+        class="smart-search__action advanced-filter-btn {{hasActiveFilters ? 'active' : ''}}"
+        bindtap="handleToggleAdvanced"
+      >
+        <text>高级筛选</text>
+        <view wx:if="{{hasActiveFilters}}" class="active-indicator">
+          <pm-badge text="{{activeFilterCount}}" type="primary" size="small" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="smart-search__loading">正在加载…</view>
+
+  <view wx:if="{{debouncedSuggestions.length}}" class="smart-search__suggestions">
+    <view
+      wx:for="{{debouncedSuggestions}}"
+      wx:key="*this"
+      class="smart-search__suggestion"
+      bindtap="handleSuggestionTap"
+      data-suggestion="{{item}}"
+    >
+      <text class="smart-search__suggestion-icon">🔍</text>
+      <text class="smart-search__suggestion-text">{{item}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{historyEnabled && searchHistory.length}}" class="smart-search__history">
+    <view class="smart-search__history-header">
+      <text class="smart-search__history-title">搜索历史</text>
+      <text class="smart-search__history-clear" bindtap="handleClearHistory">清空</text>
+    </view>
+    <view class="smart-search__history-list">
+      <view wx:for="{{searchHistory}}" wx:key="*this" class="smart-search__history-item">
+        <text class="smart-search__history-text" bindtap="handleHistoryTap" data-keyword="{{item}}">
+          {{item}}
+        </text>
+        <text
+          class="smart-search__history-delete"
+          bindtap="handleDeleteHistoryItem"
+          data-keyword="{{item}}"
+          aria-label="删除历史记录"
+        >
+          ✕
+        </text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,362 @@
+<!-- pages/admin/system-monitoring/index.wxml -->
+<view class="system-monitoring">
+  <!-- 骨架屏 -->
+  <skeleton-screen show="{{showSkeleton}}" type="page,stats,chart,grid,list" rows="8"></skeleton-screen>
+
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">系统监控</text>
+      <text class="header-subtitle">实时监控系统状态和性能指标</text>
+    </view>
+    <view class="header-actions">
+      <button class="refresh-btn" bindtap="refreshAllData">
+        <text class="btn-icon">🔄</text>
+        <text class="btn-text">刷新数据</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 系统状态概览 -->
+  <view class="status-overview">
+    <view class="status-card status-card--{{systemStatus.overall}}">
+      <view class="status-icon">
+        <text class="icon-{{systemStatus.overall}}">{{getStatusIcon(systemStatus.overall)}}</text>
+      </view>
+      <view class="status-info">
+        <text class="status-title">系统状态</text>
+        <text class="status-text">{{getStatusText(systemStatus.overall)}}</text>
+        <text class="update-time">更新于 {{systemStatus.updateTime}}</text>
+      </view>
+    </view>
+
+    <view class="quick-stats">
+      <view class="quick-stat">
+        <text class="stat-number">{{quickStats.onlineUsers}}</text>
+        <text class="stat-label">在线用户</text>
+      </view>
+      <view class="quick-stat">
+        <text class="stat-number">{{quickStats.activeConnections}}</text>
+        <text class="stat-label">活跃连接</text>
+      </view>
+      <view class="quick-stat">
+        <text class="stat-number">{{quickStats.requestRate}}</text>
+        <text class="stat-label">请求/秒</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 性能指标 -->
+  <view class="performance-section">
+    <view class="section-header">
+      <text class="section-title">性能指标</text>
+      <text class="section-subtitle">系统资源使用情况</text>
+    </view>
+
+    <view class="performance-grid">
+      <view class="perf-card">
+        <view class="perf-header">
+          <text class="perf-title">CPU 使用率</text>
+          <text class="perf-value">{{performance.cpu}}%</text>
+        </view>
+        <view class="perf-chart">
+          <view class="chart-container">
+            <view class="progress-ring" style="transform: rotate(-90deg)">
+              <view class="progress-ring-circle" style="stroke-dasharray: {{performance.cpu}} 100"></view>
+            </view>
+            <text class="chart-label">{{performance.cpu}}%</text>
+          </view>
+        </view>
+        <view class="perf-trend {{getTrendClass(performance.cpuTrend)}}">
+          <text class="trend-icon">{{getTrendIcon(performance.cpuTrend)}}</text>
+          <text class="trend-text">{{performance.cpuTrend}}%</text>
+        </view>
+      </view>
+
+      <view class="perf-card">
+        <view class="perf-header">
+          <text class="perf-title">内存使用率</text>
+          <text class="perf-value">{{performance.memory}}%</text>
+        </view>
+        <view class="perf-chart">
+          <view class="chart-container">
+            <view class="progress-ring" style="transform: rotate(-90deg)">
+              <view class="progress-ring-circle" style="stroke-dasharray: {{performance.memory}} 100"></view>
+            </view>
+            <text class="chart-label">{{performance.memory}}%</text>
+          </view>
+        </view>
+        <view class="perf-trend {{getTrendClass(performance.memoryTrend)}}">
+          <text class="trend-icon">{{getTrendIcon(performance.memoryTrend)}}</text>
+          <text class="trend-text">{{performance.memoryTrend}}%</text>
+        </view>
+      </view>
+
+      <view class="perf-card">
+        <view class="perf-header">
+          <text class="perf-title">存储使用率</text>
+          <text class="perf-value">{{performance.storage}}%</text>
+        </view>
+        <view class="perf-chart">
+          <view class="chart-container">
+            <view class="progress-ring" style="transform: rotate(-90deg)">
+              <view class="progress-ring-circle" style="stroke-dasharray: {{performance.storage}} 100"></view>
+            </view>
+            <text class="chart-label">{{performance.storage}}%</text>
+          </view>
+        </view>
+        <view class="perf-trend {{getTrendClass(performance.storageTrend)}}">
+          <text class="trend-icon">{{getTrendIcon(performance.storageTrend)}}</text>
+          <text class="trend-text">{{performance.storageTrend}}%</text>
+        </view>
+      </view>
+
+      <view class="perf-card">
+        <view class="perf-header">
+          <text class="perf-title">网络流量</text>
+          <text class="perf-value">{{performance.network}} MB/s</text>
+        </view>
+        <view class="perf-chart">
+          <view class="network-chart">
+            <view class="network-bars">
+              <view class="network-bar" style="height: {{performance.networkIn}}%"></view>
+              <view class="network-bar" style="height: {{performance.networkOut}}%"></view>
+            </view>
+            <view class="network-legend">
+              <text class="legend-item">入站: {{performance.networkIn}}%</text>
+              <text class="legend-item">出站: {{performance.networkOut}}%</text>
+            </view>
+          </view>
+        </view>
+        <view class="perf-trend {{getTrendClass(performance.networkTrend)}}">
+          <text class="trend-icon">{{getTrendIcon(performance.networkTrend)}}</text>
+          <text class="trend-text">{{performance.networkTrend}}%</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 服务状态 -->
+  <view class="services-section">
+    <view class="section-header">
+      <text class="section-title">服务状态</text>
+      <text class="section-subtitle">核心服务运行状态</text>
+    </view>
+
+    <view class="services-grid">
+      <view class="service-card service-card--{{item.status}}" wx:for="{{services}}" wx:key="name">
+        <view class="service-header">
+          <view class="service-icon">
+            <text class="icon-{{item.status}}">{{getServiceIcon(item.status)}}</text>
+          </view>
+          <view class="service-info">
+            <text class="service-name">{{item.name}}</text>
+            <text class="service-version">v{{item.version}}</text>
+          </view>
+          <view class="service-status">
+            <view class="status-badge status-badge--{{item.status}}">
+              {{getServiceStatusText(item.status)}}
+            </view>
+          </view>
+        </view>
+        <view class="service-metrics">
+          <view class="metric-item">
+            <text class="metric-label">响应时间</text>
+            <text class="metric-value">{{item.responseTime}}ms</text>
+          </view>
+          <view class="metric-item">
+            <text class="metric-label">成功率</text>
+            <text class="metric-value">{{item.successRate}}%</text>
+          </view>
+          <view class="metric-item">
+            <text class="metric-label">QPS</text>
+            <text class="metric-value">{{item.qps}}</text>
+          </view>
+        </view>
+        <view class="service-actions">
+          <button class="action-btn action-btn--restart" bindtap="restartService" data-name="{{item.name}}" wx:if="{{item.status !== 'running'}}">
+            重启
+          </button>
+          <button class="action-btn action-btn--detail" bindtap="viewServiceDetail" data-name="{{item.name}}">
+            详情
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 告警信息 -->
+  <view class="alerts-section">
+    <view class="section-header">
+      <text class="section-title">告警信息</text>
+      <text class="section-subtitle">系统告警和异常通知</text>
+      <view class="alert-filter">
+        <text class="filter-btn {{alertFilter === 'all' ? 'active' : ''}}" bindtap="setAlertFilter" data-filter="all">全部</text>
+        <text class="filter-btn {{alertFilter === 'critical' ? 'active' : ''}}" bindtap="setAlertFilter" data-filter="critical">紧急</text>
+        <text class="filter-btn {{alertFilter === 'warning' ? 'active' : ''}}" bindtap="setAlertFilter" data-filter="warning">警告</text>
+      </view>
+    </view>
+
+    <view class="alerts-list" wx:if="{{filteredAlerts.length > 0}}">
+      <view class="alert-item alert-item--{{item.level}}" wx:for="{{filteredAlerts}}" wx:key="id">
+        <view class="alert-header">
+          <view class="alert-icon">
+            <text class="icon-{{item.level}}">{{getAlertIcon(item.level)}}</text>
+          </view>
+          <view class="alert-info">
+            <text class="alert-title">{{item.title}}</text>
+            <text class="alert-time">{{item.time}}</text>
+          </view>
+          <view class="alert-status">
+            <view class="status-badge status-badge--{{item.status}}">
+              {{getAlertStatusText(item.status)}}
+            </view>
+          </view>
+        </view>
+        <view class="alert-content">
+          <text class="alert-description">{{item.description}}</text>
+        </view>
+        <view class="alert-actions">
+          <button class="action-btn action-btn--resolve" bindtap="resolveAlert" data-id="{{item.id}}" wx:if="{{item.status === 'active'}}">
+            处理
+          </button>
+          <button class="action-btn action-btn--ignore" bindtap="ignoreAlert" data-id="{{item.id}}" wx:if="{{item.status === 'active'}}">
+            忽略
+          </button>
+          <button class="action-btn action-btn--detail" bindtap="viewAlertDetail" data-id="{{item.id}}">
+            详情
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-alerts" wx:else>
+      <text class="empty-icon">✅</text>
+      <text class="empty-text">暂无告警信息</text>
+      <text class="empty-desc">系统运行正常</text>
+    </view>
+  </view>
+
+  <!-- 实时日志 -->
+  <view class="logs-section">
+    <view class="section-header">
+      <text class="section-title">实时日志</text>
+      <text class="section-subtitle">系统运行日志流</text>
+      <view class="log-controls">
+        <text class="control-btn {{autoScroll ? 'active' : ''}}" bindtap="toggleAutoScroll">
+          {{autoScroll ? '自动滚动' : '停止滚动'}}
+        </text>
+        <text class="control-btn" bindtap="clearLogs">清空</text>
+      </view>
+    </view>
+
+    <view class="logs-container" id="logsContainer">
+      <view class="log-item log-item--{{item.level}}" wx:for="{{logs}}" wx:key="id">
+        <text class="log-time">{{item.time}}</text>
+        <text class="log-level level-badge level-badge--{{item.level}}">{{item.level}}</text>
+        <text class="log-message">{{item.message}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-section">
+    <button class="action-card" bindtap="viewDetailedMetrics">
+      <text class="action-icon">📊</text>
+      <text class="action-title">详细指标</text>
+      <text class="action-desc">查看更多系统指标</text>
+    </button>
+
+    <button class="action-card" bindtap="viewHistoricalData">
+      <text class="action-icon">📈</text>
+      <text class="action-title">历史数据</text>
+      <text class="action-desc">查看历史趋势分析</text>
+    </button>
+
+    <button class="action-card" bindtap="viewOptimizationSuggestions">
+      <text class="action-icon">💡</text>
+      <text class="action-title">优化建议</text>
+      <text class="action-desc">查看系统优化建议</text>
+    </button>
+
+    <button class="action-card" bindtap="performHealthCheck">
+      <text class="action-icon">🔍</text>
+      <text class="action-title">健康检查</text>
+      <text class="action-desc">执行系统健康检查</text>
+    </button>
+
+    <button class="action-card" bindtap="exportReport">
+      <text class="action-icon">📄</text>
+      <text class="action-title">导出报告</text>
+      <text class="action-desc">生成监控报告</text>
+    </button>
+  </view>
+
+  <!-- 服务详情弹窗 -->
+  <view class="service-detail-modal" wx:if="{{showServiceModal}}">
+    <view class="modal-mask" bindtap="closeServiceModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">服务详情 - {{selectedService.name}}</text>
+        <text class="modal-close" bindtap="closeServiceModal">×</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{selectedService}}">
+        <view class="detail-section">
+          <text class="section-title">基本信息</text>
+          <view class="detail-grid">
+            <view class="detail-item">
+              <text class="detail-label">服务名称：</text>
+              <text class="detail-value">{{selectedService.name}}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">版本：</text>
+              <text class="detail-value">v{{selectedService.version}}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">状态：</text>
+              <view class="status-badge status-badge--{{selectedService.status}}">
+                {{getServiceStatusText(selectedService.status)}}
+              </view>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">启动时间：</text>
+              <text class="detail-value">{{selectedService.startTime}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="detail-section">
+          <text class="section-title">性能指标</text>
+          <view class="metrics-grid">
+            <view class="metric-card">
+              <text class="metric-number">{{selectedService.responseTime}}</text>
+              <text class="metric-label">响应时间 (ms)</text>
+            </view>
+            <view class="metric-card">
+              <text class="metric-number">{{selectedService.successRate}}%</text>
+              <text class="metric-label">成功率</text>
+            </view>
+            <view class="metric-card">
+              <text class="metric-number">{{selectedService.qps}}</text>
+              <text class="metric-label">QPS</text>
+            </view>
+            <view class="metric-card">
+              <text class="metric-number">{{selectedService.uptime}}</text>
+              <text class="metric-label">运行时间</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="modal-btn modal-btn--restart" bindtap="restartService" data-name="{{selectedService.name}}">
+          重启服务
+        </button>
+        <button class="modal-btn modal-btn--close" bindtap="closeServiceModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

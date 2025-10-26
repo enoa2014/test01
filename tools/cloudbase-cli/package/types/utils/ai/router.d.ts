@@ -1,0 +1,54 @@
+import { Logger } from '../log';
+interface IExecute {
+    agent?: string;
+    envId?: string;
+    addtionalArgs: string[];
+    log: Logger;
+    template?: string;
+}
+export declare class AICommandRouter {
+    private configManager;
+    constructor();
+    execute({ agent, addtionalArgs, log, template }: IExecute): Promise<void>;
+    private checkToolkitConfig;
+    private checkSkipTemplateConfig;
+    private saveSkipTemplateConfig;
+    private downloadTemplate;
+    private downloadAndExtractTemplate;
+    private getInstallCommand;
+    private executeCommand;
+    private isToolAvailable;
+    private validateAgentConfig;
+    private executeAgentWithConfig;
+    private executeClaudeAgent;
+    private executeNoneClaudeAgent;
+    private executeQwenAgent;
+    private executeNoneQwenAgent;
+    private executeQwenCloudbaseAgent;
+    private executeClaudeCloudbaseAgent;
+    private restartClaudeCodeRouter;
+    private isClaudeCodeRouterRunning;
+    private configureClaudeCodeRouter;
+    private parseArgs;
+    private ensureClaudeCodeRouter;
+    private ensureClaudeCode;
+    private ensureQwenCode;
+    private executeCodexAgent;
+    private executeNoneCodexAgent;
+    private executeCodexCloudbaseAgent;
+    private executeNoneCursorAgent;
+    private ensureCursor;
+    private ensureCodexCode;
+    private executeAiderAgent;
+    private executeAiderCloudbaseAgent;
+    private ensureAider;
+    private modifyMCPConfigs;
+    private modifyMCPJsonFile;
+    private modifyMCPTomlFile;
+    private mergeMcpConfig;
+    private objectToToml;
+    private executeCodebuddyAgent;
+    private executeNoneCodebuddyAgent;
+    private ensureCodebuddy;
+}
+export {};

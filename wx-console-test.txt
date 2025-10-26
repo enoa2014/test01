@@ -1,0 +1,88 @@
+// 微信开发者工具控制台测试脚本
+// 复制以下代码到微信开发者工具控制台中执行
+
+console.log('=== 微信开发者工具云函数测试 ===');
+
+// 测试基础二维码生成
+wx.cloud.callFunction({
+  name: 'testQrGeneration',
+  data: { testType: 'basic' }
+}).then(res => {
+  console.log('✅ 基础测试成功:', res);
+  if (res.result && res.result.success) {
+    console.log('🎉 二维码生成成功!');
+    console.log('文件ID:', res.result.fileID);
+    console.log('临时链接:', res.result.tempURL);
+  } else {
+    console.log('❌ 二维码生成失败:', res.result?.error || res.result?.message);
+  }
+}).catch(err => {
+  console.error('❌ 基础测试失败:', err);
+});
+
+// 测试完整流程
+setTimeout(() => {
+  wx.cloud.callFunction({
+    name: 'testQrGeneration',
+    data: { testType: 'full' }
+  }).then(res => {
+    console.log('✅ 完整流程测试结果:', res);
+    if (res.result && res.result.success) {
+      console.log('🎉 完整流程测试成功!');
+      console.log('邀请码:', res.result.code);
+      console.log('邀请ID:', res.result.inviteId);
+      console.log('文件ID:', res.result.fileId);
+      console.log('临时链接:', res.result.url);
+    } else {
+      console.log('❌ 完整流程测试失败:', res.result?.error || res.result?.message);
+    }
+  }).catch(err => {
+    console.error('❌ 完整流程测试失败:', err);
+  });
+}, 2000);
+
+// 测试RBAC云函数（如果有登录态）
+setTimeout(() => {
+  wx.cloud.callFunction({
+    name: 'rbac',
+    data: {
+      action: 'createInvite',
+      role: 'volunteer',
+      uses: 1,
+      note: '微信开发者工具测试'
+    }
+  }).then(res => {
+    console.log('✅ RBAC测试结果:', res);
+    if (res.result && res.result.success) {
+      console.log('🎉 邀请创建成功!');
+      console.log('邀请码:', res.result.data.code);
+
+      // 继续测试二维码生成
+      return wx.cloud.callFunction({
+        name: 'rbac',
+        data: {
+          action: 'generateInviteQr',
+          inviteId: res.result.data.inviteId
+        }
+      });
+    } else {
+      console.log('❌ 邀请创建失败:', res.result?.error?.message);
+      return null;
+    }
+  }).then(res => {
+    if (res && res.result) {
+      console.log('✅ RBAC二维码生成结果:', res);
+      if (res.result.success) {
+        console.log('🎉 RBAC二维码生成成功!');
+        console.log('文件ID:', res.result.data.fileId);
+        console.log('临时链接:', res.result.data.url);
+      } else {
+        console.log('❌ RBAC二维码生成失败:', res.result?.error?.message);
+      }
+    }
+  }).catch(err => {
+    console.error('❌ RBAC测试失败:', err);
+  });
+}, 4000);
+
+console.log('📋 测试脚本已执行，请等待结果...');

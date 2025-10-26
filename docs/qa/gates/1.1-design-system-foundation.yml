@@ -1,0 +1,19 @@
+# Quality Gate Decision - Story 1.1
+schema: 1
+story: "1.1"
+story_title: "design-system-foundation"
+gate: "PASS"
+status_reason: "mpflow 端到端套件与配置验证全部通过，覆盖率证据满足 AC 要求"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T01:16:07Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "后续故事中补充单测用例，以便移除 passWithNoTests 设置"

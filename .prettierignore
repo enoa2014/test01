@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+miniprogram_npm/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Configuration files
+project.config.json
+project.private.config.json
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Temporary files
+.tmp/
+temp/

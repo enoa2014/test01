@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码生成测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .qr-image {
+            max-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>二维码生成功能测试</h1>
+        <p>此页面用于测试微信小程序的二维码生成功能。请确保已登录云开发环境。</p>
+
+        <div class="container">
+            <h2>测试步骤</h2>
+            <button class="test-button" onclick="testBasicQr()">1. 基础二维码生成测试</button>
+            <button class="test-button" onclick="testRbacQr()">2. RBAC邀请码二维码测试</button>
+            <button class="test-button" onclick="testFullFlow()">3. 完整流程测试</button>
+            <button class="test-button" onclick="clearResults()">清空结果</button>
+        </div>
+
+        <div class="container">
+            <h2>测试结果</h2>
+            <div id="results"></div>
+        </div>
+
+        <div class="container">
+            <h2>生成的二维码</h2>
+            <div id="qrImages"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@2.15.1/dist/index.js"></script>
+    <script>
+        let app = null;
+        let resultsDiv = document.getElementById('results');
+        let qrImagesDiv = document.getElementById('qrImages');
+
+        // 初始化云开发
+        async function initCloud() {
+            try {
+                app = tcb.init({
+                    env: 'cloud1-6g2fzr5f7cf51e38'
+                });
+
+                // 尝试获取登录状态
+                const auth = app.auth();
+                const loginState = await auth.getLoginState();
+
+                if (!loginState) {
+                    // 匿名登录
+                    await auth.anonymousAuthProvider().signIn();
+                }
+
+                addResult('云开发初始化成功', 'success');
+                return true;
+            } catch (error) {
+                addResult('云开发初始化失败: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        function addResult(message, type = 'info') {
+            const result = document.createElement('div');
+            result.className = `result ${type}`;
+            result.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.appendChild(result);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function addQrImage(url, description) {
+            const container = document.createElement('div');
+            container.style.marginBottom = '15px';
+
+            const title = document.createElement('div');
+            title.textContent = description;
+            title.style.fontWeight = 'bold';
+            title.style.marginBottom = '5px';
+
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'qr-image';
+            img.onerror = () => {
+                img.style.display = 'none';
+                const errorMsg = document.createElement('div');
+                errorMsg.textContent = '二维码图片加载失败';
+                errorMsg.style.color = 'red';
+                container.appendChild(errorMsg);
+            };
+
+            container.appendChild(title);
+            container.appendChild(img);
+            qrImagesDiv.appendChild(container);
+        }
+
+        async function testBasicQr() {
+            if (!app) {
+                const inited = await initCloud();
+                if (!inited) return;
+            }
+
+            addResult('开始基础二维码生成测试...', 'loading');
+
+            try {
+                const result = await app.callFunction({
+                    name: 'testQrGeneration',
+                    data: {
+                        testType: 'basic'
+                    }
+                });
+
+                if (result.result && result.result.success) {
+                    addResult('✅ 基础二维码生成成功!', 'success');
+                    addResult('文件ID: ' + result.result.fileID);
+                    addResult('临时链接: ' + result.result.tempURL);
+
+                    if (result.result.tempURL) {
+                        addQrImage(result.result.tempURL, '基础测试二维码');
+                    }
+                } else {
+                    addResult('❌ 基础二维码生成失败', 'error');
+                    addResult('错误信息: ' + (result.result?.error || '未知错误'));
+                    addResult('错误详情: ' + (result.result?.details || ''));
+                }
+            } catch (error) {
+                addResult('❌ 基础测试执行失败: ' + error.message, 'error');
+                addResult('错误详情: ' + JSON.stringify(error, null, 2));
+            }
+        }
+
+        async function testRbacQr() {
+            if (!app) {
+                const inited = await initCloud();
+                if (!inited) return;
+            }
+
+            addResult('开始RBAC邀请码二维码测试...', 'loading');
+
+            try {
+                // 先创建邀请
+                addResult('创建测试邀请...');
+                const createResult = await app.callFunction({
+                    name: 'rbac',
+                    data: {
+                        action: 'createInvite',
+                        role: 'volunteer',
+                        uses: 1,
+                        note: '二维码测试'
+                    }
+                });
+
+                if (createResult.result && createResult.result.success) {
+                    const { code, inviteId } = createResult.result.data;
+                    addResult(`✅ 测试邀请创建成功: ${code}`);
+
+                    // 生成二维码
+                    addResult('为邀请生成二维码...');
+                    const qrResult = await app.callFunction({
+                        name: 'rbac',
+                        data: {
+                            action: 'generateInviteQr',
+                            inviteId: inviteId
+                        }
+                    });
+
+                    if (qrResult.result && qrResult.result.success) {
+                        addResult('✅ RBAC二维码生成成功!', 'success');
+                        addResult('邀请码: ' + code);
+                        addResult('文件ID: ' + qrResult.result.data.fileId);
+                        addResult('临时链接: ' + qrResult.result.data.url);
+
+                        if (qrResult.result.data.url) {
+                            addQrImage(qrResult.result.data.url, `邀请码 ${code} 二维码`);
+                        }
+                    } else {
+                        addResult('❌ RBAC二维码生成失败', 'error');
+                        addResult('错误信息: ' + (qrResult.result?.error?.message || '未知错误'));
+                        addResult('错误代码: ' + (qrResult.result?.error?.code || ''));
+                        addResult('错误详情: ' + (qrResult.result?.error?.details || ''));
+                    }
+                } else {
+                    addResult('❌ 创建测试邀请失败', 'error');
+                    addResult('错误信息: ' + (createResult.result?.error?.message || '未知错误'));
+                }
+            } catch (error) {
+                addResult('❌ RBAC测试执行失败: ' + error.message, 'error');
+                addResult('错误详情: ' + JSON.stringify(error, null, 2));
+            }
+        }
+
+        async function testFullFlow() {
+            if (!app) {
+                const inited = await initCloud();
+                if (!inited) return;
+            }
+
+            addResult('开始完整流程测试...', 'loading');
+
+            try {
+                const result = await app.callFunction({
+                    name: 'testQrGeneration',
+                    data: {
+                        testType: 'full'
+                    }
+                });
+
+                if (result.result && result.result.success) {
+                    addResult('✅ 完整流程测试成功!', 'success');
+                    addResult('邀请码: ' + result.result.code);
+                    addResult('邀请ID: ' + result.result.inviteId);
+                    addResult('文件ID: ' + result.result.fileId);
+                    addResult('临时链接: ' + result.result.url);
+
+                    if (result.result.url) {
+                        addQrImage(result.result.url, `完整流程二维码 (${result.result.code})`);
+                    }
+                } else {
+                    addResult('❌ 完整流程测试失败', 'error');
+                    addResult('错误信息: ' + (result.result?.error || '未知错误'));
+                    addResult('错误详情: ' + (result.result?.details || ''));
+                }
+            } catch (error) {
+                addResult('❌ 完整流程测试执行失败: ' + error.message, 'error');
+                addResult('错误详情: ' + JSON.stringify(error, null, 2));
+            }
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+            qrImagesDiv.innerHTML = '';
+            addResult('结果已清空，可以开始新的测试');
+        }
+
+        // 页面加载时初始化
+        window.onload = async function() {
+            addResult('二维码测试页面已加载，点击上方按钮开始测试');
+            await initCloud();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+{
+  "name": "test01",
+  "version": "1.0.0",
+  "description": "WeChat mini program scaffold",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enoa2014/test01.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/enoa2014/test01/issues"
+  },
+  "homepage": "https://github.com/enoa2014/test01#readme",
+  "dependencies": {
+    "@cloudbase/manager-node": "^4.6.3",
+    "@cloudbase/node-sdk": "^2.10.0",
+    "dotenv": "^17.2.2",
+    "lodash": "^4.17.21",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.6",
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.25.9",
+    "@babel/preset-typescript": "^7.25.9",
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@mpflow/cli": "^0.0.35",
+    "@mpflow/plugin-e2e-test": "^0.0.34",
+    "@parcel/watcher-linux-x64-glibc": "^2.5.1",
+    "@tailwindcss/cli": "^4.1.14",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.3.1",
+    "@types/jest": "^27.5.2",
+    "babel-jest": "^27.5.1",
+    "context7": "^1.0.3",
+    "cross-env": "^10.0.0",
+    "eslint": "^8.56.0",
+    "exa-mcp": "^0.0.7",
+    "husky": "^8.0.3",
+    "jest": "^27.5.1",
+    "jest-environment-jsdom": "^27.5.1",
+    "lint-staged": "^15.2.0",
+    "mcp-chrome-bridge": "^1.0.29",
+    "miniprogram-automator": "^0.12.1",
+    "postcss": "^8.5.6",
+    "prettier": "^3.1.1",
+    "stylelint": "^16.6.1",
+    "stylelint-config-standard": "^35.0.0",
+    "stylelint-declaration-strict-value": "^1.10.2",
+    "tailwindcss": "^3.4.13",
+    "weapp-tailwindcss": "^4.3.3",
+    "wx-server-sdk": "^3.0.1"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{wxss,css}": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,wxml,md}": [
+      "prettier --write"
+    ]
+  },
+  "scripts": {
+    "component:create": "node scripts/create-component.js",
+    "fix-encoding": "node scripts/fix-encoding.js",
+    "test:unit:coverage": "jest --config tests/unit/jest.config.js --coverage",
+    "format:check": "prettier --check \"**/*.{js,json,wxml,wxss,md}\"",
+    "test:service": "cross-env NODE_ENV=test jest --config tests/service/jest.config.cjs",
+    "format": "prettier --write \"**/*.{js,json,wxml,wxss,md}\"",
+    "test:e2e:patients": "node scripts/e2e/run-patient-suite.js",
+    "sync-config": "node scripts/sync-config.js",
+    "test:unit:watch": "jest --config tests/unit/jest.config.js --watch",
+    "lint": "node ./node_modules/eslint/bin/eslint.js --no-error-on-unmatched-pattern wx-project/ cloudfunctions/ scripts/ --ext .js",
+    "lint:style": "npx stylelint \"wx-project/**/*.{wxss,css}\"",
+    "build:dev": "npm run tailwind:build && echo 'Development build'",
+    "lint-staged": "lint-staged",
+    "lint:fix": "node ./node_modules/eslint/bin/eslint.js --no-error-on-unmatched-pattern wx-project/ cloudfunctions/ scripts/ --ext .js --fix",
+    "test:unit": "jest --config tests/unit/jest.config.js",
+    "test": "npm run test:e2e",
+    "prepare": "husky install",
+    "docs:serve": "node scripts/serve-docs.js",
+    "test:e2e:mpflow": "cross-env CI=1 mpflow-service test:e2e -- --runInBand",
+    "test:e2e": "npm run test:e2e:mpflow && npm run test:cleanup",
+    "build:prod": "npm run tailwind:build && echo 'Production build'",
+    "tailwind:build": "node scripts/build-tailwind-wxss.js",
+    "tokens:generate": "node scripts/generate-tokens.js",
+    "database:reinit": "node scripts/database-reinit.js",
+    "database:backup": "node scripts/database-reinit.js --backup",
+    "database:verify": "node scripts/database-reinit.js --verify-only",
+    "database:reset:readexcel": "node scripts/reset-via-readexcel.js",
+    "database:normalize-from-raw": "node scripts/normalize-from-raw.js",
+    "database:find-duplicates": "node scripts/find-duplicate-patients.js",
+    "test:cleanup-verify": "node scripts/e2e/verify-cleanup.js",
+    "test:cleanup": "node scripts/e2e/verify-cleanup.js --cleanup",
+    "docs:links": "node scripts/docs-check-links.js README.md",
+    "test:e2e:web": "npm --prefix web-admin run test:e2e",
+    "test:e2e:web:headed": "npm --prefix web-admin run test:e2e:headed",
+    "test:e2e:web:ui": "npm --prefix web-admin run test:e2e:ui",
+    "e2e:web:report": "npm --prefix web-admin run e2e:report",
+    "devtools:chrome": "node scripts/start-chrome-cdp.js",
+    "deploy:function": "node scripts/deploy-cloudfunctions.js",
+    "database:create-indexes:qr": "node scripts/database-create-qr-indexes.js"
+  }
+}

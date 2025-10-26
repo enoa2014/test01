@@ -1,0 +1,23 @@
+{
+  "profiles": [
+    {
+      "name": "3G Fast",
+      "download": 1600,
+      "upload": 750,
+      "latency": 150
+    },
+    {
+      "name": "3G Slow",
+      "download": 400,
+      "upload": 150,
+      "latency": 400
+    },
+    {
+      "name": "Weak Wi-Fi",
+      "download": 800,
+      "upload": 256,
+      "latency": 250
+    }
+  ],
+  "notes": "单位 kbps；用于导入微信开发者工具的 Network Throttling 自定义配置。"
+}

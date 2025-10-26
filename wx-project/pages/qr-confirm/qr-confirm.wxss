@@ -1,0 +1,409 @@
+/* pages/qr-confirm/qr-confirm.wxss */
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* 头部 */
+.header {
+  text-align: center;
+  padding: 40rpx 0;
+  color: white;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  opacity: 0.8;
+}
+
+/* 扫码区域 */
+.scan-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 60rpx 40rpx;
+  margin-bottom: 20rpx;
+  text-align: center;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.scan-icon {
+  font-size: 120rpx;
+  margin-bottom: 30rpx;
+}
+
+.scan-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.scan-desc {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 40rpx;
+}
+
+.scan-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.scan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 32rpx;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  border: none;
+}
+
+.scan-btn.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.scan-btn.secondary {
+  background: #f8f9fa;
+  color: #333;
+  border: 2rpx solid #e9ecef;
+}
+
+.btn-icon {
+  font-size: 36rpx;
+  margin-right: 16rpx;
+}
+
+/* 会话信息 */
+.session-info {
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.session-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.session-time {
+  font-size: 24rpx;
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+/* Web端信息 */
+.web-info {
+  margin-bottom: 30rpx;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+}
+
+.info-label {
+  color: #666;
+  min-width: 140rpx;
+}
+
+.info-value {
+  color: #333;
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 用户信息 */
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  margin-bottom: 30rpx;
+}
+
+.user-avatar {
+  margin-right: 20rpx;
+}
+
+.avatar-img {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.user-desc {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 角色选择 */
+.role-section {
+  margin-bottom: 30rpx;
+}
+
+.role-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.role-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border: 3rpx solid transparent;
+  transition: all 0.3s ease;
+}
+
+.role-item.selected {
+  background: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.role-icon {
+  font-size: 48rpx;
+  margin-right: 20rpx;
+}
+
+.role-info {
+  flex: 1;
+}
+
+.role-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.role-desc {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.role-check {
+  width: 40rpx;
+  height: 40rpx;
+  background: #2196f3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-icon {
+  color: white;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+/* 单角色显示 */
+.single-role {
+  margin-bottom: 30rpx;
+}
+
+.role-display {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+/* 登录模式选择 */
+.login-mode-section {
+  margin-bottom: 30rpx;
+}
+
+.mode-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.mode-options {
+  display: flex;
+  gap: 16rpx;
+}
+
+.mode-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border: 3rpx solid transparent;
+  transition: all 0.3s ease;
+}
+
+.mode-item.selected {
+  background: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.mode-icon {
+  font-size: 48rpx;
+  margin-bottom: 16rpx;
+}
+
+.mode-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+  text-align: center;
+}
+
+.mode-desc {
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 40rpx;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 28rpx;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.action-btn.cancel {
+  background: #f8f9fa;
+  color: #666;
+  border: 2rpx solid #e9ecef;
+}
+
+.action-btn.confirm {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 错误提示 */
+.error-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  margin-bottom: 20rpx;
+  text-align: center;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.error-message {
+  font-size: 32rpx;
+  color: #ff6b6b;
+  margin-bottom: 30rpx;
+}
+
+.retry-btn {
+  background: #ff6b6b;
+  color: white;
+  padding: 20rpx 40rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+/* 帮助信息 */
+.help-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.help-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.help-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.help-item {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .mode-options {
+    flex-direction: column;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}

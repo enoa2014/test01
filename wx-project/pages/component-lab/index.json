@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "Component Lab",
+  "usingComponents": {
+    "pm-button": "/components/base/pm-button/index",
+    "pm-input": "/components/base/pm-input/index",
+    "pm-card": "/components/base/pm-card/index",
+    "pm-picker": "/components/base/pm-picker/index",
+    "pm-dialog": "/components/base/pm-dialog/index",
+    "pm-badge": "/components/base/pm-badge/index"
+  }
+}

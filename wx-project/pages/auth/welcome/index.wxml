@@ -1,0 +1,156 @@
+<!-- pages/auth/welcome/index.wxml -->
+<view class="welcome-container">
+  <!-- 头部区域 -->
+  <view class="welcome-header">
+    <view class="welcome-logo">
+      <image class="logo-image" src="/assets/logo.png" mode="aspectFit" />
+    </view>
+    <text class="welcome-title">欢迎使用入住档案系统</text>
+    <text class="welcome-subtitle">让我们开始您的关怀之旅</text>
+  </view>
+
+  <!-- 内容区域 -->
+  <view class="welcome-content">
+    <!-- 功能介绍 -->
+    <view class="feature-section">
+      <view class="section-title">
+        <text>核心功能</text>
+      </view>
+      <view class="feature-list">
+        <view class="feature-item">
+          <view class="feature-icon">
+            <icon type="success" size="20" />
+          </view>
+          <view class="feature-content">
+            <text class="feature-title">患者管理</text>
+            <text class="feature-desc">完善的入住档案管理</text>
+          </view>
+        </view>
+
+        <view class="feature-item">
+          <view class="feature-icon">
+            <icon type="success" size="20" />
+          </view>
+          <view class="feature-content">
+            <text class="feature-title">关怀服务</text>
+            <text class="feature-desc">贴心的关怀服务记录</text>
+          </view>
+        </view>
+
+        <view class="feature-item">
+          <view class="feature-icon">
+            <icon type="success" size="20" />
+          </view>
+          <view class="feature-content">
+            <text class="feature-title">权限管理</text>
+            <text class="feature-desc">安全的角色权限控制</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 用户指南 -->
+    <view class="guide-section">
+      <view class="section-title">
+        <text>快速开始</text>
+      </view>
+      <view class="guide-steps">
+        <view class="step-item">
+          <view class="step-number">1</view>
+          <text class="step-text">完善个人资料</text>
+        </view>
+        <view class="step-item">
+          <view class="step-number">2</view>
+          <text class="step-text">申请相关权限</text>
+        </view>
+        <view class="step-item">
+          <view class="step-number">3</view>
+          <text class="step-text">开始使用服务</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 权限说明 -->
+    <view class="permission-section">
+      <view class="section-title">
+        <text>权限说明</text>
+      </view>
+      <view class="permission-content">
+        <text class="permission-text">
+          系统采用基于角色的权限管理，不同角色拥有不同的功能权限。请根据您的身份申请相应的权限。
+        </text>
+        <button class="permission-link" bindtap="goToPermissionHelp">
+          了解权限详情
+          <icon type="info" size="16" />
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="welcome-actions">
+    <!-- 身份快捷入口 -->
+    <view class="action-group identity">
+      <button class="action-btn primary" bindtap="goToSocialWorkerApply">
+        我是社工（提交申请）
+      </button>
+      <view style="height:12rpx" />
+      <button class="action-btn primary" bindtap="goToVolunteerInvite">
+        我是志愿者（扫码/邀请码）
+      </button>
+      <view style="height:12rpx" />
+      <button class="action-btn primary" bindtap="goToParentInvite">
+        我是家长（扫码/邀请码）
+      </button>
+    </view>
+
+    <view class="action-group primary">
+      <button class="action-btn primary" bindtap="goToProfile">
+        <icon type="success" size="20" />
+        立即完善资料
+      </button>
+    </view>
+
+    <view class="action-group secondary">
+      <button class="action-btn secondary" bindtap="goToInviteCode">
+        <icon type="info" size="20" />
+        输入邀请码
+      </button>
+
+      <button class="action-btn secondary" bindtap="goToRoleApplication">
+        <icon type="waiting" size="20" />
+        申请角色权限
+      </button>
+    </view>
+
+    <view class="action-group tertiary">
+      <button class="action-btn text" bindtap="viewGuide">
+        使用指南
+      </button>
+
+      <button class="action-btn text" bindtap="contactSupport">
+        联系客服
+      </button>
+    </view>
+
+    <view class="action-group skip" wx:if="{{canSkip}}">
+      <button class="action-btn text skip" bindtap="skipForNow">
+        稍后再说
+      </button>
+    </view>
+  </view>
+
+  <!-- 底部信息 -->
+  <view class="welcome-footer">
+    <text class="footer-text">如有问题，请联系客服获得帮助</text>
+    <text class="footer-copyright">© 2025 入住档案系统</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{!userLoaded}}">
+    <view class="loading-content">
+      <image class="loading-image" src="/assets/loading.gif" mode="aspectFit" />
+      <text class="loading-text">正在加载用户信息...</text>
+    </view>
+  </view>
+</view>

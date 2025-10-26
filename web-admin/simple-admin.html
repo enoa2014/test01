@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同心源 小家管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定义样式 */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .role-card {
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .role-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.1);
+        }
+        .role-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold text-gray-900">同心源 小家</h1>
+                    </div>
+                    <nav class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="#" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">首页</a>
+                            <a href="#" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">患者管理</a>
+                            <a href="#" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">数据分析</a>
+                            <a href="#" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">系统设置</a>
+                        </div>
+                    </nav>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600">欢迎访问管理后台</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- 登录页面 -->
+        <div id="loginPage" class="min-h-screen flex items-center justify-center py-12 px-4">
+            <div class="max-w-4xl w-full space-y-8 fade-in">
+                <!-- 标题区域 -->
+                <div class="text-center">
+                    <h1 class="text-4xl font-extrabold text-gray-900 mb-4" data-testid="login-page-title">
+                        系统登录
+                    </h1>
+                    <p class="text-lg text-gray-600">
+                        选择登录方式进入管理后台
+                    </p>
+                </div>
+
+                <!-- 登录方式切换 -->
+                <div class="bg-white rounded-xl shadow-lg p-2 flex">
+                    <button
+                        id="qrLoginTab"
+                        data-testid="qr-login-tab"
+                        onclick="showQRLogin()"
+                        class="flex-1 py-3 px-6 rounded-lg text-sm font-medium transition-all duration-200 login-tab-active"
+                    >
+                        扫码登录
+                    </button>
+                    <button
+                        id="passwordLoginTab"
+                        data-testid="password-login-tab"
+                        onclick="showPasswordLogin()"
+                        class="flex-1 py-3 px-6 rounded-lg text-sm font-medium transition-all duration-200 text-gray-700 hover:text-gray-900"
+                    >
+                        账号密码
+                    </button>
+                </div>
+
+                <!-- 错误提示 -->
+                <div id="errorMessage" class="hidden bg-red-50 border border-red-200 rounded-lg p-4" data-testid="login-error-message">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-800" data-testid="error-text" id="errorText">登录失败，请重试</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 登录内容 -->
+                <!-- 扫码登录 -->
+                <div id="qrLoginContent" class="bg-white rounded-xl shadow-lg p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2" data-testid="qr-login-title">
+                            扫码登录
+                        </h3>
+                        <p class="text-gray-600">选择您的角色，使用微信小程序扫码快速登录</p>
+                    </div>
+
+                    <!-- 角色选择器 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- 管理员角色 -->
+                        <div
+                            class="role-card p-6 rounded-lg cursor-pointer hover-lift"
+                            data-testid="role-button-admin"
+                            data-role="admin"
+                            data-role-name="系统管理员"
+                            onclick="selectRole('admin')"
+                        >
+                            <div class="text-center">
+                                <div class="text-4xl mb-3" data-testid="role-icon-admin">👑</div>
+                                <div class="font-bold text-gray-900 mb-2" data-testid="role-name-admin">系统管理员</div>
+                                <div class="text-sm text-gray-600" data-testid="role-desc-admin">拥有完整的系统管理权限，可以管理用户、配置系统、查看所有数据</div>
+                            </div>
+                            <div class="hidden absolute top-2 right-2" data-testid="role-selected-admin">
+                                <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 社工角色 -->
+                        <div
+                            class="role-card p-6 rounded-lg cursor-pointer hover-lift relative"
+                            data-testid="role-button-social_worker"
+                            data-role="social_worker"
+                            data-role-name="社工"
+                            onclick="selectRole('social_worker')"
+                        >
+                            <div class="text-center">
+                                <div class="text-4xl mb-3" data-testid="role-icon-social_worker">👩‍⚕️</div>
+                                <div class="font-bold text-gray-900 mb-2" data-testid="role-name-social_worker">社工</div>
+                                <div class="text-sm text-gray-600" data-testid="role-desc-social_worker">负责患者管理和护理记录，可以查看和管理负责的患者信息</div>
+                            </div>
+                            <div class="hidden absolute top-2 right-2" data-testid="role-selected-social_worker">
+                                <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 志愿者角色 -->
+                        <div
+                            class="role-card p-6 rounded-lg cursor-pointer hover-lift relative"
+                            data-testid="role-button-volunteer"
+                            data-role="volunteer"
+                            data-role-name="志愿者"
+                            onclick="selectRole('volunteer')"
+                        >
+                            <div class="text-center">
+                                <div class="text-4xl mb-3" data-testid="role-icon-volunteer">🤝</div>
+                                <div class="font-bold text-gray-900 mb-2" data-testid="role-name-volunteer">志愿者</div>
+                                <div class="text-sm text-gray-600" data-testid="role-desc-volunteer">参与志愿服务，可以查看基础患者信息和记录服务日志</div>
+                            </div>
+                            <div class="hidden absolute top-2 right-2" data-testid="role-selected-volunteer">
+                                <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 家长角色 -->
+                        <div
+                            class="role-card p-6 rounded-lg cursor-pointer hover-lift relative"
+                            data-testid="role-button-parent"
+                            data-role="parent"
+                            data-role-name="家长"
+                            onclick="selectRole('parent')"
+                        >
+                            <div class="text-center">
+                                <div class="text-4xl mb-3" data-testid="role-icon-parent">👨‍👩‍👧‍👦</div>
+                                <div class="font-bold text-gray-900 mb-2" data-testid="role-name-parent">家长</div>
+                                <div class="text-sm text-gray-600" data-testid="role-desc-parent">查看自己孩子的相关信息，包括护理记录和医疗信息</div>
+                            </div>
+                            <div class="hidden absolute top-2 right-2" data-testid="role-selected-parent">
+                                <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 游客角色 -->
+                        <div
+                            class="role-card p-6 rounded-lg cursor-pointer hover-lift relative"
+                            data-testid="role-button-guest"
+                            data-role="guest"
+                            data-role-name="游客"
+                            onclick="selectRole('guest')"
+                        >
+                            <div class="text-center">
+                                <div class="text-4xl mb-3" data-testid="role-icon-guest">👤</div>
+                                <div class="font-bold text-gray-900 mb-2" data-testid="role-name-guest">游客</div>
+                                <div class="text-sm text-gray-600" data-testid="role-desc-guest">临时访问权限，可以查看公开的统计信息</div>
+                            </div>
+                            <div class="hidden absolute top-2 right-2" data-testid="role-selected-guest">
+                                <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 二维码区域 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-64 h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                            <div class="text-center text-gray-500">
+                                <div class="text-4xl mb-2">📱</div>
+                                <div>请选择登录角色</div>
+                            </div>
+                        </div>
+                        <div class="mt-6 text-center text-sm text-gray-600">
+                            <div class="mb-2"><strong>使用说明：</strong></div>
+                            <div>1. 选择您的登录角色</div>
+                            <div>2. 使用微信小程序扫描二维码</div>
+                            <div>3. 在小程序中确认登录</div>
+                            <div>4. 自动跳转到管理后台</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账号密码登录 -->
+                <div id="passwordLoginContent" class="bg-white rounded-xl shadow-lg p-8 hidden">
+                    <form class="space-y-6" onsubmit="handlePasswordLogin(event)">
+                        <div>
+                            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                                用户名
+                            </label>
+                            <input
+                                id="username"
+                                name="username"
+                                data-testid="username-input"
+                                type="text"
+                                required
+                                class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="请输入账号"
+                                autocomplete="username"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                                口令
+                            </label>
+                            <input
+                                id="password"
+                                name="password"
+                                data-testid="password-input"
+                                type="password"
+                                required
+                                class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="请输入口令"
+                                autocomplete="current-password"
+                            />
+                        </div>
+
+                        <div>
+                            <button
+                                type="submit"
+                                data-testid="login-submit-button"
+                                class="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            >
+                                登录
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-6 text-center">
+                        <p class="text-xs text-gray-500">
+                            首次使用请在云函数 `auth` 中配置管理员账号，并在环境变量中启用自定义登录私钥。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理后台页面（登录后显示） -->
+        <div id="dashboardPage" class="hidden fade-in">
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-lg p-6 hover-lift">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                            <div class="text-2xl">👥</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">总患者数</p>
+                            <p class="text-2xl font-bold text-gray-900">128</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6 hover-lift">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                            <div class="text-2xl">📋</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">今日护理记录</p>
+                            <p class="text-2xl font-bold text-gray-900">24</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6 hover-lift">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-100 rounded-lg p-3">
+                            <div class="text-2xl">🤝</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">活跃志愿者</p>
+                            <p class="text-2xl font-bold text-gray-900">15</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6 hover-lift">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                            <div class="text-2xl">📊</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">本月统计</p>
+                            <p class="text-2xl font-bold text-gray-900">89%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快速操作 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 患者管理 -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">患者管理</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="text-xl mr-3">👧</div>
+                                <div>
+                                    <p class="font-medium">王小明</p>
+                                    <p class="text-sm text-gray-600">6岁 | 心脏康复</p>
+                                </div>
+                            </div>
+                            <button class="text-blue-600 hover:text-blue-800">查看详情</button>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="text-xl mr-3">👦</div>
+                                <div>
+                                    <p class="font-medium">李小华</p>
+                                    <p class="text-sm text-gray-600">8岁 | 神经康复</p>
+                                </div>
+                            </div>
+                            <button class="text-blue-600 hover:text-blue-800">查看详情</button>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        查看全部患者
+                    </button>
+                </div>
+
+                <!-- 最近活动 -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">最近活动</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-start p-3 bg-gray-50 rounded-lg">
+                            <div class="text-xl mr-3 mt-1">📝</div>
+                            <div>
+                                <p class="font-medium">护理记录更新</p>
+                                <p class="text-sm text-gray-600">王小明的日常护理记录已更新</p>
+                                <p class="text-xs text-gray-500">2小时前</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start p-3 bg-gray-50 rounded-lg">
+                            <div class="text-xl mr-3 mt-1">🏥</div>
+                            <div>
+                                <p class="font-medium">康复治疗</p>
+                                <p class="text-sm text-gray-600">李小华完成了物理康复训练</p>
+                                <p class="text-xs text-gray-500">4小时前</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start p-3 bg-gray-50 rounded-lg">
+                            <div class="text-xl mr-3 mt-1">👤</div>
+                            <div>
+                                <p class="font-medium">新志愿者加入</p>
+                                <p class="text-sm text-gray-600">张三已加入志愿者团队</p>
+                                <p class="text-xs text-gray-500">1天前</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        查看全部活动
+                    </button>
+                </div>
+            </div>
+
+            <!-- 退出登录 -->
+            <div class="mt-8 text-center">
+                <button onclick="logout()" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">
+                    退出登录
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 当前选中的角色
+        let selectedRole = null;
+
+        // 显示扫码登录
+        function showQRLogin() {
+            document.getElementById('qrLoginContent').classList.remove('hidden');
+            document.getElementById('passwordLoginContent').classList.add('hidden');
+            document.getElementById('qrLoginTab').classList.add('login-tab-active');
+            document.getElementById('passwordLoginTab').classList.remove('login-tab-active');
+            hideError();
+        }
+
+        // 显示密码登录
+        function showPasswordLogin() {
+            document.getElementById('qrLoginContent').classList.add('hidden');
+            document.getElementById('passwordLoginContent').classList.remove('hidden');
+            document.getElementById('passwordLoginTab').classList.add('login-tab-active');
+            document.getElementById('qrLoginTab').classList.remove('login-tab-active');
+            hideError();
+        }
+
+        // 选择角色
+        function selectRole(role) {
+            // 移除所有选中状态
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('selected');
+                const selectedIcon = card.querySelector('[data-testid^="role-selected-"]');
+                if (selectedIcon) {
+                    selectedIcon.classList.add('hidden');
+                }
+            });
+
+            // 添加选中状态
+            const selectedCard = document.querySelector(`[data-testid="role-button-${role}"]`);
+            selectedCard.classList.add('selected');
+            const selectedIcon = document.querySelector(`[data-testid="role-selected-${role}"]`);
+            if (selectedIcon) {
+                selectedIcon.classList.remove('hidden');
+            }
+
+            selectedRole = role;
+            hideError();
+
+            // 这里可以生成二维码的占位符
+            console.log('选择角色:', role);
+        }
+
+        // 处理密码登录
+        function handlePasswordLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showError('请填写用户名和密码');
+                return;
+            }
+
+            // 模拟登录验证
+            if (username === 'admin' && password === 'admin123') {
+                loginSuccess();
+            } else {
+                showError('口令错误');
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').classList.remove('hidden');
+        }
+
+        // 隐藏错误信息
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        // 登录成功
+        function loginSuccess() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('dashboardPage').classList.remove('hidden');
+            hideError();
+        }
+
+        // 退出登录
+        function logout() {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('dashboardPage').classList.add('hidden');
+
+            // 重置表单
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+
+            // 重置角色选择
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('selected');
+                const selectedIcon = card.querySelector('[data-testid^="role-selected-"]');
+                if (selectedIcon) {
+                    selectedIcon.classList.add('hidden');
+                }
+            });
+
+            selectedRole = null;
+            showQRLogin();
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            showQRLogin();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+name: 🧪 测试流水线
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # 单元测试和集成测试
+  unit-and-integration-tests:
+    name: 🧪 单元和集成测试
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🟢 设置Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: 📦 安装依赖
+      run: npm ci
+
+    - name: 🔧 运行代码检查
+      run: npm run lint
+
+    - name: 🧪 运行单元测试
+      run: npm run test:run -- --run --coverage
+
+    - name: 📊 上传覆盖率报告
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: 💾 保存测试结果
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-node-${{ matrix.node-version }}
+        path: |
+          coverage/
+          junit.xml
+
+  # E2E测试
+  e2e-tests:
+    name: 🎭 E2E测试
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🟢 设置Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 📦 安装依赖
+      run: npm ci
+
+    - name: 🌐 安装Playwright
+      run: npx playwright install --with-deps
+
+    - name: 🏗️ 构建应用
+      run: npm run build
+
+    - name: 🚀 启动开发服务器
+      run: |
+        npm run preview &
+        sleep 10
+
+    - name: 🎭 运行E2E测试
+      run: npm run test:e2e
+
+    - name: 📷 生成测试报告
+      if: always()
+      run: npm run e2e:report
+
+    - name: 💾 保存E2E测试结果
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          playwright-report/
+          test-results/
+
+  # 小程序测试
+  miniprogram-tests:
+    name: 📱 小程序测试
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🟢 设置Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 📦 安装依赖
+      run: npm ci
+
+    - name: 🧪 运行云函数测试
+      run: npm run test:service
+
+    - name: 🎭 运行小程序E2E测试
+      run: npm run test:e2e
+      env:
+        TENCENTCLOUD_SECRETID: ${{ secrets.TENCENTCLOUD_SECRETID }}
+        TENCENTCLOUD_SECRETKEY: ${{ secrets.TENCENTCLOUD_SECRETKEY }}
+        TCB_ENV: ${{ secrets.TCB_ENV }}
+
+  # 安全测试
+  security-scan:
+    name: 🔒 安全扫描
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🔍 运行安全审计
+      run: npm audit --audit-level moderate
+
+    - name: 🔍 扫描依赖漏洞
+      uses: securecodewarrior/github-action-add-sarif@v1
+      with:
+        sarif-file: 'security-scan-results.sarif'
+
+  # 性能测试
+  performance-test:
+    name: ⚡ 性能测试
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🟢 设置Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 📦 安装依赖
+      run: npm ci
+
+    - name: 🏗️ 构建应用
+      run: npm run build
+
+    - name: 🚀 启动服务器
+      run: |
+        npm run preview &
+        sleep 10
+
+    - name: ⚡ 运行Lighthouse CI
+      run: |
+        npm install -g @lhci/cli@0.12.x
+        lhci autorun
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+  # 部署到测试环境
+  deploy-staging:
+    name: 🚀 部署到测试环境
+    runs-on: ubuntu-latest
+    needs: [unit-and-integration-tests, e2e-tests, miniprogram-tests]
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🏗️ 构建应用
+      run: npm run build
+
+    - name: 🚀 部署到测试环境
+      run: |
+        echo "部署到测试环境的脚本"
+        # 这里添加实际的部署脚本
+
+    - name: 🔔 通知部署结果
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # 发布到生产环境
+  deploy-production:
+    name: 🌟 发布到生产环境
+    runs-on: ubuntu-latest
+    needs: [unit-and-integration-tests, e2e-tests, miniprogram-tests, security-scan, performance-test]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🏗️ 构建生产版本
+      run: npm run build
+
+    - name: 🚀 部署到生产环境
+      run: |
+        echo "部署到生产环境的脚本"
+        # 这里添加实际的部署脚本
+
+    - name: 🔔 通知发布结果
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#releases'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+# 工作流总结
+  workflow-summary:
+    name: 📊 工作流总结
+    runs-on: ubuntu-latest
+    needs: [unit-and-integration-tests, e2e-tests, miniprogram-tests]
+    if: always()
+
+    steps:
+    - name: 📋 生成测试报告
+      run: |
+        echo "# 🧪 测试流水线报告
+
+        ## 📊 测试结果
+        - 单元测试: ${{ needs.unit-and-integration-tests.result }}
+        - E2E测试: ${{ needs.e2e-tests.result }}
+        - 小程序测试: ${{ needs.miniprogram-tests.result }}
+
+        ## 📈 覆盖率
+        - 代码覆盖率: 查看 [Codecov报告](https://codecov.io/gh/${{ github.repository }})
+
+        ## 🚀 部署状态
+        - 测试环境: ${{ github.ref == 'refs/heads/develop' && '已部署' || '未部署' }}
+        - 生产环境: ${{ github.ref == 'refs/heads/main' && '已部署' || '未部署' }}
+
+        ---
+        *报告生成时间: $(date)*
+        " > test-report.md
+
+    - name: 💾 上传测试报告
+      uses: actions/upload-artifact@v3
+      with:
+        name: workflow-summary
+        path: test-report.md

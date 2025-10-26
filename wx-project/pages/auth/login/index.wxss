@@ -1,0 +1,25 @@
+.login-page { padding: 32rpx; }
+.header { align-items: center; display: flex; flex-direction: column; margin-bottom: 32rpx; }
+.logo { width: 160rpx; height: 160rpx; margin-bottom: 16rpx; }
+.title { font-size: 36rpx; font-weight: 600; }
+.subtitle { color: #666; font-size: 26rpx; margin-top: 8rpx; }
+
+.section { margin-top: 24rpx; }
+.section-title { font-size: 28rpx; color: #333; margin-bottom: 16rpx; display: block; }
+.form { display: flex; flex-direction: column; gap: 16rpx; }
+.input { border: 1px solid #e5e7eb; border-radius: 8rpx; padding: 20rpx; font-size: 28rpx; }
+.password-row { display: flex; gap: 12rpx; }
+.password-row .input { flex: 1; }
+.toggle { height: 72rpx; line-height: 72rpx; }
+
+.btn { margin-top: 12rpx; border-radius: 8rpx; }
+.btn.primary { background-color: #2563eb; color: #fff; }
+.btn + .btn { margin-top: 12rpx; }
+
+.divider { height: 1px; background-color: #eee; margin: 24rpx 0; }
+.error { color: #ef4444; font-size: 26rpx; }
+.footer { margin-top: 32rpx; text-align: center; color: #888; font-size: 24rpx; }
+
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; }
+.loading { background: #fff; padding: 24rpx 36rpx; border-radius: 12rpx; box-shadow: 0 4rpx 24rpx rgba(0,0,0,.08); }
+

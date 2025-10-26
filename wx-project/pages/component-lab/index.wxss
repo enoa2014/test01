@@ -1,0 +1,225 @@
+@import '../../styles/generated/tokens.wxss';
+@import '../../styles/foundation.wxss';
+@import '../../styles/utilities.wxss';
+@import '../../styles/responsive.wxss';
+
+.lab {
+  display: flex;
+  height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.lab__sidebar {
+  width: 240rpx;
+  background: var(--color-bg-primary);
+  border-right: 2rpx solid var(--color-border-secondary);
+}
+
+.lab__sidebar-title {
+  padding: var(--space-4);
+  font-weight: var(--font-semibold);
+  border-bottom: 2rpx solid var(--color-border-secondary);
+}
+
+.lab__item {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+}
+
+.lab__item--active {
+  background: var(--color-primary-light);
+  color: var(--color-bg-primary);
+}
+
+.lab__content {
+  display: flex;
+  flex: 1;
+  padding: var(--space-6);
+  gap: var(--space-6);
+}
+
+.lab__preview {
+  flex: 2;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.lab__preview-header {
+  margin-bottom: var(--space-4);
+}
+
+.lab__preview-title {
+  display: block;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-lg);
+}
+
+.lab__preview-path {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+.lab__preview-body {
+  min-height: 220rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.lab__empty {
+  color: var(--color-text-tertiary);
+}
+
+.lab__panel {
+  flex: 1;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.lab__panel-title {
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-4);
+}
+
+.lab__preset-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.lab__preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.lab__preset {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-base);
+  border: 2rpx solid var(--color-border-secondary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.lab__preset--active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--bg-info-soft);
+}
+
+.lab__preset--custom {
+  border-style: dashed;
+  color: var(--color-text-tertiary);
+}
+
+.lab__panel-field {
+  margin-bottom: var(--space-4);
+}
+
+.lab__panel-field--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.lab__panel-label {
+  display: block;
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+.lab__picker {
+  padding: var(--space-3);
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+}
+
+.lab__switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.lab__panel-footer {
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.lab__link {
+  color: var(--color-primary);
+  margin-left: var(--space-2);
+}
+
+.lab__button-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lab__affix {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.lab__card-header {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-semibold);
+}
+
+.lab__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.lab__card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.lab__badge-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+}
+
+.lab__dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.lab__dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.lab__textarea {
+  width: 100%;
+  min-height: 160rpx;
+  border: 2rpx solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  box-sizing: border-box;
+}

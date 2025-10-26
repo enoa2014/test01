@@ -1,0 +1,428 @@
+/* pages/auth/permission-help/index.wxss */
+
+.permission-help {
+  min-height: 100vh;
+  background-color: var(--bg-color-page);
+  padding-bottom: 40rpx;
+}
+
+/* 页面头部 */
+.page-header {
+  background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-light) 100%);
+  padding: 60rpx 40rpx 40rpx;
+  color: white;
+}
+
+.header-content {
+  text-align: center;
+}
+
+.header-title {
+  font-size: 48rpx;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.header-subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+  display: block;
+}
+
+/* 快速导航 */
+.quick-nav {
+  display: flex;
+  background: white;
+  margin: -20rpx 30rpx 30rpx;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 10rpx;
+  border-radius: 12rpx;
+  transition: all 0.3s ease;
+}
+
+.nav-item:active {
+  background-color: var(--color-info-light);
+  transform: scale(0.95);
+}
+
+.nav-icon {
+  font-size: 40rpx;
+  margin-bottom: 12rpx;
+}
+
+.nav-text {
+  font-size: 24rpx;
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+/* 通用section样式 */
+.section {
+  margin: 0 30rpx 40rpx;
+}
+
+.section-header {
+  margin-bottom: 30rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.section-desc {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  display: block;
+  line-height: 1.5;
+}
+
+/* 内容卡片 */
+.content-card {
+  background: white;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.card-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 30rpx;
+}
+
+.card-item:last-child {
+  margin-bottom: 0;
+}
+
+.item-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: var(--color-info-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.item-content {
+  flex: 1;
+}
+
+.item-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.item-desc {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  display: block;
+}
+
+/* 角色卡片 */
+.role-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.role-card {
+  background: white;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.role-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.role-info {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.role-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.role-icon {
+  font-size: 48rpx;
+}
+
+.role-content {
+  width: 100%;
+}
+
+.role-desc {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.permission-list {
+  background-color: var(--bg-color-page);
+  border-radius: 12rpx;
+  padding: 24rpx;
+}
+
+.permission-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.permission-item {
+  font-size: 26rpx;
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.permission-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 使用指南步骤 */
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.step-item {
+  display: flex;
+  background: white;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.step-number {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  font-size: 36rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 30rpx;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.step-desc {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.step-btn {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  border: none;
+  border-radius: 24rpx;
+  padding: 16rpx 32rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-right: 20rpx;
+}
+
+.step-options {
+  display: flex;
+  gap: 20rpx;
+  flex-wrap: wrap;
+}
+
+.option-btn {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 2rpx solid var(--color-primary);
+  border-radius: 24rpx;
+  padding: 16rpx 32rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+/* 常见问题 */
+.faq-list {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.faq-item {
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx 40rpx;
+  background: white;
+}
+
+.question-text {
+  font-size: 30rpx;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  flex: 1;
+  line-height: 1.5;
+  margin-right: 20rpx;
+}
+
+.icon-arrow {
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  transition: transform 0.3s ease;
+}
+
+.icon-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background-color: var(--bg-color-page);
+}
+
+.faq-answer.expanded {
+  max-height: 500rpx;
+}
+
+.answer-text {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  padding: 0 40rpx 30rpx;
+  display: block;
+}
+
+/* 联系支持 */
+.support-section {
+  margin: 40rpx 30rpx;
+}
+
+.support-content {
+  background: linear-gradient(135deg, var(--color-info-light) 0%, white 100%);
+  border-radius: 16rpx;
+  padding: 40rpx;
+  text-align: center;
+  border: 2rpx solid var(--color-info-light);
+}
+
+.support-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--color-info);
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.support-desc {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 30rpx;
+}
+
+.support-actions {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+}
+
+.support-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  background-color: white;
+  border: 2rpx solid var(--color-info);
+  border-radius: 12rpx;
+  min-width: 180rpx;
+}
+
+.support-btn text {
+  font-size: 28rpx;
+  color: var(--color-info);
+  font-weight: 500;
+}
+
+.support-btn .icon-contact,
+.support-btn .icon-feedback {
+  font-size: 40rpx;
+  margin-bottom: 12rpx;
+}
+
+/* 图标样式 */
+.icon-arrow::before {
+  content: "▼";
+}
+
+.icon-contact::before {
+  content: "📞";
+}
+
+.icon-feedback::before {
+  content: "💬";
+}

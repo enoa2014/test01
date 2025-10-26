@@ -1,0 +1,517 @@
+/* pages/auth/permission-management/index.wxss */
+
+.permission-management {
+  min-height: 100vh;
+  background-color: var(--bg-color-page);
+  padding-bottom: 40rpx;
+}
+
+/* 页面头部 */
+.page-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  padding: 60rpx 40rpx 40rpx;
+  color: white;
+}
+
+.header-content {
+  text-align: center;
+}
+
+.header-title {
+  font-size: 48rpx;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.header-subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+  display: block;
+}
+
+/* 用户信息卡片 */
+.user-card {
+  display: flex;
+  align-items: center;
+  background: white;
+  margin: -30rpx 30rpx 30rpx;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar {
+  position: relative;
+  margin-right: 30rpx;
+}
+
+.avatar-image {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid var(--color-primary);
+}
+
+.avatar-edit {
+  position: absolute;
+  bottom: -5rpx;
+  right: -5rpx;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid white;
+}
+
+.icon-camera {
+  color: white;
+  font-size: 24rpx;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.user-status {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  display: block;
+}
+
+.user-actions {
+  margin-left: 20rpx;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  background-color: var(--color-primary-light);
+  border-radius: 12rpx;
+  border: none;
+  min-width: 120rpx;
+}
+
+.action-btn text {
+  font-size: 24rpx;
+  color: var(--color-primary);
+}
+
+.action-btn .icon-edit {
+  font-size: 32rpx;
+  margin-bottom: 8rpx;
+}
+
+/* 通用section样式 */
+.permission-section,
+.action-section,
+.application-section,
+.info-section,
+.system-section {
+  margin: 0 30rpx 30rpx;
+}
+
+.section-title {
+  margin-bottom: 20rpx;
+}
+
+.title-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.title-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  display: block;
+}
+
+/* 权限状态 */
+.role-list {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.role-item {
+  padding: 30rpx;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.role-item:last-child {
+  border-bottom: none;
+}
+
+.role-info {
+  width: 100%;
+}
+
+.role-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.role-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.role-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.role-time {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 16rpx;
+}
+
+.time-label {
+  color: var(--color-text-secondary);
+}
+
+.time-value {
+  color: var(--color-text-primary);
+}
+
+.role-permissions {
+  margin-top: 16rpx;
+}
+
+.permissions-title {
+  font-size: 26rpx;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.permission-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.permission-tag {
+  padding: 8rpx 16rpx;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+/* 空状态 */
+.empty-roles {
+  background: white;
+  border-radius: 16rpx;
+  padding: 80rpx 40rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.empty-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  display: block;
+}
+
+/* 操作卡片 */
+.action-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.action-card:active {
+  transform: scale(0.98);
+}
+
+.card-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+
+.card-icon text {
+  font-size: 36rpx;
+  color: var(--color-primary);
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.card-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  display: block;
+  line-height: 1.4;
+}
+
+.card-arrow {
+  margin-left: 20rpx;
+}
+
+.icon-arrow {
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}
+
+/* 申请记录 */
+.application-list {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.application-item {
+  padding: 30rpx;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.application-item:last-child {
+  border-bottom: none;
+}
+
+.application-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.application-role {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.application-time {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+.application-reason {
+  margin-bottom: 20rpx;
+}
+
+.reason-label {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+}
+
+.reason-text {
+  font-size: 26rpx;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.application-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  padding: 12rpx 24rpx;
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  border: none;
+}
+
+.application-status {
+  padding: 6rpx 12rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.application-status--pending {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.application-status--approved {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.application-status--rejected {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* 权限说明 */
+.permission-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.permission-card {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.permission-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.permission-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.permission-icon {
+  font-size: 40rpx;
+}
+
+.permission-content {
+  width: 100%;
+}
+
+.permission-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.permission-item {
+  font-size: 24rpx;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+/* 系统信息 */
+.system-section {
+  margin-bottom: 40rpx;
+}
+
+.system-info {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+}
+
+.info-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+}
+
+.info-label {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  width: 160rpx;
+}
+
+.info-value {
+  font-size: 26rpx;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+/* 图标样式 */
+.icon-edit::before {
+  content: "✏️";
+}
+
+.icon-invite::before {
+  content: "🎫";
+}
+
+.icon-apply::before {
+  content: "📝";
+}
+
+.icon-arrow::before {
+  content: ">";
+}

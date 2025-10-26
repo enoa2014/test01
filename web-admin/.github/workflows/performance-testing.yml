@@ -1,0 +1,258 @@
+name: Performance Testing and Chrome DevTools E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天凌晨2点运行性能测试
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  # 性能测试作业
+  performance-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: 安装依赖
+      run: |
+        cd web-admin
+        npm ci
+
+    - name: 安装 Playwright 浏览器
+      run: |
+        cd web-admin
+        npx playwright install chromium
+
+    - name: 启动开发服务器
+      run: |
+        cd web-admin
+        npm run dev:all &
+        echo "等待服务器启动..."
+        sleep 30
+        curl -f http://localhost:4174 || exit 1
+
+    - name: 运行 Chrome DevTools 简化测试
+      run: |
+        cd web-admin
+        PW_BASE_URL=http://localhost:4174 npm run test:e2e chrome-devtools-simple.spec.ts --project chromium
+
+    - name: 运行 Core Web Vitals 测试
+      run: |
+        cd web-admin
+        PW_BASE_URL=http://localhost:4174 npx playwright test chrome-devtools-simple.spec.ts --project chromium --grep "Core Web Vitals"
+
+    - name: 生成性能报告
+      run: |
+        cd web-admin
+        node scripts/generate-performance-report.js
+
+    - name: 上传测试报告
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-test-results-${{ matrix.node-version }}
+        path: |
+          web-admin/playwright-report/
+          web-admin/test-results/
+          web-admin/performance-reports/
+        retention-days: 30
+
+    - name: 上传测试覆盖率
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-coverage-${{ matrix.node-version }}
+        path: web-admin/coverage/
+        retention-days: 30
+
+    - name: 性能检查（失败阈值）
+      run: |
+        cd web-admin
+        node scripts/performance-threshold-check.js
+
+    - name: 发送性能报告到Slack（可选）
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#performance-alerts'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  # 跨浏览器性能测试
+  cross-browser-tests:
+    runs-on: ubuntu-latest
+    needs: performance-tests
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: 安装依赖
+      run: |
+        cd web-admin
+        npm ci
+
+    - name: 安装 Playwright 浏览器
+      run: |
+        cd web-admin
+        npx playwright install
+
+    - name: 运行跨浏览器测试
+      run: |
+        cd web-admin
+        PW_BASE_URL=http://localhost:4174 npm run test:e2e chrome-devtools-simple.spec.ts
+
+    - name: 生成跨浏览器报告
+      run: |
+        cd web-admin
+        node scripts/generate-cross-browser-report.js
+
+    - name: 上传跨浏览器结果
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: cross-browser-results
+        path: |
+          web-admin/playwright-report/
+          web-admin/cross-browser-reports/
+        retention-days: 15
+
+  # 生产环境性能监控
+  production-monitoring:
+    runs-on: ubuntu-latest
+    needs: [performance-tests, cross-browser-tests]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: 安装依赖
+      run: |
+        cd web-admin
+        npm ci
+
+    - name: 运行生产级性能测试
+      run: |
+        cd web-admin
+        PW_BASE_URL=https://your-production-url.com npm run test:e2e chrome-devtools-production.spec.ts --project chromium
+
+    - name: 性能回归检测
+      run: |
+        cd web-admin
+        node scripts/performance-regression-check.js
+
+    - name: 更新性能基准
+      run: |
+        cd web-admin
+        node scripts/update-performance-baseline.js
+
+    - name: 部署性能报告到GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./web-admin/performance-reports
+        destination_dir: performance-reports
+
+  # 性能基准和趋势分析
+  performance-analytics:
+    runs-on: ubuntu-latest
+    needs: [production-monitoring]
+    if: always()
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 设置 Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: 安装 Python 依赖
+      run: |
+        pip install pandas matplotlib seaborn
+
+    - name: 生成性能趋势分析
+      run: |
+        cd scripts
+        python generate-performance-trends.py
+
+    - name: 上传趋势分析报告
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-trends
+        path: scripts/performance-trends/
+        retention-days: 90
+
+  # 安全扫描
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 运行安全扫描
+      run: |
+        cd web-admin
+        npm audit --audit-level moderate
+
+    - name: 代码安全分析
+      uses: securecodewarrior/github-action-add-sarif@v1
+      with:
+        sarif-file: 'security-scan-results.sarif'
+
+# 工作流总结
+jobs-summary:
+  runs-on: ubuntu-latest
+  needs: [performance-tests, cross-browser-tests, production-monitoring]
+  if: always()
+
+  steps:
+  - name: 生成工作流总结
+    run: |
+      echo "## Performance Testing Workflow Summary" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "| Job | Status | Details |" >> $GITHUB_STEP_SUMMARY
+      echo "|-----|--------|---------|" >> $GITHUB_STEP_SUMMARY
+      echo "| Performance Tests | ${{ needs.performance-tests.result }} | Chrome DevTools E2E tests |" >> $GITHUB_STEP_SUMMARY
+      echo "| Cross-browser Tests | ${{ needs.cross-browser-tests.result }} | Multi-browser compatibility |" >> $GITHUB_STEP_SUMMARY
+      echo "| Production Monitoring | ${{ needs.production-monitoring.result }} | Production performance checks |" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "📊 **Performance Metrics**" >> $GITHUB_STEP_SUMMARY
+      echo "- All test reports are available in the artifacts" >> $GITHUB_STEP_SUMMARY
+      echo "- Performance trends are updated regularly" >> $GITHUB_STEP_SUMMARY
+      echo "- Regression detection is active" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,145 @@
+/* Analysis Page Styles */
+.analysis-page {
+  padding: 20px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.analysis-container {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.analysis-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.analysis-sidebar {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.analysis-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.analysis-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.analysis-main {
+  min-width: 0;
+}
+
+.analysis-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .analysis-page {
+    padding: 16px;
+  }
+
+  .analysis-layout {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  }
+
+  .analysis-sidebar {
+    max-height: none;
+    position: static;
+    padding-right: 0;
+  }
+
+  .analysis-panels {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-page {
+    padding: 12px;
+  }
+
+  .analysis-panels {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .analysis-page {
+    padding: 32px;
+  }
+
+  .analysis-sidebar {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .analysis-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .analysis-sidebar {
+    overflow: visible;
+  }
+
+  .analysis-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1600px) {
+  .analysis-container {
+    max-width: 1600px;
+  }
+
+  .analysis-panels {
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  }
+}
+
+/* Print styles */
+@media print {
+  .analysis-page {
+    background: white;
+    padding: 0;
+  }
+
+  .analysis-container {
+    max-width: none;
+  }
+
+  .analysis-panels {
+    gap: 16px;
+  }
+
+  /* Hide interactive elements */
+  .panel-collapse-toggle,
+  .panel-mode-switch,
+  .selection-modal-backdrop {
+    display: none !important;
+  }
+
+  /* Ensure all panels are expanded */
+  .analysis-panel {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

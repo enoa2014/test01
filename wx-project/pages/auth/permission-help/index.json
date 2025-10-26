@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "权限帮助",
+  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#f5f5f5",
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "role-badge": "/components/role-badge/index"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/analysis/index",
+    "pages/patient-detail/detail",
+    "pages/patient-intake/wizard/wizard",
+    "pages/patient-intake/success/success",
+    "pages/component-lab/index",
+  "pages/auth/welcome/index",
+  "pages/auth/login/index",
+    "pages/auth/role-application/index",
+    "pages/auth/invite-code/index",
+    "pages/auth/permission-management/index",
+    "pages/auth/permission-help/index",
+    "pages/user-profile/edit/index",
+    "pages/admin/application-review/index",
+    "pages/admin/user-management/index",
+    "pages/admin/invite-management/index",
+    "pages/admin/system-monitoring/index",
+    "pages/qr-confirm/qr-confirm"
+  ],
+  "window": {
+    "navigationBarTitleText": "入住档案",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5f5"
+  },
+  "usingComponents": {
+    "auth-button": "/components/auth-button/index",
+    "role-badge": "/components/role-badge/index"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "cloud": true
+}

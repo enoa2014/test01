@@ -1,0 +1,357 @@
+<!-- pages/admin/application-review/index.wxml -->
+<view class="admin-review">
+  <!-- 骨架屏 -->
+  <skeleton-screen show="{{showSkeleton}}" type="page,stats,search,filters,list" rows="5"></skeleton-screen>
+
+  <!-- 页面头部 -->
+  <view class="page-header" wx:if="{{!showSkeleton}}">
+    <view class="header-content">
+      <text class="header-title">申请审核</text>
+      <text class="header-subtitle">审核用户的角色申请</text>
+    </view>
+    <view class="header-stats">
+      <view class="stat-item">
+        <text class="stat-number">{{stats.pendingCount}}</text>
+        <text class="stat-label">待审核</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{stats.todayCount}}</text>
+        <text class="stat-label">今日新增</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{stats.totalCount}}</text>
+        <text class="stat-label">总申请数</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选器 -->
+  <view class="filter-section">
+    <view class="filter-tabs">
+      <view
+        class="filter-tab {{activeTab === 'all' ? 'filter-tab--active' : ''}}"
+        bindtap="switchTab"
+        data-tab="all"
+      >
+        全部申请
+      </view>
+      <view
+        class="filter-tab {{activeTab === 'pending' ? 'filter-tab--active' : ''}}"
+        bindtap="switchTab"
+        data-tab="pending"
+      >
+        待审核
+      </view>
+      <view
+        class="filter-tab {{activeTab === 'approved' ? 'filter-tab--active' : ''}}"
+        bindtap="switchTab"
+        data-tab="approved"
+      >
+        已通过
+      </view>
+      <view
+        class="filter-tab {{activeTab === 'rejected' ? 'filter-tab--active' : ''}}"
+        bindtap="switchTab"
+        data-tab="rejected"
+      >
+        已拒绝
+      </view>
+    </view>
+
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <text class="search-icon">🔍</text>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="搜索申请人、手机号或邮箱"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="performSearch"
+        />
+        <text class="clear-icon {{searchKeyword ? '' : 'hidden'}}" bindtap="clearSearch">×</text>
+      </view>
+    </view>
+
+    <view class="filter-controls">
+      <view class="filter-item">
+        <text class="filter-label">角色</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{roleOptions}}"
+          range-key="label"
+          value="{{selectedRoleIndex}}"
+          bindchange="onRoleChange"
+        >
+          <view class="picker-display">
+            {{roleOptions[selectedRoleIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">时间</text>
+        <picker
+          class="filter-picker"
+          mode="date"
+          value="{{selectedDate}}"
+          bindchange="onDateChange"
+        >
+          <view class="picker-display">
+            {{selectedDate || '全部时间'}}
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 批量操作 -->
+    <view class="batch-actions" wx:if="{{activeTab === 'pending' && applications.length > 0}}">
+      <button class="batch-btn batch-btn--approve" bindtap="batchApprove">
+        批量通过
+      </button>
+      <button class="batch-btn batch-btn--reject" bindtap="batchReject">
+        批量拒绝
+      </button>
+    </view>
+  </view>
+
+  <view class="application-list" wx:if="{{applications.length > 0}}">
+    <!-- 申请列表 -->
+    <view
+      class="application-item"
+      wx:for="{{applications}}"
+      wx:key="id"
+      bindtap="viewApplicationDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="item-header">
+        <view class="applicant-info">
+          <view class="applicant-avatar">
+            <image
+              class="avatar-image"
+              src="{{item.avatar || '/assets/default-avatar.png'}}"
+              mode="aspectFill"
+            ></image>
+          </view>
+          <view class="applicant-details">
+            <text class="applicant-name">{{item.displayName}}</text>
+            <text class="applicant-contact">{{item.phone || item.email}}</text>
+            <text class="apply-time">{{item.createTime}}</text>
+          </view>
+        </view>
+        <view class="application-status">
+          <view class="status-badge status-badge--{{item.state}}">
+            {{item.statusText}}
+          </view>
+        </view>
+      </view>
+
+      <view class="item-content">
+        <view class="role-info">
+          <text class="role-label">申请角色：</text>
+          <role-badge role="{{item.role}}" size="small"></role-badge>
+        </view>
+
+        <view class="reason-preview" wx:if="{{item.reason}}">
+          <text class="reason-label">申请理由：</text>
+          <text class="reason-text">{{item.reason}}</text>
+        </view>
+
+        <view class="attachment-preview" wx:if="{{item.attachments.length > 0}}">
+          <text class="attachment-label">附件：</text>
+          <text class="attachment-count">{{item.attachments.length}}个文件</text>
+        </view>
+
+        <view class="review-info" wx:if="{{item.reviewedAt}}">
+          <text class="review-label">审核时间：</text>
+          <text class="review-time">{{item.reviewedAt}}</text>
+          <text class="reviewer">审核人：{{item.reviewerName || '管理员'}}</text>
+        </view>
+      </view>
+
+      <view class="item-actions" wx:if="{{item.state === 'pending'}}">
+        <button
+          class="action-btn action-btn--approve"
+          bindtap="approveApplication"
+          data-id="{{item.id}}"
+          catchtap="true"
+        >
+          通过
+        </button>
+        <button
+          class="action-btn action-btn--reject"
+          bindtap="rejectApplication"
+          data-id="{{item.id}}"
+          catchtap="true"
+        >
+          拒绝
+        </button>
+        <button
+          class="action-btn action-btn--detail"
+          bindtap="viewApplicationDetail"
+          data-id="{{item.id}}"
+          catchtap="true"
+        >
+          详情
+        </button>
+      </view>
+    </view>
+  </view>
+  <view class="empty-state" wx:else>
+    <!-- 空状态 -->
+    <text class="empty-icon">📋</text>
+    <text class="empty-text">暂无{{activeTab === 'all' ? '申请' : activeTab === 'pending' ? '待审核' : activeTab === 'approved' ? '已通过' : '已拒绝'}}的申请</text>
+    <text class="empty-desc">{{emptyDesc}}</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 底部统计 -->
+  <view class="bottom-stats" wx:if="{{applications.length > 0}}">
+    <text class="stats-text">共 {{total}} 条申请</text>
+    <view class="stats-divider">|</view>
+    <text class="stats-text">{{currentPage}}/{{totalPages}} 页</text>
+  </view>
+
+  <!-- 申请详情弹窗 -->
+  <view class="detail-modal" wx:if="{{showDetailModal}}">
+    <view class="modal-mask" bindtap="closeDetailModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">申请详情</text>
+        <text class="modal-close" bindtap="closeDetailModal">×</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{selectedApplication}}">
+        <!-- 申请人信息 -->
+        <view class="detail-section">
+          <text class="section-title">申请人信息</text>
+          <view class="applicant-detail">
+            <image
+              class="detail-avatar"
+              src="{{selectedApplication.avatar || '/assets/default-avatar.png'}}"
+              mode="aspectFill"
+            ></image>
+            <view class="detail-info">
+              <text class="detail-name">{{selectedApplication.displayName}}</text>
+              <text class="detail-contact">{{selectedApplication.phone}}</text>
+              <text class="detail-contact">{{selectedApplication.email}}</text>
+              <text class="detail-time">申请时间：{{selectedApplication.createTime}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 申请角色 -->
+        <view class="detail-section">
+          <text class="section-title">申请角色</text>
+          <view class="role-detail">
+            <role-badge role="{{selectedApplication.role}}"></role-badge>
+            <text class="role-desc">{{getRoleDescription(selectedApplication.role)}}</text>
+          </view>
+        </view>
+
+        <!-- 申请理由 -->
+        <view class="detail-section" wx:if="{{selectedApplication.reason}}">
+          <text class="section-title">申请理由</text>
+          <text class="reason-detail">{{selectedApplication.reason}}</text>
+        </view>
+
+        <!-- 附件 -->
+        <view class="detail-section" wx:if="{{selectedApplication.attachments.length > 0}}">
+          <text class="section-title">附件材料</text>
+          <view class="attachments-detail">
+            <view
+              class="attachment-item"
+              wx:for="{{selectedApplication.attachments}}"
+              wx:key="index"
+              wx:for-item="attachment"
+            >
+              <text class="attachment-icon">📄</text>
+              <text class="attachment-name">{{attachment.name}}</text>
+              <text class="attachment-size">{{attachment.size}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 审核状态 -->
+        <view class="detail-section" wx:if="{{selectedApplication.reviewedAt}}">
+          <text class="section-title">审核状态</text>
+          <view class="review-detail">
+            <view class="review-status status-badge--{{selectedApplication.state}}">
+              {{selectedApplication.statusText}}
+            </view>
+            <text class="reviewer-info">审核人：{{selectedApplication.reviewerName || '管理员'}}</text>
+            <text class="review-time-info">审核时间：{{selectedApplication.reviewedAt}}</text>
+            <text class="review-reason" wx:if="{{selectedApplication.reviewReason}}">
+              审核理由：{{selectedApplication.reviewReason}}
+            </text>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--approve"
+          wx:if="{{selectedApplication.state === 'pending'}}"
+          bindtap="approveApplication"
+          data-id="{{selectedApplication.id}}"
+        >
+          通过申请
+        </button>
+        <button
+          class="modal-btn modal-btn--reject"
+          wx:if="{{selectedApplication.state === 'pending'}}"
+          bindtap="rejectApplication"
+          data-id="{{selectedApplication.id}}"
+        >
+          拒绝申请
+        </button>
+        <button class="modal-btn modal-btn--close" bindtap="closeDetailModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 审核理由弹窗 -->
+  <view class="reason-modal" wx:if="{{showReasonModal}}">
+    <view class="modal-mask" bindtap="closeReasonModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">{{reasonModalTitle}}</text>
+        <text class="modal-close" bindtap="closeReasonModal">×</text>
+      </view>
+
+      <view class="modal-body">
+        <textarea
+          class="reason-input"
+          placeholder="请输入审核理由..."
+          value="{{reviewReason}}"
+          bindinput="onReasonInput"
+          maxlength="200"
+          auto-height
+        ></textarea>
+        <text class="input-counter">{{reviewReason.length}}/200</text>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--confirm"
+          bindtap="confirmReview"
+          disabled="{{!reviewReason.trim()}}"
+        >
+          确认{{reasonModalType === 'approve' ? '通过' : '拒绝'}}
+        </button>
+        <button class="modal-btn modal-btn--cancel" bindtap="closeReasonModal">
+          取消
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

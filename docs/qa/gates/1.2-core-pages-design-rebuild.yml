@@ -1,0 +1,28 @@
+# Quality Gate Decision - Story 1.2
+schema: 1
+story: "1.2"
+story_title: "core-pages-design-rebuild"
+gate: "FAIL"
+status_reason: "缺少可用性验证结果与代表性用户评审记录，AC6/AC9 未满足"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-23T01:30:01Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "QA-001"
+    severity: high
+    finding: "无设计走查或可用性测试的量化结果，无法证明体验优化率 ≥ 40% (AC6)"
+    suggested_action: "提供目标任务的前后对比数据（完成率、耗时、错误率），并附设计走查记录"
+  - id: "QA-002"
+    severity: medium
+    finding: "未记录 5 名代表性用户的评审意见及改进摘要 (AC9)"
+    suggested_action: "汇总用户评审反馈与对应优化措施，补充至交付文档"
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 1, low: 0 }
+  recommendations:
+    must_fix:
+      - "补齐 AC6 的评审量化证据后再进入开发"
+    monitor:
+      - "完成用户反馈记录后更新故事与设计交付包"

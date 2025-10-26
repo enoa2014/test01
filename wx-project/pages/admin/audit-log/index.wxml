@@ -1,0 +1,459 @@
+<!-- pages/admin/audit-log/index.wxml -->
+<view class="audit-log">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">审计日志</text>
+      <text class="header-subtitle">系统操作记录与安全审计</text>
+    </view>
+    <view class="header-actions">
+      <button class="export-btn" bindtap="exportLogs">
+        <text class="btn-icon">📊</text>
+        <text class="btn-text">导出日志</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats-section">
+    <view class="stats-grid">
+      <view class="stat-card">
+        <text class="stat-number">{{stats.totalLogs}}</text>
+        <text class="stat-label">总日志数</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.todayLogs}}</text>
+        <text class="stat-label">今日操作</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.securityEvents}}</text>
+        <text class="stat-label">安全事件</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.errorCount}}</text>
+        <text class="stat-label">错误记录</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选和搜索 -->
+  <view class="filter-section">
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <text class="search-icon">🔍</text>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="搜索操作用户、IP地址或操作描述"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="performSearch"
+        />
+        <text class="clear-icon {{searchKeyword ? '' : 'hidden'}}" bindtap="clearSearch">×</text>
+      </view>
+    </view>
+
+    <view class="filter-controls">
+      <view class="filter-item">
+        <text class="filter-label">操作类型</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{actionOptions}}"
+          range-key="label"
+          value="{{selectedActionIndex}}"
+          bindchange="onActionChange"
+        >
+          <view class="picker-display">
+            {{actionOptions[selectedActionIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">操作级别</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{levelOptions}}"
+          range-key="label"
+          value="{{selectedLevelIndex}}"
+          bindchange="onLevelChange"
+        >
+          <view class="picker-display">
+            {{levelOptions[selectedLevelIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">操作结果</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{resultOptions}}"
+          range-key="label"
+          value="{{selectedResultIndex}}"
+          bindchange="onResultChange"
+        >
+          <view class="picker-display">
+            {{resultOptions[selectedResultIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">时间范围</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{timeRangeOptions}}"
+          range-key="label"
+          value="{{selectedTimeRangeIndex}}"
+          bindchange="onTimeRangeChange"
+        >
+          <view class="picker-display">
+            {{timeRangeOptions[selectedTimeRangeIndex].label}}
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="quick-actions">
+      <button class="action-btn action-btn--security" bindtap="filterSecurityEvents">
+        安全事件
+      </button>
+      <button class="action-btn action-btn--error" bindtap="filterErrors">
+        错误记录
+      </button>
+      <button class="action-btn action-btn--admin" bindtap="filterAdminActions">
+        管理操作
+      </button>
+      <button class="action-btn action-btn--refresh" bindtap="refreshLogs">
+        刷新数据
+      </button>
+    </view>
+  </view>
+
+  <!-- 日志列表 -->
+  <view class="log-list" wx:if="{{logs.length > 0}}">
+    <view
+      class="log-item log-item--{{item.level}}"
+      wx:for="{{logs}}"
+      wx:key="id"
+      bindtap="viewLogDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="item-header">
+        <view class="log-info">
+          <view class="log-action">
+            <text class="action-text">{{item.actionText}}</text>
+            <view class="level-badge level-badge--{{item.level}}">
+              {{item.levelText}}
+            </view>
+          </view>
+          <view class="log-meta">
+            <text class="user-info">{{item.userName}} ({{item.userRole}})</text>
+            <text class="log-time">{{item.logTime}}</text>
+          </view>
+        </view>
+        <view class="log-status">
+          <view class="result-badge result-badge--{{item.result}}">
+            {{item.resultText}}
+          </view>
+        </view>
+      </view>
+
+      <view class="item-content">
+        <view class="description-preview">
+          <text class="preview-text">{{item.description}}</text>
+        </view>
+
+        <view class="detail-info">
+          <view class="detail-item" wx:if="{{item.ipAddress}}">
+            <text class="detail-label">IP地址：</text>
+            <text class="detail-text">{{item.ipAddress}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.userAgent}}">
+            <text class="detail-label">设备信息：</text>
+            <text class="detail-text">{{item.userAgent}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.targetUser}}">
+            <text class="detail-label">目标用户：</text>
+            <text class="detail-text">{{item.targetUser}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.resource}}">
+            <text class="detail-label">操作资源：</text>
+            <text class="detail-text">{{item.resource}}</text>
+          </view>
+        </view>
+
+        <view class="security-tags" wx:if="{{item.securityTags.length > 0}}">
+          <text class="security-tag" wx:for="{{item.securityTags}}" wx:key="*this" wx:for-item="tag">
+            {{tag}}
+          </text>
+        </view>
+      </view>
+
+      <view class="item-actions">
+        <button
+          class="action-btn action-btn--detail"
+          bindtap="viewLogDetail"
+          data-id="{{item.id}}"
+          catchtap="true"
+        >
+          查看详情
+        </button>
+        <button
+          class="action-btn action-btn--trace"
+          bindtap="viewTraceInfo"
+          data-id="{{item.id}}"
+          catchtap="true"
+          wx:if="{{item.hasTrace}}"
+        >
+          追踪信息
+        </button>
+        <button
+          class="action-btn action-btn--report"
+          bindtap="reportSecurityIssue"
+          data-id="{{item.id}}"
+          catchtap="true"
+          wx:if="{{item.level === 'high' || item.level === 'critical'}}"
+        >
+          安全报告
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <text class="empty-icon">📋</text>
+    <text class="empty-text">暂无日志记录</text>
+    <text class="empty-desc">系统操作日志将在这里显示</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 底部分页 -->
+  <view class="bottom-pagination" wx:if="{{logs.length > 0}}">
+    <text class="pagination-info">共 {{total}} 条日志</text>
+    <view class="pagination-controls">
+      <button
+        class="page-btn {{currentPage <= 1 ? 'page-btn--disabled' : ''}}"
+        disabled="{{currentPage <= 1}}"
+        bindtap="prevPage"
+      >
+        上一页
+      </button>
+      <text class="page-info">{{currentPage}}/{{totalPages}}</text>
+      <button
+        class="page-btn {{currentPage >= totalPages ? 'page-btn--disabled' : ''}}"
+        disabled="{{currentPage >= totalPages}}"
+        bindtap="nextPage"
+      >
+        下一页
+      </button>
+    </view>
+  </view>
+
+  <!-- 日志详情弹窗 -->
+  <view class="detail-modal" wx:if="{{showDetailModal}}">
+    <view class="modal-mask" bindtap="closeDetailModal"></view>
+    <view class="modal-content modal-content--large">
+      <view class="modal-header">
+        <text class="modal-title">日志详情</text>
+        <text class="modal-close" bindtap="closeDetailModal">×</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{selectedLog}}">
+        <!-- 基本信息 -->
+        <view class="detail-section">
+          <text class="section-title">基本信息</text>
+          <view class="detail-grid">
+            <view class="detail-item">
+              <text class="detail-label">操作类型：</text>
+              <text class="detail-value">{{selectedLog.actionText}}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">操作级别：</text>
+              <view class="level-badge level-badge--{{selectedLog.level}}">
+                {{selectedLog.levelText}}
+              </view>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">操作结果：</text>
+              <view class="result-badge result-badge--{{selectedLog.result}}">
+                {{selectedLog.resultText}}
+              </view>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">记录时间：</text>
+              <text class="detail-value">{{selectedLog.logTime}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 用户信息 -->
+        <view class="detail-section">
+          <text class="section-title">用户信息</text>
+          <view class="detail-grid">
+            <view class="detail-item">
+              <text class="detail-label">操作用户：</text>
+              <text class="detail-value">{{selectedLog.userName}}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">用户角色：</text>
+              <text class="detail-value">{{selectedLog.userRole}}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">IP地址：</text>
+              <text class="detail-value">{{selectedLog.ipAddress}}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">地理位置：</text>
+              <text class="detail-value">{{selectedLog.location || '未知'}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 操作详情 -->
+        <view class="detail-section">
+          <text class="section-title">操作详情</text>
+          <view class="content-display">
+            <text class="content-text">{{selectedLog.description}}</text>
+          </view>
+        </view>
+
+        <!-- 技术信息 -->
+        <view class="detail-section" wx:if="{{selectedLog.userAgent || selectedLog.sessionId}}">
+          <text class="section-title">技术信息</text>
+          <view class="detail-grid">
+            <view class="detail-item" wx:if="{{selectedLog.userAgent}}">
+              <text class="detail-label">用户代理：</text>
+              <text class="detail-value">{{selectedLog.userAgent}}</text>
+            </view>
+            <view class="detail-item" wx:if="{{selectedLog.sessionId}}">
+              <text class="detail-label">会话ID：</text>
+              <text class="detail-value">{{selectedLog.sessionId}}</text>
+            </view>
+            <view class="detail-item" wx:if="{{selectedLog.requestId}}">
+              <text class="detail-label">请求ID：</text>
+              <text class="detail-value">{{selectedLog.requestId}}</text>
+            </view>
+            <view class="detail-item" wx:if="{{selectedLog.duration}}">
+              <text class="detail-label">执行耗时：</text>
+              <text class="detail-value">{{selectedLog.duration}}ms</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 安全标签 -->
+        <view class="detail-section" wx:if="{{selectedLog.securityTags.length > 0}}">
+          <text class="section-title">安全标签</text>
+          <view class="security-tags">
+            <text class="security-tag" wx:for="{{selectedLog.securityTags}}" wx:key="*this" wx:for-item="tag">
+              {{tag}}
+            </text>
+          </view>
+        </view>
+
+        <!-- 相关资源 -->
+        <view class="detail-section" wx:if="{{selectedLog.targetUser || selectedLog.resource}}">
+          <text class="section-title">相关资源</text>
+          <view class="detail-grid">
+            <view class="detail-item" wx:if="{{selectedLog.targetUser}}">
+              <text class="detail-label">目标用户：</text>
+              <text class="detail-value">{{selectedLog.targetUser}}</text>
+            </view>
+            <view class="detail-item" wx:if="{{selectedLog.resource}}">
+              <text class="detail-label">操作资源：</text>
+              <text class="detail-value">{{selectedLog.resource}}</text>
+            </view>
+            <view class="detail-item" wx:if="{{selectedLog.resourceId}}">
+              <text class="detail-label">资源ID：</text>
+              <text class="detail-value">{{selectedLog.resourceId}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 原始数据 -->
+        <view class="detail-section" wx:if="{{selectedLog.rawData}}">
+          <text class="section-title">原始数据</text>
+          <view class="raw-data-display">
+            <text class="raw-data-text">{{selectedLog.rawData}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--trace"
+          bindtap="viewTraceInfo"
+          data-id="{{selectedLog.id}}"
+          wx:if="{{selectedLog.hasTrace}}"
+        >
+          查看追踪信息
+        </button>
+        <button
+          class="modal-btn modal-btn--report"
+          bindtap="reportSecurityIssue"
+          data-id="{{selectedLog.id}}"
+          wx:if="{{selectedLog.level === 'high' || selectedLog.level === 'critical'}}"
+        >
+          生成安全报告
+        </button>
+        <button class="modal-btn modal-btn--close" bindtap="closeDetailModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 追踪信息弹窗 -->
+  <view class="trace-modal" wx:if="{{showTraceModal}}">
+    <view class="modal-mask" bindtap="closeTraceModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">操作追踪信息</text>
+        <text class="modal-close" bindtap="closeTraceModal">×</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{traceInfo}}">
+        <view class="trace-section">
+          <text class="section-title">追踪链路</text>
+          <view class="trace-chain">
+            <view class="trace-step" wx:for="{{traceInfo.chain}}" wx:key="step">
+              <view class="step-number">{{item.step}}</view>
+              <view class="step-content">
+                <text class="step-action">{{item.action}}</text>
+                <text class="step-time">{{item.time}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="trace-section">
+          <text class="section-title">相关操作</text>
+          <view class="related-logs">
+            <view class="related-log" wx:for="{{traceInfo.relatedLogs}}" wx:key="id">
+              <text class="related-action">{{item.action}}</text>
+              <text class="related-time">{{item.time}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="modal-btn modal-btn--close" bindtap="closeTraceModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

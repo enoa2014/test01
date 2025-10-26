@@ -1,0 +1,644 @@
+<!-- pages/admin/notification-center/index.wxml -->
+<view class="notification-center">
+  <!-- 骨架屏 -->
+  <skeleton-screen show="{{showSkeleton}}" type="page,stats,search,filters,list" rows="5"></skeleton-screen>
+
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">消息通知中心</text>
+      <text class="header-subtitle">管理和发送系统通知</text>
+    </view>
+    <view class="header-actions">
+      <button class="create-btn" bindtap="showCreateModal">
+        <text class="btn-icon">📢</text>
+        <text class="btn-text">发送通知</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats-section">
+    <view class="stats-grid">
+      <view class="stat-card">
+        <text class="stat-number">{{stats.totalNotifications}}</text>
+        <text class="stat-label">总通知数</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.unreadCount}}</text>
+        <text class="stat-label">未读通知</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.todaySent}}</text>
+        <text class="stat-label">今日发送</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{stats.systemNotifications}}</text>
+        <text class="stat-label">系统通知</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选和搜索 -->
+  <view class="filter-section">
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <text class="search-icon">🔍</text>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="搜索通知标题或内容"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="performSearch"
+        />
+        <text class="clear-icon {{searchKeyword ? '' : 'hidden'}}" bindtap="clearSearch">×</text>
+      </view>
+    </view>
+
+    <view class="filter-controls">
+      <view class="filter-item">
+        <text class="filter-label">类型</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{typeOptions}}"
+          range-key="label"
+          value="{{selectedTypeIndex}}"
+          bindchange="onTypeChange"
+        >
+          <view class="picker-display">
+            {{typeOptions[selectedTypeIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">状态</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{statusOptions}}"
+          range-key="label"
+          value="{{selectedStatusIndex}}"
+          bindchange="onStatusChange"
+        >
+          <view class="picker-display">
+            {{statusOptions[selectedStatusIndex].label}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="filter-item">
+        <text class="filter-label">时间范围</text>
+        <picker
+          class="filter-picker"
+          mode="selector"
+          range="{{timeRangeOptions}}"
+          range-key="label"
+          value="{{selectedTimeRangeIndex}}"
+          bindchange="onTimeRangeChange"
+        >
+          <view class="picker-display">
+            {{timeRangeOptions[selectedTimeRangeIndex].label}}
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="quick-actions">
+      <button class="action-btn action-btn--batch" bindtap="showBatchSendModal">
+        批量发送
+      </button>
+      <button class="action-btn action-btn--template" bindtap="showTemplateModal">
+        通知模板
+      </button>
+      <button class="action-btn action-btn--export" bindtap="exportNotifications">
+        导出数据
+      </button>
+    </view>
+  </view>
+
+  <!-- 通知列表 -->
+  <view class="notification-list" wx:if="{{notifications.length > 0}}">
+    <view
+      class="notification-item"
+      wx:for="{{notifications}}"
+      wx:key="id"
+      bindtap="viewNotificationDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="item-header">
+        <view class="notification-info">
+          <view class="notification-title">
+            <text class="title-text">{{item.title}}</text>
+            <view class="notification-type">
+              <view class="type-badge type-badge--{{item.type}}">
+                {{item.typeText}}
+              </view>
+            </view>
+          </view>
+          <view class="notification-meta">
+            <text class="sender-info">发送者：{{item.senderName}}</text>
+            <text class="send-time">{{item.sendTime}}</text>
+          </view>
+        </view>
+        <view class="notification-status">
+          <view class="status-badge status-badge--{{item.status}}">
+            {{item.statusText}}
+          </view>
+        </view>
+      </view>
+
+      <view class="item-content">
+        <view class="content-preview">
+          <text class="preview-text">{{item.contentPreview}}</text>
+          <text class="preview-hint" wx:if="{{item.contentLength > 100}}">点击查看完整内容</text>
+        </view>
+
+        <view class="target-info" wx:if="{{item.targetInfo}}">
+          <text class="target-label">发送对象：</text>
+          <text class="target-text">{{item.targetInfo}}</text>
+        </view>
+
+        <view class="stats-info">
+          <view class="stat-item">
+            <text class="stat-label">目标用户：</text>
+            <text class="stat-value">{{item.targetCount}}人</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-label">已读：</text>
+            <text class="stat-value">{{item.readCount}}人</text>
+          </view>
+          <view class="stat-item" wx:if="{{item.clickCount}}">
+            <text class="stat-label">点击：</text>
+            <text class="stat-value">{{item.clickCount}}人</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="item-actions">
+        <button
+          class="action-btn action-btn--view"
+          bindtap="viewNotificationDetail"
+          data-id="{{item.id}}"
+          catchtap="true"
+        >
+          查看详情
+        </button>
+        <button
+          class="action-btn action-btn--resend"
+          bindtap="resendNotification"
+          data-id="{{item.id}}"
+          catchtap="true"
+          wx:if="{{item.status === 'sent' && item.readCount < item.targetCount}}"
+        >
+          重新发送
+        </button>
+        <button
+          class="action-btn action-btn--recall"
+          bindtap="recallNotification"
+          data-id="{{item.id}}"
+          catchtap="true"
+          wx:if="{{item.status === 'sent'}}"
+        >
+          撤回
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <text class="empty-icon">📬</text>
+    <text class="empty-text">暂无通知</text>
+    <text class="empty-desc">点击上方"发送通知"按钮开始创建</text>
+    <button class="create-empty-btn" bindtap="showCreateModal">
+      发送第一个通知
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 底部分页 -->
+  <view class="bottom-pagination" wx:if="{{notifications.length > 0}}">
+    <text class="pagination-info">共 {{total}} 个通知</text>
+    <view class="pagination-controls">
+      <button
+        class="page-btn {{currentPage <= 1 ? 'page-btn--disabled' : ''}}"
+        disabled="{{currentPage <= 1}}"
+        bindtap="prevPage"
+      >
+        上一页
+      </button>
+      <text class="page-info">{{currentPage}}/{{totalPages}}</text>
+      <button
+        class="page-btn {{currentPage >= totalPages ? 'page-btn--disabled' : ''}}"
+        disabled="{{currentPage >= totalPages}}"
+        bindtap="nextPage"
+      >
+        下一页
+      </button>
+    </view>
+  </view>
+
+  <!-- 发送通知弹窗 -->
+  <view class="create-modal" wx:if="{{showCreateModal}}">
+    <view class="modal-mask" bindtap="closeCreateModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">发送通知</text>
+        <text class="modal-close" bindtap="closeCreateModal">×</text>
+      </view>
+
+      <view class="modal-body">
+        <view class="form-section">
+          <text class="section-title">基本信息</text>
+          <view class="form-item">
+            <text class="form-label">通知类型 *</text>
+            <picker
+              class="form-picker"
+              mode="selector"
+              range="{{notificationTypes}}"
+              range-key="label"
+              value="{{formTypeIndex}}"
+              bindchange="onFormTypeChange"
+            >
+              <view class="picker-display">
+                {{notificationTypes[formTypeIndex].label}}
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">通知标题 *</text>
+            <input
+              class="form-input"
+              type="text"
+              placeholder="请输入通知标题"
+              value="{{formTitle}}"
+              bindinput="onFormTitleInput"
+              maxlength="100"
+            />
+            <text class="input-counter">{{formTitle.length}}/100</text>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">通知内容 *</text>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入通知内容"
+              value="{{formContent}}"
+              bindinput="onFormContentInput"
+              maxlength="500"
+              auto-height
+            ></textarea>
+            <text class="input-counter">{{formContent.length}}/500</text>
+          </view>
+        </view>
+
+        <view class="form-section">
+          <text class="section-title">发送设置</text>
+          <view class="form-item">
+            <text class="form-label">发送对象 *</text>
+            <picker
+              class="form-picker"
+              mode="selector"
+              range="{{targetOptions}}"
+              range-key="label"
+              value="{{formTargetIndex}}"
+              bindchange="onFormTargetChange"
+            >
+              <view class="picker-display">
+                {{targetOptions[formTargetIndex].label}}
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-item" wx:if="{{formTargetIndex === 2}}">
+            <text class="form-label">选择角色</text>
+            <checkbox-group bindchange="onRoleChange">
+              <label class="checkbox-item" wx:for="{{roleOptions}}" wx:key="value">
+                <checkbox value="{{item.value}}" checked="{{formSelectedRoles.indexOf(item.value) > -1}}"/>
+                <text class="checkbox-text">{{item.label}}</text>
+              </label>
+            </checkbox-group>
+          </view>
+
+          <view class="form-item">
+            <checkbox-group bindchange="onImmediateChange">
+              <label class="checkbox-item">
+                <checkbox value="immediate" checked="{{formImmediate}}"/>
+                <text class="checkbox-text">立即发送</text>
+              </label>
+              <label class="checkbox-item">
+                <checkbox value="scheduled" checked="{{formScheduled}}"/>
+                <text class="checkbox-text">定时发送</text>
+              </label>
+            </checkbox-group>
+          </view>
+
+          <view class="form-item" wx:if="{{formScheduled}}">
+            <text class="form-label">发送时间</text>
+            <picker
+              class="form-picker"
+              mode="date"
+              value="{{formSendDate}}"
+              bindchange="onFormSendDateChange"
+            >
+              <view class="picker-display">
+                {{formSendDate || '请选择发送日期'}}
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="form-section">
+          <text class="section-title">高级设置</text>
+          <view class="form-item">
+            <checkbox-group bindchange="onAdvancedChange">
+              <label class="checkbox-item">
+                <checkbox value="requireRead" checked="{{formRequireRead}}"/>
+                <text class="checkbox-text">要求已读确认</text>
+              </label>
+              <label class="checkbox-item">
+                <checkbox value="allowPush" checked="{{formAllowPush}}"/>
+                <text class="checkbox-text">允许推送通知</text>
+              </label>
+              <label class="checkbox-item">
+                <checkbox value="saveTemplate" checked="{{formSaveTemplate}}"/>
+                <text class="checkbox-text">保存为模板</text>
+              </label>
+            </checkbox-group>
+          </view>
+
+          <view class="form-item" wx:if="{{formSaveTemplate}}">
+            <text class="form-label">模板名称</text>
+            <input
+              class="form-input"
+              type="text"
+              placeholder="请输入模板名称"
+              value="{{formTemplateName}}"
+              bindinput="onFormTemplateNameInput"
+            />
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--send"
+          bindtap="confirmSendNotification"
+          disabled="{{!isFormValid}}"
+        >
+          发送通知
+        </button>
+        <button class="modal-btn modal-btn--cancel" bindtap="closeCreateModal">
+          取消
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 批量发送弹窗 -->
+  <view class="batch-modal" wx:if="{{showBatchModal}}">
+    <view class="modal-mask" bindtap="closeBatchModal"></view>
+    <view class="modal-content modal-content--large">
+      <view class="modal-header">
+        <text class="modal-title">批量发送通知</text>
+        <text class="modal-close" bindtap="closeBatchModal">×</text>
+      </view>
+
+      <view class="modal-body">
+        <view class="form-section">
+          <text class="section-title">批量设置</text>
+          <view class="form-item">
+            <text class="form-label">选择模板</text>
+            <picker
+              class="form-picker"
+              mode="selector"
+              range="{{templateOptions}}"
+              range-key="label"
+              value="{{batchTemplateIndex}}"
+              bindchange="onBatchTemplateChange"
+            >
+              <view class="picker-display">
+                {{templateOptions[batchTemplateIndex].label}}
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">发送对象 *</text>
+            <picker
+              class="form-picker"
+              mode="selector"
+              range="{{targetOptions}}"
+              range-key="label"
+              value="{{batchTargetIndex}}"
+              bindchange="onBatchTargetChange"
+            >
+              <view class="picker-display">
+                {{targetOptions[batchTargetIndex].label}}
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">发送间隔（分钟）</text>
+            <input
+              class="form-input"
+              type="number"
+              placeholder="请输入发送间隔（0为立即发送）"
+              value="{{batchInterval}}"
+              bindinput="onBatchIntervalInput"
+            />
+          </view>
+        </view>
+
+        <view class="form-section">
+          <text class="section-title">预览</text>
+          <view class="preview-section">
+            <text class="preview-title">将发送通知到 {{targetOptions[batchTargetIndex].label}}</text>
+            <text class="preview-info" wx:if="{{selectedTemplate}}">模板：{{selectedTemplate.name}}</text>
+            <text class="preview-info" wx:if="{{selectedTemplate}}">标题：{{selectedTemplate.title}}</text>
+            <text class="preview-info">间隔：{{batchInterval || 0}} 分钟</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--send"
+          bindtap="confirmBatchSend"
+          disabled="{{!isBatchFormValid}}"
+        >
+          批量发送
+        </button>
+        <button class="modal-btn modal-btn--cancel" bindtap="closeBatchModal">
+          取消
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 通知模板弹窗 -->
+  <view class="template-modal" wx:if="{{showTemplateModal}}">
+    <view class="modal-mask" bindtap="closeTemplateModal"></view>
+    <view class="modal-content modal-content--large">
+      <view class="modal-header">
+        <text class="modal-title">通知模板</text>
+        <text class="modal-close" bindtap="closeTemplateModal">×</text>
+      </view>
+
+      <view class="modal-body">
+        <view class="template-list">
+          <view
+            class="template-item"
+            wx:for="{{templates}}"
+            wx:key="id"
+            bindtap="selectTemplate"
+            data-id="{{item.id}}"
+          >
+            <view class="template-header">
+              <text class="template-name">{{item.name}}</text>
+              <view class="template-type">
+                <view class="type-badge type-badge--{{item.type}}">
+                  {{item.typeText}}
+                </view>
+              </view>
+            </view>
+            <view class="template-content">
+              <text class="template-title">{{item.title}}</text>
+              <text class="template-preview">{{item.contentPreview}}</text>
+            </view>
+            <view class="template-meta">
+              <text class="create-time">创建于 {{item.createTime}}</text>
+              <text class="use-count">使用 {{item.useCount}} 次</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="empty-templates" wx:if="{{templates.length === 0}}">
+          <text class="empty-text">暂无模板</text>
+          <text class="empty-desc">发送通知时可以保存为模板</text>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="modal-btn modal-btn--close" bindtap="closeTemplateModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 通知详情弹窗 -->
+  <view class="detail-modal" wx:if="{{showDetailModal}}">
+    <view class="modal-mask" bindtap="closeDetailModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">通知详情</text>
+        <text class="modal-close" bindtap="closeDetailModal">×</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{selectedNotification}}">
+        <!-- 基本信息 -->
+        <view class="detail-section">
+          <text class="section-title">基本信息</text>
+          <view class="detail-item">
+            <text class="detail-label">标题：</text>
+            <text class="detail-value">{{selectedNotification.title}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">类型：</text>
+            <view class="type-badge type-badge--{{selectedNotification.type}}">
+              {{selectedNotification.typeText}}
+            </view>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">状态：</text>
+            <view class="status-badge status-badge--{{selectedNotification.status}}">
+              {{selectedNotification.statusText}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 发送信息 -->
+        <view class="detail-section">
+          <text class="section-title">发送信息</text>
+          <view class="detail-item">
+            <text class="detail-label">发送者：</text>
+            <text class="detail-value">{{selectedNotification.senderName}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">发送时间：</text>
+            <text class="detail-value">{{selectedNotification.sendTime}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">发送对象：</text>
+            <text class="detail-value">{{selectedNotification.targetInfo}}</text>
+          </view>
+        </view>
+
+        <!-- 内容 -->
+        <view class="detail-section">
+          <text class="section-title">通知内容</text>
+          <view class="content-display">
+            <text class="content-text">{{selectedNotification.content}}</text>
+          </view>
+        </view>
+
+        <!-- 统计信息 -->
+        <view class="detail-section">
+          <text class="section-title">统计信息</text>
+          <view class="stats-grid">
+            <view class="stat-item">
+              <text class="stat-number">{{selectedNotification.targetCount}}</text>
+              <text class="stat-label">目标用户</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-number">{{selectedNotification.readCount}}</text>
+              <text class="stat-label">已读用户</text>
+            </view>
+            <view class="stat-item" wx:if="{{selectedNotification.clickCount}}">
+              <text class="stat-number">{{selectedNotification.clickCount}}</text>
+              <text class="stat-label">点击用户</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-number">{{selectedNotification.readRate}}%</text>
+              <text class="stat-label">阅读率</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button
+          class="modal-btn modal-btn--resend"
+          bindtap="resendNotification"
+          data-id="{{selectedNotification.id}}"
+          wx:if="{{selectedNotification.status === 'sent' && selectedNotification.readCount < selectedNotification.targetCount}}"
+        >
+          重新发送
+        </button>
+        <button
+          class="modal-btn modal-btn--recall"
+          bindtap="recallNotification"
+          data-id="{{selectedNotification.id}}"
+          wx:if="{{selectedNotification.status === 'sent'}}"
+        >
+          撤回通知
+        </button>
+        <button class="modal-btn modal-btn--close" bindtap="closeDetailModal">
+          关闭
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

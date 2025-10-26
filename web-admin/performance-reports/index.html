@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web管理后台性能监控报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .grade-a { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .grade-b { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .grade-c { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .grade-d { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+        .grade-f { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- 头部 -->
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">性能监控报告</h1>
+                        <p class="text-gray-600 mt-1">Web管理后台 Chrome DevTools E2E 测试</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-500">生成时间</div>
+                        <div class="text-lg font-semibold">2025/10/18 23:26:52</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容 -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- 综合评分卡片 -->
+            <div class="grade-b rounded-xl p-8 text-white mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2">综合性能评级</h2>
+                        <div class="text-6xl font-bold">B</div>
+                        <div class="text-xl mt-2">综合评分: 89.2/100</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm opacity-90">性能状态</div>
+                        <div class="text-2xl font-bold mt-1">
+                            良好
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 核心指标 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">FCP</h3>
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900">1622ms</div>
+                    <div class="text-sm text-gray-600 mt-1">首次内容绘制</div>
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: 54.07334713342933%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">TTFB</h3>
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3-3a4 4 0 00-5.656 5.656l1.5 1.5a1 1 0 001.414-1.414l-1.5-1.5a2 2 0 112.828 2.828l3 3z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900">232ms</div>
+                    <div class="text-sm text-gray-600 mt-1">首字节时间</div>
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-600 h-2 rounded-full" style="width: 46.30762289599532%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">CLS</h3>
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900">0.189</div>
+                    <div class="text-sm text-gray-600 mt-1">累积布局偏移</div>
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-orange-600 h-2 rounded-full" style="width: 75.40757971189802%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">内存</h3>
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0-1.657-3.134-3-7-3s-7 1.343-7 3z"/>
+                                <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0-1.657-3.134-3-7-3S3 5.343 3 7z"/>
+                                <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900">16.6MB</div>
+                    <div class="text-sm text-gray-600 mt-1">JS堆内存使用</div>
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-purple-600 h-2 rounded-full" style="width: 33.208565813114724%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趋势图表 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">30天性能趋势</h3>
+                <canvas id="performanceChart" width="400" height="150"></canvas>
+            </div>
+
+            <!-- 测试结果摘要 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">测试结果摘要</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">测试类型</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">执行时间</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Chrome DevTools 简化测试</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        通过
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2分钟</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">6/6 测试通过</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Core Web Vitals 测试</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        通过
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1分钟</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">所有指标优秀</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">生产级性能测试</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        部分通过
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3分钟</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3/8 测试通过</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 优化建议 -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">优化建议</h3>
+                <div class="space-y-4">
+                    
+      <div class="flex items-start space-x-3">
+        <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
+        <div>
+          <div class="font-medium">减少累积布局偏移</div>
+          <div class="text-sm text-gray-600">
+            当前CLS为0.189，建议为图片和广告设置明确的尺寸，避免动态插入内容。
+          </div>
+        </div>
+      </div>
+    
+                </div>
+            </div>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="bg-white border-t">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="text-center text-gray-500 text-sm">
+                    <p>Web管理后台性能监控报告 | 由 Chrome DevTools E2E 测试系统生成</p>
+                    <p class="mt-1">报告生成时间: 2025/10/18 23:26:52</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // 性能趋势图表
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const labels = ["9月19日","9月20日","9月21日","9月22日","9月23日","9月24日","9月25日","9月26日","9月27日","9月28日","9月29日","9月30日","10月1日","10月2日","10月3日","10月4日","10月5日","10月6日","10月7日","10月8日","10月9日","10月10日","10月11日","10月12日","10月13日","10月14日","10月15日","10月16日","10月17日","10月18日"];
+        const scoreData = ["88.6","80.9","90.1","97.8","85.9","99.6","82.1","83.1","87.1","76.0","76.2","93.4","92.3","75.8","98.2","85.5","88.5","77.4","97.3","95.0","89.3","80.7","90.4","87.3","98.6","94.3","82.0","92.1","89.3","89.2"];
+        const fcpData = ["1.72","1.73","2.40","1.98","2.30","1.97","1.78","1.91","2.27","1.82","2.04","2.05","2.17","1.55","1.70","1.64","2.00","2.30","1.82","2.11","1.56","1.69","1.61","1.95","1.66","2.31","2.16","2.48","1.91","1.62"];
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '综合评分',
+                    data: scoreData,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                }, {
+                    label: 'FCP (秒)',
+                    data: fcpData,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '评分'
+                        },
+                        min: 0,
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'FCP (秒)'
+                        },
+                        min: 0,
+                        max: 5,
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+  

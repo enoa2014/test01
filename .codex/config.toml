@@ -1,0 +1,87 @@
+## Codex CLI global policy (advisory)
+## Some runners respect these defaults; others may override at runtime.
+[policy]
+# 默认允许联网（MCP 服务器与需要网络的命令）。
+network_access = "enabled"
+# 默认无需人工批准（非交互式）。
+approval_policy = "never"
+# 默认禁用沙箱限制（完整文件系统访问）。
+sandbox_mode = "danger-full-access"
+
+[mcp]
+
+## Context7 MCP server configuration for Codex CLI
+## 使用 npx 运行官方 @upstash/context7 的 MCP 子命令
+[mcp.servers.context7]
+transport = "stdio"
+command = "npx"
+args = ["-y", "@upstash/context7", "mcp"]
+
+[mcp.servers.context7.env]
+CONTEXT7_API_KEY = "${CONTEXT7_API_KEY}"
+
+# Exa Search MCP server (optional). No API key required per your setup.
+# If your Codex run attempts to start `exa` by default, define it here to avoid timeouts.
+[mcp.servers.exa]
+transport = "stdio"
+# Prefer local binary to avoid npx startup delays. Install with:
+#   npm i -D exa-mcp
+command = "node_modules/.bin/exa-mcp"
+# If your exa package requires a subcommand, set: args = ["mcp"]
+args = []
+
+# Alternative Exa package name if the above is unavailable:
+# [mcp.servers.exa]
+# transport = "stdio"
+# command = "npx"
+# args = ["-y", "@exafunction/exa-mcp-server"]
+
+# Chrome DevTools MCP server (optional). Commented out to avoid extra startup attempts.
+# Requires a running Chrome with remote debugging or a bridge.
+# To enable, uncomment the block below and configure as needed.
+# [mcp.servers.chrome-devtools]
+# transport = "stdio"
+# command = "npx"
+# args = ["-y", "chrome-devtools-mcp@latest"]
+#
+# [mcp.servers.chrome-devtools.env]
+# CHROME_WS_ENDPOINT = "${CHROME_WS_ENDPOINT}"
+#
+# Alternative: bridge approach (no CHROME_WS_ENDPOINT needed)
+# [mcp.servers.chrome-devtools]
+# transport = "stdio"
+# command = "mcp-chrome-bridge"
+# args = []
+
+# Chrome MCP Server (hangwin/mcp-chrome). Uses the native bridge.
+# This will invoke the bridge via npx (avoids hardcoding global install paths).
+# If you prefer a faster startup, install globally: `npm i -g mcp-chrome-bridge`
+# and change `command = "mcp-chrome-bridge"` with `args = []`.
+[mcp.servers.chrome-mcp-server]
+transport = "stdio"
+# 使用 mcp-chrome-bridge 提供的 STDIO 服务器入口。
+# 注意：该 STDIO 服务器会通过 HTTP 连接到本地桥接服务（默认 127.0.0.1:56889/mcp）。
+# 若未运行桥接服务或未安装浏览器扩展，工具调用将会失败。
+command = "node_modules/.bin/mcp-chrome-stdio"
+args = []
+
+# Optional: If you are running the server as an HTTP/SSE endpoint locally
+# (e.g., the bridge exposes `http://127.0.0.1:12306/mcp`), you can try an HTTP
+# transport instead by uncommenting and adapting the block below. Support for
+# non-stdio transports depends on your Codex build.
+# [mcp.servers.chrome-mcp-http]
+# transport = "http"
+# url = "http://127.0.0.1:12306/mcp"
+
+# Spec Workflow MCP（spec-kit 风格工作流）
+# 使用 npx 一次性拉取并运行 @pimzino/spec-workflow-mcp。
+# 该服务需要一个“项目根目录”参数；推荐通过环境变量指定，避免硬编码路径。
+[mcp.servers.spec-workflow]
+transport = "stdio"
+command = "npx"
+args = ["-y", "@pimzino/spec-workflow-mcp@latest", "${SPEC_WORKFLOW_PROJECT}", "--AutoStartDashboard"]
+
+[mcp.servers.spec-workflow.env]
+# 将此变量设置为你希望承载规格/计划的项目根目录（绝对路径更稳妥）。
+# 例如：/mnt/c/Users/86152/work/test01
+SPEC_WORKFLOW_PROJECT = "${SPEC_WORKFLOW_PROJECT}"

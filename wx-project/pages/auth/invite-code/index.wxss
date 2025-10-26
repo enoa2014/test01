@@ -1,0 +1,461 @@
+/* pages/auth/invite-code/index.wxss */
+
+.invite-code {
+  min-height: 100vh;
+  background-color: var(--bg-color-page);
+  padding-bottom: 40rpx;
+}
+
+/* 页面头部 */
+.page-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  padding: 60rpx 40rpx 40rpx;
+  color: white;
+}
+
+.header-content {
+  text-align: center;
+}
+
+.header-title {
+  font-size: 48rpx;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.header-subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+  display: block;
+}
+
+/* 输入区域 */
+.input-section {
+  margin: 40rpx 30rpx;
+}
+
+.input-container {
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.input-label {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 20rpx;
+}
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 16rpx;
+}
+
+.invite-input {
+  width: 100%;
+  height: 100rpx;
+  padding: 0 120rpx 0 30rpx;
+  border: 3rpx solid var(--border-color);
+  border-radius: 16rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+  letter-spacing: 8rpx;
+  text-align: center;
+  color: var(--color-text-primary);
+  background-color: var(--bg-color-input);
+  transition: all 0.3s ease;
+}
+
+.invite-input:focus {
+  border-color: var(--color-primary);
+  background-color: white;
+}
+
+.invite-input::placeholder {
+  color: var(--color-text-disabled);
+  font-weight: 400;
+  letter-spacing: 2rpx;
+}
+
+.input-status {
+  position: absolute;
+  right: 30rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-clear {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background-color: var(--color-disabled);
+  color: white;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.validating-icon {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.input-hint {
+  text-align: center;
+}
+
+.hint-text {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+/* 验证结果 */
+.validation-result {
+  margin-top: 30rpx;
+}
+
+.result-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  border-left: 8rpx solid;
+}
+
+.result-card--success {
+  background-color: var(--color-success-light);
+  border-left-color: var(--color-success);
+}
+
+.result-card--error {
+  background-color: var(--color-danger-light);
+  border-left-color: var(--color-danger);
+}
+
+.result-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  font-size: 40rpx;
+}
+
+.result-card--success .result-icon {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.result-card--error .result-icon {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+.result-content {
+  flex: 1;
+}
+
+.result-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.result-card--success .result-title {
+  color: var(--color-success);
+}
+
+.result-card--error .result-title {
+  color: var(--color-danger);
+}
+
+.result-desc {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.detail-item {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  display: block;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 40rpx;
+}
+
+.action-btn {
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn--primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+}
+
+.action-btn--primary.action-btn--disabled {
+  background: var(--color-disabled);
+  color: var(--color-text-disabled);
+}
+
+.action-btn--secondary {
+  background-color: white;
+  color: var(--color-primary);
+  border: 2rpx solid var(--color-primary);
+}
+
+/* 使用说明 */
+.help-section {
+  margin: 40rpx 30rpx;
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.help-title {
+  margin-bottom: 30rpx;
+}
+
+.title-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.help-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.help-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.icon-number {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.help-text {
+  flex: 1;
+}
+
+.help-step {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.help-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: block;
+}
+
+/* 常见问题 */
+.faq-section {
+  margin: 40rpx 30rpx;
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.faq-title {
+  margin-bottom: 30rpx;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.faq-item {
+  border-bottom: 2rpx solid var(--border-color);
+  padding-bottom: 20rpx;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+}
+
+.question-text {
+  font-size: 28rpx;
+  color: var(--color-text-primary);
+  flex: 1;
+  font-weight: 500;
+}
+
+.icon-arrow {
+  width: 32rpx;
+  height: 32rpx;
+  margin-left: 20rpx;
+  transition: transform 0.3s ease;
+  color: var(--color-text-secondary);
+}
+
+.icon-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.faq-answer.expanded {
+  max-height: 200rpx;
+  padding: 0 20rpx 20rpx;
+}
+
+.answer-text {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* 联系支持 */
+.support-section {
+  margin: 40rpx 30rpx;
+  background: linear-gradient(135deg, var(--color-info-light) 0%, white 100%);
+  border-radius: 20rpx;
+  padding: 40rpx;
+  text-align: center;
+  border: 2rpx solid var(--color-info-light);
+}
+
+.support-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-info);
+  margin-bottom: 20rpx;
+}
+
+.support-desc {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 30rpx;
+  display: block;
+}
+
+.support-actions {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+}
+
+.support-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  background-color: white;
+  border: 2rpx solid var(--color-info);
+  border-radius: 12rpx;
+  min-width: 160rpx;
+}
+
+.support-btn text {
+  font-size: 26rpx;
+  color: var(--color-info);
+}
+
+.support-btn .icon-contact,
+.support-btn .icon-apply {
+  font-size: 36rpx;
+  margin-bottom: 8rpx;
+}
+
+/* 图标样式 */
+.icon-clear::before {
+  content: "×";
+}
+
+.icon-success::before {
+  content: "✓";
+}
+
+.icon-error::before {
+  content: "✕";
+}
+
+.icon-arrow::before {
+  content: "▼";
+}
+
+.icon-contact::before {
+  content: "📞";
+}
+
+.icon-apply::before {
+  content: "📝";
+}

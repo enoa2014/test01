@@ -1,0 +1,196 @@
+<!-- pages/auth/role-application/index.wxml -->
+<view class="role-application">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">角色申请</text>
+      <text class="header-subtitle">请选择您希望申请的角色并填写相关信息</text>
+    </view>
+  </view>
+
+  <!-- 申请表单 -->
+  <view class="application-form">
+    <!-- 角色选择 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">选择角色</text>
+        <text class="title-required">*</text>
+      </view>
+      <view class="role-options">
+        <view
+          class="role-option {{selectedRole === 'social_worker' ? 'role-option--selected' : ''}}"
+          bindtap="selectRole"
+          data-role="social_worker"
+        >
+          <view class="role-icon">
+            <text class="icon-social-worker"></text>
+          </view>
+          <view class="role-info">
+            <text class="role-name">社工</text>
+            <text class="role-desc">负责患者跟进、康复指导等工作</text>
+          </view>
+          <view class="role-check">
+            <text class="icon-check" wx:if="{{selectedRole === 'social_worker'}}"></text>
+          </view>
+        </view>
+
+        <view
+          class="role-option {{selectedRole === 'volunteer' ? 'role-option--selected' : ''}}"
+          bindtap="selectRole"
+          data-role="volunteer"
+        >
+          <view class="role-icon">
+            <text class="icon-volunteer"></text>
+          </view>
+          <view class="role-info">
+            <text class="role-name">志愿者</text>
+            <text class="role-desc">协助社工开展活动、陪伴患者等</text>
+          </view>
+          <view class="role-check">
+            <text class="icon-check" wx:if="{{selectedRole === 'volunteer'}}"></text>
+          </view>
+        </view>
+
+        <view
+          class="role-option {{selectedRole === 'researcher' ? 'role-option--selected' : ''}}"
+          bindtap="selectRole"
+          data-role="researcher"
+        >
+          <view class="role-icon">
+            <text class="icon-researcher"></text>
+          </view>
+          <view class="role-info">
+            <text class="role-name">研究员</text>
+            <text class="role-desc">负责数据分析、研究报告等工作</text>
+          </view>
+          <view class="role-check">
+            <text class="icon-check" wx:if="{{selectedRole === 'researcher'}}"></text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 申请理由 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">申请理由</text>
+        <text class="title-required">*</text>
+        <text class="title-hint">请详细说明您申请此角色的原因和相关经验</text>
+      </view>
+      <textarea
+        class="reason-input"
+        placeholder="请详细说明您的申请理由，包括相关工作经验、专业技能等..."
+        value="{{reason}}"
+        bindinput="onReasonInput"
+        maxlength="500"
+        auto-height
+      ></textarea>
+      <view class="input-counter">{{reason.length}}/500</view>
+    </view>
+
+    <!-- 相关附件 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">相关附件</text>
+        <text class="title-hint">可上传相关证明文件（选填）</text>
+      </view>
+      <view class="attachment-area">
+        <view class="attachment-list" wx:if="{{attachments.length > 0}}">
+          <view
+            class="attachment-item"
+            wx:for="{{attachments}}"
+            wx:key="index"
+          >
+            <view class="attachment-info">
+              <text class="attachment-name">{{item.name}}</text>
+              <text class="attachment-size">{{item.size}}</text>
+            </view>
+            <view class="attachment-remove" bindtap="removeAttachment" data-index="{{index}}">
+              <text class="icon-close"></text>
+            </view>
+          </view>
+        </view>
+        <view class="upload-btn" bindtap="chooseAttachment" wx:if="{{attachments.length < 3}}">
+          <text class="icon-upload"></text>
+          <text class="upload-text">上传附件</text>
+          <text class="upload-hint">最多3个文件，每个不超过10MB</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 联系方式 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">联系方式</text>
+        <text class="title-hint">用于申请结果通知</text>
+      </view>
+      <view class="contact-info">
+        <view class="contact-item">
+          <text class="contact-label">手机号</text>
+          <input
+            class="contact-input"
+            type="number"
+            placeholder="请输入手机号"
+            value="{{phone}}"
+            bindinput="onPhoneInput"
+          />
+        </view>
+        <view class="contact-item">
+          <text class="contact-label">邮箱</text>
+          <input
+            class="contact-input"
+            type="text"
+            placeholder="请输入邮箱地址"
+            value="{{email}}"
+            bindinput="onEmailInput"
+          />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 申请须知 -->
+  <view class="application-notice">
+    <view class="notice-title">申请须知</view>
+    <view class="notice-content">
+      <text class="notice-item">• 申请提交后，管理员将在1-3个工作日内审核</text>
+      <text class="notice-item">• 审核结果将通过系统消息通知您</text>
+      <text class="notice-item">• 如有疑问，请联系系统管理员</text>
+      <text class="notice-item">• 请确保提供的信息真实有效</text>
+    </view>
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-area">
+    <button
+      class="submit-btn {{canSubmit ? '' : 'submit-btn--disabled'}}"
+      disabled="{{!canSubmit}}"
+      loading="{{submitting}}"
+      bindtap="submitApplication"
+    >
+      {{submitting ? '提交中...' : '提交申请'}}
+    </button>
+  </view>
+
+  <!-- 历史申请记录 -->
+  <view class="history-section" wx:if="{{historyApplications.length > 0}}">
+    <view class="history-title">历史申请记录</view>
+    <view class="history-list">
+      <view
+        class="history-item"
+        wx:for="{{historyApplications}}"
+        wx:key="id"
+        bindtap="viewApplicationDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="history-info">
+          <view class="history-role">{{item.roleName}}</view>
+          <view class="history-time">{{item.createTime}}</view>
+        </view>
+        <view class="history-status history-status--{{item.status}}">
+          {{item.statusText}}
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

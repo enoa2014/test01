@@ -1,0 +1,294 @@
+<!-- pages/auth/permission-help/index.wxml -->
+<view class="permission-help">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">权限帮助</text>
+      <text class="header-subtitle">了解权限系统和使用指南</text>
+    </view>
+  </view>
+
+  <!-- 快速导航 -->
+  <view class="quick-nav">
+    <view class="nav-item" bindtap="scrollToSection" data-section="overview">
+      <text class="nav-icon">📖</text>
+      <text class="nav-text">权限概述</text>
+    </view>
+    <view class="nav-item" bindtap="scrollToSection" data-section="roles">
+      <text class="nav-icon">👥</text>
+      <text class="nav-text">角色说明</text>
+    </view>
+    <view class="nav-item" bindtap="scrollToSection" data-section="guide">
+      <text class="nav-icon">📋</text>
+      <text class="nav-text">使用指南</text>
+    </view>
+    <view class="nav-item" bindtap="scrollToSection" data-section="faq">
+      <text class="nav-icon">❓</text>
+      <text class="nav-text">常见问题</text>
+    </view>
+  </view>
+
+  <!-- 权限概述 -->
+  <view class="section" id="overview">
+    <view class="section-header">
+      <text class="section-title">权限概述</text>
+      <text class="section-desc">了解权限系统的基本概念和作用</text>
+    </view>
+
+    <view class="content-card">
+      <view class="card-item">
+        <view class="item-icon">🔐</view>
+        <view class="item-content">
+          <text class="item-title">什么是权限系统</text>
+          <text class="item-desc">权限系统是基于角色的访问控制(RBAC)系统，用于管理用户在系统中的操作权限和功能访问范围。</text>
+        </view>
+      </view>
+
+      <view class="card-item">
+        <view class="item-icon">👤</view>
+        <view class="item-content">
+          <text class="item-title">用户角色</text>
+          <text class="item-desc">每个用户可以拥有一个或多个角色，不同角色具有不同的权限范围，确保数据安全和操作合规。</text>
+        </view>
+      </view>
+
+      <view class="card-item">
+        <view class="item-icon">🎯</view>
+        <view class="item-content">
+          <text class="item-title">权限控制</text>
+          <text class="item-desc">系统根据用户的角色自动控制功能访问和数据查看范围，防止越权操作和信息泄露。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 角色说明 -->
+  <view class="section" id="roles">
+    <view class="section-header">
+      <text class="section-title">角色说明</text>
+      <text class="section-desc">详细介绍各个角色的权限和职责</text>
+    </view>
+
+    <view class="role-cards">
+      <view class="role-card">
+        <view class="role-header">
+          <view class="role-info">
+            <text class="role-name">社工</text>
+            <role-badge role="social_worker"></role-badge>
+          </view>
+          <text class="role-icon">👩‍⚕️</text>
+        </view>
+        <view class="role-content">
+          <text class="role-desc">负责患者的日常跟进、康复指导和护理工作</text>
+          <view class="permission-list">
+            <text class="permission-title">核心权限：</text>
+            <text class="permission-item">✓ 查看和编辑患者详细信息</text>
+            <text class="permission-item">✓ 管理患者康复计划和进度</text>
+            <text class="permission-item">✓ 上传患者相关文件和记录</text>
+            <text class="permission-item">✓ 查看患者数据分析报告</text>
+            <text class="permission-item">✓ 与患者进行沟通和指导</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="role-card">
+        <view class="role-header">
+          <view class="role-info">
+            <text class="role-name">志愿者</text>
+            <role-badge role="volunteer"></role-badge>
+          </view>
+          <text class="role-icon">🤝</text>
+        </view>
+        <view class="role-content">
+          <text class="role-desc">协助社工开展活动，陪伴和关爱患者</text>
+          <view class="permission-list">
+            <text class="permission-title">核心权限：</text>
+            <text class="permission-item">✓ 查看患者基本信息</text>
+            <text class="permission-item">✓ 参与康复活动组织</text>
+            <text class="permission-item">✓ 上传活动记录和照片</text>
+            <text class="permission-item">✓ 查看活动统计数据</text>
+            <text class="permission-item">✓ 与患者进行友好互动</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="role-card">
+        <view class="role-header">
+          <view class="role-info">
+            <text class="role-name">研究员</text>
+            <role-badge role="researcher"></role-badge>
+          </view>
+          <text class="role-icon">👨‍🔬</text>
+        </view>
+        <view class="role-content">
+          <text class="role-desc">负责数据分析、研究和报告撰写</text>
+          <view class="permission-list">
+            <text class="permission-title">核心权限：</text>
+            <text class="permission-item">✓ 查看所有患者数据（脱敏）</text>
+            <text class="permission-item">✓ 生成数据分析报告</text>
+            <text class="permission-item">✓ 导出研究用数据集</text>
+            <text class="permission-item">✓ 查看系统统计和趋势</text>
+            <text class="permission-item">✓ 撰写和发布研究报告</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="role-card">
+        <view class="role-header">
+          <view class="role-info">
+            <text class="role-name">管理员</text>
+            <role-badge role="admin"></role-badge>
+          </view>
+          <text class="role-icon">⚙️</text>
+        </view>
+        <view class="role-content">
+          <text class="role-desc">负责系统管理和用户权限管理</text>
+          <view class="permission-list">
+            <text class="permission-title">核心权限：</text>
+            <text class="permission-item">✓ 管理所有用户账户</text>
+            <text class="permission-item">✓ 分配和管理用户角色</text>
+            <text class="permission-item">✓ 系统设置和配置</text>
+            <text class="permission-item">✓ 数据备份和恢复</text>
+            <text class="permission-item">✓ 审核角色申请和邀请码管理</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 使用指南 -->
+  <view class="section" id="guide">
+    <view class="section-header">
+      <text class="section-title">使用指南</text>
+      <text class="section-desc">逐步指导如何获得和使用权限</text>
+    </view>
+
+    <view class="guide-steps">
+      <view class="step-item">
+        <view class="step-number">1</view>
+        <view class="step-content">
+          <text class="step-title">完善个人资料</text>
+          <text class="step-desc">首先需要完善您的个人资料，包括真实姓名、联系方式等基本信息。</text>
+          <button class="step-btn" bindtap="goToProfileEdit">完善资料</button>
+        </view>
+      </view>
+
+      <view class="step-item">
+        <view class="step-number">2</view>
+        <view class="step-content">
+          <text class="step-title">选择获取方式</text>
+          <text class="step-desc">您可以通过邀请码激活或角色申请两种方式获得权限。</text>
+          <view class="step-options">
+            <button class="option-btn" bindtap="goToInviteCode">邀请码激活</button>
+            <button class="option-btn" bindtap="goToRoleApplication">角色申请</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="step-item">
+        <view class="step-number">3</view>
+        <view class="step-content">
+          <text class="step-title">等待审核</text>
+          <text class="step-desc">提交申请后，管理员将在1-3个工作日内审核您的申请。邀请码激活会立即生效。</text>
+        </view>
+      </view>
+
+      <view class="step-item">
+        <view class="step-number">4</view>
+        <view class="step-content">
+          <text class="step-title">开始使用</text>
+          <text class="step-desc">获得权限后，您就可以在权限范围内使用相应的功能了。</text>
+          <button class="step-btn" bindtap="goToPermissionManagement">查看权限</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 常见问题 -->
+  <view class="section" id="faq">
+    <view class="section-header">
+      <text class="section-title">常见问题</text>
+      <text class="section-desc">解答用户常见的权限相关问题</text>
+    </view>
+
+    <view class="faq-list">
+      <view class="faq-item" bindtap="toggleFaq" data-index="0">
+        <view class="faq-question">
+          <text class="question-text">如何知道我当前拥有什么权限？</text>
+          <text class="icon-arrow {{faqExpanded[0] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[0] ? 'expanded' : ''}}">
+          <text class="answer-text">您可以在"权限管理"页面查看当前拥有的角色和权限。页面会显示您的角色名称、权限范围和获得时间等信息。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="1">
+        <view class="faq-question">
+          <text class="question-text">申请被拒绝了怎么办？</text>
+          <text class="icon-arrow {{faqExpanded[1] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[1] ? 'expanded' : ''}}">
+          <text class="answer-text">如果申请被拒绝，您可以：1）查看拒绝原因并改进申请材料；2）联系管理员了解更多详情；3）等待合适时机重新申请。建议完善个人资料后再申请。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="2">
+        <view class="faq-question">
+          <text class="question-text">可以拥有多个角色吗？</text>
+          <text class="icon-arrow {{faqExpanded[2] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[2] ? 'expanded' : ''}}">
+          <text class="answer-text">是的，您可以拥有多个角色。不同角色的权限会叠加生效，让您能够使用更广泛的功能。但请注意不同角色之间的职责区分。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="3">
+        <view class="faq-question">
+          <text class="question-text">权限可以临时借用或转让吗？</text>
+          <text class="icon-arrow {{faqExpanded[3] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[3] ? 'expanded' : ''}}">
+          <text class="answer-text">出于安全考虑，权限不能借用或转让。每个用户必须通过正规渠道获得自己的权限。如需要临时访问特定功能，请联系管理员。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="4">
+        <view class="faq-question">
+          <text class="question-text">如何申请更高级别的权限？</text>
+          <text class="icon-arrow {{faqExpanded[4] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[4] ? 'expanded' : ''}}">
+          <text class="answer-text">如果您需要更高级别的权限，建议：1）先熟悉当前角色的功能；2）积累相关工作经验；3）提供充分的申请理由；4）通过角色申请页面提交申请。</text>
+        </view>
+      </view>
+
+      <view class="faq-item" bindtap="toggleFaq" data-index="5">
+        <view class="faq-question">
+          <text class="question-text">忘记邀请码或丢失权限怎么办？</text>
+          <text class="icon-arrow {{faqExpanded[5] ? 'expanded' : ''}}"></text>
+        </view>
+        <view class="faq-answer {{faqExpanded[5] ? 'expanded' : ''}}">
+          <text class="answer-text">如果忘记邀请码，需要联系原发放人重新获取。如果是权限丢失，请立即联系管理员确认账户安全，管理员会协助您恢复权限。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 联系支持 -->
+  <view class="support-section">
+    <view class="support-content">
+      <text class="support-title">需要更多帮助？</text>
+      <text class="support-desc">如果您在权限使用过程中遇到任何问题，请联系我们的技术支持团队</text>
+      <view class="support-actions">
+        <button class="support-btn" bindtap="contactAdmin">
+          <text class="icon-contact"></text>
+          <text>联系管理员</text>
+        </button>
+        <button class="support-btn" bindtap="goToFeedback">
+          <text class="icon-feedback"></text>
+          <text>意见反馈</text>
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

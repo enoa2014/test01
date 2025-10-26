@@ -1,0 +1,8 @@
+
+# Chrome MCP E2E 测试结果
+test-results/
+test-results/**/*
+.env.test
+coverage/
+playwright-report/
+test-results.xml

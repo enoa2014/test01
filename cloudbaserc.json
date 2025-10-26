@@ -1,0 +1,39 @@
+{
+  "$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+  "envId": "cloud1-6g2fzr5f7cf51e38",
+  "framework": {
+    "name": "wechat-miniprogram",
+    "hooks": {},
+    "requirement": {},
+    "functions": []
+  },
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "patientIntake",
+      "dir": "cloudfunctions/patientIntake",
+      "runtime": "Nodejs16.13",
+      "timeout": 20,
+      "installDependency": true
+    },
+    {
+      "name": "patientProfile",
+      "dir": "cloudfunctions/patientProfile",
+      "runtime": "Nodejs16.13",
+      "timeout": 20,
+      "installDependency": true
+    },
+    {
+      "name": "rbac",
+      "dir": "cloudfunctions/rbac",
+      "runtime": "Nodejs16.13",
+      "timeout": 20,
+      "installDependency": true,
+      "envVariables": {
+        "WECHAT_MINIAPP_ID": "wx6fe6343a956db160",
+        "WECHAT_MINIAPP_SECRET": "c9371df2d58ad14ed0511fb38b49cc53",
+        "TCB_ENV": "cloud1-6g2fzr5f7cf51e38"
+      }
+    }
+  ]
+}

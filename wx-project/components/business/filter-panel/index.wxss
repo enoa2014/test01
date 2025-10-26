@@ -1,0 +1,349 @@
+@import '/styles/foundation.wxss';
+
+.filter-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-modal);
+  z-index: 1800;
+}
+
+.filter-panel-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 640rpx;
+  max-width: 92vw;
+  height: 100vh;
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  z-index: 1801;
+}
+
+.filter-panel__header {
+  position: relative;
+  padding: var(--space-5) var(--space-6) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.filter-panel__title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.filter-panel__subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.filter-panel__close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-lg);
+}
+
+.filter-panel__body {
+  flex: 1;
+  padding: 0 var(--space-6) var(--space-6);
+  /* 明确设置高度以确保滚动功能正常工作 */
+  /* 100vh - header约120rpx - footer约140rpx = 约calc(100vh - 260rpx) */
+  height: calc(100vh - 260rpx);
+  overflow-y: auto;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.filter-section--schemes {
+  padding-bottom: var(--space-3);
+  border-bottom: 1rpx solid var(--color-border-secondary);
+}
+
+.filter-section--logic {
+  padding-bottom: var(--space-3);
+  border-bottom: 1rpx solid var(--color-border-secondary);
+}
+
+/* P1-2: 方案管理标题优化 */
+.filter-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.filter-section__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.filter-section__count {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-normal);
+}
+
+.filter-section__manage-link {
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.filter-section__manage-link:active {
+  opacity: 0.7;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.filter-chip {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-base);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.filter-chip--active {
+  background: var(--color-primary);
+  color: var(--color-text-primary-inverse);
+}
+
+.filter-chip--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1rpx solid var(--color-border-secondary);
+}
+
+.filter-chip--ghost.filter-chip--active {
+  background: var(--color-sky-blue);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.filter-dates {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.filter-date__item {
+  min-width: 240rpx;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  border: 1rpx solid var(--color-border-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.filter-date__label {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.filter-date__value {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.filter-date__divider {
+  font-size: var(--text-lg);
+  color: var(--color-text-tertiary);
+}
+
+.filter-diagnosis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.filter-diagnosis__label {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.filter-diagnosis__suggestions,
+.filter-diagnosis__selected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.filter-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.filter-tag__text {
+  max-width: 240rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-tag__remove {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220rpx, 1fr));
+  gap: var(--space-2);
+}
+
+.filter-grid__item {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  border: 1rpx solid var(--color-border-secondary);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.filter-grid__item--active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-bg-secondary);
+}
+
+.filter-panel__footer {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: 1rpx solid var(--color-border-secondary);
+  background: var(--color-bg-primary);
+}
+
+.filter-panel__preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 200rpx;
+}
+
+.filter-panel__preview-count {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+}
+
+.filter-panel__preview-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.filter-schemes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* P1-2: 方案卡片优化 */
+.filter-schemes__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  border: 1rpx solid var(--color-border-secondary);
+  background: var(--color-bg-tertiary);
+  gap: var(--space-3);
+  transition: all 0.2s ease;
+}
+
+.filter-schemes__item:not(.manage-mode):active {
+  background: var(--color-bg-secondary);
+  transform: scale(0.98);
+}
+
+.filter-schemes__item.manage-mode {
+  background: var(--color-bg-primary);
+}
+
+.filter-schemes__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  cursor: pointer;
+}
+
+.filter-schemes__name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+}
+
+.filter-schemes__summary {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-schemes__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.filter-panel__logic-tip {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.filter-panel__btn.pm-button {
+  flex: 1;
+}

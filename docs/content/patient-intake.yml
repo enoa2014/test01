@@ -1,0 +1,188 @@
+# 患者录入内容配置
+
+# 情况说明配置
+situation:
+  minLength: 30
+  maxLength: 500
+  keywords:
+    - 护理
+    - 症状
+    - 康复
+    - 治疗
+    - 病情
+    - 照顾
+    - 功能
+    - 障碍
+    - 需要
+    - 协助
+    - 疼痛
+    - 医疗
+    - 康复训练
+    - 生活自理
+    - 精神状态
+  example: "患者因脑瘫需要专业护理照顾，主要症状包括运动功能障碍、语言交流困难，需要协助进食、洗漱等日常生活护理，定期进行康复训练。"
+  hints:
+    - "请详细描述患者的主要症状和护理需求"
+    - "建议包含疾病情况、生活自理能力、康复需求等信息"
+    - "如有特殊护理要求，请详细说明"
+
+# 字段校验规则
+validation:
+  patientName:
+    required: true
+    minLength: 2
+    maxLength: 20
+    pattern: "^[\\u4e00-\\u9fa5a-zA-Z\\s]+$"
+    errorMessages:
+      required: "请输入患者姓名"
+      minLength: "姓名至少需要2个字符"
+      maxLength: "姓名不能超过20个字符"
+      pattern: "姓名只能包含中文、英文和空格"
+
+  idNumber:
+    required: true
+    patterns:
+      身份证: "^[1-9]\\d{17}$"
+      护照: "^[A-Za-z0-9]{6,12}$"
+      军官证: "^[A-Za-z0-9]{6,20}$"
+    errorMessages:
+      required: "请输入证件号码"
+      身份证: "身份证号码应为18位数字"
+      护照: "护照号码格式不正确"
+      军官证: "军官证号码格式不正确"
+
+  phone:
+    pattern: "^1[3-9]\\d{9}$"
+    errorMessages:
+      pattern: "手机号码格式不正确"
+      required: "请输入手机号码"
+
+  emergencyPhone:
+    required: true
+    pattern: "^1[3-9]\\d{9}$"
+    errorMessages:
+      required: "请输入紧急联系人电话"
+      pattern: "紧急联系人电话格式不正确"
+
+  address:
+    required: true
+    minLength: 10
+    maxLength: 200
+    errorMessages:
+      required: "请输入常住地址"
+      minLength: "地址至少需要10个字符"
+      maxLength: "地址不能超过200个字符"
+
+  emergencyContact:
+    required: true
+    minLength: 2
+    maxLength: 10
+    errorMessages:
+      required: "请输入紧急联系人"
+      minLength: "联系人姓名至少需要2个字符"
+      maxLength: "联系人姓名不能超过10个字符"
+
+  birthDate:
+    required: true
+    minDate: "1900-01-01"
+    maxDate: "today"
+    errorMessages:
+      required: "请选择出生日期"
+      minDate: "出生日期不能早于1900年"
+      maxDate: "出生日期不能晚于今天"
+
+# 表单提示文案
+hints:
+  patientName: "请输入患者的真实姓名"
+  idType: "请选择证件类型"
+  idNumber: "示例：身份证格式为18位数字"
+  gender: "请选择患者性别"
+  birthDate: "请选择患者出生日期"
+  phone: "示例：13812345678"
+  address: "请输入详细的居住地址"
+  emergencyContact: "请输入紧急联系人的姓名"
+  emergencyPhone: "紧急联系人的手机号码"
+  backupContact: "备用联系人（选填）"
+  backupPhone: "备用联系人电话（选填）"
+  situation: "请详细描述患者情况，包含护理需求或症状信息"
+
+# 上传配置
+upload:
+  maxFileSize: 10  # MB
+  maxCount: 5
+  allowedTypes:
+    - JPG
+    - JPEG
+    - PNG
+    - WebP
+    - PDF
+    - DOC
+    - DOCX
+    - XLS
+    - XLSX
+    - TXT
+  categories:
+    image:
+      - JPG
+      - JPEG
+      - PNG
+      - WebP
+    document:
+      - PDF
+      - DOC
+      - DOCX
+      - XLS
+      - XLSX
+      - TXT
+  errorMessages:
+    fileSize: "文件大小不能超过{maxSize}MB"
+    fileCount: "最多只能上传{maxCount}个文件"
+    fileType: "不支持的文件类型，请上传{allowedTypes}格式的文件"
+
+# 步骤配置
+steps:
+  - title: "基础信息"
+    key: "basic"
+    description: "填写患者的基本身份信息"
+    requiredFields:
+      - patientName
+      - idType
+      - idNumber
+      - gender
+      - birthDate
+    optionalFields:
+      - phone
+
+  - title: "联系人"
+    key: "contact"
+    description: "填写患者的联系方式和紧急联系人"
+    requiredFields:
+      - address
+      - emergencyContact
+      - emergencyPhone
+    optionalFields:
+      - backupContact
+      - backupPhone
+
+  - title: "情况说明"
+    key: "situation"
+    description: "详细描述患者的情况和护理需求"
+    requiredFields:
+      - situation
+
+  - title: "附件上传"
+    key: "upload"
+    description: "上传相关的证明文件和医疗资料（选填）"
+    optionalFields:
+      - attachments
+
+  - title: "核对提交"
+    key: "review"
+    description: "核对所有信息并完成提交"
+
+# 多语言支持（预留）
+i18n:
+  zh-CN:
+    # 中文文案
+  en-US:
+    # 英文文案（预留）

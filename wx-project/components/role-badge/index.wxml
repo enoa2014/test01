@@ -1,0 +1,20 @@
+<!-- components/role-badge/index.wxml -->
+<view
+  class="{{badgeClass}}"
+  style="{{badgeStyle}}"
+  bindtap="onBadgeTap"
+>
+  <!-- 图标 -->
+  <view wx:if="{{showIcon && iconUrl}}" class="role-badge__icon">
+    <image
+      class="role-badge__icon-image"
+      src="{{iconUrl}}"
+      mode="aspectFit"
+    />
+  </view>
+
+  <!-- 文字 -->
+  <view wx:if="{{displayText}}" class="role-badge__text">
+    {{displayText}}
+  </view>
+</view>

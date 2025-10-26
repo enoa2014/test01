@@ -1,0 +1,12 @@
+{
+  "name": "rbac",
+  "version": "1.0.0",
+  "description": "RBAC云函数 - 用户角色权限管理",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^8.3.2",
+    "axios": "^1.7.7"
+  }
+}
