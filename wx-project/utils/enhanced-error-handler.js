@@ -1,5 +1,5 @@
 // 增强错误处理器
-const PERFORMANCE_CONFIG = require('../config/performance-config');
+const PERFORMANCE_CONFIG = require('../config/performance-config.js');
 const performanceMonitor = require('./performance-monitor');
 const logger = require('./logger');
 

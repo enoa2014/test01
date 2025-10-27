@@ -2,7 +2,7 @@
 /**
  * 简易日志工具，集中处理所有日志输出，避免直接使用 console.
  */
-const PERFORMANCE_CONFIG = require('../config/performance-config');
+const PERFORMANCE_CONFIG = require('../config/performance-config.js');
 
 const loggingConfig =
   PERFORMANCE_CONFIG &&

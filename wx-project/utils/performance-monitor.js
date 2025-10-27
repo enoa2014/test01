@@ -1,5 +1,5 @@
 // 性能监控器
-const PERFORMANCE_CONFIG = require('../config/performance-config');
+const PERFORMANCE_CONFIG = require('../config/performance-config.js');
 const logger = require('./logger');
 
 class PerformanceMonitor {

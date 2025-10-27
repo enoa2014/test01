@@ -1,5 +1,5 @@
 // 资源优化工具
-const PERFORMANCE_CONFIG = require('../config/performance-config');
+const PERFORMANCE_CONFIG = require('../config/performance-config.js');
 const performanceMonitor = require('./performance-monitor');
 const logger = require('./logger');
 
