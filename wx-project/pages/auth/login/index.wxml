@@ -8,7 +8,6 @@
   <view class="section">
     <text class="section-title">快捷进入</text>
     <button class="btn primary" bindtap="goWelcome">微信用户进入</button>
-    <button class="btn" bindtap="goQRConfirm">扫码确认登录</button>
   </view>
 
   <view class="divider" />

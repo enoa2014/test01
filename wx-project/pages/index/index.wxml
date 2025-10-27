@@ -99,16 +99,7 @@
           aria-label="{{batchMode ? '退出多选模式' : '开启多选模式'}}"
           bindtap="onToggleBatchMode"
         />
-        <pm-button
-          class="toolbar-action"
-          text="扫码登录"
-          icon="📱"
-          size="small"
-          type="primary"
-          ghost="{{true}}"
-          bindtap="onQRLoginTap"
-        />
-        <pm-button
+                <pm-button
           class="toolbar-action"
           text="查看分析"
           size="small"

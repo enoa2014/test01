@@ -2161,12 +2161,7 @@ Page({
     });
   },
 
-  onQRLoginTap() {
-    wx.navigateTo({
-      url: '/pages/qr-confirm/qr-confirm',
-    });
-  },
-  applyAnalysisShortcut(shortcut) {
+    applyAnalysisShortcut(shortcut) {
     if (!shortcut || typeof shortcut !== 'object') {
       return;
     }

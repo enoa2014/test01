@@ -42,10 +42,7 @@ Page({
     wx.navigateTo({ url: '/pages/auth/welcome/index' })
   },
 
-  goQRConfirm() {
-    wx.navigateTo({ url: '/pages/qr-confirm/qr-confirm' })
-  },
-
+  
   async submitAdminLogin() {
     const { username, password } = this.data
     if (!username || !password) {
