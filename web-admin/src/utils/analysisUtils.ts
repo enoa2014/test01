@@ -28,6 +28,7 @@ const SUMMARY_CARD_CONFIG: Array<{ id: string; key: keyof SummaryStats; label: s
   { id: 'pending', key: 'pending', label: '待入住', description: '待随访 / 待安排的住户' },
   { id: 'discharged', key: 'discharged', label: '已离开', description: '已出院或离家的住户' },
 ];
+const FUTURE_TIMESTAMP_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 
 const LEGEND_ITEMS: LegendItem[] = [
   {
@@ -109,23 +110,26 @@ function normalizeCareStatus(value: any, fallback = 'pending'): string {
   return fallback;
 }
 
-function mapPatientStatus(latestAdmissionTimestamp: number): { careStatus: string; diffDays: number | null } {
+function mapPatientStatus(latestAdmissionTimestamp: number): { careStatus: string; diffDays: number | null; futureAnomaly: boolean } {
   const timestamp = Number(latestAdmissionTimestamp || 0);
   if (!Number.isFinite(timestamp) || timestamp <= 0) {
-    return { careStatus: 'pending', diffDays: null };
+    return { careStatus: 'pending', diffDays: null, futureAnomaly: false };
   }
   const now = Date.now();
+  if (timestamp > now + FUTURE_TIMESTAMP_TOLERANCE_MS) {
+    return { careStatus: 'discharged', diffDays: null, futureAnomaly: true };
+  }
   if (timestamp > now) {
-    return { careStatus: 'pending', diffDays: 0 };
+    return { careStatus: 'pending', diffDays: 0, futureAnomaly: false };
   }
   const diffDays = Math.floor((now - timestamp) / MS_PER_DAY);
   if (diffDays <= 30) {
-    return { careStatus: 'in_care', diffDays };
+    return { careStatus: 'in_care', diffDays, futureAnomaly: false };
   }
   if (diffDays <= 90) {
-    return { careStatus: 'pending', diffDays };
+    return { careStatus: 'pending', diffDays, futureAnomaly: false };
   }
-  return { careStatus: 'discharged', diffDays };
+  return { careStatus: 'discharged', diffDays, futureAnomaly: false };
 }
 
 function deriveCareStatusFromPatient(patient: any): string {
@@ -133,12 +137,16 @@ function deriveCareStatusFromPatient(patient: any): string {
     return 'pending';
   }
   const latestAdmissionTimestamp = Number(patient.latestAdmissionTimestamp || 0);
-  const { careStatus: derivedCareStatus } = mapPatientStatus(latestAdmissionTimestamp);
+  const { careStatus: derivedCareStatus, futureAnomaly } = mapPatientStatus(latestAdmissionTimestamp);
+  const futureAdmissionAnomaly = futureAnomaly || Boolean(patient && patient.futureAdmissionAnomaly);
   const checkoutAtRaw = patient.checkoutAt || (patient.metadata && patient.metadata.checkoutAt);
   const checkoutAt = Number(checkoutAtRaw);
   const hasCheckout = Number.isFinite(checkoutAt) && checkoutAt > 0;
 
   let careStatus = normalizeCareStatus(patient.careStatus, derivedCareStatus);
+  if (futureAdmissionAnomaly) {
+    careStatus = derivedCareStatus;
+  }
   const latestTimestampNumeric = Number.isFinite(latestAdmissionTimestamp) ? latestAdmissionTimestamp : null;
   const hasExplicitCareStatus = Boolean(safeString(patient.careStatus));
 

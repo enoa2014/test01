@@ -31,6 +31,7 @@ const MAX_PATIENT_LIST_LIMIT = 200;
 const EXPORT_TEMPLATE_FILE_ID =
   'cloud://cloud1-6g2fzr5f7cf51e38.636c-cloud1-6g2fzr5f7cf51e38-1375978325/data/b.xlsx';
 const EXPORT_CLOUD_DIR = 'exports';
+const FUTURE_TIMESTAMP_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 
 // Utility functions
 function makeError(code, message, details) {
@@ -44,6 +45,15 @@ function makeError(code, message, details) {
 function safeNumber(value) {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
+}
+
+function isFutureTimestampAnomaly(timestamp, now) {
+  const numeric = Number(timestamp || 0);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return false;
+  }
+  const current = Number.isFinite(now) ? now : Date.now();
+  return numeric > current + FUTURE_TIMESTAMP_TOLERANCE_MS;
 }
 
 function firstDefined() {
@@ -1362,6 +1372,7 @@ async function buildPatientsFromDatabase(options = {}) {
       pickValue(doc.checkoutReason, data.checkoutReason, nestedData.checkoutReason) || '';
     const checkoutNote =
       pickValue(doc.checkoutNote, data.checkoutNote, nestedData.checkoutNote) || '';
+    const futureAdmissionAnomaly = isFutureTimestampAnomaly(latestTimestamp);
 
     if (!careStatus && checkoutAt) {
       careStatus = 'discharged';
@@ -1371,6 +1382,8 @@ async function buildPatientsFromDatabase(options = {}) {
       latestTimestamp &&
       checkoutAt >= latestTimestamp
     ) {
+      careStatus = 'discharged';
+    } else if (futureAdmissionAnomaly) {
       careStatus = 'discharged';
     }
     const phone = doc.phone || data.phone || '';
@@ -1495,6 +1508,7 @@ async function buildPatientsFromDatabase(options = {}) {
       checkoutAt: checkoutAt || null,
       checkoutReason,
       checkoutNote,
+      futureAdmissionAnomaly,
     });
   });
 
@@ -1523,18 +1537,52 @@ async function buildPatientsFromDatabase(options = {}) {
   if (includeTotal) {
     try {
       const baseConditions = conditions.slice();
-      const buildStatusWhere = statusId => {
-        const statusCond = _.or([
-          { careStatus: statusId },
-          { 'data.careStatus': statusId },
-        ]);
-        if (!baseConditions.length) return statusCond;
-        return _.and(baseConditions.concat([statusCond]));
+      const now = Date.now();
+      const anomalyThreshold = now + FUTURE_TIMESTAMP_TOLERANCE_MS;
+      const rawInCareCond = _.or([
+        { careStatus: 'in_care' },
+        { 'data.careStatus': 'in_care' },
+      ]);
+      const rawPendingCond = _.or([
+        { careStatus: 'pending' },
+        { 'data.careStatus': 'pending' },
+      ]);
+      const rawDischargedCond = _.or([
+        { careStatus: 'discharged' },
+        { 'data.careStatus': 'discharged' },
+      ]);
+      const futureAnomalyCond = _.or([
+        { latestAdmissionTimestamp: _.gt(anomalyThreshold) },
+        { 'data.latestAdmissionTimestamp': _.gt(anomalyThreshold) },
+      ]);
+      const notFutureAnomalyCond = _.or([
+        { latestAdmissionTimestamp: _.lte(anomalyThreshold) },
+        { latestAdmissionTimestamp: _.exists(false) },
+        { latestAdmissionTimestamp: _.eq(null) },
+        { latestAdmissionTimestamp: _.lte(0) },
+        { 'data.latestAdmissionTimestamp': _.lte(anomalyThreshold) },
+        { 'data.latestAdmissionTimestamp': _.exists(false) },
+        { 'data.latestAdmissionTimestamp': _.eq(null) },
+        { 'data.latestAdmissionTimestamp': _.lte(0) },
+      ]);
+      const combineWithBase = expr => {
+        if (!baseConditions.length) {
+          return expr;
+        }
+        return _.and(baseConditions.concat([expr]));
       };
+      const inCareWhere = combineWithBase(rawInCareCond);
+      const pendingWhere = combineWithBase(_.and([rawPendingCond, notFutureAnomalyCond]));
+      const dischargedWhere = combineWithBase(
+        _.or([
+          rawDischargedCond,
+          _.and([rawPendingCond, futureAnomalyCond]),
+        ])
+      );
       const [inCareRes, pendingRes, dischargedRes] = await Promise.all([
-        db.collection(PATIENTS_COLLECTION).where(buildStatusWhere('in_care')).count(),
-        db.collection(PATIENTS_COLLECTION).where(buildStatusWhere('pending')).count(),
-        db.collection(PATIENTS_COLLECTION).where(buildStatusWhere('discharged')).count(),
+        db.collection(PATIENTS_COLLECTION).where(inCareWhere).count(),
+        db.collection(PATIENTS_COLLECTION).where(pendingWhere).count(),
+        db.collection(PATIENTS_COLLECTION).where(dischargedWhere).count(),
       ]);
       statusCounts = {
         inCare: Number(inCareRes && inCareRes.total) || 0,
@@ -3214,6 +3262,9 @@ exports.main = async event => {
     );
     if (!careStatus && Number.isFinite(latestTs) && latestTs > 0) {
       const now = Date.now();
+      if (isFutureTimestampAnomaly(latestTs, now)) {
+        return 'discharged';
+      }
       if (latestTs > now) return 'pending';
       const diffDays = Math.floor((now - latestTs) / (24 * 60 * 60 * 1000));
       if (diffDays <= 30) return 'in_care';

@@ -28,6 +28,7 @@ export type PatientSummary = {
   checkoutAt?: number | string;
   checkoutReason?: string;
   checkoutNote?: string;
+  futureAdmissionAnomaly?: boolean;
 };
 
 export type PatientDetail = {

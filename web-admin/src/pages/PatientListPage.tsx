@@ -25,6 +25,7 @@ const CACHE_KEY = 'patient_list_cache_web';
 const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
 const SUGGEST_DEBOUNCE_TIME = 300; // 搜索建议防抖时间
 const MAX_SUGGESTIONS = 8; // 最大建议数量
+const FUTURE_TIMESTAMP_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 
 // 列表页状态选项（与详情页保持一致）
 const STATUS_OPTIONS = [
@@ -62,6 +63,7 @@ type TableRow = PatientSummary & {
   importedAt?: number;
   _importedAt?: number;
   excelImportOrder?: number;
+  futureAdmissionAnomaly?: boolean;
 };
 
 type CacheData = {
@@ -106,20 +108,33 @@ const deriveCardStatus = (careStatus: string): 'success' | 'warning' | 'default'
 
 const mapPatientStatus = (latestAdmissionTimestamp: number) => {
   if (!Number.isFinite(latestAdmissionTimestamp) || latestAdmissionTimestamp <= 0) {
-    return { cardStatus: 'default' as const, careStatus: 'discharged' as const, diffDays: null };
+    return {
+      cardStatus: 'default' as const,
+      careStatus: 'discharged' as const,
+      diffDays: null,
+      futureAnomaly: false,
+    };
   }
   const now = Date.now();
+  if (latestAdmissionTimestamp > now + FUTURE_TIMESTAMP_TOLERANCE_MS) {
+    return {
+      cardStatus: 'default' as const,
+      careStatus: 'discharged' as const,
+      diffDays: null,
+      futureAnomaly: true,
+    };
+  }
   if (latestAdmissionTimestamp > now) {
-    return { cardStatus: 'warning' as const, careStatus: 'pending' as const, diffDays: 0 };
+    return { cardStatus: 'warning' as const, careStatus: 'pending' as const, diffDays: 0, futureAnomaly: false };
   }
   const diffDays = Math.floor((now - latestAdmissionTimestamp) / (24 * 60 * 60 * 1000));
   if (diffDays <= 30) {
-    return { cardStatus: 'success' as const, careStatus: 'in_care' as const, diffDays };
+    return { cardStatus: 'success' as const, careStatus: 'in_care' as const, diffDays, futureAnomaly: false };
   }
   if (diffDays <= 90) {
-    return { cardStatus: 'warning' as const, careStatus: 'pending' as const, diffDays };
+    return { cardStatus: 'warning' as const, careStatus: 'pending' as const, diffDays, futureAnomaly: false };
   }
-  return { cardStatus: 'default' as const, careStatus: 'discharged' as const, diffDays };
+  return { cardStatus: 'default' as const, careStatus: 'discharged' as const, diffDays, futureAnomaly: false };
 };
 
 const identifyRiskLevel = (diffDays: number | null): 'high' | 'medium' | 'low' => {
@@ -495,13 +510,19 @@ const PatientListPage: React.FC = () => {
         const {
           careStatus: derivedCareStatus,
           diffDays,
+          futureAnomaly,
         } = mapPatientStatus(latestAdmissionTimestamp);
+        const futureAdmissionAnomaly =
+          futureAnomaly || Boolean((item as any)?.futureAdmissionAnomaly);
 
         const checkoutAtRaw = item.checkoutAt || (item as any)?.metadata?.checkoutAt;
         const checkoutAt = Number(checkoutAtRaw || 0);
         const hasCheckout = Number.isFinite(checkoutAt) && checkoutAt > 0;
 
         let careStatus = normalizeCareStatus(item.careStatus, derivedCareStatus);
+        if (futureAdmissionAnomaly) {
+          careStatus = derivedCareStatus;
+        }
 
         const latestTimestampNumeric = Number.isFinite(latestAdmissionTimestamp)
           ? latestAdmissionTimestamp
@@ -568,6 +589,7 @@ const PatientListPage: React.FC = () => {
           latestDoctor,
           firstDoctor,
           firstAdmissionTimestamp,
+          futureAdmissionAnomaly,
         };
       });
 
