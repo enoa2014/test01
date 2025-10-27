@@ -497,12 +497,23 @@ const PatientListPage: React.FC = () => {
           diffDays,
         } = mapPatientStatus(latestAdmissionTimestamp);
 
-        const checkoutAt = Number(item.checkoutAt || 0);
+        const checkoutAtRaw = item.checkoutAt || (item as any)?.metadata?.checkoutAt;
+        const checkoutAt = Number(checkoutAtRaw || 0);
         const hasCheckout = Number.isFinite(checkoutAt) && checkoutAt > 0;
 
         let careStatus = normalizeCareStatus(item.careStatus, derivedCareStatus);
 
-        if (hasCheckout && (!item.careStatus || careStatus === derivedCareStatus)) {
+        const latestTimestampNumeric = Number.isFinite(latestAdmissionTimestamp)
+          ? latestAdmissionTimestamp
+          : null;
+        const hasExplicitCareStatus = Boolean(safeString(item.careStatus));
+
+        if (
+          hasCheckout &&
+          (!hasExplicitCareStatus ||
+            careStatus === derivedCareStatus ||
+            (latestTimestampNumeric !== null && checkoutAt >= latestTimestampNumeric))
+        ) {
           careStatus = 'discharged';
         }
 
