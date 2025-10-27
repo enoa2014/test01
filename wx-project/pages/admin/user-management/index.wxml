@@ -197,7 +197,7 @@
           </button>
           <button
             class="action-btn action-btn--status"
-            bindtap="toggleUserStatus"
+            bindtap="onToggleUserStatusTap"
             data-id="{{item.id}}"
             catchtap="true"
           >
@@ -304,7 +304,7 @@
             <view class="status-actions">
               <button
                 class="status-btn"
-                bindtap="toggleUserStatus"
+                bindtap="onToggleUserStatusTap"
                 data-id="{{selectedUser.id}}"
               >
                 {{selectedUser.status === 'active' ? '暂停用户' : '激活用户'}}

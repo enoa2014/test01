@@ -1,4 +1,5 @@
 // utils/storage.js
+const logger = require('./logger');
 
 /**
  * 本地存储工具类
@@ -21,7 +22,7 @@ class Storage {
       wx.setStorageSync(key, data);
       return true;
     } catch (error) {
-      console.error('存储失败:', error);
+      logger.error('存储失败:', error);
       return false;
     }
   }
@@ -48,7 +49,7 @@ class Storage {
 
       return data.value;
     } catch (error) {
-      console.error('读取存储失败:', error);
+      logger.error('读取存储失败:', error);
       return defaultValue;
     }
   }
@@ -62,7 +63,7 @@ class Storage {
       wx.removeStorageSync(key);
       return true;
     } catch (error) {
-      console.error('移除存储失败:', error);
+      logger.error('移除存储失败:', error);
       return false;
     }
   }
@@ -75,7 +76,7 @@ class Storage {
       wx.clearStorageSync();
       return true;
     } catch (error) {
-      console.error('清空存储失败:', error);
+      logger.error('清空存储失败:', error);
       return false;
     }
   }
@@ -94,7 +95,7 @@ class Storage {
         usagePercent: ((info.currentSize / info.limitSize) * 100).toFixed(2)
       };
     } catch (error) {
-      console.error('获取存储信息失败:', error);
+      logger.error('获取存储信息失败:', error);
       return null;
     }
   }
@@ -295,7 +296,7 @@ class Storage {
 
       return true;
     } catch (error) {
-      console.error('清理临时数据失败:', error);
+      logger.error('清理临时数据失败:', error);
       return false;
     }
   }
@@ -340,7 +341,7 @@ class Storage {
       const data = wx.getStorageSync(key);
       return data !== undefined && data !== null;
     } catch (error) {
-      console.error('检查存储项失败:', error);
+      logger.error('检查存储项失败:', error);
       return false;
     }
   }
@@ -358,7 +359,7 @@ class Storage {
       }
       return JSON.stringify(data).length;
     } catch (error) {
-      console.error('获取存储项大小失败:', error);
+      logger.error('获取存储项大小失败:', error);
       return 0;
     }
   }
@@ -380,10 +381,10 @@ class Storage {
         }
       });
 
-      console.log(`存储压缩完成，清理了 ${cleanedCount} 个过期项`);
+      logger.info(`存储压缩完成，清理了 ${cleanedCount} 个过期项`);
       return cleanedCount;
     } catch (error) {
-      console.error('存储压缩失败:', error);
+      logger.error('存储压缩失败:', error);
       return 0;
     }
   }
@@ -404,7 +405,7 @@ class Storage {
 
       return data;
     } catch (error) {
-      console.error('导出存储数据失败:', error);
+      logger.error('导出存储数据失败:', error);
       return {};
     }
   }
@@ -422,7 +423,7 @@ class Storage {
 
       return true;
     } catch (error) {
-      console.error('导入存储数据失败:', error);
+      logger.error('导入存储数据失败:', error);
       return false;
     }
   }

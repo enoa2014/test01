@@ -1,7 +1,8 @@
 // pages/admin/system-monitoring/index.js
 const userManager = require('../../../utils/user-manager');
-const { errorHandler, loadingManager, cacheManager, Validator, debounce } = require('../../../utils/admin-utils');
+const { errorHandler, loadingManager } = require('../../../utils/admin-utils');
 const { createDataManager } = require('../../../utils/data-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -124,8 +125,8 @@ Page({
     logTimer: null
   },
 
-  onLoad(options) {
-    console.log('[admin-system-monitoring] 页面加载');
+  onLoad(_options) {
+    logger.info('[admin-system-monitoring] 页面加载');
     this.initDataManager();
     this.checkAdminPermission();
   },
@@ -242,7 +243,7 @@ Page({
       this.setData({ showSkeleton: false });
       this.updateFilteredAlerts();
     } catch (error) {
-      console.error('[admin-system-monitoring] 加载初始数据失败:', error);
+      logger.error('[admin-system-monitoring] 加载初始数据失败:', error);
       this.setData({ showSkeleton: false });
       errorHandler.handle(error, errorHandler.errorTypes.NETWORK, {
         operation: 'loadData'
@@ -363,7 +364,7 @@ Page({
 
       this.updateFilteredAlerts();
     } catch (error) {
-      console.error('[admin-system-monitoring] 刷新数据失败:', error);
+      logger.error('[admin-system-monitoring] 刷新数据失败:', error);
       errorHandler.handle(error, errorHandler.errorTypes.NETWORK, {
         operation: 'refreshAllData'
       });
@@ -391,7 +392,7 @@ Page({
         }
       });
     } catch (error) {
-      console.error('[admin-system-monitoring] 刷新系统数据失败:', error);
+      logger.error('[admin-system-monitoring] 刷新系统数据失败:', error);
       // 使用默认数据
       this.generateMockSystemStatus();
     }
@@ -419,7 +420,7 @@ Page({
         }
       });
     } catch (error) {
-      console.error('[admin-system-monitoring] 刷新性能数据失败:', error);
+      logger.error('[admin-system-monitoring] 刷新性能数据失败:', error);
       // 使用默认数据
       this.generateMockPerformanceMetrics();
     }
@@ -436,7 +437,7 @@ Page({
         this.setData({ services });
       }
     } catch (error) {
-      console.error('[admin-system-monitoring] 刷新服务数据失败:', error);
+      logger.error('[admin-system-monitoring] 刷新服务数据失败:', error);
       // 使用默认数据
       this.generateMockServices();
     }
@@ -453,7 +454,7 @@ Page({
         this.setData({ alerts });
       }
     } catch (error) {
-      console.error('[admin-system-monitoring] 刷新告警数据失败:', error);
+      logger.error('[admin-system-monitoring] 刷新告警数据失败:', error);
       // 使用默认数据
       this.generateMockAlerts();
     }
@@ -570,7 +571,7 @@ Page({
    */
   setAlertFilter(e) {
     const filter = e.currentTarget.dataset.filter;
-    this.setData({ alertFilter });
+    this.setData({ alertFilter: filter });
     this.updateFilteredAlerts();
   },
 

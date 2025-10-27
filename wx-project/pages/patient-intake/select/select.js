@@ -1,7 +1,7 @@
 // 住户选择页面
-const logger = require('../../../utils/logger');
 const themeManager = require('../../../utils/theme');
 const { formatDate, formatAge } = require('../../../utils/date');
+const logger = require('../../../utils/logger');
 
 const INITIAL_THEME_KEY = themeManager.getTheme();
 

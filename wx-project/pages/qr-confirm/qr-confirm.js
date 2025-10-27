@@ -1,4 +1,5 @@
 // pages/qr-confirm/qr-confirm.js
+const logger = require('../../utils/logger');
 const app = getApp()
 
 Page({
@@ -63,11 +64,11 @@ Page({
       onlyFromCamera: false,
       scanType: ['qrCode'],
       success: (res) => {
-        console.log('扫码结果:', res.result)
+        logger.info('扫码结果:', res.result)
         this.handleScanResult(res.result)
       },
       fail: (err) => {
-        console.error('扫码失败:', err)
+        logger.error('扫码失败:', err)
         this.setError('扫码失败，请重试')
         wx.showToast({
           title: '扫码失败',
@@ -90,11 +91,11 @@ Page({
         wx.getQRCode({
           filePath: tempFilePath,
           success: (qrRes) => {
-            console.log('识别结果:', qrRes.result)
+            logger.info('识别结果:', qrRes.result)
             this.handleScanResult(qrRes.result)
           },
           fail: (err) => {
-            console.error('二维码识别失败:', err)
+            logger.error('二维码识别失败:', err)
             this.setError('无法识别二维码，请重试')
             wx.showToast({
               title: '二维码识别失败',
@@ -104,7 +105,7 @@ Page({
         })
       },
       fail: (err) => {
-        console.error('选择图片失败:', err)
+        logger.error('选择图片失败:', err)
         wx.showToast({
           title: '选择图片失败',
           icon: 'none'
@@ -139,7 +140,7 @@ Page({
         this.setError(parseResult.error.message || '二维码无效')
       }
     } catch (error) {
-      console.error('处理扫码结果失败:', error)
+      logger.error('处理扫码结果失败:', error)
       this.setError('处理失败，请重试')
     } finally {
       this.setData({ loading: false })
@@ -159,9 +160,7 @@ Page({
       }).then(res => {
         if (res.result && res.result.success) {
           // 保存 approveNonce 供后续确认使用
-          try {
-            this.setData({ approveNonce: res.result.data.approveNonce })
-          } catch (e) {}
+          this.setData({ approveNonce: res.result.data.approveNonce })
           resolve(res.result)
         } else {
           reject(new Error(res.result?.error?.message || '解析失败'))
@@ -174,7 +173,7 @@ Page({
 
   // 获取当前用户信息
   async getCurrentUserInfo() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       // 从app全局获取用户信息
       const userInfo = app.globalData.userInfo
 
@@ -192,7 +191,7 @@ Page({
             resolve(userInfo)
           },
           fail: (err) => {
-            console.error('获取用户信息失败:', err)
+            logger.error('获取用户信息失败:', err)
             // 如果获取失败，使用基础信息
             const basicInfo = {
               nickName: '用户',
@@ -207,7 +206,7 @@ Page({
   },
 
   // 确定用户角色
-  determineUserRoles(userInfo) {
+  determineUserRoles(_userInfo) {
     const userManager = app.getUserManager()
     const userRoles = userManager.getUserRoles() || ['guest']
 
@@ -291,7 +290,7 @@ Page({
         this.setError(result.error.message || '确认失败')
       }
     } catch (error) {
-      console.error('确认登录失败:', error)
+      logger.error('确认登录失败:', error)
       this.setError('确认失败，请重试')
     } finally {
       this.setData({ loading: false })
@@ -301,27 +300,23 @@ Page({
   // 确认二维码登录
   async confirmQRLogin(sessionId, loginMode, selectedRole, userInfo) {
     const location = await this.getCurrentLocation()
-    try {
-      const res = await wx.cloud.callFunction({
-        name: 'qrLogin',
-        data: {
-          action: 'qrApprove',
-          sessionId,
-          userInfo: { ...userInfo, selectedRole },
-          loginMode,
-          deviceInfo: this.getDeviceInfo(),
-          securityToken: this.generateSecurityToken(),
-          location,
-          approveNonce: this.data.approveNonce
-        }
-      })
-      if (res.result && res.result.success) {
-        return res.result
+    const res = await wx.cloud.callFunction({
+      name: 'qrLogin',
+      data: {
+        action: 'qrApprove',
+        sessionId,
+        userInfo: { ...userInfo, selectedRole },
+        loginMode,
+        deviceInfo: this.getDeviceInfo(),
+        securityToken: this.generateSecurityToken(),
+        location,
+        approveNonce: this.data.approveNonce
       }
-      throw new Error(res.result?.error?.message || '确认失败')
-    } catch (err) {
-      throw err
+    })
+    if (res.result && res.result.success) {
+      return res.result
     }
+    throw new Error(res.result?.error?.message || '确认失败')
   },
 
   // 取消登录
@@ -339,7 +334,7 @@ Page({
           }
         })
       } catch (error) {
-        console.error('取消登录失败:', error)
+        logger.error('取消登录失败:', error)
       }
     }
 

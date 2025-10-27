@@ -1,7 +1,8 @@
 // pages/admin/invite-management/index.js
 const userManager = require('../../../utils/user-manager');
-const { errorHandler, loadingManager, cacheManager, Validator, debounce } = require('../../../utils/admin-utils');
+const { errorHandler, loadingManager, debounce } = require('../../../utils/admin-utils');
 const { createDataManager } = require('../../../utils/data-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -66,8 +67,8 @@ Page({
     showSkeleton: true
   },
 
-  onLoad(options) {
-    console.log('[admin-invite-management] 页面加载');
+  onLoad(_options) {
+    logger.info('[admin-invite-management] 页面加载');
     this.initDataManager();
     this.checkAdminPermission();
   },
@@ -142,7 +143,7 @@ Page({
       // 数据加载完成，隐藏骨架屏
       this.setData({ showSkeleton: false });
     } catch (error) {
-      console.error('[admin-invite-management] 加载初始数据失败:', error);
+      logger.error('[admin-invite-management] 加载初始数据失败:', error);
       this.setData({ showSkeleton: false });
     }
   },
@@ -348,7 +349,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[admin-invite-management] 加载统计数据失败:', error);
+      logger.error('[admin-invite-management] 加载统计数据失败:', error);
       // 设置默认统计数据
       this.setData({
         stats: {
@@ -553,7 +554,7 @@ Page({
       }
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-invite-management] 创建邀请码失败:', error);
+      logger.error('[admin-invite-management] 创建邀请码失败:', error);
       wx.showToast({
         title: error.message || '创建失败，请重试',
         icon: 'none'
@@ -658,8 +659,7 @@ Page({
   /**
    * 编辑邀请码
    */
-  editInvite(e) {
-    const inviteId = e.currentTarget.dataset.id;
+  editInvite(_e) {
     wx.showModal({
       title: '编辑邀请码',
       content: '邀请码编辑功能开发中...',
@@ -708,7 +708,7 @@ Page({
       }
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-invite-management] 撤销邀请码失败:', error);
+      logger.error('[admin-invite-management] 撤销邀请码失败:', error);
       wx.showToast({
         title: error.message || '撤销失败，请重试',
         icon: 'none'

@@ -1,5 +1,6 @@
 // components/auth-button/index.js
 const userManager = require('../../utils/user-manager');
+const logger = require('../../utils/logger');
 
 Component({
   properties: {
@@ -117,7 +118,7 @@ Component({
           permissionChecked: true
         });
       } catch (error) {
-        console.error('权限检查失败:', error);
+        logger.error('权限检查失败:', error);
         this.setData({
           hasPermission: false,
           currentUser: null,
@@ -157,7 +158,7 @@ Component({
       wx.navigateTo({
         url: '/pages/auth/role-application'
       }).catch(error => {
-        console.error('跳转失败:', error);
+        logger.error('跳转失败:', error);
         wx.showToast({
           title: '页面跳转失败',
           icon: 'none'
@@ -202,7 +203,7 @@ Component({
       wx.navigateTo({
         url: '/pages/auth/permission-help'
       }).catch(error => {
-        console.error('跳转失败:', error);
+        logger.error('跳转失败:', error);
         wx.showToast({
           title: '页面跳转失败',
           icon: 'none'
@@ -236,7 +237,7 @@ Component({
     getButtonClass() {
       const { type, size, plain, round, hasPermission, disabled, loading } = this.data;
 
-      let classes = ['auth-button'];
+      const classes = ['auth-button'];
 
       // 类型样式
       if (type) {

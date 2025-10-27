@@ -1,5 +1,6 @@
 // utils/data-manager.js
 // 数据管理工具 - 优化数据加载、缓存和错误处理
+const logger = require('./logger');
 
 const { errorHandler, cacheManager, debounce, isEmpty } = require('./admin-utils');
 
@@ -46,7 +47,7 @@ class DataManager {
       if (!forceRefresh && this.options.enableCache && cacheKey) {
         const cachedData = cacheManager.get(cacheKey);
         if (cachedData) {
-          console.log(`[DataManager] Cache hit for ${cacheKey}`);
+          logger.info(`[DataManager] Cache hit for ${cacheKey}`);
           return cachedData;
         }
       }
@@ -54,7 +55,7 @@ class DataManager {
       // 检查是否有相同的请求正在进行
       const requestKey = this.generateRequestKey(api, params, page, pageSize);
       if (this.pendingRequests.has(requestKey)) {
-        console.log(`[DataManager] Request already pending for ${requestKey}`);
+        logger.info(`[DataManager] Request already pending for ${requestKey}`);
         return this.pendingRequests.get(requestKey);
       }
 
@@ -83,7 +84,7 @@ class DataManager {
       }
 
     } catch (error) {
-      console.error(`[DataManager] Failed to get list:`, error);
+      logger.error(`[DataManager] Failed to get list:`, error);
       throw errorHandler.handle(error, errorHandler.errorTypes.NETWORK, {
         api,
         params,
@@ -111,7 +112,7 @@ class DataManager {
       if (!forceRefresh && this.options.enableCache && cacheKey) {
         const cachedData = cacheManager.get(cacheKey);
         if (cachedData) {
-          console.log(`[DataManager] Cache hit for detail ${cacheKey}`);
+          logger.info(`[DataManager] Cache hit for detail ${cacheKey}`);
           return cachedData;
         }
       }
@@ -137,7 +138,7 @@ class DataManager {
       }
 
     } catch (error) {
-      console.error(`[DataManager] Failed to get detail:`, error);
+      logger.error(`[DataManager] Failed to get detail:`, error);
       throw errorHandler.handle(error, errorHandler.errorTypes.NETWORK, {
         api,
         id,
@@ -171,7 +172,7 @@ class DataManager {
       return result;
 
     } catch (error) {
-      console.error(`[DataManager] Failed to create:`, error);
+      logger.error(`[DataManager] Failed to create:`, error);
       throw errorHandler.handle(error, errorHandler.errorTypes.BUSINESS, {
         api,
         data,
@@ -206,7 +207,7 @@ class DataManager {
       return result;
 
     } catch (error) {
-      console.error(`[DataManager] Failed to update:`, error);
+      logger.error(`[DataManager] Failed to update:`, error);
       throw errorHandler.handle(error, errorHandler.errorTypes.BUSINESS, {
         api,
         id,
@@ -241,7 +242,7 @@ class DataManager {
       return result;
 
     } catch (error) {
-      console.error(`[DataManager] Failed to delete:`, error);
+      logger.error(`[DataManager] Failed to delete:`, error);
       throw errorHandler.handle(error, errorHandler.errorTypes.BUSINESS, {
         api,
         id,
@@ -280,7 +281,7 @@ class DataManager {
       return result;
 
     } catch (error) {
-      console.error(`[DataManager] Failed batch operation:`, error);
+      logger.error(`[DataManager] Failed batch operation:`, error);
       throw errorHandler.handle(error, errorHandler.errorTypes.BUSINESS, {
         api,
         operation,
@@ -304,7 +305,7 @@ class DataManager {
 
     while (retryCount <= maxRetries) {
       try {
-        console.log(`[DataManager] Executing request: ${api}`, { method, data });
+        logger.info(`[DataManager] Executing request: ${api}`, { method, data });
 
         const result = await wx.cloud.callFunction({
           name: api,
@@ -321,7 +322,7 @@ class DataManager {
         retryCount++;
 
         if (retryCount <= maxRetries) {
-          console.warn(`[DataManager] Request failed, retrying (${retryCount}/${maxRetries}):`, error);
+          logger.warn(`[DataManager] Request failed, retrying (${retryCount}/${maxRetries}):`, error);
           await this.delay(this.options.retryDelay * retryCount);
         } else {
           throw error;
@@ -391,7 +392,7 @@ class DataManager {
    */
   clearCacheByPattern(pattern) {
     // 这里需要根据实际的缓存管理器实现
-    console.log(`[DataManager] Clearing cache by pattern: ${pattern}`);
+    logger.info(`[DataManager] Clearing cache by pattern: ${pattern}`);
   }
 
   /**
@@ -457,7 +458,7 @@ class DataManager {
         };
 
       } catch (error) {
-        console.error('[DataManager] Paginated loader failed:', error);
+        logger.error('[DataManager] Paginated loader failed:', error);
         throw error;
       }
     };

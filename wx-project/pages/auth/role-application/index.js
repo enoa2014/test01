@@ -1,7 +1,7 @@
 // pages/auth/role-application/index.js
 const userManager = require('../../../utils/user-manager');
 const { FormValidator, Validators } = require('../../../utils/validators');
-const storage = require('../../../utils/storage');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -37,7 +37,7 @@ Page({
   },
 
   onLoad(options) {
-    console.log('[role-application] 页面加载');
+    logger.info('[role-application] 页面加载');
     this.initValidator();
     this.loadUserData();
     this.loadApplicationHistory();
@@ -93,7 +93,7 @@ Page({
         this.validateForm();
       }
     } catch (error) {
-      console.error('[role-application] 加载用户数据失败:', error);
+      logger.error('[role-application] 加载用户数据失败:', error);
     }
   },
 
@@ -118,7 +118,7 @@ Page({
         historyApplications: formattedHistory
       });
     } catch (error) {
-      console.error('[role-application] 加载申请历史失败:', error);
+      logger.error('[role-application] 加载申请历史失败:', error);
     }
   },
 
@@ -139,7 +139,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[role-application] 检查登录状态失败:', error);
+      logger.error('[role-application] 检查登录状态失败:', error);
     }
   },
 
@@ -232,7 +232,7 @@ Page({
         attachments: [...this.data.attachments, ...newAttachments]
       });
     } catch (error) {
-      console.error('[role-application] 选择附件失败:', error);
+      logger.error('[role-application] 选择附件失败:', error);
     }
   },
 
@@ -318,7 +318,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[role-application] 提交申请失败:', error);
+      logger.error('[role-application] 提交申请失败:', error);
       wx.showToast({
         title: '提交失败，请重试',
         icon: 'none'
@@ -352,7 +352,7 @@ Page({
           type: attachment.type
         });
       } catch (error) {
-        console.error('[role-application] 上传附件失败:', attachment.name, error);
+        logger.error('[role-application] 上传附件失败:', attachment.name, error);
         // 继续上传其他文件，不要因为一个文件失败而全部失败
       }
     }

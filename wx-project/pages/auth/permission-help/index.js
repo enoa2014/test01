@@ -1,12 +1,13 @@
 // pages/auth/permission-help/index.js
+const logger = require('../../../utils/logger');
 Page({
   data: {
     // FAQ展开状态
     faqExpanded: [false, false, false, false, false, false]
   },
 
-  onLoad(options) {
-    console.log('[permission-help] 页面加载');
+  onLoad(_options) {
+    logger.info('[permission-help] 页面加载');
   },
 
   /**

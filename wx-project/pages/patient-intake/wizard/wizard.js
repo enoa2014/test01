@@ -1,5 +1,6 @@
 // 住户录入向导页面
 const themeManager = require('../../../utils/theme');
+const logger = require('../../../utils/logger');
 const INITIAL_THEME_KEY = themeManager.getTheme();
 const PATIENT_LIST_DIRTY_KEY = 'patient_list_dirty';
 
@@ -36,7 +37,6 @@ function getVisibleSteps(steps) {
 const INITIAL_STEPS = buildSteps(false, 'intake');
 const INITIAL_VISIBLE_STEPS = getVisibleSteps(INITIAL_STEPS);
 
-const logger = require('../../../utils/logger');
 
 Page({
   data: {

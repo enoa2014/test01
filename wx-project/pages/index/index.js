@@ -1,4 +1,4 @@
-﻿const logger = require('../../utils/logger');
+const logger = require('../../utils/logger');
 const themeManager = require('../../utils/theme');
 const { formatDate, formatAge, calculateAge } = require('../../utils/date');
 const { callPatientIntake } = require('../../utils/intake');
@@ -40,6 +40,7 @@ const INITIAL_THEME_KEY = themeManager.getTheme();
 const INITIAL_THEME_INDEX = themeManager.getThemeIndex(INITIAL_THEME_KEY);
 const INITIAL_THEME_LABEL = themeManager.getThemeLabel(INITIAL_THEME_KEY);
 const MEDIA_SUMMARY_TTL = 5 * 60 * 1000; // 5分钟缓存
+const FUTURE_TIMESTAMP_TOLERANCE_MS = 24 * 60 * 60 * 1000; // 允许的未来预约时间（1天）
 // 快速筛选器已移除 - 功能已整合至统计卡片
 function safeString(value) {
   if (value === null || value === undefined) {
@@ -326,20 +327,28 @@ function createOptionsFromSet(values) {
 function mapPatientStatus(latestAdmissionTimestamp) {
   const timestamp = Number(latestAdmissionTimestamp || 0);
   if (!Number.isFinite(timestamp) || timestamp <= 0) {
-    return { cardStatus: 'default', careStatus: 'discharged', diffDays: null };
+    return { cardStatus: 'default', careStatus: 'discharged', diffDays: null, futureAnomaly: false };
   }
   const now = Date.now();
+  if (timestamp > now + FUTURE_TIMESTAMP_TOLERANCE_MS) {
+    return {
+      cardStatus: 'default',
+      careStatus: 'discharged',
+      diffDays: null,
+      futureAnomaly: true,
+    };
+  }
   if (timestamp > now) {
-    return { cardStatus: 'warning', careStatus: 'pending', diffDays: 0 };
+    return { cardStatus: 'warning', careStatus: 'pending', diffDays: 0, futureAnomaly: false };
   }
   const diffDays = Math.floor((now - timestamp) / (24 * 60 * 60 * 1000));
   if (diffDays <= 30) {
-    return { cardStatus: 'success', careStatus: 'in_care', diffDays };
+    return { cardStatus: 'success', careStatus: 'in_care', diffDays, futureAnomaly: false };
   }
   if (diffDays <= 90) {
-    return { cardStatus: 'warning', careStatus: 'pending', diffDays };
+    return { cardStatus: 'warning', careStatus: 'pending', diffDays, futureAnomaly: false };
   }
-  return { cardStatus: 'default', careStatus: 'discharged', diffDays };
+  return { cardStatus: 'default', careStatus: 'discharged', diffDays, futureAnomaly: false };
 }
 function identifyRiskLevel(diffDays) {
   if (diffDays === null || diffDays === undefined) {
@@ -906,11 +915,17 @@ Page({
           cardStatus: derivedCardStatus,
           careStatus: derivedCareStatus,
           diffDays,
+          futureAnomaly,
         } = mapPatientStatus(latestAdmissionTimestamp);
+        const futureAdmissionAnomaly =
+          futureAnomaly || Boolean(item && item.futureAdmissionAnomaly);
         const checkoutAtRaw = item.checkoutAt || (item.metadata && item.metadata.checkoutAt);
         const checkoutAt = Number(checkoutAtRaw);
         const hasCheckout = Number.isFinite(checkoutAt) && checkoutAt > 0;
         let careStatus = normalizeCareStatus(item.careStatus, derivedCareStatus);
+        if (futureAdmissionAnomaly) {
+          careStatus = derivedCareStatus;
+        }
         const latestTimestampNumeric = Number.isFinite(latestAdmissionTimestamp)
           ? latestAdmissionTimestamp
           : null;
@@ -983,6 +998,7 @@ Page({
           ethnicity,
           checkoutAt: hasCheckout ? checkoutAt : null,
           selected,
+          futureAdmissionAnomaly,
         };
       });
       let mergedPatients = mappedPatients;
@@ -1146,22 +1162,32 @@ Page({
             cardStatus: derivedCardStatus,
             careStatus: derivedCareStatus,
             diffDays,
+            futureAnomaly,
           } = mapPatientStatus(latestTimestamp);
-          const normalizedCareStatus = normalizeCareStatus(nextItem.careStatus, derivedCareStatus);
-          const cardStatus = deriveCardStatus(normalizedCareStatus, derivedCardStatus);
+          const futureAdmissionAnomaly =
+            futureAnomaly || Boolean(nextItem && nextItem.futureAdmissionAnomaly);
+          const normalizedCareStatus = normalizeCareStatus(
+            nextItem.careStatus,
+            derivedCareStatus
+          );
+          const resolvedCareStatus = futureAdmissionAnomaly
+            ? derivedCareStatus
+            : normalizedCareStatus;
+          const cardStatus = deriveCardStatus(resolvedCareStatus, derivedCardStatus);
           const riskLevel = identifyRiskLevel(diffDays);
           const admissionCount = Number(nextItem.admissionCount || 0);
           const badges = generatePatientBadges({
-            careStatus: normalizedCareStatus,
+            careStatus: resolvedCareStatus,
             riskLevel,
             admissionCount,
           });
           return {
             ...nextItem,
-            careStatus: normalizedCareStatus,
+            careStatus: resolvedCareStatus,
             cardStatus,
             riskLevel,
             badges,
+            futureAdmissionAnomaly,
           };
         }
         return item;
@@ -1283,15 +1309,20 @@ Page({
     const total = Number.isFinite(fromServer) && fromServer >= loaded ? fromServer : loaded;
     // 优先使用服务端各状态统计，保证“在住/待入住/已离开”稳定准确
     const server = this.data && this.data.serverStatusCounts;
-    const inCare = server && Number.isFinite(server.inCare)
+    const localInCare = patients.filter(p => p.careStatus === 'in_care').length;
+    const localPending = patients.filter(p => p.careStatus === 'pending').length;
+    const localDischarged = patients.filter(p => p.careStatus === 'discharged').length;
+    const hasFutureAnomaly = patients.some(p => p && p.futureAdmissionAnomaly);
+    const preferServerCounts = server && !hasFutureAnomaly;
+    const inCare = preferServerCounts && Number.isFinite(server.inCare)
       ? Number(server.inCare)
-      : patients.filter(p => p.careStatus === 'in_care').length;
-    const pending = server && Number.isFinite(server.pending)
+      : localInCare;
+    const pending = preferServerCounts && Number.isFinite(server.pending)
       ? Number(server.pending)
-      : patients.filter(p => p.careStatus === 'pending').length;
-    const discharged = server && Number.isFinite(server.discharged)
+      : localPending;
+    const discharged = preferServerCounts && Number.isFinite(server.discharged)
       ? Number(server.discharged)
-      : patients.filter(p => p.careStatus === 'discharged').length;
+      : localDischarged;
 
     return {
       total,
@@ -3274,10 +3305,10 @@ Page({
         userPermissions: userManager.getRoleName()
       });
 
-      console.log('[index] 用户权限检查通过:', user.roles);
+      logger.info('[index] 用户权限检查通过:', user.roles);
 
     } catch (error) {
-      console.error('[index] 检查用户权限失败:', error);
+      logger.error('[index] 检查用户权限失败:', error);
       // 权限检查失败，跳转到欢迎页面
       wx.redirectTo({
         url: '/pages/auth/welcome'

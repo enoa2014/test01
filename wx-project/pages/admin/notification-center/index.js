@@ -1,7 +1,8 @@
 // pages/admin/notification-center/index.js
 const userManager = require('../../../utils/user-manager');
-const { errorHandler, loadingManager, cacheManager, Validator, debounce } = require('../../../utils/admin-utils');
+const { errorHandler, loadingManager, debounce } = require('../../../utils/admin-utils');
 const { createDataManager } = require('../../../utils/data-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -110,8 +111,8 @@ Page({
     showSkeleton: true
   },
 
-  onLoad(options) {
-    console.log('[admin-notification-center] 页面加载');
+  onLoad(_options) {
+    logger.info('[admin-notification-center] 页面加载');
     this.initDataManager();
     this.checkAdminPermission();
   },
@@ -188,7 +189,7 @@ Page({
       // 数据加载完成，隐藏骨架屏
       this.setData({ showSkeleton: false });
     } catch (error) {
-      console.error('[admin-notification-center] 加载初始数据失败:', error);
+      logger.error('[admin-notification-center] 加载初始数据失败:', error);
       this.setData({ showSkeleton: false });
     }
   },
@@ -336,7 +337,7 @@ Page({
         total = result.data.total || 0;
       } else {
         // 如果API调用失败，使用模拟数据作为后备
-        console.warn('[admin-notification-center] API调用失败，使用模拟数据');
+        logger.warn('[admin-notification-center] API调用失败，使用模拟数据');
         const mockNotifications = this.generateMockNotifications();
 
         // 应用筛选
@@ -429,7 +430,7 @@ Page({
         }
       });
     } catch (error) {
-      console.error('[admin-notification-center] 加载统计数据失败:', error);
+      logger.error('[admin-notification-center] 加载统计数据失败:', error);
     }
   },
 
@@ -478,7 +479,7 @@ Page({
         templateOptions
       });
     } catch (error) {
-      console.error('[admin-notification-center] 加载模板失败:', error);
+      logger.error('[admin-notification-center] 加载模板失败:', error);
     }
   },
 
@@ -697,7 +698,7 @@ Page({
    * 表单是否有效
    */
   get isFormValid() {
-    const { formTitle, formContent, formTargetIndex } = this.data;
+    const { formTitle, formContent } = this.data;
     return formTitle.trim().length > 0 &&
            formContent.trim().length > 0 &&
            (this.data.formImmediate || this.data.formSendDate);
@@ -794,7 +795,7 @@ Page({
       return;
     }
 
-    const { batchTemplateIndex, batchTargetIndex, batchInterval, selectedTemplate, targetOptions } = this.data;
+    const { batchTemplateIndex, batchTargetIndex, batchInterval, targetOptions } = this.data;
 
     try {
       wx.showLoading({ title: '批量发送中...' });
@@ -838,7 +839,7 @@ Page({
    */
   async saveAsTemplate(templateData) {
     // 模拟保存模板
-    console.log('保存模板:', templateData);
+    logger.info('保存模板:', templateData);
   },
 
   /**
@@ -869,9 +870,7 @@ Page({
   /**
    * 重新发送通知
    */
-  async resendNotification(e) {
-    const notificationId = e.currentTarget.dataset.id;
-
+  async resendNotification(_e) {
     const result = await wx.showModal({
       title: '确认重新发送',
       content: '确定要重新发送此通知吗？',
@@ -897,7 +896,7 @@ Page({
       this.loadStats();
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-notification-center] 重新发送失败:', error);
+      logger.error('[admin-notification-center] 重新发送失败:', error);
       wx.showToast({
         title: '重新发送失败，请重试',
         icon: 'none'
@@ -908,9 +907,7 @@ Page({
   /**
    * 撤回通知
    */
-  async recallNotification(e) {
-    const notificationId = e.currentTarget.dataset.id;
-
+  async recallNotification(_e) {
     const result = await wx.showModal({
       title: '确认撤回',
       content: '确定要撤回此通知吗？撤回后将无法恢复。',
@@ -936,7 +933,7 @@ Page({
       this.loadStats();
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-notification-center] 撤回失败:', error);
+      logger.error('[admin-notification-center] 撤回失败:', error);
       wx.showToast({
         title: '撤回失败，请重试',
         icon: 'none'

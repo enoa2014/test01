@@ -390,13 +390,14 @@ class FormValidator {
         case 'date':
           isValid = Validators.date(value, rule.format);
           break;
-        case 'reason':
+        case 'reason': {
           const reasonResult = Validators.applicationReason(value);
           isValid = reasonResult.valid;
           if (!isValid) {
             errors.push(reasonResult.error);
           }
           break;
+        }
         case 'occupation':
           isValid = Validators.occupation(value);
           break;

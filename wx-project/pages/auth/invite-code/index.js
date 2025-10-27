@@ -1,6 +1,7 @@
 // pages/auth/invite-code/index.js
 const userManager = require('../../../utils/user-manager');
 const { Validators } = require('../../../utils/validators');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -27,7 +28,7 @@ Page({
   },
 
   onLoad(options) {
-    console.log('[invite-code] 页面加载');
+    logger.info('[invite-code] 页面加载');
     // 解析二维码/小程序码参数
     try {
       const rawScene = options && options.scene ? decodeURIComponent(options.scene) : '';
@@ -56,7 +57,7 @@ Page({
         setTimeout(() => this.validateAndUseInviteCode(), 200);
       }
     } catch (e) {
-      console.warn('[invite-code] 解析二维码参数失败:', e);
+      logger.warn('[invite-code] 解析二维码参数失败:', e);
     }
 
     // 自动聚焦输入框（若未携带二维码码值）
@@ -89,7 +90,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[invite-code] 检查登录状态失败:', error);
+      logger.error('[invite-code] 检查登录状态失败:', error);
     }
   },
 
@@ -191,7 +192,7 @@ Page({
       }, 1500);
 
     } catch (error) {
-      console.error('[invite-code] 验证邀请码失败:', error);
+      logger.error('[invite-code] 验证邀请码失败:', error);
       this.setData({
         validating: false,
         validationResult: {
@@ -265,7 +266,7 @@ Page({
       }
 
     } catch (error) {
-      console.error('[invite-code] 使用邀请码失败:', error);
+      logger.error('[invite-code] 使用邀请码失败:', error);
       this.setData({
         using: false,
         validationResult: {

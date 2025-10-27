@@ -1,6 +1,7 @@
 // 资源优化工具
 const PERFORMANCE_CONFIG = require('../config/performance-config');
 const performanceMonitor = require('./performance-monitor');
+const logger = require('./logger');
 
 class ResourceOptimizer {
   constructor() {
@@ -100,7 +101,9 @@ class ResourceOptimizer {
         options.success = function(res) {
           // 优化选中的图片
           self.optimizeSelectedImages(res.tempFiles);
-          originalSuccess && originalSuccess(res);
+          if (typeof originalSuccess === 'function') {
+            originalSuccess(res);
+          }
         };
 
         options.fail = originalFail;
@@ -138,10 +141,10 @@ class ResourceOptimizer {
         src: file.path,
         quality: PERFORMANCE_CONFIG.OPTIMIZATION.IMAGE_OPTIMIZATION.QUALITY,
         success: (res) => {
-          console.log(`[ResourceOptimizer] Image compressed: ${file.size} -> ${res.size} bytes`);
+          logger.info(`[ResourceOptimizer] Image compressed: ${file.size} -> ${res.size} bytes`);
         },
         fail: (error) => {
-          console.error('[ResourceOptimizer] Image compression failed:', error);
+          logger.error('[ResourceOptimizer] Image compression failed:', error);
         }
       });
     }
@@ -150,9 +153,9 @@ class ResourceOptimizer {
   /**
    * 转换为WebP格式
    */
-  convertToWebP(file) {
+  convertToWebP(_file) {
     // 在小程序中，WebP转换需要服务器支持
-    console.log('[ResourceOptimizer] WebP conversion requires server support');
+    logger.info('[ResourceOptimizer] WebP conversion requires server support');
   }
 
   /**
@@ -161,11 +164,13 @@ class ResourceOptimizer {
   setupPreloading() {
     // 监听页面加载完成，开始预加载
     if (typeof wx !== 'undefined') {
-      wx.onNetworkStatusChange && wx.onNetworkStatusChange((res) => {
-        if (res.isConnected && res.networkType !== 'none') {
-          this.startPreloading();
-        }
-      });
+      if (typeof wx.onNetworkStatusChange === 'function') {
+        wx.onNetworkStatusChange((res) => {
+          if (res.isConnected && res.networkType !== 'none') {
+            this.startPreloading();
+          }
+        });
+      }
     }
   }
 
@@ -392,7 +397,7 @@ class ResourceOptimizer {
       });
     }
 
-    console.log('[ResourceOptimizer] Memory cleanup completed');
+    logger.info('[ResourceOptimizer] Memory cleanup completed');
   }
 
   /**

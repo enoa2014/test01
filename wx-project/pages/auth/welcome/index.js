@@ -1,6 +1,7 @@
 // pages/auth/welcome/index.js
 const userManager = require('../../../utils/user-manager');
 const Storage = require('../../../utils/storage');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -9,7 +10,7 @@ Page({
     userLoaded: false
   },
 
-  onLoad(options) {
+  onLoad(_options) {
     this.initPage();
   },
 
@@ -38,7 +39,7 @@ Page({
         }, 1000);
       }
     } catch (error) {
-      console.error('初始化欢迎页面失败:', error);
+      logger.error('初始化欢迎页面失败:', error);
       this.setData({ userLoaded: true });
     }
   },
@@ -68,7 +69,7 @@ Page({
       // 资料已完善，跳转到首页
       this.goToHome();
     } catch (error) {
-      console.error('检查用户状态失败:', error);
+      logger.error('检查用户状态失败:', error);
       this.setData({ userLoaded: true });
     }
   },
@@ -88,7 +89,7 @@ Page({
     wx.navigateTo({
       url: '/pages/user-profile/edit'
     }).catch(error => {
-      console.error('跳转到资料编辑页面失败:', error);
+      logger.error('跳转到资料编辑页面失败:', error);
       wx.showToast({
         title: '页面跳转失败',
         icon: 'none'
@@ -111,7 +112,7 @@ Page({
     wx.navigateTo({
       url: '/pages/auth/invite-code'
     }).catch(error => {
-      console.error('跳转到邀请码页面失败:', error);
+      logger.error('跳转到邀请码页面失败:', error);
       wx.showToast({
         title: '页面跳转失败',
         icon: 'none'
@@ -126,7 +127,7 @@ Page({
     wx.navigateTo({
       url: '/pages/auth/role-application?role=social_worker'
     }).catch(err => {
-      console.error('跳转失败:', err);
+      logger.error('跳转失败:', err);
       wx.showToast({ title: '页面跳转失败', icon: 'none' });
     });
   },
@@ -136,7 +137,7 @@ Page({
    */
   goToVolunteerInvite() {
     wx.navigateTo({ url: '/pages/auth/invite-code' }).catch(err => {
-      console.error('跳转失败:', err);
+      logger.error('跳转失败:', err);
       wx.showToast({ title: '页面跳转失败', icon: 'none' });
     });
   },
@@ -146,7 +147,7 @@ Page({
    */
   goToParentInvite() {
     wx.navigateTo({ url: '/pages/auth/invite-code' }).catch(err => {
-      console.error('跳转失败:', err);
+      logger.error('跳转失败:', err);
       wx.showToast({ title: '页面跳转失败', icon: 'none' });
     });
   },
@@ -166,7 +167,7 @@ Page({
     wx.navigateTo({
       url: '/pages/auth/role-application'
     }).catch(error => {
-      console.error('跳转到角色申请页面失败:', error);
+      logger.error('跳转到角色申请页面失败:', error);
       wx.showToast({
         title: '页面跳转失败',
         icon: 'none'
@@ -181,7 +182,7 @@ Page({
     wx.navigateTo({
       url: '/pages/auth/permission-help'
     }).catch(error => {
-      console.error('跳转到权限帮助页面失败:', error);
+      logger.error('跳转到权限帮助页面失败:', error);
       wx.showToast({
         title: '页面跳转失败',
         icon: 'none'
@@ -196,7 +197,7 @@ Page({
     wx.switchTab({
       url: '/pages/index/index'
     }).catch(error => {
-      console.error('跳转到首页失败:', error);
+      logger.error('跳转到首页失败:', error);
       wx.showToast({
         title: '页面跳转失败',
         icon: 'none'
@@ -225,7 +226,7 @@ Page({
     wx.navigateTo({
       url: '/pages/help/user-guide'
     }).catch(error => {
-      console.error('跳转到使用指南失败:', error);
+      logger.error('跳转到使用指南失败:', error);
       wx.showToast({
         title: '页面跳转失败',
         icon: 'none'

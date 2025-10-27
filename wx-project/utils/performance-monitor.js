@@ -1,5 +1,6 @@
 // 性能监控器
 const PERFORMANCE_CONFIG = require('../config/performance-config');
+const logger = require('./logger');
 
 class PerformanceMonitor {
   constructor() {
@@ -108,7 +109,7 @@ class PerformanceMonitor {
 
     // 检查API响应时间阈值
     if (duration > PERFORMANCE_CONFIG.MONITORING.THRESHOLDS.API_RESPONSE_TIME) {
-      console.warn(`[Performance] Slow API request: ${name} took ${duration}ms`);
+      logger.warn(`[Performance] Slow API request: ${name} took ${duration}ms`);
     }
   }
 
@@ -126,7 +127,7 @@ class PerformanceMonitor {
 
     // 检查交互响应时间阈值
     if (duration > PERFORMANCE_CONFIG.MONITORING.THRESHOLDS.INTERACTION_TIME) {
-      console.warn(`[Performance] Slow interaction: ${action} took ${duration}ms`);
+      logger.warn(`[Performance] Slow interaction: ${action} took ${duration}ms`);
     }
   }
 
@@ -155,9 +156,11 @@ class PerformanceMonitor {
   observePageLoad() {
     if (typeof wx !== 'undefined') {
       // 小程序环境
-      wx.onPageNotFound && wx.onPageNotFound((res) => {
-        this.recordError(new Error('Page not found'), { path: res.path });
-      });
+      if (typeof wx.onPageNotFound === 'function') {
+        wx.onPageNotFound((res) => {
+          this.recordError(new Error('Page not found'), { path: res.path });
+        });
+      }
     }
   }
 
@@ -180,13 +183,17 @@ class PerformanceMonitor {
         options.success = function(res) {
           const duration = Date.now() - startTime;
           self.recordRequest(url, method, duration, res.statusCode);
-          originalSuccess && originalSuccess(res);
+          if (typeof originalSuccess === 'function') {
+            originalSuccess(res);
+          }
         };
 
         options.fail = function(error) {
           const duration = Date.now() - startTime;
           self.recordRequest(url, method, duration, null, error);
-          originalFail && originalFail(error);
+          if (typeof originalFail === 'function') {
+            originalFail(error);
+          }
         };
 
         return originalRequest.call(this, options);
@@ -200,9 +207,11 @@ class PerformanceMonitor {
   observeErrors() {
     // 全局错误处理
     if (typeof wx !== 'undefined') {
-      wx.onError && wx.onError((error) => {
-        this.recordError(new Error(error), { source: 'wx.onError' });
-      });
+      if (typeof wx.onError === 'function') {
+        wx.onError((error) => {
+          this.recordError(new Error(error), { source: 'wx.onError' });
+        });
+      }
     }
 
     // 未处理的Promise拒绝
@@ -240,7 +249,7 @@ class PerformanceMonitor {
 
         // 检查内存使用阈值
         if (usagePercent > PERFORMANCE_CONFIG.MONITORING.THRESHOLDS.MEMORY_USAGE) {
-          console.warn(`[Performance] High memory usage: ${usagePercent.toFixed(2)}%`);
+          logger.warn(`[Performance] High memory usage: ${usagePercent.toFixed(2)}%`);
         }
       }
     }, 30000); // 每30秒检查一次
@@ -255,12 +264,12 @@ class PerformanceMonitor {
     switch (name) {
       case 'page_load':
         if (value > thresholds.PAGE_LOAD_TIME) {
-          console.warn(`[Performance] Slow page load: ${value}ms`);
+          logger.warn(`[Performance] Slow page load: ${value}ms`);
         }
         break;
       case 'interaction_click':
         if (value > thresholds.INTERACTION_TIME) {
-          console.warn(`[Performance] Slow click interaction: ${value}ms`);
+          logger.warn(`[Performance] Slow click interaction: ${value}ms`);
         }
         break;
     }
@@ -288,7 +297,7 @@ class PerformanceMonitor {
       try {
         callback(name, data);
       } catch (error) {
-        console.error('[Performance] Observer callback error:', error);
+        logger.error('[Performance] Observer callback error:', error);
       }
     });
   }
@@ -342,7 +351,7 @@ class PerformanceMonitor {
     if (!PERFORMANCE_CONFIG.ERROR_HANDLING.REPORTING.ENABLED) return;
 
     // 这里可以上报到服务器
-    console.log('[Performance] Metrics report:', report);
+    logger.info('[Performance] Metrics report:', report);
 
     // 示例：上报到服务器
     /*
@@ -351,10 +360,10 @@ class PerformanceMonitor {
       method: 'POST',
       data: report,
       success: () => {
-        console.log('[Performance] Metrics reported successfully');
+        logger.info('[Performance] Metrics reported successfully');
       },
       fail: (error) => {
-        console.error('[Performance] Failed to report metrics:', error);
+        logger.error('[Performance] Failed to report metrics:', error);
       }
     });
     */

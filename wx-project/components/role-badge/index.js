@@ -87,9 +87,8 @@ Component({
 
     badgeClass() {
       const { size, clickable, customClass } = this.data;
-      const { currentRoleConfig } = this;
 
-      let classes = ['role-badge'];
+      const classes = ['role-badge'];
 
       // 尺寸样式
       if (size) {

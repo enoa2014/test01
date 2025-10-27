@@ -1,7 +1,7 @@
 const { envList, cloudEnvId, isProduction } = require('./config/envList');
 const themeManager = require('./utils/theme');
-const logger = require('./utils/logger');
 const userManager = require('./utils/user-manager');
+const logger = require('./utils/logger');
 
 const themeListeners = new Set();
 
@@ -68,7 +68,7 @@ App({
   async initUserManager() {
     try {
       // 尝试获取当前用户信息
-      const user = await userManager.getCurrentUser();
+      await userManager.getCurrentUser();
       logger.info('[app-user] 用户管理器初始化成功');
 
       // 如果是新用户，跳转到欢迎页面

@@ -2,6 +2,7 @@
 /**
  * 用户管理器 - 处理用户状态和权限管理
  */
+const logger = require('./logger');
 class UserManager {
   constructor() {
     this.currentUser = null;
@@ -31,7 +32,7 @@ class UserManager {
       try {
         callback(this.currentUser, this.permissions);
       } catch (error) {
-        console.error('权限变化监听器执行失败:', error);
+        logger.error('权限变化监听器执行失败:', error);
       }
     });
   }
@@ -73,7 +74,7 @@ class UserManager {
         throw new Error(res.result?.error?.message || '获取用户信息失败');
       }
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      logger.error('获取用户信息失败:', error);
 
       // 尝试从本地存储恢复
       const cachedUser = wx.getStorageSync('user_info');
@@ -124,7 +125,7 @@ class UserManager {
 
       return requiredRoles.some(role => user.roles.includes(role));
     } catch (error) {
-      console.error('权限检查失败:', error);
+      logger.error('权限检查失败:', error);
       return false;
     }
   }
@@ -296,7 +297,7 @@ class UserManager {
 
       return res.result;
     } catch (error) {
-      console.error('验证邀请码失败:', error);
+      logger.error('验证邀请码失败:', error);
       return {
         success: false,
         error: '验证失败，请重试'
@@ -366,7 +367,7 @@ class UserManager {
       }
       return [];
     } catch (error) {
-      console.error('获取申请历史失败:', error);
+      logger.error('获取申请历史失败:', error);
       return [];
     }
   }
@@ -388,7 +389,7 @@ class UserManager {
 
       return res.result;
     } catch (error) {
-      console.error('撤销申请失败:', error);
+      logger.error('撤销申请失败:', error);
       return {
         success: false,
         error: '撤销失败，请重试'
@@ -414,7 +415,7 @@ class UserManager {
         url: uploadResult.fileID
       };
     } catch (error) {
-      console.error('上传头像失败:', error);
+      logger.error('上传头像失败:', error);
       return {
         success: false,
         error: '上传失败'
@@ -442,7 +443,7 @@ class UserManager {
         url: uploadResult.fileID
       };
     } catch (error) {
-      console.error('上传文件失败:', error);
+      logger.error('上传文件失败:', error);
       return {
         success: false,
         error: '上传失败'
@@ -512,7 +513,7 @@ class UserManager {
 
       return res.result;
     } catch (error) {
-      console.error('获取申请状态失败:', error);
+      logger.error('获取申请状态失败:', error);
       return {
         success: false,
         error: '获取状态失败'
@@ -572,7 +573,7 @@ class UserManager {
         data: { action: 'logout' }
       });
     } catch (error) {
-      console.error('登出失败:', error);
+      logger.error('登出失败:', error);
     }
 
     // 跳转到首页
@@ -598,7 +599,7 @@ class UserManager {
 
       return result.result || { success: false, data: {} };
     } catch (error) {
-      console.error('获取申请统计失败:', error);
+      logger.error('获取申请统计失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -624,7 +625,7 @@ class UserManager {
 
       return result.result || { success: false, data: {} };
     } catch (error) {
-      console.error('获取申请列表失败:', error);
+      logger.error('获取申请列表失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -648,7 +649,7 @@ class UserManager {
 
       return result.result || { success: false };
     } catch (error) {
-      console.error('批准申请失败:', error);
+      logger.error('批准申请失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -672,7 +673,7 @@ class UserManager {
 
       return result.result || { success: false };
     } catch (error) {
-      console.error('拒绝申请失败:', error);
+      logger.error('拒绝申请失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -698,7 +699,7 @@ class UserManager {
 
       return result.result || { success: false, data: {} };
     } catch (error) {
-      console.error('获取用户列表失败:', error);
+      logger.error('获取用户列表失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -724,7 +725,7 @@ class UserManager {
 
       return result.result || { success: false };
     } catch (error) {
-      console.error('修改用户角色失败:', error);
+      logger.error('修改用户角色失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -751,7 +752,7 @@ class UserManager {
 
       return result.result || { success: false };
     } catch (error) {
-      console.error('创建邀请码失败:', error);
+      logger.error('创建邀请码失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -777,7 +778,7 @@ class UserManager {
 
       return result.result || { success: false, data: {} };
     } catch (error) {
-      console.error('获取邀请码列表失败:', error);
+      logger.error('获取邀请码列表失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -801,7 +802,7 @@ class UserManager {
 
       return result.result || { success: false };
     } catch (error) {
-      console.error('撤销邀请码失败:', error);
+      logger.error('撤销邀请码失败:', error);
       return { success: false, error: error.message };
     }
   }

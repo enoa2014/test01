@@ -1,6 +1,7 @@
 // pages/user-profile/edit/index.js
 const userManager = require('../../../utils/user-manager');
-const { FormValidator, Validators } = require('../../../utils/validators');
+const { FormValidator } = require('../../../utils/validators');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -47,7 +48,7 @@ Page({
     isLoading: true
   },
 
-  onLoad(options) {
+  onLoad(_options) {
     this.initPage();
   },
 
@@ -159,7 +160,7 @@ Page({
 
       this.setData({ isLoading: false });
     } catch (error) {
-      console.error('加载用户资料失败:', error);
+      logger.error('加载用户资料失败:', error);
       this.setData({ isLoading: false });
       wx.showToast({
         title: '加载失败',
@@ -257,7 +258,7 @@ Page({
         this.uploadAvatar(tempFilePath);
       },
       fail: (error) => {
-        console.error('选择图片失败:', error);
+        logger.error('选择图片失败:', error);
         wx.showToast({
           title: '选择图片失败',
           icon: 'none'
@@ -307,7 +308,7 @@ Page({
         title: '头像上传失败',
         icon: 'error'
       });
-      console.error('头像上传失败:', error);
+      logger.error('头像上传失败:', error);
     }
   },
 
@@ -347,7 +348,7 @@ Page({
   validateField(field, value) {
     if (!this.data.validator) return;
 
-    const isValid = this.data.validator.validateField(field, value);
+    this.data.validator.validateField(field, value);
     const errors = this.data.validator.getFieldErrors(field);
 
     this.setData({
@@ -434,7 +435,7 @@ Page({
         throw new Error(result.error || '保存失败');
       }
     } catch (error) {
-      console.error('保存资料失败:', error);
+      logger.error('保存资料失败:', error);
       wx.showToast({
         title: error.message || '保存失败',
         icon: 'error'

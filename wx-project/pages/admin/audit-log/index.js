@@ -1,7 +1,8 @@
 // pages/admin/audit-log/index.js
 const userManager = require('../../../utils/user-manager');
-const { errorHandler, loadingManager, cacheManager, Validator, debounce } = require('../../../utils/admin-utils');
+const { errorHandler, loadingManager, debounce } = require('../../../utils/admin-utils');
 const { createDataManager } = require('../../../utils/data-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -72,8 +73,8 @@ Page({
     showSkeleton: true
   },
 
-  onLoad(options) {
-    console.log('[admin-audit-log] 页面加载');
+  onLoad(_options) {
+    logger.info('[admin-audit-log] 页面加载');
     this.initDataManager();
     this.checkAdminPermission();
   },
@@ -148,7 +149,7 @@ Page({
       // 数据加载完成，隐藏骨架屏
       this.setData({ showSkeleton: false });
     } catch (error) {
-      console.error('[admin-audit-log] 加载初始数据失败:', error);
+      logger.error('[admin-audit-log] 加载初始数据失败:', error);
       this.setData({ showSkeleton: false });
     }
   },
@@ -313,7 +314,7 @@ Page({
         total = result.data.total || 0;
       } else {
         // 如果API调用失败，使用模拟数据作为后备
-        console.warn('[admin-audit-log] API调用失败，使用模拟数据');
+        logger.warn('[admin-audit-log] API调用失败，使用模拟数据');
         const mockLogs = this.generateMockLogs();
 
         // 应用筛选
@@ -408,7 +409,6 @@ Page({
 
       const timestamp = Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000;
       const isSecurityEvent = level === 'critical' || level === 'high';
-      const isError = result === 'failure';
 
       return {
         id: `log_${index + 1}`,
@@ -536,7 +536,7 @@ Page({
         }
       });
     } catch (error) {
-      console.error('[admin-audit-log] 加载统计数据失败:', error);
+      logger.error('[admin-audit-log] 加载统计数据失败:', error);
     }
   },
 
@@ -616,9 +616,7 @@ Page({
   /**
    * 查看追踪信息
    */
-  async viewTraceInfo(e) {
-    const logId = e.currentTarget.dataset.id;
-
+  async viewTraceInfo(_e) {
     try {
       wx.showLoading({ title: '加载追踪信息...' });
 
@@ -645,7 +643,7 @@ Page({
       });
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-audit-log] 加载追踪信息失败:', error);
+      logger.error('[admin-audit-log] 加载追踪信息失败:', error);
       wx.showToast({
         title: '加载追踪信息失败',
         icon: 'none'

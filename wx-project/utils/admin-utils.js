@@ -1,5 +1,6 @@
 // utils/admin-utils.js
 // 管理员功能通用工具函数
+const logger = require('./logger');
 
 /**
  * 统一的加载状态管理
@@ -116,7 +117,7 @@ class ErrorHandler {
    * @param {Object} errorInfo 错误信息
    */
   logError(errorInfo) {
-    console.error('[Admin Error]', errorInfo);
+    logger.error('[Admin Error]', errorInfo);
 
     // 这里可以添加错误上报逻辑
     if (typeof wx !== 'undefined') {
@@ -127,7 +128,7 @@ class ErrorHandler {
           errorInfo
         }
       }).catch(err => {
-        console.error('Error logging failed:', err);
+        logger.error('Error logging failed:', err);
       });
     }
   }
@@ -421,7 +422,7 @@ function deepClone(obj) {
   if (typeof obj === 'object') {
     const clonedObj = {};
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         clonedObj[key] = deepClone(obj[key]);
       }
     }

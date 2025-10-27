@@ -1,5 +1,6 @@
 // pages/auth/permission-management/index.js
 const userManager = require('../../../utils/user-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -67,8 +68,8 @@ Page({
     }
   },
 
-  onLoad(options) {
-    console.log('[permission-management] 页面加载');
+  onLoad(_options) {
+    logger.info('[permission-management] 页面加载');
   },
 
   onShow() {
@@ -110,7 +111,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[permission-management] 加载用户数据失败:', error);
+      logger.error('[permission-management] 加载用户数据失败:', error);
       wx.showToast({
         title: '加载失败，请重试',
         icon: 'none'
@@ -137,7 +138,7 @@ Page({
         reviewedAt: item.reviewedAt ? this.formatDate(item.reviewedAt) : null
       }));
     } catch (error) {
-      console.error('[permission-management] 加载申请记录失败:', error);
+      logger.error('[permission-management] 加载申请记录失败:', error);
       return [];
     }
   },
@@ -226,7 +227,7 @@ Page({
         }
       }
     } catch (error) {
-      console.error('[permission-management] 编辑头像失败:', error);
+      logger.error('[permission-management] 编辑头像失败:', error);
       wx.showToast({
         title: '头像更新失败',
         icon: 'none'
@@ -334,7 +335,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[permission-management] 撤销申请失败:', error);
+      logger.error('[permission-management] 撤销申请失败:', error);
       wx.showToast({
         title: '撤销失败，请重试',
         icon: 'none'

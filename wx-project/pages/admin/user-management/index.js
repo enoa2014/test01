@@ -1,7 +1,8 @@
 // pages/admin/user-management/index.js
 const userManager = require('../../../utils/user-manager');
-const { errorHandler, loadingManager, cacheManager, Validator, debounce } = require('../../../utils/admin-utils');
+const { errorHandler, loadingManager, debounce } = require('../../../utils/admin-utils');
 const { createDataManager } = require('../../../utils/data-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -74,8 +75,8 @@ Page({
     showSkeleton: true
   },
 
-  onLoad(options) {
-    console.log('[admin-user-management] 页面加载');
+  onLoad(_options) {
+    logger.info('[admin-user-management] 页面加载');
     this.initDataManager();
     this.checkAdminPermission();
   },
@@ -150,7 +151,7 @@ Page({
       // 数据加载完成，隐藏骨架屏
       this.setData({ showSkeleton: false });
     } catch (error) {
-      console.error('[admin-user-management] 加载初始数据失败:', error);
+      logger.error('[admin-user-management] 加载初始数据失败:', error);
       this.setData({ showSkeleton: false });
     }
   },
@@ -372,7 +373,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[admin-user-management] 加载统计数据失败:', error);
+      logger.error('[admin-user-management] 加载统计数据失败:', error);
       // 设置默认统计数据
       this.setData({
         stats: {
@@ -586,8 +587,7 @@ Page({
   /**
    * 编辑用户
    */
-  editUser(e) {
-    const userId = e.currentTarget.dataset.id;
+  editUser(_e) {
     wx.showModal({
       title: '编辑用户',
       content: '用户编辑功能开发中...',
@@ -616,7 +616,7 @@ Page({
   /**
    * 切换用户状态
    */
-  async toggleUserStatus(e) {
+  async onToggleUserStatusTap(e) {
     const userId = e.currentTarget.dataset.id;
     const user = this.data.users.find(u => u.id === userId);
 
@@ -649,7 +649,7 @@ Page({
       }, 1000);
 
     } catch (error) {
-      console.error('[admin-user-management] 切换用户状态失败:', error);
+      logger.error('[admin-user-management] 切换用户状态失败:', error);
       wx.showToast({
         title: '操作失败，请重试',
         icon: 'none'
@@ -778,7 +778,7 @@ Page({
 
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-user-management] 修改用户角色失败:', error);
+      logger.error('[admin-user-management] 修改用户角色失败:', error);
       wx.showToast({
         title: error.message || '修改失败，请重试',
         icon: 'none'

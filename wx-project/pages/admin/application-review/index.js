@@ -1,7 +1,8 @@
 // pages/admin/application-review/index.js
 const userManager = require('../../../utils/user-manager');
-const { errorHandler, loadingManager, cacheManager, Validator, debounce } = require('../../../utils/admin-utils');
+const { errorHandler, loadingManager, debounce } = require('../../../utils/admin-utils');
 const { createDataManager } = require('../../../utils/data-manager');
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -55,8 +56,8 @@ Page({
   /**
    * 页面初始化
    */
-  onLoad(options) {
-    console.log('[admin-application-review] 页面加载');
+  onLoad(_options) {
+    logger.info('[admin-application-review] 页面加载');
     this.initDataManager();
     this.checkAdminPermission();
   },
@@ -131,7 +132,7 @@ Page({
       // 数据加载完成，隐藏骨架屏
       this.setData({ showSkeleton: false });
     } catch (error) {
-      console.error('[admin-application-review] 加载初始数据失败:', error);
+      logger.error('[admin-application-review] 加载初始数据失败:', error);
       this.setData({ showSkeleton: false });
     }
   },
@@ -424,7 +425,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('[admin-application-review] 加载统计数据失败:', error);
+      logger.error('[admin-application-review] 加载统计数据失败:', error);
     }
   },
 
@@ -553,7 +554,7 @@ Page({
       }
     } catch (error) {
       wx.hideLoading();
-      console.error('[admin-application-review] 审核失败:', error);
+      logger.error('[admin-application-review] 审核失败:', error);
       wx.showToast({
         title: error.message || '审核失败，请重试',
         icon: 'none'

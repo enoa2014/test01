@@ -1,5 +1,6 @@
 // pages/auth/login/index.js
 const userManager = require('../../../utils/user-manager')
+const logger = require('../../../utils/logger');
 
 Page({
   data: {
@@ -22,7 +23,9 @@ Page({
         // 已有登录态
         wx.switchTab({ url: '/pages/index/index' })
       }
-    } catch (_) {}
+    } catch (_) {
+      // 忽略预取用户失败的异常，保持登录流程
+    }
   },
 
   onUsernameInput(e) {
@@ -67,7 +70,9 @@ Page({
         wx.setStorageSync('ADMIN_LOGIN_TICKET', ticket)
         wx.setStorageSync('ADMIN_LOGIN_USER', user)
         wx.setStorageSync('ADMIN_LOGIN_AT', Date.now())
-      } catch (_) {}
+      } catch (_) {
+        // 存储失败不影响后续登录流程
+      }
 
       // 兼容性自定义登录：尝试使用可用 API 完成票据登录
       await this.trySignInWithTicket(ticket)
@@ -78,7 +83,7 @@ Page({
       // 进入权限管理或首页
       wx.navigateTo({ url: '/pages/auth/permission-management/index' })
     } catch (err) {
-      console.error('管理员登录失败:', err)
+      logger.error('管理员登录失败:', err)
       this.setData({ error: err.message || '登录失败，请重试' })
     } finally {
       this.setData({ loading: false })
@@ -116,8 +121,7 @@ Page({
       }
     } catch (e) {
       // 不抛出，让调用方以成功票据为准继续流程
-      console.warn('trySignInWithTicket 警告:', e)
+      logger.warn('trySignInWithTicket 警告:', e)
     }
   }
 })
-

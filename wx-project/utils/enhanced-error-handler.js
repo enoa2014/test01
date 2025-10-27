@@ -1,6 +1,7 @@
 // 增强错误处理器
 const PERFORMANCE_CONFIG = require('../config/performance-config');
 const performanceMonitor = require('./performance-monitor');
+const logger = require('./logger');
 
 class EnhancedErrorHandler {
   constructor() {
@@ -16,19 +17,23 @@ class EnhancedErrorHandler {
   setupGlobalHandlers() {
     // 微信小程序错误处理
     if (typeof wx !== 'undefined') {
-      wx.onError && wx.onError((error) => {
-        this.handleError(new Error(error), {
-          source: 'wx.onError',
-          type: 'javascript'
+      if (typeof wx.onError === 'function') {
+        wx.onError((error) => {
+          this.handleError(new Error(error), {
+            source: 'wx.onError',
+            type: 'javascript'
+          });
         });
-      });
+      }
 
-      wx.onUnhandledRejection && wx.onUnhandledRejection((event) => {
-        this.handleError(event.reason, {
-          source: 'wx.onUnhandledRejection',
-          type: 'promise_rejection'
+      if (typeof wx.onUnhandledRejection === 'function') {
+        wx.onUnhandledRejection((event) => {
+          this.handleError(event.reason, {
+            source: 'wx.onUnhandledRejection',
+            type: 'promise_rejection'
+          });
         });
-      });
+      }
     }
 
     // 浏览器环境错误处理
@@ -126,8 +131,6 @@ class EnhancedErrorHandler {
    * 根据错误类型处理
    */
   handleByErrorType(error, context) {
-    const { code, message } = error;
-
     // 网络错误
     if (this.isNetworkError(error)) {
       this.handleNetworkError(error, context);
@@ -214,7 +217,7 @@ class EnhancedErrorHandler {
    * 处理网络错误
    */
   handleNetworkError(error, context) {
-    console.error('[ErrorHandler] Network error:', error);
+    logger.error('[ErrorHandler] Network error:', error);
 
     // 自动重试逻辑
     if (context.enableRetry !== false) {
@@ -229,7 +232,7 @@ class EnhancedErrorHandler {
    * 处理权限错误
    */
   handlePermissionError(error, context) {
-    console.error('[ErrorHandler] Permission error:', error);
+    logger.error('[ErrorHandler] Permission error:', error);
 
     // 清理用户权限缓存
     if (typeof wx !== 'undefined' && wx.removeStorageSync) {
@@ -253,7 +256,7 @@ class EnhancedErrorHandler {
    * 处理验证错误
    */
   handleValidationError(error, context) {
-    console.error('[ErrorHandler] Validation error:', error);
+    logger.error('[ErrorHandler] Validation error:', error);
 
     // 显示详细的验证错误信息
     if (context.showDetails !== false) {
@@ -264,8 +267,8 @@ class EnhancedErrorHandler {
   /**
    * 处理服务器错误
    */
-  handleServerError(error, context) {
-    console.error('[ErrorHandler] Server error:', error);
+  handleServerError(error, _context) {
+    logger.error('[ErrorHandler] Server error:', error);
 
     // 服务器错误时降低请求频率
     this.adjustRequestFrequency();
@@ -275,7 +278,7 @@ class EnhancedErrorHandler {
    * 处理未知错误
    */
   handleUnknownError(error, context) {
-    console.error('[ErrorHandler] Unknown error:', error);
+    logger.error('[ErrorHandler] Unknown error:', error);
 
     // 记录详细信息以便调试
     this.logErrorForDebugging(error, context);
@@ -354,7 +357,7 @@ class EnhancedErrorHandler {
   /**
    * 显示验证详情
    */
-  showValidationDetails(error, context) {
+  showValidationDetails(error, _context) {
     if (typeof wx !== 'undefined') {
       wx.showModal({
         title: '输入错误',
@@ -369,7 +372,7 @@ class EnhancedErrorHandler {
    */
   adjustRequestFrequency() {
     // 实现请求频率调整逻辑
-    console.log('[ErrorHandler] Adjusting request frequency due to server errors');
+    logger.info('[ErrorHandler] Adjusting request frequency due to server errors');
   }
 
   /**
@@ -387,7 +390,7 @@ class EnhancedErrorHandler {
       timestamp: new Date().toISOString()
     };
 
-    console.error('[ErrorHandler] Debug info:', debugInfo);
+    logger.error('[ErrorHandler] Debug info:', debugInfo);
   }
 
   /**
@@ -421,7 +424,7 @@ class EnhancedErrorHandler {
     try {
       await this.reportErrors(errors);
     } catch (reportError) {
-      console.error('[ErrorHandler] Failed to report errors:', reportError);
+      logger.error('[ErrorHandler] Failed to report errors:', reportError);
       // 上报失败，重新加入队列
       this.errorQueue.unshift(...errors);
     } finally {
